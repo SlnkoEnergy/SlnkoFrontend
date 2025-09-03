@@ -48,8 +48,8 @@ export const GlobalTaskApi = createApi({
     }),
 
     getAllUser: builder.query({
-      query: () => ({
-        url: "all-user",
+      query: ({department}) => ({
+        url: `all-user?department=${department}`,
         method: "GET",
       }),
       providesTags: ["User"],

@@ -16,7 +16,7 @@ import NoData from "../assets/alert-bell.svg";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import { debounce } from "lodash";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import Chip from "@mui/joy/Chip";
 import WorkOutlineIcon from "@mui/icons-material/WorkOutline";
 import ApartmentIcon from "@mui/icons-material/Apartment";
@@ -25,8 +25,10 @@ import BuildIcon from "@mui/icons-material/Build";
 import {
   useGetAllTasksQuery,
   useGetAllDeptQuery,
+  // NEW: import the users query
+  useGetAllUserQuery,
 } from "../redux/globalTaskSlice";
-import { useNavigate } from "react-router-dom";
+
 import {
   Badge,
   Dropdown,
@@ -64,7 +66,7 @@ function Dash_task({ selected, setSelected }) {
     searchParams.get("deadline") || ""
   );
 
-  // NEW: UI + query state for name filters (persisted via URL)
+  // Name filters (persisted to URL / sent to backend)
   const [assignedToName, setAssignedToName] = useState(
     searchParams.get("assignedToName") || ""
   );
@@ -72,7 +74,7 @@ function Dash_task({ selected, setSelected }) {
     searchParams.get("createdByName") || ""
   );
 
-  // Raw inputs for debounced typing (so UI updates immediately)
+  // Raw inputs (used only when using text inputs; for dropdowns we'll set directly)
   const [rawAssignedToName, setRawAssignedToName] = useState(
     searchParams.get("assignedToName") || ""
   );
@@ -86,6 +88,8 @@ function Dash_task({ selected, setSelected }) {
   );
 
   const navigate = useNavigate();
+
+  // MAIN DATA
   const { data, isLoading } = useGetAllTasksQuery({
     page: currentPage,
     search: searchQuery,
@@ -97,14 +101,34 @@ function Dash_task({ selected, setSelected }) {
     hide_completed: hideCompleted,
     hide_pending: hidePending,
     hide_inprogress: hideProgress,
-    // NEW: send to backend
     assignedToName,
     createdByName,
   });
 
+  // DEPARTMENTS
   const { data: deptApiData, isLoading: isDeptLoading } = useGetAllDeptQuery();
   const deptList = deptApiData?.data?.filter((d) => d) || [];
 
+  // NEW: Fetch users for the selected department (only when a department is chosen)
+  // If you want ONLY "accounts" to trigger this, replace `!!departmentFilter` with `(departmentFilter?.toLowerCase() === "accounts")`.
+  const shouldLoadUsers = !!departmentFilter; 
+  const {
+    data: usersResp,
+    isFetching: isUsersLoading,
+    isError: isUsersError,
+  } = useGetAllUserQuery(
+    { department: departmentFilter },
+    { skip: !shouldLoadUsers }
+  );
+
+  // Normalize users data (expecting array of { _id, name } or similar)
+  const userOptions =
+    (usersResp?.data || usersResp?.users || []).map((u) => ({
+      value: u?._id || u?.id || u?.email || u?.name, // fallback keys
+      label: u?.name || u?.fullName || u?.email || "Unknown",
+    })) || [];
+
+  // Keep URL in sync
   useEffect(() => {
     const params = {};
 
@@ -113,8 +137,8 @@ function Dash_task({ selected, setSelected }) {
     if (dateFilter) params.createdAt = dateFilter;
     if (deadlineDateFilter) params.deadline = deadlineDateFilter;
     if (departmentFilter) params.department = departmentFilter;
-    if (assignedToName) params.assignedToName = assignedToName; // NEW
-    if (createdByName) params.createdByName = createdByName; // NEW
+    if (assignedToName) params.assignedToName = assignedToName;
+    if (createdByName) params.createdByName = createdByName;
     if (currentPage) params.page = currentPage;
     if (itemsPerPage) params.limit = itemsPerPage;
 
@@ -125,13 +149,23 @@ function Dash_task({ selected, setSelected }) {
     dateFilter,
     deadlineDateFilter,
     departmentFilter,
-    assignedToName, // NEW
-    createdByName, // NEW
+    assignedToName,
+    createdByName,
     currentPage,
     itemsPerPage,
     setSearchParams,
   ]);
 
+  // Reset dependent filters when department changes
+  useEffect(() => {
+    // Clear name filters when department changes so we don't carry stale names across departments
+    setAssignedToName("");
+    setCreatedByName("");
+    setRawAssignedToName("");
+    setRawCreatedByName("");
+  }, [departmentFilter]);
+
+  // Debouncers (still used for text input mode)
   const debouncedSearch = useCallback(
     debounce((value) => {
       setSearchQuery(value);
@@ -140,7 +174,6 @@ function Dash_task({ selected, setSelected }) {
     []
   );
 
-  // NEW: debounce filters for names
   const debouncedAssignedToName = useCallback(
     debounce((value) => {
       setAssignedToName(value);
@@ -182,15 +215,28 @@ function Dash_task({ selected, setSelected }) {
     debouncedSearch(value);
   };
 
-  // NEW: handlers for the two name filters
-  const handleAssignedToName = (value) => {
+  // Text-input handlers (used when department not selected)
+  const handleAssignedToNameText = (value) => {
     setRawAssignedToName(value);
     debouncedAssignedToName(value);
   };
-
-  const handleCreatedByName = (value) => {
+  const handleCreatedByNameText = (value) => {
     setRawCreatedByName(value);
     debouncedCreatedByName(value);
+  };
+
+  // Dropdown handlers (used when department is selected)
+  const handleAssignedToNameSelect = (_, newValue) => {
+    const v = newValue || "";
+    setAssignedToName(v);
+    setRawAssignedToName(v);
+    setCurrentPage(1);
+  };
+  const handleCreatedByNameSelect = (_, newValue) => {
+    const v = newValue || "";
+    setCreatedByName(v);
+    setRawCreatedByName(v);
+    setCurrentPage(1);
   };
 
   const handleSelectAll = (event) => {
@@ -225,7 +271,7 @@ function Dash_task({ selected, setSelected }) {
   const statusOptions = ["completed", "pending", "in progress"];
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("hiddenStatuses")) || {};
+    const saved = JSON.parse(localStorage.getItem("hiddenStatuses") || "{}") || {};
     setHideCompleted(saved.completed || false);
     setHidePending(saved.pending || false);
     setHideProgress(saved["in progress"] || false);
@@ -262,6 +308,8 @@ function Dash_task({ selected, setSelected }) {
 
   const hiddenCount = selectedValues.length;
 
+  const showUserDropdowns = !!departmentFilter; // or === "accounts" if you want to restrict
+
   return (
     <>
       {/* Search and Filters */}
@@ -293,7 +341,7 @@ function Dash_task({ selected, setSelected }) {
           <Select
             value={statusFilter}
             placeholder="Select Status"
-            onChange={(e, newValue) => setStatusFilter(newValue || "")}
+            onChange={(_e, newValue) => setStatusFilter(newValue || "")}
             sx={{
               height: "32px",
               borderRadius: "6px",
@@ -332,7 +380,7 @@ function Dash_task({ selected, setSelected }) {
           <FormLabel>Items per page</FormLabel>
           <Select
             value={itemsPerPage}
-            onChange={(e, newValue) => {
+            onChange={(_e, newValue) => {
               setItemsPerPage(Number(newValue));
               setCurrentPage(1);
             }}
@@ -356,7 +404,7 @@ function Dash_task({ selected, setSelected }) {
           <FormLabel>Department</FormLabel>
           <Select
             value={departmentFilter}
-            onChange={(e, newValue) => {
+            onChange={(_e, newValue) => {
               setDepartmentFilter(newValue || "");
               setCurrentPage(1);
             }}
@@ -378,27 +426,73 @@ function Dash_task({ selected, setSelected }) {
           </Select>
         </FormControl>
 
-        {/* NEW: Assigned To (Name) */}
-        <FormControl size="sm" sx={{ minWidth: { xs: "160px", md: "200px" } }}>
-          <FormLabel>Assigned To (Name)</FormLabel>
-          <Input
-            size="sm"
-            placeholder="e.g. Rounik"
-            value={rawAssignedToName}
-            onChange={(e) => handleAssignedToName(e.target.value)}
-          />
-        </FormControl>
+        {/* Assigned To / Created By — SWITCH between text and dropdown based on department */}
+        {showUserDropdowns ? (
+          <>
+            <FormControl size="sm" sx={{ minWidth: { xs: "160px", md: "220px" } }}>
+              <FormLabel>
+                Assigned To {isUsersLoading ? "(loading…)" : ""}
+              </FormLabel>
+              <Select
+                placeholder={isUsersLoading ? "Loading…" : "All"}
+                value={assignedToName || ""}
+                onChange={handleAssignedToNameSelect}
+                disabled={isUsersLoading || isUsersError}
+                sx={{ height: "32px", borderRadius: "6px", borderColor: "#ccc" }}
+              >
+                <Option value="">All</Option>
+                {userOptions.map((u) => (
+                  <Option key={u.value} value={u.label /* filter by name */}>
+                    {u.label}
+                  </Option>
+                ))}
+              </Select>
+            </FormControl>
 
-        {/* NEW: Created By (Name) */}
-        <FormControl size="sm" sx={{ minWidth: { xs: "160px", md: "200px" } }}>
-          <FormLabel>Created By (Name)</FormLabel>
-          <Input
-            size="sm"
-            placeholder="e.g. Siddharth"
-            value={rawCreatedByName}
-            onChange={(e) => handleCreatedByName(e.target.value)}
-          />
-        </FormControl>
+            <FormControl size="sm" sx={{ minWidth: { xs: "160px", md: "220px" } }}>
+              <FormLabel>
+                Created By {isUsersLoading ? "(loading…)" : ""}
+              </FormLabel>
+              <Select
+                placeholder={isUsersLoading ? "Loading…" : "All"}
+                value={createdByName || ""}
+                onChange={handleCreatedByNameSelect}
+                disabled={isUsersLoading || isUsersError}
+                sx={{ height: "32px", borderRadius: "6px", borderColor: "#ccc" }}
+              >
+                <Option value="">All</Option>
+                {userOptions.map((u) => (
+                  <Option key={u.value} value={u.label /* filter by name */}>
+                    {u.label}
+                  </Option>
+                ))}
+              </Select>
+            </FormControl>
+          </>
+        ) : (
+          <>
+            {/* Text inputs if NO department selected (keeps your old behavior) */}
+            <FormControl size="sm" sx={{ minWidth: { xs: "160px", md: "200px" } }}>
+              <FormLabel>Assigned To (Name)</FormLabel>
+              <Input
+                size="sm"
+                placeholder="e.g Ram"
+                value={rawAssignedToName}
+                onChange={(e) => handleAssignedToNameText(e.target.value)}
+              />
+            </FormControl>
+
+            <FormControl size="sm" sx={{ minWidth: { xs: "160px", md: "200px" } }}>
+              <FormLabel>Created By (Name)</FormLabel>
+              <Input
+                size="sm"
+                placeholder="e.g. Ramesh"
+                value={rawCreatedByName}
+                onChange={(e) => handleCreatedByNameText(e.target.value)}
+              />
+            </FormControl>
+          </>
+        )}
 
         <Dropdown>
           <MenuButton
@@ -481,7 +575,7 @@ function Dash_task({ selected, setSelected }) {
               <th style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
                 <Checkbox
                   size="sm"
-                  checked={selected.length === filteredData.length}
+                  checked={selected.length === filteredData.length && filteredData.length > 0}
                   onChange={handleSelectAll}
                   indeterminate={
                     selected.length > 0 && selected.length < filteredData.length
@@ -489,7 +583,6 @@ function Dash_task({ selected, setSelected }) {
                 />
               </th>
 
-              {/* Task Info with Sort by Priority */}
               <th style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
                 <Box display="flex" alignItems="center" gap={0.5}>
                   <Typography level="body-sm">Task Info</Typography>
@@ -516,7 +609,6 @@ function Dash_task({ selected, setSelected }) {
                 </Box>
               </th>
 
-              {/* The rest of the column headers */}
               {["Title", "Type", "Project Info", "Description", "Status"].map(
                 (header, i) => (
                   <th
@@ -546,7 +638,6 @@ function Dash_task({ selected, setSelected }) {
                     />
                   </td>
 
-                  {/* Task Info */}
                   <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
                     <Typography
                       fontWeight="lg"
@@ -584,7 +675,6 @@ function Dash_task({ selected, setSelected }) {
                     </Typography>
                   </td>
 
-                  {/* Title + Assigned To + Deadline */}
                   <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
                     <Typography fontWeight="lg">{task.title || "-"}</Typography>
 
@@ -769,7 +859,6 @@ function Dash_task({ selected, setSelected }) {
                     )}
                   </td>
 
-                  {/* Project Info */}
                   <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
                     {Array.isArray(task.project_details) &&
                     task.project_details.length > 0 ? (
@@ -828,7 +917,7 @@ function Dash_task({ selected, setSelected }) {
                               <Typography fontWeight="lg">
                                 {task.project_details[0].code || "-"}
                               </Typography>
-                            <Typography level="body-sm">
+                              <Typography level="body-sm">
                                 {task.project_details[0].name || "-"}
                               </Typography>
                             </Box>
@@ -860,7 +949,6 @@ function Dash_task({ selected, setSelected }) {
                     )}
                   </td>
 
-                  {/* Description */}
                   <td
                     style={{
                       padding: "8px",
@@ -894,7 +982,6 @@ function Dash_task({ selected, setSelected }) {
                     </Tooltip>
                   </td>
 
-                  {/* Status */}
                   <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
                     <Tooltip title={task.current_status?.remarks || ""}>
                       <Chip
