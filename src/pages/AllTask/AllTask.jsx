@@ -14,6 +14,8 @@ import Header from "../../component/Partials/Header";
 import { useNavigate } from "react-router-dom";
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 import { useExportTasksToCsvMutation } from "../../redux/globalTaskSlice";
+import MainHeader from "../../component/Partials/MainHeader";
+import SubHeader from "../../component/Partials/SubHeader";
 
 function AllTask() {
   const navigate = useNavigate();
@@ -64,106 +66,68 @@ function AllTask() {
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
       <Box sx={{ display: "flex", minHeight: "100dvh" }}>
-        <Header />
         <Sidebar />
+         <MainHeader title="Tasks" sticky>
+          <Box display="flex" gap={1}>
+            <Button
+              size="sm"
+              onClick={() => navigate(`/eng_dash`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": {
+                  bgcolor: "rgba(255,255,255,0.15)",
+                },
+              }}
+            >
+              All Tasks
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={()=> navigate(`/inspection`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": {
+                  bgcolor: "rgba(255,255,255,0.15)",
+                },
+              }}
+            >
+              Cancelled Tasks
+            </Button>
+          </Box>
+        </MainHeader>
+        <SubHeader
+          title="All Tasks"
+          isBackEnabled={false}
+          sticky
+        ></SubHeader>
         <Box
           component="main"
           className="MainContent"
           sx={{
-            px: { xs: 2, md: 4 },
-            pt: {
-              xs: "calc(12px + var(--Header-height))",
-              sm: "calc(12px + var(--Header-height))",
-              md: 1,
-            },
-            pb: { xs: 2, sm: 2, md: 1 },
             flex: 1,
             display: "flex",
             flexDirection: "column",
-            height: "100dvh",
             gap: 1,
+            mt: "108px",
+            p: "16px",
+            px: "24px",
           }}
         >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              marginLeft: { xl: "15%", lg: "18%" },
-            }}
-          >
-            <Breadcrumbs
-              size="sm"
-              aria-label="breadcrumbs"
-              separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
-            >
-              <Link
-                underline="none"
-                color="neutral"
-                sx={{ fontSize: 12, fontWeight: 500 }}
-              >
-                Tasks
-              </Link>
-
-              <Typography
-                color="primary"
-                sx={{ fontWeight: 500, fontSize: 12 }}
-              >
-                All Task
-              </Typography>
-            </Breadcrumbs>
-          </Box>
-
-          <Box
-            sx={{
-              display: "flex",
-              mb: 1,
-              gap: 1,
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: { xs: "start", sm: "center" },
-              flexWrap: "wrap",
-              justifyContent: "space-between",
-              marginLeft: { xl: "15%", lg: "18%" },
-            }}
-          >
-            <Typography level="h2" component="h1">
-              All Task
-            </Typography>
-
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: { xs: "column", sm: "row" },
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 1.5,
-                flexWrap: "wrap",
-                borderRadius: "lg",
-              }}
-            >
-              {selectedIds && selectedIds.length > 0 && (
-                <Button
-                variant="outlined"
-                color="primary"
-                startDecorator={<DownloadRoundedIcon />}
-                size="md"
-                onClick={() => handleExport(selectedIds)}
-              >
-                Export to CSV
-              </Button>
-              )}
-
-              <Button
-                variant="solid"
-                color="primary"
-                startDecorator={<ViewModuleRoundedIcon />}
-                size="md"
-                onClick={() => navigate("/add_task")}
-              >
-                Add Task
-              </Button>
-            </Box>
-          </Box>
           <Dash_task selected={selectedIds} setSelected={setSelectedIds} />
         </Box>
       </Box>
