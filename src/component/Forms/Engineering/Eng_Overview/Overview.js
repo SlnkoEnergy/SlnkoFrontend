@@ -523,15 +523,14 @@ const Overview = () => {
       sx={{
         display: "flex",
         flexDirection: "column",
-        height: "100vh",
-        maxHeight: isFromCamDash ? "70vh" : "90vh",
-        width: { xs: "96vw", lg: "75vw", xl: "80vw" },
+        maxHeight: isFromCamDash ? "70vh" : "85vh",
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
         bgcolor: "background.body",
         overflowY: isFromCamDash ? "auto" : "auto",
         overflowX: "auto",
-        marginLeft: isFromCamDash
-          ? "0%"
-          : { xs: "2%", lg: "19.6%", xl: "16.7%" },
+        ml: {
+          lg: "var(--Sidebar-width)",
+        },
       }}
     >
       <Box
@@ -613,7 +612,7 @@ const Overview = () => {
           </Box>
           <Divider sx={{ mb: 3, mt: 3 }} />
 
-          <Box sx={{ display: "grid", gap: 3 }}>
+          <Box sx={{ display: "grid", gap: 3, gridTemplateColumns:'1fr 1fr' }}>
             {selected === "summary" ? (
               boqSummaryData && boqSummaryData.length > 0 ? (
                 boqSummaryData.map((summary, i) => (
@@ -625,6 +624,7 @@ const Overview = () => {
                       borderRadius: "lg",
                       boxShadow: "sm",
                       bgcolor: "background.surface",
+                      
                     }}
                   >
                     <Typography level="title-md" sx={{ mb: 1 }}>
@@ -675,8 +675,6 @@ const Overview = () => {
                       borderRadius: "lg",
                       boxShadow: "sm",
                       bgcolor: "background.surface",
-                      position: "relative",
-                      maxHeight: "70vh",
                     }}
                   >
                     <Typography level="title-md" sx={{ mb: 1 }}>

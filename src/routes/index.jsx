@@ -111,6 +111,7 @@ import LogisticsForm from "../pages/SCM/LogisticsForm";
 import Inspection from "../pages/Eng/Inspection";
 import Inspection_Form from "../pages/Eng/Inspection_Form";
 import Category_Form from "../pages/Databases/Category_Form";
+import UserProfile from "../pages/Users/UserProfile";
 
 function index() {
   return (
@@ -131,6 +132,15 @@ function index() {
       {/*------ User---------- */}
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
+
+      <Route
+        path="/user_profile"
+        element={
+          <PrivateRoute>
+            <UserProfile />
+          </PrivateRoute>
+        }
+      />
 
       <Route
         path="/add_user"

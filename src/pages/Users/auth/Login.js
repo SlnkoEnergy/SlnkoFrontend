@@ -108,6 +108,9 @@ const Login = () => {
         role: matchedUser.role,
         department: matchedUser.department || "",
         userID: matchedUser._id || "",
+        location: matchedUser.location || "",
+        about: matchedUser.about || "",
+        attacchment_url: matchedUser.attacchment_url || "",
       };
 
       localStorage.setItem("userDetails", JSON.stringify(userDetails));

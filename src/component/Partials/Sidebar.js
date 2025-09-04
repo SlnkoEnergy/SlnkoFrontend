@@ -29,7 +29,13 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Main_Logo from "../../assets/protrac_logo.png";
 import { closeSidebar } from "../../utils/utils";
+import {
+  NovuProvider,
+  PopoverNotificationCenter,
+} from "@novu/notification-center";
 import DatabaseIcon from "@mui/icons-material/Storage";
+import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
+import ColorSchemeToggle from "./ColorSchemeToggle";
 
 function Toggler({ defaultExpanded = false, renderToggle, children }) {
   const [open, setOpen] = useState(defaultExpanded);
@@ -58,9 +64,11 @@ function Sidebar() {
   const navigate = useNavigate();
   // const { mode } = useColorScheme();
   const [user, setUser] = useState(null);
+  const [subscribeId, setSubscribeId] = useState("");
   const location = useLocation();
   useEffect(() => {
     const userData = getUserData();
+    setSubscribeId(userData.userID);
     setUser(userData);
   }, []);
 
@@ -79,7 +87,6 @@ function Sidebar() {
   };
 
   const isSalesPage = location.pathname === "/sales";
-  const isEngineering = location.pathname === "/overview";
   return (
     <Sheet
       className="Sidebar"
@@ -140,16 +147,26 @@ function Sidebar() {
         }}
         onClick={() => closeSidebar()}
       />
-      <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-        <IconButton variant="soft" color="primary" size="sm">
-          <img
-            src={Main_Logo}
-            alt="Protrac"
-            style={{ width: "70px", height: "60px" }}
-          />
-        </IconButton>
-        {/* <ColorSchemeToggle sx={{ ml: "auto" }} /> */}
+
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          position: "relative",
+          gap: 10,
+        }}
+      >
+        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+          <IconButton variant="soft" color="primary" size="sm">
+            <img
+              src={Main_Logo}
+              alt="Protrac"
+              style={{ width: "70px", height: "60px" }}
+            />
+          </IconButton>
+        </Box>
       </Box>
+
       <Input
         size="sm"
         startDecorator={<SearchRoundedIcon />}
@@ -390,41 +407,13 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <BuildIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Eng</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/eng_dash")}>
-                      Dashboard
-                    </ListItemButton>
-                  </ListItem>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/inspection")}>
-                      Inspection
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/eng_dash")}>
+                <BuildIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Eng</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
 
             <ListItem nested>
