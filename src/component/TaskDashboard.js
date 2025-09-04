@@ -111,7 +111,7 @@ function Dash_task({ selected, setSelected }) {
 
   // NEW: Fetch users for the selected department (only when a department is chosen)
   // If you want ONLY "accounts" to trigger this, replace `!!departmentFilter` with `(departmentFilter?.toLowerCase() === "accounts")`.
-  const shouldLoadUsers = !!departmentFilter; 
+  const shouldLoadUsers = !!departmentFilter;
   const {
     data: usersResp,
     isFetching: isUsersLoading,
@@ -271,7 +271,8 @@ function Dash_task({ selected, setSelected }) {
   const statusOptions = ["completed", "pending", "in progress"];
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("hiddenStatuses") || "{}") || {};
+    const saved =
+      JSON.parse(localStorage.getItem("hiddenStatuses") || "{}") || {};
     setHideCompleted(saved.completed || false);
     setHidePending(saved.pending || false);
     setHideProgress(saved["in progress"] || false);
@@ -308,25 +309,31 @@ function Dash_task({ selected, setSelected }) {
 
   const hiddenCount = selectedValues.length;
 
-  const showUserDropdowns = !!departmentFilter; // or === "accounts" if you want to restrict
+  const showUserDropdowns = !!departmentFilter;
 
   return (
-    <>
+    <Box
+      sx={{
+        ml: {
+          lg: "var(--Sidebar-width)",
+        },
+        px: "0px",
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+      }}
+    >
       {/* Search and Filters */}
+      <Box display={"flex"} justifyContent={"flex-end"} alignItems={"center"} pb={0.5}>
       <Box
         sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          py: 2,
+          py: 1,
           display: "flex",
-          flexWrap: "wrap",
+          justifyContent:'flex-end',
+          alignItems:'flex-end',
           gap: 1.5,
-          "& > *": {
-            minWidth: { xs: "120px", md: "160px" },
-          },
+          width:'50%'
         }}
       >
         <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search</FormLabel>
           <Input
             size="sm"
             placeholder="Search by Title, Description or Type"
@@ -335,209 +342,26 @@ function Dash_task({ selected, setSelected }) {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
-
-        <FormControl size="sm">
-          <FormLabel>Status</FormLabel>
-          <Select
-            value={statusFilter}
-            placeholder="Select Status"
-            onChange={(_e, newValue) => setStatusFilter(newValue || "")}
-            sx={{
-              height: "32px",
-              borderRadius: "6px",
-              padding: "2px 6px",
-              borderColor: "#ccc",
-            }}
-          >
-            <Option value="">Select Status</Option>
-            <Option value="pending">Pending</Option>
-            <Option value="in progress">In Progress</Option>
-            <Option value="completed">Completed</Option>
-          </Select>
-        </FormControl>
-
-        <FormControl size="sm">
-          <FormLabel>Filter by Date</FormLabel>
-          <Input
-            size="sm"
-            type="date"
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-          />
-        </FormControl>
-
-        <FormControl size="sm">
-          <FormLabel>Filter By Deadline</FormLabel>
-          <Input
-            size="sm"
-            type="date"
-            value={deadlineDateFilter}
-            onChange={(e) => setDeadlineDateFilter(e.target.value)}
-          />
-        </FormControl>
-        <FormControl size="sm">
-          <FormLabel>Department</FormLabel>
-          <Select
-            value={departmentFilter}
-            onChange={(_e, newValue) => {
-              setDepartmentFilter(newValue || "");
-              setCurrentPage(1);
-            }}
-            disabled={isDeptLoading}
-            placeholder="All"
-            sx={{
-              height: "32px",
-              borderRadius: "6px",
-              padding: "0 8px",
-              borderColor: "#ccc",
-            }}
-          >
-            <Option value="">All</Option>
-            {deptList.map((dept) => (
-              <Option key={dept} value={dept}>
-                {dept}
-              </Option>
-            ))}
-          </Select>
-        </FormControl>
-
-        {/* Assigned To / Created By — SWITCH between text and dropdown based on department */}
-        {showUserDropdowns ? (
-          <>
-            <FormControl size="sm" sx={{ minWidth: { xs: "160px", md: "220px" } }}>
-              <FormLabel>
-                Assigned To {isUsersLoading ? "(loading…)" : ""}
-              </FormLabel>
-              <Select
-                placeholder={isUsersLoading ? "Loading…" : "All"}
-                value={assignedToName || ""}
-                onChange={handleAssignedToNameSelect}
-                disabled={isUsersLoading || isUsersError}
-                sx={{ height: "32px", borderRadius: "6px", borderColor: "#ccc" }}
-              >
-                <Option value="">All</Option>
-                {userOptions.map((u) => (
-                  <Option key={u.value} value={u.label /* filter by name */}>
-                    {u.label}
-                  </Option>
-                ))}
-              </Select>
-            </FormControl>
-
-            <FormControl size="sm" sx={{ minWidth: { xs: "160px", md: "220px" } }}>
-              <FormLabel>
-                Created By {isUsersLoading ? "(loading…)" : ""}
-              </FormLabel>
-              <Select
-                placeholder={isUsersLoading ? "Loading…" : "All"}
-                value={createdByName || ""}
-                onChange={handleCreatedByNameSelect}
-                disabled={isUsersLoading || isUsersError}
-                sx={{ height: "32px", borderRadius: "6px", borderColor: "#ccc" }}
-              >
-                <Option value="">All</Option>
-                {userOptions.map((u) => (
-                  <Option key={u.value} value={u.label /* filter by name */}>
-                    {u.label}
-                  </Option>
-                ))}
-              </Select>
-            </FormControl>
-          </>
-        ) : (
-          <>
-            {/* Text inputs if NO department selected (keeps your old behavior) */}
-            <FormControl size="sm" sx={{ minWidth: { xs: "160px", md: "200px" } }}>
-              <FormLabel>Assigned To (Name)</FormLabel>
-              <Input
-                size="sm"
-                placeholder="e.g Ram"
-                value={rawAssignedToName}
-                onChange={(e) => handleAssignedToNameText(e.target.value)}
-              />
-            </FormControl>
-
-            <FormControl size="sm" sx={{ minWidth: { xs: "160px", md: "200px" } }}>
-              <FormLabel>Created By (Name)</FormLabel>
-              <Input
-                size="sm"
-                placeholder="e.g. Ramesh"
-                value={rawCreatedByName}
-                onChange={(e) => handleCreatedByNameText(e.target.value)}
-              />
-            </FormControl>
-          </>
-        )}
-
-        <Dropdown>
-          <MenuButton
-            slots={{ root: IconButton }}
-            slotProps={{
-              root: {
-                variant: "outlined",
-                color: "neutral",
-                size: "sm",
-                sx: {
-                  height: "32px",
-                  justifyContent: "center",
-                  borderRadius: "6px",
-                  mt: "23px",
-                },
-              },
-            }}
-          >
-            <Badge
-              badgeContent={hiddenCount > 0 ? `+${hiddenCount}` : null}
-              color="danger"
-              size="sm"
-              variant="solid"
-              sx={{ "--Badge-minHeight": "16px", "--Badge-fontSize": "10px" }}
-            >
-              <FilterAltIcon fontSize="small" />
-            </Badge>
-          </MenuButton>
-
-          <Menu>
-            <Typography
-              level="title-sm"
-              sx={{ px: 1.5, py: 1, fontWeight: 600 }}
-            >
-              Hide Status
-            </Typography>
-
-            {statusOptions.map((status) => (
-              <MenuItem
-                key={status}
-                onClick={() => handleToggle(status)}
-                sx={{ display: "flex", alignItems: "center", gap: 1 }}
-              >
-                <Checkbox
-                  checked={selectedValues.includes(status)}
-                  variant="outlined"
-                  size="sm"
-                  sx={{ pointerEvents: "none" }}
-                />
-                {status.charAt(0).toUpperCase() + status.slice(1)}
-              </MenuItem>
-            ))}
-          </Menu>
-        </Dropdown>
+</Box>
+       
       </Box>
 
       {/* Table */}
       <Sheet
+        className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: { xs: "none", sm: "initial" },
+          display: { xs: "none", sm: "block" },
           width: "100%",
           borderRadius: "sm",
-          overflow: "auto",
-          minHeight: 0,
-          marginLeft: { lg: "18%", xl: "15%" },
-          maxWidth: { lg: "85%", sm: "100%" },
+          maxHeight: "66vh",
+          overflowY: "auto",
         }}
       >
-        <Box component="table" sx={{ width: "100%", borderCollapse: "collapse" }}>
+        <Box
+          component="table"
+          sx={{ width: "100%", borderCollapse: "collapse" }}
+        >
           <thead
             style={{
               position: "sticky",
@@ -550,7 +374,10 @@ function Dash_task({ selected, setSelected }) {
               <th style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
                 <Checkbox
                   size="sm"
-                  checked={selected.length === filteredData.length && filteredData.length > 0}
+                  checked={
+                    selected.length === filteredData.length &&
+                    filteredData.length > 0
+                  }
                   onChange={handleSelectAll}
                   indeterminate={
                     selected.length > 0 && selected.length < filteredData.length
@@ -568,7 +395,11 @@ function Dash_task({ selected, setSelected }) {
                       color="neutral"
                       onClick={() =>
                         setPrioritySortOrder((prev) =>
-                          prev === "asc" ? "desc" : prev === "desc" ? null : "asc"
+                          prev === "asc"
+                            ? "desc"
+                            : prev === "desc"
+                            ? null
+                            : "asc"
                         )
                       }
                     >
@@ -577,7 +408,10 @@ function Dash_task({ selected, setSelected }) {
                       ) : prioritySortOrder === "desc" ? (
                         <ArrowDownwardIcon fontSize="small" />
                       ) : (
-                        <ArrowUpwardIcon fontSize="small" sx={{ opacity: 0.3 }} />
+                        <ArrowUpwardIcon
+                          fontSize="small"
+                          sx={{ opacity: 0.3 }}
+                        />
                       )}
                     </IconButton>
                   </Tooltip>
@@ -605,7 +439,9 @@ function Dash_task({ selected, setSelected }) {
             {filteredData.length > 0 ? (
               filteredData.map((task) => (
                 <tr key={task._id}>
-                  <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
+                  >
                     <Checkbox
                       size="sm"
                       checked={selected.includes(task._id)}
@@ -613,7 +449,9 @@ function Dash_task({ selected, setSelected }) {
                     />
                   </td>
 
-                  <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
+                  >
                     <Typography
                       fontWeight="lg"
                       sx={{ cursor: "pointer", color: "primary.700" }}
@@ -624,11 +462,13 @@ function Dash_task({ selected, setSelected }) {
                     <Box display="flex" alignItems="center" gap={0.5}>
                       <Tooltip title="Priority">
                         <Box display="flex">
-                          {[...Array(Number(task.priority || 0))].map((_, i) => (
-                            <Typography key={i} level="body-sm">
-                              ⭐
-                            </Typography>
-                          ))}
+                          {[...Array(Number(task.priority || 0))].map(
+                            (_, i) => (
+                              <Typography key={i} level="body-sm">
+                                ⭐
+                              </Typography>
+                            )
+                          )}
                         </Box>
                       </Tooltip>
                     </Box>
@@ -650,14 +490,20 @@ function Dash_task({ selected, setSelected }) {
                     </Typography>
                   </td>
 
-                  <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
+                  >
                     <Typography fontWeight="lg">{task.title || "-"}</Typography>
 
                     {task.assigned_to?.length > 0 ? (
                       <Tooltip
                         title={
                           <Box sx={{ px: 1, py: 0.5 }}>
-                            <Typography level="body-sm" fontWeight="md" mb={0.5}>
+                            <Typography
+                              level="body-sm"
+                              fontWeight="md"
+                              mb={0.5}
+                            >
                               Assigned To:
                             </Typography>
                             {task.assigned_to.map((a, i) => (
@@ -812,7 +658,9 @@ function Dash_task({ selected, setSelected }) {
                       })()}
                   </td>
 
-                  <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
+                  >
                     {task.type ? (
                       <Box
                         display="inline-flex"
@@ -834,7 +682,9 @@ function Dash_task({ selected, setSelected }) {
                     )}
                   </td>
 
-                  <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
+                  >
                     {Array.isArray(task.project_details) &&
                     task.project_details.length > 0 ? (
                       task.project_details.length === 1 ? (
@@ -852,25 +702,28 @@ function Dash_task({ selected, setSelected }) {
                             <Box
                               sx={{ maxHeight: 200, overflowY: "auto", pr: 1 }}
                             >
-                              {task.project_details.slice(1).map((project, index) => (
-                                <Box key={project._id} sx={{ mb: 1 }}>
-                                  <Typography level="body-md" fontWeight="lg">
-                                    {project.code}
-                                  </Typography>
-                                  <Typography level="body-sm">
-                                    {project.name}
-                                  </Typography>
-                                  {index !== task.project_details.length - 2 && (
-                                    <Box
-                                      sx={{
-                                        height: "1px",
-                                        backgroundColor: "#eee",
-                                        my: 1,
-                                      }}
-                                    />
-                                  )}
-                                </Box>
-                              ))}
+                              {task.project_details
+                                .slice(1)
+                                .map((project, index) => (
+                                  <Box key={project._id} sx={{ mb: 1 }}>
+                                    <Typography level="body-md" fontWeight="lg">
+                                      {project.code}
+                                    </Typography>
+                                    <Typography level="body-sm">
+                                      {project.name}
+                                    </Typography>
+                                    {index !==
+                                      task.project_details.length - 2 && (
+                                      <Box
+                                        sx={{
+                                          height: "1px",
+                                          backgroundColor: "#eee",
+                                          my: 1,
+                                        }}
+                                      />
+                                    )}
+                                  </Box>
+                                ))}
                             </Box>
                           }
                           arrow
@@ -933,7 +786,9 @@ function Dash_task({ selected, setSelected }) {
                   >
                     <Tooltip
                       title={
-                        <Typography sx={{ whiteSpace: "pre-line", maxWidth: "300px" }}>
+                        <Typography
+                          sx={{ whiteSpace: "pre-line", maxWidth: "300px" }}
+                        >
                           {task.description || ""}
                         </Typography>
                       }
@@ -957,7 +812,9 @@ function Dash_task({ selected, setSelected }) {
                     </Tooltip>
                   </td>
 
-                  <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
+                  >
                     <Tooltip title={task.current_status?.remarks || ""}>
                       <Chip
                         variant="soft"
@@ -985,7 +842,10 @@ function Dash_task({ selected, setSelected }) {
               ))
             ) : (
               <tr>
-                <td colSpan={6} style={{ textAlign: "center", padding: "16px" }}>
+                <td
+                  colSpan={6}
+                  style={{ textAlign: "center", padding: "16px" }}
+                >
                   <Box
                     sx={{
                       display: "flex",
@@ -1009,15 +869,14 @@ function Dash_task({ selected, setSelected }) {
 
       {/* Pagination */}
       <Box
-         className="Pagination-laptopUp"
+        className="Pagination-laptopUp"
         sx={{
-          pt: 2,
+          pt: 0.5,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: "flex",
           flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
-          marginLeft: { lg: "18%", xl: "15%" },
         }}
       >
         <Button
@@ -1054,7 +913,7 @@ function Dash_task({ selected, setSelected }) {
           )}
         </Box>
 
-         <FormControl size="sm">
+        <FormControl size="sm">
           <Select
             value={itemsPerPage}
             onChange={(_e, newValue) => {
@@ -1088,7 +947,7 @@ function Dash_task({ selected, setSelected }) {
           Next
         </Button>
       </Box>
-    </>
+    </Box>
   );
 }
 

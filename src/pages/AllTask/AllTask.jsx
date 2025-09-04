@@ -3,25 +3,28 @@ import CssBaseline from "@mui/joy/CssBaseline";
 import { CssVarsProvider } from "@mui/joy/styles";
 import { useEffect, useState } from "react";
 import Button from "@mui/joy/Button";
-import Breadcrumbs from "@mui/joy/Breadcrumbs";
-import Link from "@mui/joy/Link";
-import Typography from "@mui/joy/Typography";
-import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import ViewModuleRoundedIcon from "@mui/icons-material/ViewModuleRounded";
 import Sidebar from "../../component/Partials/Sidebar";
 import Dash_task from "../../component/TaskDashboard";
-import Header from "../../component/Partials/Header";
 import { useNavigate } from "react-router-dom";
-import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 import { useExportTasksToCsvMutation } from "../../redux/globalTaskSlice";
 import MainHeader from "../../component/Partials/MainHeader";
 import SubHeader from "../../component/Partials/SubHeader";
+import { Add } from "@mui/icons-material";
+import Filter, { buildQueryParams } from "../../component/Partials/Filter";
 
 function AllTask() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
+const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
 
+  const fields = [
+    { key: "createdBy", label: "Reporter", type: "select", getOptions: async () => ["Alice", "Bob"] },
+    { key: "assignee", label: "Assignee", type: "multiselect", getOptions: async () => ["Charlie", "Diana"] },
+    { key: "deadline", label: "Deadline", type: "daterange" },
+    { key: "status", label: "Status", type: "select", options: ["Open", "Closed"] },
+  ];
   useEffect(() => {
     const userData = getUserData();
     setUser(userData);
@@ -67,7 +70,7 @@ function AllTask() {
       <CssBaseline />
       <Box sx={{ display: "flex", minHeight: "100dvh" }}>
         <Sidebar />
-         <MainHeader title="Tasks" sticky>
+        <MainHeader title="Tasks" sticky>
           <Box display="flex" gap={1}>
             <Button
               size="sm"
@@ -86,12 +89,12 @@ function AllTask() {
                 },
               }}
             >
-              All Tasks
+              Dashboard
             </Button>
 
             <Button
               size="sm"
-              onClick={()=> navigate(`/inspection`)}
+              onClick={() => navigate(`/inspection`)}
               sx={{
                 color: "white",
                 bgcolor: "transparent",
@@ -106,15 +109,61 @@ function AllTask() {
                 },
               }}
             >
-              Cancelled Tasks
+             All Tasks
             </Button>
           </Box>
         </MainHeader>
-        <SubHeader
-          title="All Tasks"
-          isBackEnabled={false}
-          sticky
-        ></SubHeader>
+        <SubHeader title="All Tasks" isBackEnabled={false} sticky>
+          <Box display="flex" gap={1}>
+            {selectedIds && selectedIds.length > 0 && (
+              <Button
+                variant="outlined"
+                size="sm"
+                onClick={() => navigate("/add_task")}
+                sx={{
+                  color: "#3366a3",
+                  borderColor: "#3366a3",
+                  backgroundColor: "transparent",
+                  "--Button-hoverBg": "#e0e0e0",
+                  "--Button-hoverBorderColor": "#3366a3",
+                  "&:hover": {
+                    color: "#3366a3",
+                  },
+                }}
+              >
+                Export
+              </Button>
+            )}
+
+            <Button
+              variant="solid"
+              size="sm"
+              startDecorator={<Add />}
+              onClick={() => navigate("/add_task")}
+              sx={{
+                backgroundColor: "#3366a3",
+                color: "#fff",
+                "&:hover": {
+                  backgroundColor: "#285680",
+                },
+              }}
+            >
+              Add Task
+            </Button>
+
+           <Filter
+        open={open}
+        onOpenChange={setOpen} // 👈 must be a function
+        fields={fields}
+        onApply={(values) => {
+          const qs = buildQueryParams(values, { dateKeys: ["deadline"], arrayKeys: ["assignee"] });
+          console.log("querystring:", qs);
+          setQuery(qs);
+          setOpen(false);
+        }}
+      />
+          </Box>
+        </SubHeader>
         <Box
           component="main"
           className="MainContent"
