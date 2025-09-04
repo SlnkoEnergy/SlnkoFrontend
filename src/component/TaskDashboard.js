@@ -1,102 +1,77 @@
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { debounce } from "lodash";
+import { useNavigate } from "react-router-dom";
+import Box from "@mui/joy/Box";
+import Button from "@mui/joy/Button";
+import Checkbox from "@mui/joy/Checkbox";
+import Chip from "@mui/joy/Chip";
+import FormControl from "@mui/joy/FormControl";
+import Input from "@mui/joy/Input";
+import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
+import Select from "@mui/joy/Select";
+import Option from "@mui/joy/Option";
+import Sheet from "@mui/joy/Sheet";
+import Tooltip from "@mui/joy/Tooltip";
+import Typography from "@mui/joy/Typography";
+import Tabs from "@mui/joy/Tabs";
+import TabList from "@mui/joy/TabList";
+import Tab from "@mui/joy/Tab";
 import SearchIcon from "@mui/icons-material/Search";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
-import Checkbox from "@mui/joy/Checkbox";
-import Box from "@mui/joy/Box";
-import Button from "@mui/joy/Button";
-import FormControl from "@mui/joy/FormControl";
-import FormLabel from "@mui/joy/FormLabel";
-import Input from "@mui/joy/Input";
-import Sheet from "@mui/joy/Sheet";
-import Typography from "@mui/joy/Typography";
-import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
-import Tooltip from "@mui/joy/Tooltip";
-import { useEffect, useMemo, useState, useCallback } from "react";
-import NoData from "../assets/alert-bell.svg";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
-import { debounce } from "lodash";
-import { useSearchParams, useNavigate } from "react-router-dom";
-import Chip from "@mui/joy/Chip";
 import WorkOutlineIcon from "@mui/icons-material/WorkOutline";
 import ApartmentIcon from "@mui/icons-material/Apartment";
 import BuildIcon from "@mui/icons-material/Build";
-
+import NoData from "../assets/alert-bell.svg";
 import {
   useGetAllTasksQuery,
   useGetAllDeptQuery,
-  // NEW: import the users query
   useGetAllUserQuery,
 } from "../redux/globalTaskSlice";
 
-import {
-  Badge,
-  Dropdown,
-  Menu,
-  MenuButton,
-  MenuItem,
-  Option,
-  Select,
-} from "@mui/joy";
-import FilterAltIcon from "@mui/icons-material/FilterAlt";
+function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
+  const navigate = useNavigate();
 
-function Dash_task({ selected, setSelected }) {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const tabLabel = searchParams.get("tab") || "All";
+  const currentPage = Number(searchParams.get("page")) || 1;
+  const itemsPerPage = Number(searchParams.get("limit")) || 100;
+
+  const searchQuery = searchParams.get("search") || "";
+  const createdAt = searchParams.get("createdAt") || "";
+  const deadline = searchParams.get("deadline") || "";
+  const department = searchParams.get("department") || "";
+  const assignedToName = searchParams.get("assignedToName") || "";
+  const createdByName = searchParams.get("createdByName") || "";
+
+  const statusFromTab =
+    {
+      Pending: "pending",
+      "In Progress": "in progress",
+      Completed: "completed",
+      Cancelled: "cancelled",
+      All: "",
+    }[tabLabel] ?? "";
+
   const [hideCompleted, setHideCompleted] = useState(false);
   const [hidePending, setHidePending] = useState(false);
   const [hideProgress, setHideProgress] = useState(false);
-  const [currentPage, setCurrentPage] = useState(
-    Number(searchParams.get("page")) || 1
-  );
-
-  const [searchQuery, setSearchQuery] = useState(
-    searchParams.get("search") || ""
-  );
-  const [rawSearch, setRawSearch] = useState(searchParams.get("search") || "");
-  const [statusFilter, setStatusFilter] = useState(
-    searchParams.get("status") || ""
-  );
-  const [dateFilter, setDateFilter] = useState(
-    searchParams.get("createdAt") || ""
-  );
-  const [departmentFilter, setDepartmentFilter] = useState(
-    searchParams.get("department") || ""
-  );
-  const [deadlineDateFilter, setDeadlineDateFilter] = useState(
-    searchParams.get("deadline") || ""
-  );
-
-  // Name filters (persisted to URL / sent to backend)
-  const [assignedToName, setAssignedToName] = useState(
-    searchParams.get("assignedToName") || ""
-  );
-  const [createdByName, setCreatedByName] = useState(
-    searchParams.get("createdByName") || ""
-  );
-
-  // Raw inputs (used only when using text inputs; for dropdowns we'll set directly)
-  const [rawAssignedToName, setRawAssignedToName] = useState(
-    searchParams.get("assignedToName") || ""
-  );
-  const [rawCreatedByName, setRawCreatedByName] = useState(
-    searchParams.get("createdByName") || ""
-  );
-
   const [prioritySortOrder, setPrioritySortOrder] = useState(null);
-  const [itemsPerPage, setItemsPerPage] = useState(
-    Number(searchParams.get("limit")) || 100
-  );
+  const [rawSearch, setRawSearch] = useState(searchQuery);
+  const [selectedTab, setSelectedTab] = useState(tabLabel);
 
-  const navigate = useNavigate();
+  useEffect(() => setRawSearch(searchQuery), [searchQuery]);
+  useEffect(() => setSelectedTab(tabLabel), [tabLabel]);
 
-  // MAIN DATA
+  // -------- Data ----------
   const { data, isLoading } = useGetAllTasksQuery({
     page: currentPage,
     search: searchQuery,
-    status: statusFilter,
-    createdAt: dateFilter,
-    deadline: deadlineDateFilter,
-    department: departmentFilter,
+    status: statusFromTab, 
+    createdAt,
+    deadline,
+    department,
     limit: itemsPerPage,
     hide_completed: hideCompleted,
     hide_pending: hidePending,
@@ -105,154 +80,91 @@ function Dash_task({ selected, setSelected }) {
     createdByName,
   });
 
-  // DEPARTMENTS
-  const { data: deptApiData, isLoading: isDeptLoading } = useGetAllDeptQuery();
-  const deptList = deptApiData?.data?.filter((d) => d) || [];
+  const { data: deptApiData } = useGetAllDeptQuery();
 
-  // NEW: Fetch users for the selected department (only when a department is chosen)
-  // If you want ONLY "accounts" to trigger this, replace `!!departmentFilter` with `(departmentFilter?.toLowerCase() === "accounts")`.
-  const shouldLoadUsers = !!departmentFilter;
+
+  const shouldLoadUsers = !!department;
   const {
     data: usersResp,
     isFetching: isUsersLoading,
     isError: isUsersError,
-  } = useGetAllUserQuery(
-    { department: departmentFilter },
-    { skip: !shouldLoadUsers }
+  } = useGetAllUserQuery({ department }, { skip: !shouldLoadUsers });
+
+
+  const patchParams = useCallback(
+    (patchObj) => {
+      if (!setSearchParams) return;
+      setSearchParams((prev) => {
+        const merged = Object.fromEntries(prev.entries());
+        return { ...merged, ...patchObj };
+      });
+    },
+    [setSearchParams]
   );
 
-  // Normalize users data (expecting array of { _id, name } or similar)
-  const userOptions =
-    (usersResp?.data || usersResp?.users || []).map((u) => ({
-      value: u?._id || u?.id || u?.email || u?.name, // fallback keys
-      label: u?.name || u?.fullName || u?.email || "Unknown",
-    })) || [];
-
-  // Keep URL in sync
-  useEffect(() => {
-    const params = {};
-
-    if (searchQuery) params.search = searchQuery;
-    if (statusFilter) params.status = statusFilter;
-    if (dateFilter) params.createdAt = dateFilter;
-    if (deadlineDateFilter) params.deadline = deadlineDateFilter;
-    if (departmentFilter) params.department = departmentFilter;
-    if (assignedToName) params.assignedToName = assignedToName;
-    if (createdByName) params.createdByName = createdByName;
-    if (currentPage) params.page = currentPage;
-    if (itemsPerPage) params.limit = itemsPerPage;
-
-    setSearchParams(params);
-  }, [
-    searchQuery,
-    statusFilter,
-    dateFilter,
-    deadlineDateFilter,
-    departmentFilter,
-    assignedToName,
-    createdByName,
-    currentPage,
-    itemsPerPage,
-    setSearchParams,
-  ]);
-
-  // Reset dependent filters when department changes
-  useEffect(() => {
-    // Clear name filters when department changes so we don't carry stale names across departments
-    setAssignedToName("");
-    setCreatedByName("");
-    setRawAssignedToName("");
-    setRawCreatedByName("");
-  }, [departmentFilter]);
-
-  // Debouncers (still used for text input mode)
-  const debouncedSearch = useCallback(
-    debounce((value) => {
-      setSearchQuery(value);
-      setCurrentPage(1);
-    }, 300),
-    []
+  const setParamAndResetPage = useCallback(
+    (key, value) => {
+      if (!setSearchParams) return;
+      setSearchParams((prev) => {
+        const merged = Object.fromEntries(prev.entries());
+        if (value == null || value === "") delete merged[key];
+        else merged[key] = String(value);
+        merged.page = "1";
+        return merged;
+      });
+    },
+    [setSearchParams]
   );
 
-  const debouncedAssignedToName = useCallback(
-    debounce((value) => {
-      setAssignedToName(value);
-      setCurrentPage(1);
-    }, 300),
-    []
+  // Debounced free-text search -> URL
+  const debouncedPushSearch = useCallback(
+    debounce((value) => setParamAndResetPage("search", value), 300),
+    [setParamAndResetPage]
   );
+  const handleSearch = (value) => {
+    setRawSearch(value);
+    debouncedPushSearch(value);
+  };
 
-  const debouncedCreatedByName = useCallback(
-    debounce((value) => {
-      setCreatedByName(value);
-      setCurrentPage(1);
-    }, 300),
-    []
-  );
+  const handlePageChange = (page) => {
+    const max = data?.totalPages || 1;
+    if (page >= 1 && page <= max) patchParams({ page: String(page) });
+  };
 
+  const handlePageSize = (_e, newValue) => {
+    const n = Number(newValue) || 10;
+    setSearchParams((prev) => {
+      const merged = Object.fromEntries(prev.entries());
+      merged.limit = String(n);
+      merged.page = "1";
+      return merged;
+    });
+  };
+
+  // -------- Table shaping ----------
   const draftPayments = data?.tasks || [];
   const totalCount = data?.totalTasks || 0;
   const totalPages = data?.totalPages || 1;
 
   const filteredData = useMemo(() => {
-    let sorted = [...(draftPayments || [])];
-
+    const arr = [...draftPayments];
     if (prioritySortOrder) {
-      sorted.sort((a, b) => {
-        const aPriority = Number(a.priority) || 0;
-        const bPriority = Number(b.priority) || 0;
-        return prioritySortOrder === "asc"
-          ? aPriority - bPriority
-          : bPriority - aPriority;
+      arr.sort((a, b) => {
+        const A = Number(a.priority) || 0;
+        const B = Number(b.priority) || 0;
+        return prioritySortOrder === "asc" ? A - B : B - A;
       });
     }
-
-    return sorted;
+    return arr;
   }, [draftPayments, prioritySortOrder]);
 
-  const handleSearch = (value) => {
-    setRawSearch(value);
-    debouncedSearch(value);
+  const handleSelectAll = (e) => {
+    setSelected(e.target.checked ? filteredData.map((d) => d._id) : []);
   };
-
-  // Text-input handlers (used when department not selected)
-  const handleAssignedToNameText = (value) => {
-    setRawAssignedToName(value);
-    debouncedAssignedToName(value);
-  };
-  const handleCreatedByNameText = (value) => {
-    setRawCreatedByName(value);
-    debouncedCreatedByName(value);
-  };
-
-  // Dropdown handlers (used when department is selected)
-  const handleAssignedToNameSelect = (_, newValue) => {
-    const v = newValue || "";
-    setAssignedToName(v);
-    setRawAssignedToName(v);
-    setCurrentPage(1);
-  };
-  const handleCreatedByNameSelect = (_, newValue) => {
-    const v = newValue || "";
-    setCreatedByName(v);
-    setRawCreatedByName(v);
-    setCurrentPage(1);
-  };
-
-  const handleSelectAll = (event) => {
-    setSelected(event.target.checked ? filteredData.map((d) => d._id) : []);
-  };
-
   const handleRowSelect = (id) => {
     setSelected((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
-  };
-
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
   };
 
   const getTypeData = (type) => {
@@ -268,82 +180,85 @@ function Dash_task({ selected, setSelected }) {
     }
   };
 
-  const statusOptions = ["completed", "pending", "in progress"];
-
-  useEffect(() => {
-    const saved =
-      JSON.parse(localStorage.getItem("hiddenStatuses") || "{}") || {};
-    setHideCompleted(saved.completed || false);
-    setHidePending(saved.pending || false);
-    setHideProgress(saved["in progress"] || false);
-  }, []);
-
-  const selectedValues = [
-    ...(hideCompleted ? ["completed"] : []),
-    ...(hidePending ? ["pending"] : []),
-    ...(hideProgress ? ["in progress"] : []),
-  ];
-  const handleToggle = (status) => {
-    let updated = {
-      completed: hideCompleted,
-      pending: hidePending,
-      "in progress": hideProgress,
-    };
-
-    if (status === "completed") {
-      const newVal = !hideCompleted;
-      setHideCompleted(newVal);
-      updated.completed = newVal;
-    } else if (status === "pending") {
-      const newVal = !hidePending;
-      setHidePending(newVal);
-      updated.pending = newVal;
-    } else if (status === "in progress") {
-      const newVal = !hideProgress;
-      setHideProgress(newVal);
-      updated["in progress"] = newVal;
-    }
-
-    localStorage.setItem("hiddenStatuses", JSON.stringify(updated));
-  };
-
-  const hiddenCount = selectedValues.length;
-
-  const showUserDropdowns = !!departmentFilter;
-
   return (
     <Box
       sx={{
-        ml: {
-          lg: "var(--Sidebar-width)",
-        },
+        ml: { lg: "var(--Sidebar-width)" },
         px: "0px",
         width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
       }}
     >
-      {/* Search and Filters */}
-      <Box display={"flex"} justifyContent={"flex-end"} alignItems={"center"} pb={0.5}>
+      {/* Search + Tabs + Page size */}
       <Box
-        sx={{
-          py: 1,
-          display: "flex",
-          justifyContent:'flex-end',
-          alignItems:'flex-end',
-          gap: 1.5,
-          width:'50%'
-        }}
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        pb={0.5}
+        flexWrap="wrap"
+        gap={1}
       >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <Input
-            size="sm"
-            placeholder="Search by Title, Description or Type"
-            startDecorator={<SearchIcon />}
-            value={rawSearch}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-        </FormControl>
-</Box>
-       
+    
+        <Tabs
+          value={selectedTab}
+          onChange={(_e, newValue) => {
+            setSelectedTab(newValue);
+            setSearchParams((prev) => {
+              const params = new URLSearchParams(prev);
+              params.set("tab", newValue);
+              params.set("page", "1");
+              return params;
+            });
+          }}
+          indicatorPlacement="none"
+          sx={{
+            bgcolor: "background.level1",
+            borderRadius: "md",
+            boxShadow: "sm",
+            width: "fit-content",
+          }}
+        >
+          <TabList sx={{ gap: 1 }}>
+            {["Pending", "In Progress", "Completed", "Cancelled", "All"].map(
+              (label) => (
+                <Tab
+                  key={label}
+                  value={label}
+                  disableIndicator
+                  sx={{
+                    borderRadius: "xl",
+                    fontWeight: "md",
+                    "&.Mui-selected": {
+                      bgcolor: "background.surface",
+                      boxShadow: "sm",
+                    },
+                  }}
+                >
+                  {label}
+                </Tab>
+              )
+            )}
+          </TabList>
+        </Tabs>
+
+        <Box
+          sx={{
+            py: 1,
+            display: "flex",
+            alignItems: "flex-end",
+            gap: 1.5,
+            width: { xs: "100%", md: "50%" },
+          }}
+        >
+          <FormControl sx={{ flex: 1 }} size="sm">
+            <Input
+              size="sm"
+              placeholder="Search by Title, Description or Type"
+              startDecorator={<SearchIcon />}
+              value={rawSearch}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+          </FormControl>
+        </Box>
       </Box>
 
       {/* Table */}
@@ -354,7 +269,7 @@ function Dash_task({ selected, setSelected }) {
           display: { xs: "none", sm: "block" },
           width: "100%",
           borderRadius: "sm",
-          maxHeight: "66vh",
+          maxHeight: { xs: "66vh", xl: "75vh" },
           overflowY: "auto",
         }}
       >
@@ -371,7 +286,7 @@ function Dash_task({ selected, setSelected }) {
             }}
           >
             <tr>
-              <th style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
+              <th style={{ padding: 8, borderBottom: "1px solid #ddd" }}>
                 <Checkbox
                   size="sm"
                   checked={
@@ -385,7 +300,7 @@ function Dash_task({ selected, setSelected }) {
                 />
               </th>
 
-              <th style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
+              <th style={{ padding: 8, borderBottom: "1px solid #ddd" }}>
                 <Box display="flex" alignItems="center" gap={0.5}>
                   <Typography level="body-sm">Task Info</Typography>
                   <Tooltip title="Sort by Priority">
@@ -419,16 +334,16 @@ function Dash_task({ selected, setSelected }) {
               </th>
 
               {["Title", "Type", "Project Info", "Description", "Status"].map(
-                (header, i) => (
+                (h) => (
                   <th
-                    key={i}
+                    key={h}
                     style={{
-                      padding: "8px",
+                      padding: 8,
                       textAlign: "left",
                       borderBottom: "1px solid #ddd",
                     }}
                   >
-                    {header}
+                    {h}
                   </th>
                 )
               )}
@@ -439,9 +354,7 @@ function Dash_task({ selected, setSelected }) {
             {filteredData.length > 0 ? (
               filteredData.map((task) => (
                 <tr key={task._id}>
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
-                  >
+                  <td style={{ padding: 8, borderBottom: "1px solid #ddd" }}>
                     <Checkbox
                       size="sm"
                       checked={selected.includes(task._id)}
@@ -449,9 +362,7 @@ function Dash_task({ selected, setSelected }) {
                     />
                   </td>
 
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
-                  >
+                  <td style={{ padding: 8, borderBottom: "1px solid #ddd" }}>
                     <Typography
                       fontWeight="lg"
                       sx={{ cursor: "pointer", color: "primary.700" }}
@@ -459,6 +370,7 @@ function Dash_task({ selected, setSelected }) {
                     >
                       {task.taskCode}
                     </Typography>
+
                     <Box display="flex" alignItems="center" gap={0.5}>
                       <Tooltip title="Priority">
                         <Box display="flex">
@@ -490,9 +402,7 @@ function Dash_task({ selected, setSelected }) {
                     </Typography>
                   </td>
 
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
-                  >
+                  <td style={{ padding: 8, borderBottom: "1px solid #ddd" }}>
                     <Typography fontWeight="lg">{task.title || "-"}</Typography>
 
                     {task.assigned_to?.length > 0 ? (
@@ -531,7 +441,6 @@ function Dash_task({ selected, setSelected }) {
                           <Typography level="body-sm" noWrap>
                             {task.assigned_to[0].name}
                           </Typography>
-
                           {task.assigned_to.length > 1 && (
                             <Box
                               sx={{
@@ -558,16 +467,15 @@ function Dash_task({ selected, setSelected }) {
                     <Typography level="body-sm" startDecorator="📅">
                       Deadline: {task.deadline?.split("T")[0] || "-"}
                     </Typography>
+
                     {task.deadline &&
                       (() => {
                         const msPerDay = 1000 * 60 * 60 * 24;
-
                         const toMidnight = (d) => {
                           const x = new Date(d);
                           x.setHours(0, 0, 0, 0);
                           return x;
                         };
-
                         const daysBetween = (a, b) => {
                           const A = toMidnight(a).getTime();
                           const B = toMidnight(b).getTime();
@@ -575,7 +483,7 @@ function Dash_task({ selected, setSelected }) {
                         };
 
                         const today = toMidnight(new Date());
-                        const deadline = toMidnight(task.deadline);
+                        const dln = toMidnight(task.deadline);
 
                         const startDate =
                           task?.createdAt ??
@@ -586,7 +494,6 @@ function Dash_task({ selected, setSelected }) {
                           ?.slice()
                           .reverse()
                           .find((s) => s?.status === "completed");
-
                         const currentIsCompleted =
                           task?.current_status?.status === "completed";
                         const completionDate =
@@ -600,9 +507,9 @@ function Dash_task({ selected, setSelected }) {
                             completionDate,
                             startDate
                           );
-                          const lateBy = daysBetween(completionDate, deadline);
+                          const lateBy = daysBetween(completionDate, dln);
 
-                          if (toMidnight(completionDate) <= deadline) {
+                          if (toMidnight(completionDate) <= dln) {
                             return (
                               <Typography
                                 level="body-sm"
@@ -621,7 +528,7 @@ function Dash_task({ selected, setSelected }) {
                                 startDecorator="⏰"
                               >
                                 Completed late by {lateBy}{" "}
-                                {lateBy === 1 ? "day" : "days"} &middot; took{" "}
+                                {lateBy === 1 ? "day" : "days"} · took{" "}
                                 {elapsedDays}{" "}
                                 {elapsedDays === 1 ? "day" : "days"}
                               </Typography>
@@ -630,10 +537,10 @@ function Dash_task({ selected, setSelected }) {
                         }
 
                         if (
-                          deadline < today &&
+                          dln < today &&
                           task?.current_status?.status !== "completed"
                         ) {
-                          const diffInDays = daysBetween(today, deadline);
+                          const diffInDays = daysBetween(today, dln);
                           return (
                             <Typography
                               level="body-sm"
@@ -658,9 +565,7 @@ function Dash_task({ selected, setSelected }) {
                       })()}
                   </td>
 
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
-                  >
+                  <td style={{ padding: 8, borderBottom: "1px solid #ddd" }}>
                     {task.type ? (
                       <Box
                         display="inline-flex"
@@ -682,48 +587,90 @@ function Dash_task({ selected, setSelected }) {
                     )}
                   </td>
 
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
-                  >
-                    {Array.isArray(task.project_details) &&
-                    task.project_details.length > 0 ? (
-                      task.project_details.length === 1 ? (
-                        <div>
-                          <Typography fontWeight="lg">
-                            {task.project_details[0].code || "-"}
-                          </Typography>
-                          <Typography level="body-sm" sx={{ color: "#666" }}>
-                            {task.project_details[0].name || "-"}
-                          </Typography>
-                        </div>
-                      ) : (
+                  <td style={{ padding: 8, borderBottom: "1px solid #ddd" }}>
+                    {(() => {
+                      // Normalize to an array of { code, name }
+                      let projects = [];
+
+                      // case 1: array from API
+                      if (
+                        Array.isArray(task.project_details) &&
+                        task.project_details.length > 0
+                      ) {
+                        projects = task.project_details.map((p) => ({
+                          code: p.code ?? p.projectCode ?? "-",
+                          name: p.name ?? p.projectName ?? "-",
+                        }));
+                      }
+
+                      // case 2: single embedded object
+                      else if (
+                        task.project &&
+                        typeof task.project === "object"
+                      ) {
+                        projects = [
+                          {
+                            code:
+                              task.project.code ??
+                              task.project.projectCode ??
+                              "-",
+                            name:
+                              task.project.name ??
+                              task.project.projectName ??
+                              "-",
+                          },
+                        ];
+                      }
+
+                      // case 3: flat fields
+                      else if (task.project_code || task.project_name) {
+                        projects = [
+                          {
+                            code: task.project_code ?? "-",
+                            name: task.project_name ?? "-",
+                          },
+                        ];
+                      }
+
+                      if (projects.length === 0) {
+                        return <Typography fontWeight="lg">N/A</Typography>;
+                      }
+
+                      if (projects.length === 1) {
+                        return (
+                          <div>
+                            <Typography fontWeight="lg">
+                              {projects[0].code}
+                            </Typography>
+                            <Typography level="body-sm" sx={{ color: "#666" }}>
+                              {projects[0].name}
+                            </Typography>
+                          </div>
+                        );
+                      }
+
+                      // >1 projects with tooltip
+                      return (
                         <Tooltip
                           title={
                             <Box
                               sx={{ maxHeight: 200, overflowY: "auto", pr: 1 }}
                             >
-                              {task.project_details
-                                .slice(1)
-                                .map((project, index) => (
-                                  <Box key={project._id} sx={{ mb: 1 }}>
-                                    <Typography level="body-md" fontWeight="lg">
-                                      {project.code}
-                                    </Typography>
-                                    <Typography level="body-sm">
-                                      {project.name}
-                                    </Typography>
-                                    {index !==
-                                      task.project_details.length - 2 && (
-                                      <Box
-                                        sx={{
-                                          height: "1px",
-                                          backgroundColor: "#eee",
-                                          my: 1,
-                                        }}
-                                      />
-                                    )}
-                                  </Box>
-                                ))}
+                              {projects.slice(1).map((p, i) => (
+                                <Box key={`${p.code}-${i}`} sx={{ mb: 1 }}>
+                                  <Typography level="body-md" fontWeight="lg">
+                                    {p.code}
+                                  </Typography>
+                                  <Typography level="body-sm">
+                                    {p.name}
+                                  </Typography>
+                                  {i !== projects.length - 2 && (
+                                    <Box
+                                      sx={{ height: 1, bgcolor: "#eee", my: 1 }}
+                                    />
+                                  )}
+                                </Box>
+                              ))}
                             </Box>
                           }
                           arrow
@@ -743,10 +690,10 @@ function Dash_task({ selected, setSelected }) {
                           >
                             <Box>
                               <Typography fontWeight="lg">
-                                {task.project_details[0].code || "-"}
+                                {projects[0].code}
                               </Typography>
                               <Typography level="body-sm">
-                                {task.project_details[0].name || "-"}
+                                {projects[0].name}
                               </Typography>
                             </Box>
                             <Box
@@ -765,29 +712,25 @@ function Dash_task({ selected, setSelected }) {
                                 boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
                               }}
                             >
-                              +{task.project_details.length - 1}
+                              +{projects.length - 1}
                             </Box>
                           </Box>
                         </Tooltip>
-                      )
-                    ) : (
-                      <>
-                        <Typography fontWeight="lg">N/A</Typography>
-                      </>
-                    )}
+                      );
+                    })()}
                   </td>
 
                   <td
                     style={{
-                      padding: "8px",
+                      padding: 8,
                       borderBottom: "1px solid #ddd",
-                      maxWidth: "200px",
+                      maxWidth: 200,
                     }}
                   >
                     <Tooltip
                       title={
                         <Typography
-                          sx={{ whiteSpace: "pre-line", maxWidth: "300px" }}
+                          sx={{ whiteSpace: "pre-line", maxWidth: 300 }}
                         >
                           {task.description || ""}
                         </Typography>
@@ -800,7 +743,7 @@ function Dash_task({ selected, setSelected }) {
                       <Typography
                         noWrap
                         sx={{
-                          maxWidth: "180px",
+                          maxWidth: 180,
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap",
@@ -812,9 +755,7 @@ function Dash_task({ selected, setSelected }) {
                     </Tooltip>
                   </td>
 
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
-                  >
+                  <td style={{ padding: 8, borderBottom: "1px solid #ddd" }}>
                     <Tooltip title={task.current_status?.remarks || ""}>
                       <Chip
                         variant="soft"
@@ -842,10 +783,7 @@ function Dash_task({ selected, setSelected }) {
               ))
             ) : (
               <tr>
-                <td
-                  colSpan={6}
-                  style={{ textAlign: "center", padding: "16px" }}
-                >
+                <td colSpan={6} style={{ textAlign: "center", padding: 16 }}>
                   <Box
                     sx={{
                       display: "flex",
@@ -871,7 +809,7 @@ function Dash_task({ selected, setSelected }) {
       <Box
         className="Pagination-laptopUp"
         sx={{
-          pt: 0.5,
+          pt: 1,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: "flex",
@@ -916,10 +854,7 @@ function Dash_task({ selected, setSelected }) {
         <FormControl size="sm">
           <Select
             value={itemsPerPage}
-            onChange={(_e, newValue) => {
-              setItemsPerPage(Number(newValue));
-              setCurrentPage(1);
-            }}
+            onChange={handlePageSize}
             sx={{
               height: "32px",
               borderRadius: "6px",

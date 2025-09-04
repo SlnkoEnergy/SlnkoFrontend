@@ -304,7 +304,7 @@ export default function Filter({
     matcher: "AND",
     ...initialValues,
   }));
-
+  const [exiting, setExiting] = useState(false);
   const initAppliedRef = useRef(false);
   useEffect(() => {
     if (!initAppliedRef.current) {
@@ -347,15 +347,26 @@ export default function Filter({
 
   return (
     <>
-      <Tooltip title="Filters">
-        <IconButton variant="soft" onClick={() => onOpenChange(true)}>
-          <FilterAltRoundedIcon />
-        </IconButton>
-      </Tooltip>
+      <IconButton
+        variant="soft"
+        size="sm"
+        sx={{
+          "--Icon-color": "#3366a3",
+        }}
+        onClick={() => onOpenChange(true)}
+      >
+        <FilterAltRoundedIcon />
+      </IconButton>
 
       <Modal
         open={!!open}
-        onClose={() => onOpenChange(false)}
+        onClose={() => {
+          setExiting(true);
+          setTimeout(() => {
+            setExiting(false);
+            onOpenChange(false);
+          }, 280);
+        }}
         keepMounted
         slotProps={{
           backdrop: { sx: { transition: "opacity 0.28s ease" } },
@@ -376,7 +387,11 @@ export default function Filter({
             bgcolor: "background.level1",
             zIndex: 1300,
             transition: "transform 0.28s ease",
-            transform: open ? "translateX(0)" : "translateX(100%)",
+            transform: open
+              ? "translateX(0)"
+              : exiting
+              ? "translateX(-100%)"
+              : "translateX(100%)",
           }}
         >
           <Box
@@ -464,10 +479,35 @@ export default function Filter({
           <Box
             sx={{ display: "flex", gap: 1, p: 1.5, justifyContent: "flex-end" }}
           >
-            <Button variant="plain" onClick={resetAll}>
+            <Button
+              variant="outlined"
+              size="sm"
+              sx={{
+                color: "#3366a3",
+                borderColor: "#3366a3",
+                backgroundColor: "transparent",
+                "--Button-hoverBg": "#e0e0e0",
+                "--Button-hoverBorderColor": "#3366a3",
+                "&:hover": {
+                  color: "#3366a3",
+                },
+                height: "8px",
+              }}
+              onClick={resetAll}
+            >
               Reset
             </Button>
             <Button
+              variant="solid"
+              size="sm"
+              sx={{
+                backgroundColor: "#3366a3",
+                color: "#fff",
+                "&:hover": {
+                  backgroundColor: "#285680",
+                },
+                height: "8px",
+              }}
               onClick={() => onApply && onApply(values, { appliedCount })}
             >
               Find
@@ -549,74 +589,3 @@ export function buildQueryParams(
   return params.toString();
 }
 
-// Demo (remove in prod)
-export function DemoFilter() {
-  const [open, setOpen] = useState(false);
-  const [qs, setQs] = useState("");
-
-  const fields = [
-    {
-      key: "projectGroup",
-      label: "Project Group",
-      type: "select",
-      options: ["RoofTop", "GroundMount", "EPC"],
-      startOpen: true,
-    },
-    {
-      key: "createdBy",
-      label: "Reporter",
-      type: "select",
-      getOptions: async () => ["Siddharth", "Sarvesh", "Rounik", "Chandan"],
-    },
-    {
-      key: "assignee",
-      label: "Assignee",
-      type: "multiselect",
-      getOptions: async () => ["Devashish", "Aditi", "Sahil"],
-    },
-    { key: "createdAt", label: "Created Time", type: "daterange" },
-    {
-      key: "status",
-      label: "Status",
-      type: "select",
-      options: ["Open", "WIP", "Done"],
-    },
-    { key: "tags", label: "Tags", type: "tags" },
-  ];
-
-  return (
-    <Box sx={{ p: 2 }}>
-      <Filter
-        open={open}
-        onOpenChange={setOpen}
-        fields={fields}
-        onApply={(values) => {
-          const search = buildQueryParams(values, {
-            dateKeys: ["createdAt"],
-            arrayKeys: ["assignee", "tags"],
-          });
-          setQs(search);
-          setOpen(false);
-        }}
-      />
-
-      <Typography level="title-lg" sx={{ mb: 1 }}>
-        Demo
-      </Typography>
-      <Button
-        startDecorator={<FilterAltRoundedIcon />}
-        onClick={() => setOpen(true)}
-      >
-        Open Filters
-      </Button>
-      {qs && (
-        <Sheet variant="soft" sx={{ mt: 2, p: 1.5 }}>
-          <Typography level="body-sm">Querystring</Typography>
-          <Typography level="body-md" sx={{ wordBreak: "break-all" }}>
-            {qs}
-          </Typography>
-        </Sheet>
-      )}
-    </Box>
-  );
-}
