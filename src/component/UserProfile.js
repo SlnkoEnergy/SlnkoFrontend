@@ -33,6 +33,13 @@ import CameraAltOutlined from "@mui/icons-material/CameraAltOutlined";
 import UploadFileOutlined from "@mui/icons-material/UploadFileOutlined";
 import DeleteOutline from "@mui/icons-material/DeleteOutline";
 
+// RTK Query hooks
+import {
+  useGetUserByIdQuery,
+  useEditUserMutation,
+} from "../redux/loginSlice";
+
+// no attachment_url in editable keys (we don’t expose it in UI)
 const ALL_KEYS = [
   "name",
   "email",
@@ -40,7 +47,7 @@ const ALL_KEYS = [
   "department",
   "location",
   "about",
-  "avatar_url",
+  "avatar_url", // local display only
 ];
 
 const BASIC_EDIT_KEYS = ["phone", "location", "about"]; // editable for regular users
@@ -49,7 +56,6 @@ const DEPT_OPTIONS = ["SCM", "Engineering", "BD", "Accounts", "Operations"];
 const pick = (obj, keys) =>
   keys.reduce((acc, k) => (k in obj ? { ...acc, [k]: obj[k] } : acc), {});
 
-// ---- localStorage helpers
 const LS_KEY = "userDetails";
 const readUserFromLS = () => {
   try {
@@ -59,24 +65,9 @@ const readUserFromLS = () => {
     return null;
   }
 };
-const writeUserToLS = (next) => {
-  localStorage.setItem(LS_KEY, JSON.stringify(next));
-};
+const writeUserToLS = (next) => localStorage.setItem(LS_KEY, JSON.stringify(next));
 
-// safe getter for nested keys: "user.department" etc.
-const getPath = (obj, path) =>
-  path.split(".").reduce((a, k) => (a && a[k] != null ? a[k] : undefined), obj);
-
-// coalesce first non-empty from a list of keys (supports nested "a.b" paths)
-const coalesce = (obj, keys, fallback = "") => {
-  for (const k of keys) {
-    const v = k.includes(".") ? getPath(obj, k) : obj?.[k];
-    if (v !== undefined && v !== null && String(v).trim() !== "") return v;
-  }
-  return fallback;
-};
-
-// Convert file -> dataURL for storing avatar locally
+// helper to preview avatar locally
 const fileToDataURL = (file) =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -88,7 +79,6 @@ const fileToDataURL = (file) =>
 export default function UserProfilePanel() {
   const fileRef = useRef(null);
 
-  // ----- State
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState({ open: false, color: "success", msg: "" });
@@ -102,44 +92,81 @@ export default function UserProfilePanel() {
     department: "",
     location: "",
     about: "",
-    avatar_url: "",
+    avatar_url: "", // displayed photo (comes from DB attachment_url or cache)
   });
-  const [baselineForm, setBaselineForm] = useState(null); // for change detection
+  const [baselineForm, setBaselineForm] = useState(null);
 
-  // ---- Load from localStorage with normalization
+  // ---- RTK Query hooks
+  const ls = readUserFromLS();
+  const storedUserId = ls?.userID;
+  const {
+    data,
+    isLoading: isUserLoading,
+    isFetching: isUserFetching,
+    error: fetchError,
+  } = useGetUserByIdQuery(storedUserId, { skip: !storedUserId });
+
+  const [editUser] = useEditUserMutation();
+
+  // Prefill from localStorage immediately (so UI isn’t blank)
   useEffect(() => {
-    setLoading(true);
     setApiError("");
-    const raw = readUserFromLS();
-    console.log("[UserProfile] localStorage userDetails:", raw);
-    if (!raw) {
-      setApiError("No user found in localStorage (key: 'userDetails').");
-      setLoading(false);
-      return;
+    const cache = readUserFromLS();
+    if (cache) {
+      const prefill = {
+        name: cache.name || "",
+        email: cache.email || "",
+        phone: String(cache.phone ?? ""),
+        department: cache.department || "",
+        location: cache.location || "",
+        about: cache.about || "",
+        avatar_url: cache.avatar_url || cache.attachment_url || "",
+      };
+      setForm(prefill);
+      setBaselineForm(prefill);
+      setUser(cache);
     }
-
-    // Some apps store user inside { user: {...} } or { data: {...} }
-    const u = raw.user || raw.data || raw;
-
-    const name =
-      coalesce(u, ["name", "full_name", "username"], "") ||
-      `${coalesce(u, ["first_name"], "")} ${coalesce(u, ["last_name"], "")}`.trim();
-
-    const initial = {
-      name,
-      email: coalesce(u, ["email"], ""),
-      phone: String(coalesce(u, ["phone", "mobile", "contact"], "")),
-      department: coalesce(u, ["department", "dept", "department_name", "Department", "user.department"], ""),
-      location: coalesce(u, ["location", "city", "user.location"], ""),
-      about: coalesce(u, ["about", "bio", "user.about"], ""),
-      avatar_url: coalesce(u, ["avatar_url", "photo", "avatar", "profile_pic", "user.avatar_url"], ""),
-    };
-
-    setUser(u);
-    setForm(initial);
-    setBaselineForm(initial);
-    setLoading(false);
+    setLoading(false); // we will hydrate again when RTK data arrives
   }, []);
+
+  // Hydrate with fresh API data when it arrives
+  useEffect(() => {
+    if (data?.user) {
+      const u = data.user;
+      const initial = {
+        name: u.name || "",
+        email: u.email || "",
+        phone: String(u.phone ?? ""),
+        department: u.department || "",
+        location: u.location || "",
+        about: u.about || "",
+        avatar_url: u.attachment_url || "", // map DB image URL to avatar
+      };
+      setForm(initial);
+      setBaselineForm(initial);
+      setUser(u);
+
+      // sync LS so other screens see latest
+      writeUserToLS({
+        name: initial.name,
+        email: initial.email,
+        phone: initial.phone,
+        emp_id: u.emp_id || "",
+        role: u.role || "",
+        department: initial.department,
+        userID: u._id || storedUserId,
+        location: initial.location,
+        about: initial.about,
+        attachment_url: initial.avatar_url,
+        avatar_url: initial.avatar_url,
+      });
+    } else if (fetchError) {
+      setApiError(
+        fetchError?.data?.message ||
+          "Live profile could not be fetched. Showing cached profile from this device."
+      );
+    }
+  }, [data, fetchError, storedUserId]);
 
   // ---- Permissions (optional): allow full edit if you store a flag/admin)
   const canEditAll = !!(
@@ -147,6 +174,7 @@ export default function UserProfilePanel() {
     user?.profile_full_edit ||
     (typeof user?.role === "string" && user.role.toLowerCase() === "admin")
   );
+
   const editableKeys = useMemo(
     () => (canEditAll ? ALL_KEYS : BASIC_EDIT_KEYS),
     [canEditAll]
@@ -161,85 +189,79 @@ export default function UserProfilePanel() {
     return curr !== base;
   }, [form, baselineForm, editableKeys]);
 
-  // ---- Handlers
   const handleField = (key) => (e, val) => {
     const value = e?.target ? e.target.value : val;
     setForm((f) => ({ ...f, [key]: value }));
   };
 
-  const saveProfile = () => {
+  const saveProfile = async () => {
     if (!hasEditableChanges) return;
     setSaving(true);
-    try {
-      // merge only editable keys back into the stored object
-      const payload = pick(form, editableKeys);
-      const current = readUserFromLS() || {};
-      const nextMerged = { ...(current.user || current), ...payload };
-      // keep original wrapping if any
-      const toStore = current.user ? { ...current, user: nextMerged } : nextMerged;
+    setApiError("");
 
-      writeUserToLS(toStore);
-      setUser(nextMerged);
+    const currentLS = readUserFromLS();
+    const userId = currentLS?.userID || user?._id;
+    const payload = pick(form, editableKeys); // phone/location/about for regular users
+
+    try {
+      if (!userId) throw new Error("No user id to update.");
+      await editUser({ userId, ...payload }).unwrap();
+
       setBaselineForm((prev) => ({ ...prev, ...payload }));
-      setToast({ open: true, color: "success", msg: "Profile updated locally." });
-    } catch {
-      setApiError("Failed to save to localStorage.");
+
+      // update LS cache
+      const merged = { ...(currentLS || {}), ...payload, userID: userId };
+      writeUserToLS(merged);
+
+      setToast({ open: true, color: "success", msg: "Profile updated successfully." });
+    } catch (err) {
+      setApiError(err?.data?.message || "Failed to save profile.");
     } finally {
       setSaving(false);
     }
   };
 
-
-
-  // ---- Avatar
+  // ====== PHOTO (local preview only; no backend upload) ======
   const handleAvatarClick = () => fileRef.current?.click();
 
   const uploadAvatar = async (file) => {
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      setToast({ open: true, color: "warning", msg: "Please upload an image ≤ 2MB." });
+    if (file.size > 5 * 1024 * 1024) {
+      setToast({ open: true, color: "warning", msg: "Please upload an image ≤ 5MB." });
       return;
     }
-    setSaving(true);
     try {
-      const dataUrl = await fileToDataURL(file); // store as base64 data URL
+      const dataUrl = await fileToDataURL(file);
       setForm((f) => ({ ...f, avatar_url: dataUrl }));
       setBaselineForm((b) => ({ ...(b || {}), avatar_url: dataUrl }));
 
-      const current = readUserFromLS() || {};
-      const merged = { ...(current.user || current), avatar_url: dataUrl };
-      const toStore = current.user ? { ...current, user: merged } : merged;
-      writeUserToLS(toStore);
-      setUser(merged);
+      const lsNow = readUserFromLS() || {};
+      writeUserToLS({ ...lsNow, avatar_url: dataUrl });
 
-      setToast({ open: true, color: "success", msg: "Profile photo updated." });
+      setToast({
+        open: true,
+        color: "neutral",
+        msg: "Photo updated locally (not uploaded to server).",
+      });
     } catch {
       setApiError("Failed to read the selected file.");
-    } finally {
-      setSaving(false);
     }
   };
 
   const removeAvatar = () => {
-    setSaving(true);
-    try {
-      setForm((f) => ({ ...f, avatar_url: "" }));
-      setBaselineForm((b) => ({ ...(b || {}), avatar_url: "" }));
-
-      const current = readUserFromLS() || {};
-      const merged = { ...(current.user || current), avatar_url: "" };
-      const toStore = current.user ? { ...current, user: merged } : merged;
-      writeUserToLS(toStore);
-      setUser(merged);
-
-      setToast({ open: true, color: "neutral", msg: "Profile photo removed." });
-    } finally {
-      setSaving(false);
-    }
+    setForm((f) => ({ ...f, avatar_url: "" }));
+    const lsNow = readUserFromLS() || {};
+    writeUserToLS({ ...lsNow, avatar_url: "" });
+    setToast({
+      open: true,
+      color: "neutral",
+      msg: "Profile photo removed (local display).",
+    });
   };
 
-  // ---- UI
-  if (loading) {
+  const showSkeleton = loading || isUserLoading || isUserFetching;
+
+  if (showSkeleton) {
     return (
       <Grid container spacing={2}>
         <Grid xs={12} md={5}>
@@ -276,19 +298,15 @@ export default function UserProfilePanel() {
         </Alert>
       )}
 
-      <Grid
-        container
-        spacing={2}
-        sx={{ alignItems: "stretch" }} // make columns equal height
-      >
-        {/* LEFT: Profile Card (wider & taller) */}
+      <Grid container spacing={2} sx={{ alignItems: "stretch" }}>
+        {/* LEFT: Profile Card */}
         <Grid xs={12} md={5} sx={{ display: "flex" }}>
           <Sheet
             variant="soft"
             sx={{
-              flex: 1,               // fill grid cell
-              height: "100%",        // match tallest column
-              minHeight: { md: 520, lg: 600 }, // ensure it’s tall enough
+              flex: 1,
+              height: "100%",
+              minHeight: { md: 520, lg: 600 },
               p: 3,
               borderRadius: "lg",
               display: "flex",
@@ -306,7 +324,6 @@ export default function UserProfilePanel() {
                   {form.name?.[0]?.toUpperCase() || "U"}
                 </Avatar>
 
-                {/* Change photo (stored in LS as data URL) */}
                 <Tooltip title="Change photo">
                   <IconButton
                     size="sm"
@@ -423,7 +440,6 @@ export default function UserProfilePanel() {
                     placeholder="Select department"
                     disabled={!isFieldEditable("department")}
                   >
-                    {/* Add current value if it's not in the predefined list */}
                     {!deptInList && form.department && (
                       <Option value={form.department}>{form.department}</Option>
                     )}
@@ -470,7 +486,6 @@ export default function UserProfilePanel() {
                 >
                   Save changes
                 </Button>
-                
               </Grid>
             </Grid>
           </Sheet>
