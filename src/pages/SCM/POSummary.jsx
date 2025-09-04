@@ -12,6 +12,9 @@ import { useNavigate } from "react-router-dom";
 import Header from "../../component/Partials/Header";
 import PurchaseOrder from "../../component/PurchaseOrderSummary";
 import { toast } from "react-toastify";
+import SubHeader from "../../component/Partials/SubHeader";
+import MainHeader from "../../component/Partials/MainHeader";
+import { Add } from "@mui/icons-material";
 
 function POSummary() {
   const navigate = useNavigate();
@@ -55,109 +58,117 @@ function POSummary() {
     });
   };
 
-  const allowedUsers = [
-    "IT Team",
-    "Guddu Rani Dubey",
-    "Varun Mishra",
-    "Prachi Singh",
-    "Ajay Singh",
-    "Aryan Maheshwari",
-    "Sarthak Sharma",
-    "Naresh Kumar",
-    "Shubham Gupta",
-    "Gagan Tayal",
-  ];
-
-
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
       <Box sx={{ display: "flex", minHeight: "100dvh" }}>
-        <Header />
         <Sidebar />
+
+        <MainHeader title="SCM" sticky>
+          <Box display="flex" gap={1}>
+            <Button
+              size="sm"
+              onClick={() => navigate(`/eng_dash`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              Purchase Order
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => navigate(`/inspection`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              Logistics
+            </Button>
+
+             <Button
+              size="sm"
+              onClick={() => navigate(`/inspection`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              Vendor Bill
+            </Button>
+          </Box>
+        </MainHeader>
+        <SubHeader title="Purchase Order" isBackEnabled={false} sticky>
+          <Box display="flex" gap={1} alignItems="center">
+              <Button
+                variant="outlined"
+                size="sm"
+                sx={{
+                  color: "#3366a3",
+                  borderColor: "#132e4eff",
+                  backgroundColor: "transparent",
+                  "--Button-hoverBg": "#e0e0e0",
+                  "--Button-hoverBorderColor": "#3366a3",
+                  "&:hover": { color: "#3366a3" },
+                  height: "8px",
+                }}
+              >
+                Export
+              </Button>
+         
+
+            <Button
+              variant="solid"
+              size="sm"
+              startDecorator={<Add />}
+              onClick={() => navigate("/add_task")}
+              sx={{
+                backgroundColor: "#3366a3",
+                color: "#fff",
+                "&:hover": { backgroundColor: "#285680" },
+                height: "8px",
+              }}
+            >
+              Add Task
+            </Button>
+          </Box>
+        </SubHeader>
         <Box
           component="main"
           className="MainContent"
           sx={{
-            px: { xs: 2, md: 6 },
-            pt: {
-              xs: "calc(12px + var(--Header-height))",
-              sm: "calc(12px + var(--Header-height))",
-              md: 3,
-            },
-            pb: { xs: 2, sm: 2, md: 3 },
             flex: 1,
             display: "flex",
             flexDirection: "column",
-            minWidth: 0,
-            height: "100dvh",
             gap: 1,
+            mt: "108px",
+            p: "16px",
+            px: "24px",
           }}
         >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              marginLeft: { xl: "15%", lg: "18%" },
-            }}
-          >
-            <Breadcrumbs
-              size="sm"
-              aria-label="breadcrumbs"
-              separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
-            >
-              <Link
-                underline="hover"
-                color="neutral"
-                href=""
-                sx={{ fontSize: 12, fontWeight: 500 }}
-              >
-                SCM
-              </Link>
-              <Typography color="primary" sx={{ fontWeight: 500, fontSize: 12 }}>
-                Purchase Order Summary
-              </Typography>
-            </Breadcrumbs>
-          </Box>
-
-          <Box
-            sx={{
-              display: "flex",
-              mb: 1,
-              gap: 1,
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: { xs: "start", sm: "center" },
-              flexWrap: "wrap",
-              justifyContent: "space-between",
-              marginLeft: { xl: "15%", lg: "18%" },
-            }}
-          >
-            <Typography level="h2" component="h1">
-              Purchase Order Summary
-            </Typography>
-
-              <Box
-                sx={{
-                  display: "flex",
-                  mb: 1,
-                  gap: 1,
-                  flexDirection: { xs: "column", sm: "row" },
-                  alignItems: { xs: "start", sm: "center" },
-                  flexWrap: "wrap",
-                  justifyContent: "center",
-                }}
-              >
-                
-                <Button color="primary" size="sm" onClick={handleOpenLogisticsWithSeed}>
-                  Logistics Form
-                </Button>
-                  <Button color="primary" variant="outlined" size="sm" onClick={() => navigate("/add_vendor")}>
-                    Add Vendor
-                  </Button>
-              </Box>
-          </Box>
-
           <PurchaseOrder ref={poSummaryRef} />
         </Box>
       </Box>

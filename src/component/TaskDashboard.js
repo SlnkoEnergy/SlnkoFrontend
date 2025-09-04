@@ -270,7 +270,7 @@ function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
           width: "100%",
           borderRadius: "sm",
           maxHeight: { xs: "66vh", xl: "75vh" },
-          overflowY: "auto",
+          overflow: "auto",
         }}
       >
         <Box

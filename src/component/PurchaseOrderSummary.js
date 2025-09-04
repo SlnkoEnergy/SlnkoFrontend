@@ -1248,24 +1248,34 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   };
 
   return (
-    <>
+    <Box
+    sx={{
+        ml: { lg: "var(--Sidebar-width)" },
+        px: "0px",
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+      }}
+    >
       {/* Search + Filters */}
+       <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+              pb={0.5}
+              flexWrap="wrap"
+              gap={1}
+            >
+      {/* {renderFilters()} */}
       <Box
         className="SearchAndFilters-tabletUp"
-        sx={{
-          marginLeft: isFromCAM || isFromPR ? 0 : { xl: "15%", lg: "18%" },
-          borderRadius: "sm",
-          py: 1,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1.5,
-          "& > *": {
-            minWidth: { xs: "120px", md: "160px" },
-          },
-        }}
+         sx={{
+            py: 1,
+            display: "flex",
+            alignItems: "flex-end",
+            gap: 1.5,
+            width: { xs: "100%", md: "50%" },
+          }}
       >
         <FormControl sx={{ flex: 2, minWidth: 280 }} size="sm">
-          <FormLabel>Search here</FormLabel>
           <Input
             size="sm"
             placeholder="Search Project Id, PO Number, Vendor"
@@ -1275,28 +1285,23 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           />
         </FormControl>
 
-        {renderFilters()}
       </Box>
-
+</Box>
       {/* Table */}
       <Sheet
         className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display:
-            isFromCAM || isFromPR ? "flex" : { xs: "none", sm: "initial" },
-          width: "100%",
+          display: { xs: "none", sm: "block" },
+          width: "80%",
           borderRadius: "sm",
-          flexShrink: 1,
+          maxHeight: { xs: "66vh", xl: "75vh" },
           overflow: "auto",
-          minHeight: 0,
-          marginLeft: isFromCAM || isFromPR ? 0 : { xl: "15%", lg: "18%" },
-          maxWidth: isFromCAM || isFromPR ? "100%" : { lg: "85%", sm: "100%" },
         }}
       >
         <Box
           component="table"
-          sx={{ width: "100%", borderCollapse: "collapse" }}
+          sx={{ width: "80%", borderCollapse: "collapse" }}
         >
           <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
             <Box component="tr">
@@ -1718,7 +1723,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           display: "flex",
           alignItems: "center",
           flexDirection: { xs: "column", md: "row" },
-          marginLeft: isFromCAM || isFromPR ? 0 : { xl: "15%", lg: "18%" },
         }}
       >
         <Button
@@ -1850,7 +1854,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
         />
       </Box>
-    </>
+    </Box>
   );
 });
 
