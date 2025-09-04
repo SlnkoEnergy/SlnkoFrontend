@@ -1509,14 +1509,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
           </List>
-        ) : user?.role === "purchase" &&
-          (user?.name === "Aryan Maheshwari" ||
-            user?.name === "Sarthak Sharma" ||
-            user?.name === "Ajay Singh" ||
-            user?.name === "Shubham Gupta" ||
-            user?.name === "Saurabh Suman" ||
-            user?.name === "Rahul Pareek" ||
-            user?.name === "Sujoy Mahata") ? (
+        ) : user?.role === "purchase"  ? (
           <List
             size="sm"
             sx={{
@@ -2190,17 +2183,8 @@ function Sidebar() {
               </Toggler>
             </ListItem>
           </List>
-        ) : user?.department === "CAM" &&
-          (user?.name === "Som Narayan Jha" ||
-            user?.name === "Ashish Kumar" ||
-            user?.name === "Tanvi Jha" ||
-            user?.name === "Saresh" ||
-            user?.name === "Deepika Singh" ||
-            user?.name === "Rahul Kushwaha" ||
-            user?.name === "Subhadra" ||
-            user?.name === "Prince Srivastav" ||
-            user?.name === "Aditya Kashyap" ||
-            user?.name === "Izhan Mustafa") ? (
+        ) : user?.department === "CAM" 
+           ? (
           <List
             size="sm"
             sx={{
@@ -3243,8 +3227,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
           </List>
-        ) : user?.department === "Logistic" &&
-          user?.name === "Rajan Kumar Jha" ? (
+        ) : user?.department === "Logistic" ? (
           <List
             size="sm"
             sx={{
@@ -3277,20 +3260,20 @@ function Sidebar() {
               >
                 <List sx={{ gap: 0.5 }}>
                   <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/purchase-order")}>
+                    {/* <ListItemButton onClick={() => navigate("/purchase-order")}>
                       Purchase Order
                     </ListItemButton>
                   </ListItem>
-                  <ListItem>
+                  <ListItem> */}
                     <ListItemButton onClick={() => navigate("/logistics")}>
                       Logistics
                     </ListItemButton>
                   </ListItem>
-                  <ListItem>
+                  {/* <ListItem>
                     <ListItemButton onClick={() => navigate("/vendor_bill")}>
                       Vendor Bill
                     </ListItemButton>
-                  </ListItem>
+                  </ListItem> */}
                 </List>
               </Toggler>
             </ListItem>
