@@ -3227,8 +3227,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
           </List>
-        ) : user?.department === "Logistic" &&
-          user?.name === "Rajan Jha" || user?.name === "Ashish Jha" ? (
+        ) : user?.department === "Logistic" ? (
           <List
             size="sm"
             sx={{
