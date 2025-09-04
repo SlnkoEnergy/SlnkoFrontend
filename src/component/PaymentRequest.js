@@ -160,6 +160,7 @@ const PaymentRequest = forwardRef(() => {
             {" "}
             {(user?.name === "IT Team" ||
               user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
               user?.name === "Prachi Singh" ||
               user?.department === "admin" ||
               user?.name === "Shubham Gupta" ||
@@ -175,6 +176,7 @@ const PaymentRequest = forwardRef(() => {
             )}
             {(user?.name === "IT Team" ||
               user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
               user?.name === "Prachi Singh" ||
               user?.department === "admin" ||
               user?.name === "Ajay Singh" ||
@@ -360,7 +362,7 @@ const PaymentRequest = forwardRef(() => {
               }}
               sx={{ minWidth: 64 }}
             >
-              {[10, 25, 50, 100].map((value) => (
+              {[10, 25, 50, 500].map((value) => (
                 <Option key={value} value={value}>
                   {value}
                 </Option>

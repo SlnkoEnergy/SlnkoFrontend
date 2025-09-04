@@ -272,6 +272,7 @@ const UpdatePurchaseOrder = ({ po_number }) => {
                 {user?.name === "IT Team" ||
                 user?.name === "admin" ||
                 user?.name === "Guddu Rani Dubey" ||
+                user?.name === "Varun Mishra" ||
                 user?.name === "Prachi Singh" ? (
                   <Select
                     options={getFormData.projectIDs.map((project) => ({
@@ -327,6 +328,7 @@ const UpdatePurchaseOrder = ({ po_number }) => {
                 ![
                   "IT Team",
                   "Guddu Rani Dubey",
+                  "Varun Mishra",
                   "Prachi Singh",
                   "admin",
                 ].includes(user?.name)
@@ -526,6 +528,7 @@ const UpdatePurchaseOrder = ({ po_number }) => {
                   ![
                     "IT Team",
                     "Guddu Rani Dubey",
+                    "Varun Mishra",
                     "Prachi Singh",
                     "admin",
                   ].includes(user?.name)

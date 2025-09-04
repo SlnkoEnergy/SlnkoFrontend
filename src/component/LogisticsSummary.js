@@ -144,7 +144,7 @@ function StatusCard({ row, onUpdated }) {
     if (userData) setUser(JSON.parse(userData));
   }, []);
 
-  const isLogistic = user?.department === "Logistic";
+  const isLogistic = user?.department === "Logistic"||user?.department === "SCM";
   const isSuperadmin = user?.role === "superadmin";
 
   const showChangeToOfd =

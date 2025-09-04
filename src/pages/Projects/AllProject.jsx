@@ -121,6 +121,7 @@ function ProjectBalance() {
             </Typography>
             {(user?.name === "IT Team" ||
               user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
               user?.name === "Prachi Singh" ||
               user?.department === "admin" ||
               user?.name === "Naresh Kumar") && (
