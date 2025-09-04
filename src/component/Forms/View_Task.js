@@ -20,6 +20,7 @@ import {
   Tab,
   IconButton,
 } from "@mui/joy";
+
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import SaveRoundedIcon from "@mui/icons-material/SaveRounded";
@@ -29,6 +30,8 @@ import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
 import PercentRoundedIcon from "@mui/icons-material/PercentRounded";
 import PriorityHighRoundedIcon from "@mui/icons-material/PriorityHighRounded";
 import GroupRoundedIcon from "@mui/icons-material/GroupRounded";
+import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
+import KeyboardArrowRightRoundedIcon from "@mui/icons-material/KeyboardArrowRightRounded";
 import WorkOutlineIcon from "@mui/icons-material/WorkOutline";
 import ApartmentIcon from "@mui/icons-material/Apartment";
 import BuildIcon from "@mui/icons-material/Build";
@@ -39,7 +42,6 @@ import {
   useGetTaskByIdQuery,
   useUpdateTaskStatusMutation,
   useDeleteTaskMutation,
-  // (optional) add these in your slice if you want to persist more fields / comments
   // useUpdateTaskFieldsMutation,
   // useAddTaskCommentMutation,
 } from "../../redux/globalTaskSlice";
@@ -90,6 +92,30 @@ const Field = ({ label, value, decorator, muted }) => (
   </Stack>
 );
 
+// Generic collapsible section
+function Section({ title, open, onToggle, children, right = null, outlined = true }) {
+  return (
+    <Sheet variant={outlined ? "outlined" : "soft"} sx={{ p: 2, borderRadius: "md", mb: 2 }}>
+      <Stack direction="row" alignItems="center" justifyContent="space-between">
+        <Stack direction="row" alignItems="center" gap={1}>
+          <IconButton
+            size="sm"
+            variant="plain"
+            onClick={onToggle}
+            aria-label={open ? "Collapse" : "Expand"}
+          >
+            {open ? <KeyboardArrowDownRoundedIcon /> : <KeyboardArrowRightRoundedIcon />}
+          </IconButton>
+          <Typography level="title-md">{title}</Typography>
+        </Stack>
+        {right}
+      </Stack>
+
+      {open && <Box sx={{ mt: 1.25 }}>{children}</Box>}
+    </Sheet>
+  );
+}
+
 export default function ViewTaskPage() {
   const [searchParams] = useSearchParams();
   const id = searchParams.get("task");
@@ -104,12 +130,16 @@ export default function ViewTaskPage() {
   const [status, setStatus] = useState("Select Status");
   const [editingInfo, setEditingInfo] = useState(false);
 
+  // collapsible toggles
+  const [openDescription, setOpenDescription] = useState(true);
+  const [openInfo, setOpenInfo] = useState(true);
+  const [openAssocProject, setOpenAssocProject] = useState(true);
+  const [openActivity, setOpenActivity] = useState(true);
+
   // mutations
   const [updateTaskStatus, { isLoading: isUpdating }] =
     useUpdateTaskStatusMutation();
   const [deleteTask, { isLoading: isDeleting }] = useDeleteTaskMutation();
-  // const [updateFields, { isLoading: isSavingFields }] = useUpdateTaskFieldsMutation?.() ?? [{},{}];
-  // const [addComment, { isLoading: isAddingComment }] = useAddTaskCommentMutation?.() ?? [{},{}];
 
   // editable fields
   const [owner, setOwner] = useState("");
@@ -144,8 +174,7 @@ export default function ViewTaskPage() {
   }, [task, editingInfo]);
 
   const projects = useMemo(() => {
-    // normalize project info to array of {code, name}
-    if (Array.isArray(task?.project_id) && task.project_id.length) {
+    if (Array.isArray(task?.project_id) && task?.project_id?.length) {
       return task.project_id.map((p) => ({
         code: p.code ?? p.projectCode ?? "-",
         name: p.name ?? p.projectName ?? "-",
@@ -203,25 +232,6 @@ export default function ViewTaskPage() {
   };
 
   const handleSaveInfo = async () => {
-    // If you have an API, call it here. Otherwise we just update locally.
-    // try {
-    //   await updateFields({
-    //     id,
-    //     startDate,
-    //     deadline: dueDate,
-    //     duration_days: Number(duration) || 0,
-    //     completion_percentage: Number(completion) || 0,
-    //     priority: Number(priority) || 0,
-    //     tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
-    //     ownerNames: owner, // or ownerIds if your API needs IDs
-    //   }).unwrap();
-    //   toast.success("Task info saved");
-    // } catch {
-    //   toast.error("Failed to save task info");
-    //   return;
-    // }
-
-    // local reflect (safe even without API)
     setTask((prev) => ({
       ...prev,
       startDate: startDate || prev?.startDate,
@@ -234,7 +244,6 @@ export default function ViewTaskPage() {
           .split(",")
           .map((t) => t.trim())
           .filter(Boolean) || prev?.tags,
-      // owner display only – your backend likely needs IDs
       assigned_to:
         owner?.length > 0
           ? owner.split(",").map((name, i) => ({ name: name.trim(), _idx: i }))
@@ -334,28 +343,21 @@ export default function ViewTaskPage() {
           value={`${task?.completion_percentage ?? task?.completion ?? 0} %`}
           decorator={<PercentRoundedIcon />}
         />
-        <Field
-          label="Created By"
-          value={task?.createdBy?.name || "—"}
-        />
+        <Field label="Created By" value={task?.createdBy?.name || "—"} />
         <Field
           label="Created At"
-          value={
-            task?.createdAt
-              ? new Date(task.createdAt).toLocaleString()
-              : "—"
-          }
+          value={task?.createdAt ? new Date(task.createdAt).toLocaleString() : "—"}
         />
       </Box>
     </Sheet>
   );
 
+  const isCompleted = (task?.current_status?.status || "").toLowerCase() === "completed";
+
   return (
     <Box
       sx={{
-        ml: { lg: "var(--Sidebar-width)" },
-        px: 2,
-        py: 2,
+        ml: { xs: 0, lg: "var(--Sidebar-width)" },
         width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
         bgcolor: "background.body",
       }}
@@ -396,11 +398,7 @@ export default function ViewTaskPage() {
             {editingInfo ? <CloseRoundedIcon /> : <EditRoundedIcon />}
           </IconButton>
           {editingInfo && (
-            <IconButton
-              variant="solid"
-              color="primary"
-              onClick={handleSaveInfo}
-            >
+            <IconButton variant="solid" color="primary" onClick={handleSaveInfo}>
               <SaveRoundedIcon />
             </IconButton>
           )}
@@ -415,7 +413,7 @@ export default function ViewTaskPage() {
         </Stack>
       </Sheet>
 
-      {/* Status bar like screenshot */}
+      {/* Normal (non-fixed) Status bar */}
       <Sheet
         sx={{
           mb: 2,
@@ -425,22 +423,18 @@ export default function ViewTaskPage() {
           alignItems: "center",
           justifyContent: "space-between",
           bgcolor: "background.level1",
+          boxShadow: "sm",
         }}
       >
         <Stack direction="row" gap={1} alignItems="center">
-          <Chip
-            variant="soft"
-            color={statusColor(task?.current_status?.status)}
-          >
+          <Chip variant="soft" color={statusColor(task?.current_status?.status)}>
             {(task?.current_status?.status || "Current Status")
               .split(" ")
               .map((w) => w[0]?.toUpperCase() + w.slice(1))
               .join(" ")}
           </Chip>
           {typeMeta(task?.type).icon}
-          <Typography level="body-sm">
-            {typeMeta(task?.type).label}
-          </Typography>
+          <Typography level="body-sm">{typeMeta(task?.type).label}</Typography>
         </Stack>
 
         <Stack direction="row" gap={1} alignItems="center">
@@ -449,7 +443,7 @@ export default function ViewTaskPage() {
             onChange={(_, v) => setStatus(v)}
             size="sm"
             sx={{ minWidth: 180 }}
-            disabled={(task?.current_status?.status || "").toLowerCase() === "completed"}
+            disabled={isCompleted}
           >
             <Option disabled value="Select Status">
               Select Status
@@ -463,29 +457,30 @@ export default function ViewTaskPage() {
             size="sm"
             onClick={handleStatusSubmit}
             loading={isUpdating}
-            disabled={(task?.current_status?.status || "").toLowerCase() === "completed"}
+            disabled={isCompleted}
           >
             Update
           </Button>
         </Stack>
       </Sheet>
 
-      {/* Description */}
-      <Sheet variant="outlined" sx={{ p: 2, borderRadius: "md", mb: 2 }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Typography level="title-md">Description</Typography>
-        </Stack>
-        <Typography level="body-sm" sx={{ mt: 1.25, whiteSpace: "pre-line" }}>
+      {/* Description (collapsible) */}
+      <Section
+        title="Description"
+        open={openDescription}
+        onToggle={() => setOpenDescription((v) => !v)}
+      >
+        <Typography level="body-sm" sx={{ whiteSpace: "pre-line" }}>
           {task?.description || "—"}
         </Typography>
-      </Sheet>
+      </Section>
 
-      {/* Task Information (editable mode mirrors screenshot fields) */}
-      <Sheet variant="outlined" sx={{ p: 2, borderRadius: "md", mb: 2 }}>
-        <Typography level="title-md" mb={1}>
-          Task Information
-        </Typography>
-
+      {/* Task Information (collapsible with edit mirror) */}
+      <Section
+        title="Task Information"
+        open={openInfo}
+        onToggle={() => setOpenInfo((v) => !v)}
+      >
         {!editingInfo ? (
           infoGrid
         ) : (
@@ -584,62 +579,70 @@ export default function ViewTaskPage() {
             </Box>
           </Sheet>
         )}
-      </Sheet>
+      </Section>
 
-      {/* Associated Project (like the avatar/card on the left in your screenshot) */}
-      <Sheet
-        variant="soft"
-        sx={{
-          p: 2,
-          borderRadius: "md",
-          display: "flex",
-          alignItems: "center",
-          gap: 1.25,
-          mb: 2,
-        }}
+      {/* Associated Project (collapsible) */}
+      <Section
+        title="Associated Project"
+        open={openAssocProject}
+        onToggle={() => setOpenAssocProject((v) => !v)}
+        outlined={false}
       >
-        <Avatar size="md">
-          {projects[0]?.name?.[0]?.toUpperCase() || "P"}
-        </Avatar>
-        <Box>
-          <Typography level="body-md" fontWeight="lg">
-            {projects[0]?.name || "Associated Project"}
-          </Typography>
-          <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
-            {projects[0]?.code || "—"}
-          </Typography>
-        </Box>
+        <Sheet
+          variant="soft"
+          sx={{
+            p: 2,
+            borderRadius: "md",
+            display: "flex",
+            alignItems: "center",
+            gap: 1.25,
+          }}
+        >
+          <Avatar size="md">{projects[0]?.name?.[0]?.toUpperCase() || "P"}</Avatar>
+          <Box>
+            <Typography level="body-md" fontWeight="lg">
+              {projects[0]?.name || "Associated Project"}
+            </Typography>
+            <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
+              {projects[0]?.code || "—"}
+            </Typography>
+          </Box>
 
-        {projects.length > 1 && (
-          <Tooltip
-            arrow
-            variant="soft"
-            placement="top"
-            title={
-              <Box sx={{ maxHeight: 220, overflowY: "auto", px: 1 }}>
-                {projects.slice(1).map((p, i) => (
-                  <Box key={`${p.code}-${i}`} sx={{ mb: 1 }}>
-                    <Typography fontWeight="md" level="body-sm">
-                      {p.name}
-                    </Typography>
-                    <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
-                      {p.code}
-                    </Typography>
-                    {i !== projects.length - 2 && <Divider sx={{ my: 1 }} />}
-                  </Box>
-                ))}
-              </Box>
-            }
-          >
-            <Chip size="sm" variant="soft" sx={{ ml: "auto" }}>
-              +{projects.length - 1} more
-            </Chip>
-          </Tooltip>
-        )}
-      </Sheet>
+          {projects.length > 1 && (
+            <Tooltip
+              arrow
+              variant="soft"
+              placement="top"
+              title={
+                <Box sx={{ maxHeight: 220, overflowY: "auto", px: 1 }}>
+                  {projects.slice(1).map((p, i) => (
+                    <Box key={`${p.code}-${i}`} sx={{ mb: 1 }}>
+                      <Typography fontWeight="md" level="body-sm">
+                        {p.name}
+                      </Typography>
+                      <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
+                        {p.code}
+                      </Typography>
+                      {i !== projects.length - 2 && <Divider sx={{ my: 1 }} />}
+                    </Box>
+                  ))}
+                </Box>
+              }
+            >
+              <Chip size="sm" variant="soft" sx={{ ml: "auto" }}>
+                +{projects.length - 1} more
+              </Chip>
+            </Tooltip>
+          )}
+        </Sheet>
+      </Section>
 
-      {/* Activity area (tabs like your screenshot footer) */}
-      <Sheet variant="outlined" sx={{ p: 2, borderRadius: "md" }}>
+      {/* Activity area (collapsible) */}
+      <Section
+        title="Activity & Notes"
+        open={openActivity}
+        onToggle={() => setOpenActivity((v) => !v)}
+      >
         <Tabs defaultValue="comments" sx={{ mb: 1 }}>
           <TabList>
             <Tab value="comments">Comments</Tab>
@@ -653,7 +656,6 @@ export default function ViewTaskPage() {
           </TabList>
         </Tabs>
 
-        {/* Quick note composer like the screenshot */}
         <Typography level="body-sm" sx={{ mb: 0.5 }}>
           Task Notes
         </Typography>
@@ -665,7 +667,6 @@ export default function ViewTaskPage() {
             placeholder="Add a task note (optional)"
             sx={{ flex: 1 }}
           />
-          {/* If you wire an addComment API, use it here. For now submit updates the status only. */}
         </Stack>
 
         <Divider sx={{ my: 1.5 }} />
@@ -692,9 +693,7 @@ export default function ViewTaskPage() {
                 </Chip>
                 <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
                   by {h?.user_id?.name || "Unknown"} on{" "}
-                  {h?.updatedAt
-                    ? new Date(h.updatedAt).toLocaleString()
-                    : "—"}
+                  {h?.updatedAt ? new Date(h.updatedAt).toLocaleString() : "—"}
                 </Typography>
                 {h?.remarks && (
                   <Typography level="body-sm" sx={{ mt: 0.25 }}>
@@ -705,7 +704,7 @@ export default function ViewTaskPage() {
               </Box>
             ))}
         </Box>
-      </Sheet>
+      </Section>
     </Box>
   );
 }
