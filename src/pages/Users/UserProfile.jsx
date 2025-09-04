@@ -7,9 +7,24 @@ import SubHeader from "../../component/Partials/SubHeader";
 import Dash_eng from "../../component/EngDashboard";
 import MainHeader from "../../component/Partials/MainHeader";
 import { useNavigate } from "react-router-dom";
+import UserProfilePanel from "../../component/UserProfile";
+import { useEffect, useState } from "react";
 
 function UserProfile() {
   const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+   useEffect(() => {
+      const userData = getUserData();
+      setUser(userData);
+    }, []);
+  
+    const getUserData = () => {
+      const userData = localStorage.getItem("userDetails");
+      if (userData) {
+        return JSON.parse(userData);
+      }
+      return null;
+    };
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -17,53 +32,13 @@ function UserProfile() {
         sx={{ display: "flex", minHeight: "100dvh", flexDirection: "column" }}
       >
         <Sidebar />
-        <MainHeader title="Engineering" sticky>
-          <Box display="flex" gap={1}>
-            <Button
-              size="sm"
-              onClick={() => navigate(`/eng_dash`)}
-              sx={{
-                color: "white",
-                bgcolor: "transparent",
-                fontWeight: 500,
-                fontSize: "1rem",
-                letterSpacing: 0.5,
-                borderRadius: "6px",
-                px: 1.5,
-                py: 0.5,
-                "&:hover": {
-                  bgcolor: "rgba(255,255,255,0.15)",
-                },
-              }}
-            >
-              All Projects
-            </Button>
-
-            <Button
-              size="sm"
-              onClick={()=> navigate(`/inspection`)}
-              sx={{
-                color: "white",
-                bgcolor: "transparent",
-                fontWeight: 500,
-                fontSize: "1rem",
-                letterSpacing: 0.5,
-                borderRadius: "6px",
-                px: 1.5,
-                py: 0.5,
-                "&:hover": {
-                  bgcolor: "rgba(255,255,255,0.15)",
-                },
-              }}
-            >
-              Inspection
-            </Button>
-          </Box>
+        <MainHeader title="User Profile" sticky>
+          
         </MainHeader>
 
         <SubHeader
-          title="All Projects"
-          isBackEnabled={false}
+          title="User Details"
+          isBackEnabled={true}
           sticky
         ></SubHeader>
         <Box
@@ -79,7 +54,7 @@ function UserProfile() {
             px: "24px",
           }}
         >
-          <Dash_eng />
+          <UserProfilePanel />
         </Box>
       </Box>
     </CssVarsProvider>
