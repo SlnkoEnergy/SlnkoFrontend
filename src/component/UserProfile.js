@@ -24,11 +24,14 @@ import Dropdown from "@mui/joy/Dropdown";
 import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
 import MenuItem from "@mui/joy/MenuItem";
+import Chip from "@mui/joy/Chip";
+import Modal from "@mui/joy/Modal";
+import ModalDialog from "@mui/joy/ModalDialog";
+import ModalClose from "@mui/joy/ModalClose";
 
 // Icons
 import EditRounded from "@mui/icons-material/EditRounded";
 import SaveRounded from "@mui/icons-material/SaveRounded";
-import RestartAltRounded from "@mui/icons-material/RestartAltRounded";
 import CameraAltOutlined from "@mui/icons-material/CameraAltOutlined";
 import UploadFileOutlined from "@mui/icons-material/UploadFileOutlined";
 import DeleteOutline from "@mui/icons-material/DeleteOutline";
@@ -39,22 +42,23 @@ import {
   useEditUserMutation,
 } from "../redux/loginSlice";
 
-// no attachment_url in editable keys (we don’t expose it in UI)
-const ALL_KEYS = [
-  "name",
-  "email",
-  "phone",
-  "department",
-  "location",
-  "about",
-  "avatar_url", // local display only
-];
-
-const BASIC_EDIT_KEYS = ["phone", "location", "about"]; // editable for regular users
+// --- constants / helpers ---
+const ALL_KEYS = ["name", "email", "phone", "department", "location", "about"];
+const BASIC_EDIT_KEYS = ["phone", "location", "about"];
 const DEPT_OPTIONS = ["SCM", "Engineering", "BD", "Accounts", "Operations"];
 
 const pick = (obj, keys) =>
   keys.reduce((acc, k) => (k in obj ? { ...acc, [k]: obj[k] } : acc), {});
+
+const diffEditable = (base = {}, curr = {}, keys = []) => {
+  const out = {};
+  keys.forEach((k) => {
+    const a = base[k] ?? "";
+    const b = curr[k] ?? "";
+    if (String(a) !== String(b)) out[k] = b;
+  });
+  return out;
+};
 
 const LS_KEY = "userDetails";
 const readUserFromLS = () => {
@@ -67,7 +71,7 @@ const readUserFromLS = () => {
 };
 const writeUserToLS = (next) => localStorage.setItem(LS_KEY, JSON.stringify(next));
 
-// helper to preview avatar locally
+// preview helper
 const fileToDataURL = (file) =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -92,11 +96,19 @@ export default function UserProfilePanel() {
     department: "",
     location: "",
     about: "",
-    avatar_url: "", // displayed photo (comes from DB attachment_url or cache)
+    avatar_url: "", // current saved avatar URL (backed by DB attachment_url)
   });
   const [baselineForm, setBaselineForm] = useState(null);
 
-  // ---- RTK Query hooks
+  // NEW: staged avatar changes (preview + delayed upload)
+  const [pendingAvatarFile, setPendingAvatarFile] = useState(null);
+  const [pendingAvatarRemove, setPendingAvatarRemove] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState(""); // data URL for preview
+
+  // NEW: preview modal state
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  // RTK Query
   const ls = readUserFromLS();
   const storedUserId = ls?.userID;
   const {
@@ -108,7 +120,7 @@ export default function UserProfilePanel() {
 
   const [editUser] = useEditUserMutation();
 
-  // Prefill from localStorage immediately (so UI isn’t blank)
+  // Prefill from localStorage quickly
   useEffect(() => {
     setApiError("");
     const cache = readUserFromLS();
@@ -126,10 +138,10 @@ export default function UserProfilePanel() {
       setBaselineForm(prefill);
       setUser(cache);
     }
-    setLoading(false); // we will hydrate again when RTK data arrives
+    setLoading(false);
   }, []);
 
-  // Hydrate with fresh API data when it arrives
+  // Hydrate with fresh API data
   useEffect(() => {
     if (data?.user) {
       const u = data.user;
@@ -140,13 +152,12 @@ export default function UserProfilePanel() {
         department: u.department || "",
         location: u.location || "",
         about: u.about || "",
-        avatar_url: u.attachment_url || "", // map DB image URL to avatar
+        avatar_url: u.attachment_url || "",
       };
       setForm(initial);
       setBaselineForm(initial);
       setUser(u);
 
-      // sync LS so other screens see latest
       writeUserToLS({
         name: initial.name,
         email: initial.email,
@@ -168,99 +179,132 @@ export default function UserProfilePanel() {
     }
   }, [data, fetchError, storedUserId]);
 
-  // ---- Permissions (optional): allow full edit if you store a flag/admin)
+  // permissions (optional)
   const canEditAll = !!(
     user?.permissions?.profile_full_edit ||
     user?.profile_full_edit ||
     (typeof user?.role === "string" && user.role.toLowerCase() === "admin")
   );
-
   const editableKeys = useMemo(
     () => (canEditAll ? ALL_KEYS : BASIC_EDIT_KEYS),
     [canEditAll]
   );
-
-  const isFieldEditable = (key) => (canEditAll ? true : BASIC_EDIT_KEYS.includes(key));
+  const isFieldEditable = (key) =>
+    canEditAll ? true : BASIC_EDIT_KEYS.includes(key);
 
   const hasEditableChanges = useMemo(() => {
     if (!baselineForm) return false;
-    const curr = JSON.stringify(pick(form, editableKeys));
-    const base = JSON.stringify(pick(baselineForm, editableKeys));
-    return curr !== base;
+    const a = JSON.stringify(pick(form, editableKeys));
+    const b = JSON.stringify(pick(baselineForm, editableKeys));
+    return a !== b;
   }, [form, baselineForm, editableKeys]);
+
+  const hasAvatarChange = !!pendingAvatarFile || pendingAvatarRemove;
 
   const handleField = (key) => (e, val) => {
     const value = e?.target ? e.target.value : val;
     setForm((f) => ({ ...f, [key]: value }));
   };
 
+  // --- Avatar handlers (no immediate upload) ---
+  const handleAvatarClick = () => fileRef.current?.click();
+
+  const handleAvatarSelect = async (file) => {
+    if (!file) return;
+    if (!file.type?.startsWith("image/")) {
+      setToast({ open: true, color: "warning", msg: "Please choose an image file." });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setToast({ open: true, color: "warning", msg: "Please upload an image ≤ 5MB." });
+      return;
+    }
+    // stage for upload on Save, and show preview
+    const dataUrl = await fileToDataURL(file);
+    setPendingAvatarFile(file);
+    setPendingAvatarRemove(false);
+    setAvatarPreview(dataUrl);
+  };
+
+  const markRemoveAvatar = () => {
+    // mark for removal on Save; also reflect visually
+    setPendingAvatarFile(null);
+    setPendingAvatarRemove(true);
+    setAvatarPreview("");
+    setForm((f) => ({ ...f, avatar_url: "" }));
+  };
+
+  // --- Save handler: JSON only OR JSON + avatar OR avatar only OR remove avatar ---
   const saveProfile = async () => {
-    if (!hasEditableChanges) return;
+    if (!hasEditableChanges && !hasAvatarChange) return;
     setSaving(true);
     setApiError("");
 
     const currentLS = readUserFromLS();
     const userId = currentLS?.userID || user?._id;
-    const payload = pick(form, editableKeys); // phone/location/about for regular users
 
     try {
       if (!userId) throw new Error("No user id to update.");
-      await editUser({ userId, ...payload }).unwrap();
 
-      setBaselineForm((prev) => ({ ...prev, ...payload }));
+      // send only changed fields
+      const changed = diffEditable(baselineForm, form, editableKeys);
 
-      // update LS cache
-      const merged = { ...(currentLS || {}), ...payload, userID: userId };
-      writeUserToLS(merged);
+      let resp;
+      if (pendingAvatarFile) {
+        // send file (and optionally changed fields)
+        const fd = new FormData();
+        fd.append("data", JSON.stringify(changed)); // can be {}
+        fd.append("avatar", pendingAvatarFile);
+        resp = await editUser({ userId, body: fd }).unwrap();
+      } else if (pendingAvatarRemove) {
+        // remove photo (and optionally changed fields)
+        const body = { ...changed, attachment_url: "" };
+        resp = await editUser({ userId, body }).unwrap();
+      } else if (Object.keys(changed).length > 0) {
+        // just fields
+        resp = await editUser({ userId, body: changed }).unwrap();
+      }
+
+      const updatedUser = resp?.user || {};
+      const serverAvatar = updatedUser.attachment_url ?? form.avatar_url;
+
+      // update baselines/state/LS
+      const nextBaseline = {
+        ...baselineForm,
+        ...changed,
+        avatar_url: pendingAvatarRemove ? "" : serverAvatar,
+      };
+      setBaselineForm(nextBaseline);
+      setForm((f) => ({ ...nextBaseline }));
+
+      writeUserToLS({
+        ...(readUserFromLS() || {}),
+        ...nextBaseline,
+        userID: userId,
+        attachment_url: nextBaseline.avatar_url,
+        avatar_url: nextBaseline.avatar_url,
+      });
+
+      // clear staged avatar changes
+      setPendingAvatarFile(null);
+      setPendingAvatarRemove(false);
+      setAvatarPreview("");
 
       setToast({ open: true, color: "success", msg: "Profile updated successfully." });
     } catch (err) {
-      setApiError(err?.data?.message || "Failed to save profile.");
+      setApiError(err?.data?.message || err?.message || "Failed to save profile.");
     } finally {
       setSaving(false);
     }
   };
 
-  // ====== PHOTO (local preview only; no backend upload) ======
-  const handleAvatarClick = () => fileRef.current?.click();
-
-  const uploadAvatar = async (file) => {
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      setToast({ open: true, color: "warning", msg: "Please upload an image ≤ 5MB." });
-      return;
-    }
-    try {
-      const dataUrl = await fileToDataURL(file);
-      setForm((f) => ({ ...f, avatar_url: dataUrl }));
-      setBaselineForm((b) => ({ ...(b || {}), avatar_url: dataUrl }));
-
-      const lsNow = readUserFromLS() || {};
-      writeUserToLS({ ...lsNow, avatar_url: dataUrl });
-
-      setToast({
-        open: true,
-        color: "neutral",
-        msg: "Photo updated locally (not uploaded to server).",
-      });
-    } catch {
-      setApiError("Failed to read the selected file.");
-    }
-  };
-
-  const removeAvatar = () => {
-    setForm((f) => ({ ...f, avatar_url: "" }));
-    const lsNow = readUserFromLS() || {};
-    writeUserToLS({ ...lsNow, avatar_url: "" });
-    setToast({
-      open: true,
-      color: "neutral",
-      msg: "Profile photo removed (local display).",
-    });
+  // ---- Preview modal helpers
+  const displayedAvatar = avatarPreview || form.avatar_url || "";
+  const openPreview = () => {
+    if (displayedAvatar) setPreviewOpen(true);
   };
 
   const showSkeleton = loading || isUserLoading || isUserFetching;
-
   if (showSkeleton) {
     return (
       <Grid container spacing={2}>
@@ -318,11 +362,29 @@ export default function UserProfilePanel() {
               <Box sx={{ position: "relative" }}>
                 <Avatar
                   variant="soft"
-                  src={form.avatar_url || undefined}
-                  sx={{ width: 104, height: 104, fontSize: 36 }}
+                  src={displayedAvatar || undefined}
+                  onClick={openPreview}
+                  title={displayedAvatar ? "Click to preview" : ""}
+                  sx={{
+                    width: 104,
+                    height: 104,
+                    fontSize: 36,
+                    cursor: displayedAvatar ? "zoom-in" : "default",
+                  }}
                 >
                   {form.name?.[0]?.toUpperCase() || "U"}
                 </Avatar>
+
+                {!!hasAvatarChange && (
+                  <Chip
+                    size="sm"
+                    variant="soft"
+                    color="warning"
+                    sx={{ position: "absolute", left: 0, bottom: -10 }}
+                  >
+                    Unsaved photo
+                  </Chip>
+                )}
 
                 <Tooltip title="Change photo">
                   <IconButton
@@ -334,12 +396,13 @@ export default function UserProfilePanel() {
                     <CameraAltOutlined />
                   </IconButton>
                 </Tooltip>
+
                 <input
                   ref={fileRef}
                   type="file"
                   accept="image/*"
                   style={{ display: "none" }}
-                  onChange={(e) => uploadAvatar(e.target.files?.[0])}
+                  onChange={(e) => handleAvatarSelect(e.target.files?.[0])}
                 />
               </Box>
 
@@ -362,9 +425,12 @@ export default function UserProfilePanel() {
                 <Menu placement="bottom-end">
                   <MenuItem onClick={handleAvatarClick}>
                     <UploadFileOutlined fontSize="small" style={{ marginRight: 8 }} />
-                    Upload new photo
+                    Choose new photo
                   </MenuItem>
-                  <MenuItem onClick={removeAvatar} disabled={!form.avatar_url}>
+                  <MenuItem
+                    onClick={markRemoveAvatar}
+                    disabled={!form.avatar_url && !avatarPreview}
+                  >
                     <DeleteOutline fontSize="small" style={{ marginRight: 8 }} />
                     Remove photo
                   </MenuItem>
@@ -482,7 +548,7 @@ export default function UserProfilePanel() {
                   loading={saving}
                   startDecorator={<SaveRounded />}
                   onClick={saveProfile}
-                  disabled={!hasEditableChanges}
+                  disabled={saving || (!hasEditableChanges && !hasAvatarChange)}
                 >
                   Save changes
                 </Button>
@@ -491,6 +557,50 @@ export default function UserProfilePanel() {
           </Sheet>
         </Grid>
       </Grid>
+
+      {/* Image Preview Modal */}
+      <Modal open={previewOpen} onClose={() => setPreviewOpen(false)}>
+        <ModalDialog
+          aria-labelledby="avatar-preview-title"
+          sx={{
+            p: 0,
+            overflow: "hidden",
+            maxWidth: "min(92vw, 900px)",
+            bgcolor: "neutral.softBg",
+          }}
+        >
+          <ModalClose />
+          {displayedAvatar ? (
+            <Box
+              sx={{
+                display: "grid",
+                placeItems: "center",
+                width: "100%",
+                height: "100%",
+                p: 2,
+                bgcolor: "background.surface",
+              }}
+            >
+              <img
+                src={displayedAvatar}
+                alt="Profile photo"
+                style={{
+                  maxWidth: "88vw",
+                  maxHeight: "82vh",
+                  objectFit: "contain",
+                  display: "block",
+                }}
+              />
+            </Box>
+          ) : (
+            <Box sx={{ p: 3 }}>
+              <Typography id="avatar-preview-title" level="title-md">
+                No image available
+              </Typography>
+            </Box>
+          )}
+        </ModalDialog>
+      </Modal>
 
       <Snackbar
         open={toast.open}
