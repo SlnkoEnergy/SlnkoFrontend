@@ -46,12 +46,9 @@ import {
 import AnimatedNumber from "./AnimatedBalance";
 import axios from "axios";
 
-const ProjectBalances = forwardRef((props, ref) => {
+const ProjectBalances = forwardRef(() => {
   const theme = useTheme();
-  const { mode } = useColorScheme();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [selected, setSelected] = useState([]);
   const [searchParams, setSearchParams] = useSearchParams();
   const initialPage = parseInt(searchParams.get("page")) || 1;
@@ -65,13 +62,14 @@ const ProjectBalances = forwardRef((props, ref) => {
     data: responseData,
     isLoading,
     refetch,
+    error: fetchError,
   } = useGetProjectBalanceQuery({
     page: currentPage,
     pageSize: perPage,
     search: searchQuery,
-  });
+  },{ refetchOnMountOrArgChange: true });
 
-  // const [exportProjectBalance] = useGetExportProjectBalanceMutation();
+
 
   const paginatedData = responseData?.data || [];
   const paginatedDataTotals = responseData?.totals || {};
@@ -149,7 +147,7 @@ const ProjectBalances = forwardRef((props, ref) => {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("CSV Export Error:", err);
-      throw err; // to let handleExport catch it
+      throw err;
     }
   };
 
@@ -567,13 +565,6 @@ const ProjectBalances = forwardRef((props, ref) => {
         </Box>
       </>
     );
-  };
-
-  const indianWithSign = (x) => {
-    const num = Number(x) || 0;
-    const sign = num < 0 ? "-" : "";
-    const abs = Math.round(Math.abs(num));
-    return `${sign}${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(abs)}`;
   };
 
   const trim2 = (s) => s.replace(/\.00$/, "").replace(/(\.\d)0$/, "$1");

@@ -23,10 +23,11 @@ export const AccountsApi = createApi({
       transformResponse: (response) => ({
         data: response.data || [],
         total: response.meta?.total || 0,
-        count: response.meta?.count || 0,
+        count: response.meta?.count || (response.data?.length ?? 0),
         totals: response.totals || {},
       }),
-      providesTags: ["Accounts"],
+      providesTags: () => [{ type: "Accounts", id: "ProjectBalance" }],
+      keepUnusedDataFor: 5,
     }),
     getPaymentRecord: builder.query({
       query: ({
@@ -139,7 +140,7 @@ export const AccountsApi = createApi({
       providesTags: ["Accounts"],
     }),
 
-     getExportPaymentHistory: builder.query({
+    getExportPaymentHistory: builder.query({
       async queryFn({ po_number }, _queryApi, _extraOptions, fetchWithBQ) {
         const result = await fetchWithBQ({
           url: `accounting/debithistorycsv?po_number=${po_number}`,
