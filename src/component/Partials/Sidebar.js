@@ -36,6 +36,7 @@ import {
 import DatabaseIcon from "@mui/icons-material/Storage";
 import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 import ColorSchemeToggle from "./ColorSchemeToggle";
+import { UserButton, useUser } from "@stackframe/react";
 
 function Toggler({ defaultExpanded = false, renderToggle, children }) {
   const [open, setOpen] = useState(defaultExpanded);
@@ -65,6 +66,7 @@ function Sidebar() {
   // const { mode } = useColorScheme();
   const [user, setUser] = useState(null);
   const [subscribeId, setSubscribeId] = useState("");
+  const usr = useUser();
   const location = useLocation();
   useEffect(() => {
     const userData = getUserData();
@@ -3372,13 +3374,13 @@ function Sidebar() {
             bgcolor: "transparent",
           }}
         >
-          <Avatar />
+          <UserButton />
           <Stack>
-            <Typography fontWeight="lg">{user?.name}</Typography>
+            <Typography fontWeight="lg" fontSize="sm">{usr?.displayName}</Typography>
             <Typography level="body-sm">{user?.emp_id}</Typography>
           </Stack>
           <IconButton
-            onClick={handleLogout}
+            onClick={() => usr.signOut()}
             size="sm"
             variant="plain"
             color="danger"
