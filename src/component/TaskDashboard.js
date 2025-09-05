@@ -34,7 +34,7 @@ import {
 function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
   const navigate = useNavigate();
 
-  const tabLabel = searchParams.get("tab") || "All";
+  const tabLabel = searchParams.get("tab") || "Pending";
   const currentPage = Number(searchParams.get("page")) || 1;
   const itemsPerPage = Number(searchParams.get("limit")) || 100;
 
@@ -68,7 +68,7 @@ function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
   const { data, isLoading } = useGetAllTasksQuery({
     page: currentPage,
     search: searchQuery,
-    status: statusFromTab, 
+    status: statusFromTab,
     createdAt,
     deadline,
     department,
@@ -82,14 +82,12 @@ function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
 
   const { data: deptApiData } = useGetAllDeptQuery();
 
-
   const shouldLoadUsers = !!department;
   const {
     data: usersResp,
     isFetching: isUsersLoading,
     isError: isUsersError,
   } = useGetAllUserQuery({ department }, { skip: !shouldLoadUsers });
-
 
   const patchParams = useCallback(
     (patchObj) => {
@@ -197,7 +195,6 @@ function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
         flexWrap="wrap"
         gap={1}
       >
-    
         <Tabs
           value={selectedTab}
           onChange={(_e, newValue) => {

@@ -1,3 +1,4 @@
+// src/redux/globalTaskSlice.ts (or .js)
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 const baseQuery = fetchBaseQuery({
@@ -5,9 +6,7 @@ const baseQuery = fetchBaseQuery({
   credentials: "include",
   prepareHeaders: (headers) => {
     const token = localStorage.getItem("authToken");
-    if (token) {
-      headers.set("x-auth-token", token);
-    }
+    if (token) headers.set("x-auth-token", token);
     return headers;
   },
 });
@@ -15,19 +14,21 @@ const baseQuery = fetchBaseQuery({
 export const GlobalTaskApi = createApi({
   reducerPath: "GlobalTaskApi",
   baseQuery,
-  tagTypes: ["GlobalTask"],
+  // Use consistent tag names throughout
+  tagTypes: ["Tasks", "Task", "Users", "Depts"],
   endpoints: (builder) => ({
-    // POST: Create a new task
+    /* ------------------------------ CREATE ------------------------------ */
     createTask: builder.mutation({
       query: ({ payload, team }) => ({
         url: `tasks/task${team ? `?team=${team}` : ""}`,
         method: "POST",
         body: payload,
       }),
-      invalidatesTags: ["GlobalTask"],
+      // ensure the list page refetches
+      invalidatesTags: [{ type: "Tasks", id: "LIST" }],
     }),
 
-    // GET: Fetch all tasks with filters
+    /* --------------------------- LIST / GET ALL ------------------------- */
     getAllTasks: builder.query({
       query: ({
         page = 1,
@@ -40,49 +41,82 @@ export const GlobalTaskApi = createApi({
         hide_completed = false,
         hide_inprogress = false,
         hide_pending = false,
-        assignedToName,
-        createdByName,
+        assignedToName = "",
+        createdByName = "",
       }) =>
         `tasks/task?page=${page}&search=${search}&status=${status}&createdAt=${createdAt}&deadline=${deadline}&department=${department}&limit=${limit}&hide_completed=${hide_completed}&hide_inprogress=${hide_inprogress}&hide_pending=${hide_pending}&assignedToName=${assignedToName}&createdByName=${createdByName}`,
-      providesTags: ["Task"],
+      // Provide LIST tag and (if available) per-item tags for fine-grained invalidation
+      providesTags: (result) => {
+        const items =
+          Array.isArray(result)
+            ? result
+            : Array.isArray(result?.data)
+            ? result.data
+            : Array.isArray(result?.tasks)
+            ? result.tasks
+            : []; // fallback if your API wraps the array differently
+
+        return [
+          { type: "Tasks", id: "LIST" },
+          ...items
+            .filter(Boolean)
+            .map((t) => (t?._id ? { type: "Task", id: t._id } : null))
+            .filter(Boolean),
+        ];
+      },
     }),
 
-    getAllUser: builder.query({
-      query: ({department}) => ({
-        url: `all-user?department=${department}`,
-        method: "GET",
-      }),
-      providesTags: ["User"],
-    }),
-
-    getAllDept: builder.query({
-      query: () => ({
-        url: "all-dept",
-        method: "GET",
-      }),
-      providesTags: ["User"],
-    }),
+    /* ----------------------------- GET ONE ------------------------------ */
     getTaskById: builder.query({
       query: (id) => ({
         url: `tasks/task/${id}`,
         method: "GET",
       }),
-      providesTags: ["User"],
+      providesTags: (_result, _err, id) => [{ type: "Task", id }],
     }),
+
+    /* ------------------------- STATUS UPDATE (PUT) ---------------------- */
+    // Matches your backend: PUT /tasks/:id/updateTaskStatus  body: { status, remarks }
     updateTaskStatus: builder.mutation({
       query: ({ id, status, remarks }) => ({
         url: `tasks/${id}/updateTaskStatus`,
         method: "PUT",
         body: { status, remarks },
       }),
-      providesTags: ["User"],
+      // Refetch both this task and the list after a status change
+      invalidatesTags: (_res, _err, { id }) => [
+        { type: "Task", id },
+        { type: "Tasks", id: "LIST" },
+      ],
     }),
+
+    /* ------------------------------ UPDATE ------------------------------ */
+    updateTask: builder.mutation({
+      query: ({ id, body }) => ({
+        url: `tasks/task/${id}`,
+        method: "PUT",
+        body,
+      }),
+      // Update list + the specific item
+      invalidatesTags: (_res, _err, { id }) => [
+        { type: "Task", id },
+        { type: "Tasks", id: "LIST" },
+      ],
+    }),
+
+    /* ------------------------------ DELETE ------------------------------ */
     deleteTask: builder.mutation({
       query: (id) => ({
-        url: `/tasks/task/${id}`,
+        url: `tasks/task/${id}`,
         method: "DELETE",
       }),
+      invalidatesTags: (_res, _err, id) => [
+        { type: "Task", id },
+        { type: "Tasks", id: "LIST" },
+      ],
     }),
+
+    /* ----------------------------- EXPORT ------------------------------- */
     exportTasksToCsv: builder.mutation({
       query: (ids) => ({
         url: "tasks/exportTocsv",
@@ -90,6 +124,23 @@ export const GlobalTaskApi = createApi({
         body: { ids },
         responseHandler: (response) => response.blob(),
       }),
+    }),
+
+    /* --------------------------- USERS / DEPTS -------------------------- */
+    getAllUser: builder.query({
+      query: ({ department = "" }) => ({
+        url: `all-user?department=${department}`,
+        method: "GET",
+      }),
+      providesTags: [{ type: "Users", id: "LIST" }],
+    }),
+
+    getAllDept: builder.query({
+      query: () => ({
+        url: "all-dept",
+        method: "GET",
+      }),
+      providesTags: [{ type: "Depts", id: "LIST" }],
     }),
   }),
 });
@@ -103,4 +154,5 @@ export const {
   useUpdateTaskStatusMutation,
   useDeleteTaskMutation,
   useExportTasksToCsvMutation,
+  useUpdateTaskMutation,
 } = GlobalTaskApi;

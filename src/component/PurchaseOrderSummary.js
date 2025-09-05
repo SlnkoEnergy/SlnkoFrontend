@@ -20,7 +20,12 @@ import DownloadIcon from "@mui/icons-material/Download";
 import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { Clock, CheckCircle2, AlarmClockMinusIcon, AlertTriangle } from "lucide-react";
+import {
+  Clock,
+  CheckCircle2,
+  AlarmClockMinusIcon,
+  AlertTriangle,
+} from "lucide-react";
 import {
   forwardRef,
   useCallback,
@@ -127,7 +132,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     catInitialData?.count ??
     catInitialData?.totalCount ??
     topCategories.length;
-
 
   const { search, state } = useLocation();
   const [sp] = useSearchParams();
@@ -493,8 +497,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                 {activeDateFilter === "etd"
                   ? "ETD Date Range"
                   : activeDateFilter === "po"
-                    ? "PO Date Range"
-                    : "Delivery Date Range"}
+                  ? "PO Date Range"
+                  : "Delivery Date Range"}
               </Typography>
 
               <Box display="flex" gap={1}>
@@ -506,8 +510,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       activeDateFilter === "etd"
                         ? etdFrom
                         : activeDateFilter === "po"
-                          ? poFrom
-                          : deliveryFrom
+                        ? poFrom
+                        : deliveryFrom
                     }
                     onChange={(e) => {
                       if (activeDateFilter === "etd")
@@ -528,8 +532,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       activeDateFilter === "etd"
                         ? etdTo
                         : activeDateFilter === "po"
-                          ? poTo
-                          : deliveryTo
+                        ? poTo
+                        : deliveryTo
                     }
                     onChange={(e) => {
                       if (activeDateFilter === "etd") setEtdTo(e.target.value);
@@ -732,8 +736,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     const label = isFullyBilled
       ? "Fully Billed"
       : isPending
-        ? "Pending"
-        : status;
+      ? "Pending"
+      : status;
 
     const icon = isFullyBilled ? (
       <CheckRoundedIcon />
@@ -1043,8 +1047,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     const categories = Array.isArray(item)
       ? item.filter(Boolean).map(String)
       : item
-        ? [String(item)]
-        : [];
+      ? [String(item)]
+      : [];
 
     const onlyOther =
       categories.length === 1 && categories[0].trim().toLowerCase() === "other";
@@ -1206,9 +1210,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       case "out_for_delivery":
         return <Truck size={18} style={{ marginRight: 6 }} />;
       case "partially_delivered":
-     return <PackageCheck size={18} style={{ marginRight: 6 }} />; // or any "half" metaphor you like
-   case "short_quantity":
-     return <AlertTriangle size={18} style={{ marginRight: 6 }} />;
+        return <PackageCheck size={18} style={{ marginRight: 6 }} />; // or any "half" metaphor you like
+      case "short_quantity":
+        return <AlertTriangle size={18} style={{ marginRight: 6 }} />;
       case "delivered":
         return <Handshake size={18} style={{ marginRight: 6 }} />;
       case "etd pending":
@@ -1233,9 +1237,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       case "out_for_delivery":
         return "orange";
       case "partially_delivered":
-        return "#f59e0b"; // amber
+        return "#f59e0b";
       case "short_quantity":
-        return "#b45309"; // darker amber
+        return "#b45309";
       case "delivered":
         return "green";
       case "etd pending":
@@ -1249,51 +1253,50 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
   return (
     <Box
-    sx={{
-        ml: { lg: "var(--Sidebar-width)" },
+      sx={{
+        ml: { xs:0,lg: "var(--Sidebar-width)" },
         px: "0px",
         width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+        maxWidth:{xs:'95vw', lg:'84vw'}
       }}
     >
-      {/* Search + Filters */}
-       <Box
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              pb={0.5}
-              flexWrap="wrap"
-              gap={1}
-            >
-      {/* {renderFilters()} */}
       <Box
-        className="SearchAndFilters-tabletUp"
-         sx={{
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        pb={0.5}
+        flexWrap="wrap"
+        gap={1}
+      >
+        {/* {renderFilters()} */}
+        <Box
+          className="SearchAndFilters-tabletUp"
+          sx={{
             py: 1,
             display: "flex",
             alignItems: "flex-end",
             gap: 1.5,
             width: { xs: "100%", md: "50%" },
           }}
-      >
-        <FormControl sx={{ flex: 2, minWidth: 280 }} size="sm">
-          <Input
-            size="sm"
-            placeholder="Search Project Id, PO Number, Vendor"
-            startDecorator={<SearchIcon />}
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-        </FormControl>
-
+        >
+          <FormControl sx={{ flex: 2, }} size="sm">
+            <Input
+              size="sm"
+              placeholder="Search Project Id, PO Number, Vendor"
+              startDecorator={<SearchIcon />}
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+          </FormControl>
+        </Box>
       </Box>
-</Box>
       {/* Table */}
       <Sheet
         className="OrderTableContainer"
         variant="outlined"
         sx={{
           display: { xs: "none", sm: "block" },
-          width: "80%",
+          width: "100%",
           borderRadius: "sm",
           maxHeight: { xs: "66vh", xl: "75vh" },
           overflow: "auto",
@@ -1301,7 +1304,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       >
         <Box
           component="table"
-          sx={{ width: "80%", borderCollapse: "collapse" }}
+          sx={{ width: "100%", borderCollapse: "collapse" }}
         >
           <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
             <Box component="tr">
@@ -1764,7 +1767,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           )}
         </Box>
 
-        <FormControl size="sm" sx={{ minWidth: 120 }}>
+        <FormControl size="sm">
           <Select
             value={perPage}
             onChange={(e, newValue) => {
@@ -1774,7 +1777,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           >
             {[10, 30, 60, 100].map((num) => (
               <Option key={num} value={num}>
-                {num}/Page
+                {num}
               </Option>
             ))}
           </Select>

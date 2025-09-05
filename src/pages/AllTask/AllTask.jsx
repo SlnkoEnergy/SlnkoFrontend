@@ -179,19 +179,15 @@ function AllTask() {
               onApply={(values) => {
                 setSearchParams((prev) => {
                   const merged = Object.fromEntries(prev.entries());
-
-                  // clear old filter keys
                   delete merged.status;
                   delete merged.createdAt;
                   delete merged.deadline;
                   delete merged.department;
                   delete merged.assignedToName;
                   delete merged.createdByName;
-
-                  // set new ones
                   return {
                     ...merged,
-                    page: "1", // reset pagination
+                    page: "1", 
                     ...(values.status && { status: String(values.status) }),
                     ...(values.createdAt && {
                       createdAt: String(values.createdAt),
@@ -215,14 +211,12 @@ function AllTask() {
               onReset={() => {
                 setSearchParams((prev) => {
                   const merged = Object.fromEntries(prev.entries());
-                  // clear only filter keys, keep pagination/limit/etc.
                   delete merged.status;
                   delete merged.createdAt;
                   delete merged.deadline;
                   delete merged.department;
                   delete merged.assignedToName;
                   delete merged.createdByName;
-
                   return { ...merged, page: "1" };
                 });
               }}
@@ -243,7 +237,6 @@ function AllTask() {
             px: "24px",
           }}
         >
-          {/* Dash_task keeps reading everything from URL params, unchanged */}
           <Dash_task
             selected={selectedIds}
             setSelected={setSelectedIds}

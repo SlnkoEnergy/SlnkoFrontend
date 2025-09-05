@@ -266,8 +266,8 @@ function VendorBillSummary() {
     const rawLabel = isFullyBilled
       ? "Fully Billed"
       : isPending
-        ? `${balance} - Waiting Bills`
-        : status;
+      ? `${balance} - Waiting Bills`
+      : status;
 
     const label = capitalize(rawLabel);
 
@@ -412,46 +412,52 @@ function VendorBillSummary() {
 
   const navigate = useNavigate();
   return (
-    <>
+    <Box
+      sx={{
+        ml: { lg: "var(--Sidebar-width)" },
+        px: "0px",
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+      }}
+    >
       <Box
-        className="SearchAndFilters-tabletUp"
-        sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          borderRadius: "sm",
-          py: 1,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1.5,
-          "& > *": {
-            minWidth: { xs: "120px", md: "160px" },
-          },
-        }}
+        display="flex"
+        justifyContent="flex-end"
+        alignItems="center"
+        pb={0.5}
+        flexWrap="wrap"
+        gap={1}
       >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search here</FormLabel>
-          <Input
-            size="sm"
-            placeholder="Search Project Id, PO Number, Vendor"
-            startDecorator={<SearchIcon />}
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-        </FormControl>
-        {renderFilters()}
+        <Box
+          className="SearchAndFilters-tabletUp"
+          sx={{
+            borderRadius: "sm",
+            py: 1,
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 1.5,
+            width: "50%",
+          }}
+        >
+          <FormControl sx={{ flex: 1 }} size="sm">
+            <Input
+              size="sm"
+              placeholder="Search Project Id, PO Number, Vendor"
+              startDecorator={<SearchIcon />}
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+          </FormControl>
+        </Box>
       </Box>
-
       <Sheet
         className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: { xs: "none", sm: "initial" },
+          display: { xs: "none", sm: "block" },
           width: "100%",
           borderRadius: "sm",
-          flexShrink: 1,
+          maxHeight: { xs: "66vh", xl: "75vh" },
           overflow: "auto",
-          minHeight: 0,
-          marginLeft: { lg: "18%", xl: "15%" },
-          maxWidth: { lg: "85%", sm: "100%" },
         }}
       >
         <Box
@@ -743,13 +749,12 @@ function VendorBillSummary() {
       <Box
         className="Pagination-laptopUp"
         sx={{
-          pt: 2,
+          pt: 1,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
-          flexDirection: { xs: "column", md: "row" },
-          marginLeft: { xl: "15%", lg: "18%" },
         }}
       >
         <Button
@@ -764,7 +769,6 @@ function VendorBillSummary() {
         </Button>
 
         <Box>
-          {/* Showing page {currentPage} of {totalPages} ({total} results) */}
           <Typography level="body-sm">
             Showing {startIndex}–{endIndex} of {total} results
           </Typography>
@@ -792,7 +796,7 @@ function VendorBillSummary() {
           )}
         </Box>
 
-        <FormControl size="sm" sx={{ minWidth: 120 }}>
+        <FormControl size="sm">
           <Select
             value={perPage}
             onChange={(e, newValue) => handlePerPageChange(newValue)}
@@ -816,7 +820,7 @@ function VendorBillSummary() {
           Next
         </Button>
       </Box>
-    </>
+    </Box>
   );
 }
 

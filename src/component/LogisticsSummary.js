@@ -144,7 +144,8 @@ function StatusCard({ row, onUpdated }) {
     if (userData) setUser(JSON.parse(userData));
   }, []);
 
-  const isLogistic = user?.department === "Logistic"||user?.department === "SCM";
+  const isLogistic =
+    user?.department === "Logistic" || user?.department === "SCM";
   const isSuperadmin = user?.role === "superadmin";
 
   const showChangeToOfd =
@@ -200,10 +201,16 @@ function StatusCard({ row, onUpdated }) {
     }
 
     try {
-      await updateStatus({ id: row._id, status: targetStatus, remarks: "" }).unwrap();
+      await updateStatus({
+        id: row._id,
+        status: targetStatus,
+        remarks: "",
+      }).unwrap();
       await onUpdated?.();
     } catch (e) {
-      setErrorText(e?.data?.message || e?.error || e?.message || "Failed to update status");
+      setErrorText(
+        e?.data?.message || e?.error || e?.message || "Failed to update status"
+      );
     }
   };
 
@@ -243,13 +250,17 @@ function StatusCard({ row, onUpdated }) {
           <Typography level="body-sm" sx={{ minWidth: 130 }}>
             Dispatch Date :
           </Typography>
-          <Typography level="body-sm">{ddmmyyyy(row?.dispatch_date)}</Typography>
+          <Typography level="body-sm">
+            {ddmmyyyy(row?.dispatch_date)}
+          </Typography>
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Typography level="body-sm" sx={{ minWidth: 130 }}>
             Delivery Date :
           </Typography>
-          <Typography level="body-sm">{ddmmyyyy(row?.delivery_date)}</Typography>
+          <Typography level="body-sm">
+            {ddmmyyyy(row?.delivery_date)}
+          </Typography>
         </Box>
       </Box>
 
@@ -286,7 +297,6 @@ function StatusCard({ row, onUpdated }) {
     </Box>
   );
 }
-
 
 /* ---------------- component ---------------- */
 export default function LogisticsDashboard() {
@@ -358,52 +368,36 @@ export default function LogisticsDashboard() {
     return [];
   }, [resp]);
 
-// API-aware meta + range with robust fallbacks
-const meta = resp?.meta || {};
-const total = Number(
-  meta?.total ??
-  meta?.totalCount ??
-  meta?.total_count ??
-  resp?.total ??
-  0
-);
-const count = Number(
-  meta?.count ??
-  meta?.pageCount ??
-  meta?.per_page_count ??
-  rows.length
-);
-const apiPage = Number(
-  meta?.page ??
-  meta?.currentPage ??
-  meta?.current_page ??
-  currentPage
-);
-const apiPageSize = Number(
-  meta?.pageSize ??
-  meta?.perPage ??
-  meta?.per_page ??
-  rowsPerPage
-);
+  // API-aware meta + range with robust fallbacks
+  const meta = resp?.meta || {};
+  const total = Number(
+    meta?.total ?? meta?.totalCount ?? meta?.total_count ?? resp?.total ?? 0
+  );
+  const count = Number(
+    meta?.count ?? meta?.pageCount ?? meta?.per_page_count ?? rows.length
+  );
+  const apiPage = Number(
+    meta?.page ?? meta?.currentPage ?? meta?.current_page ?? currentPage
+  );
+  const apiPageSize = Number(
+    meta?.pageSize ?? meta?.perPage ?? meta?.per_page ?? rowsPerPage
+  );
 
-const totalPages = Math.max(1, Math.ceil((total || 0) / apiPageSize));
+  const totalPages = Math.max(1, Math.ceil((total || 0) / apiPageSize));
 
-// For "Showing X–Y of Z"
-const startIndex = total ? (apiPage - 1) * apiPageSize + 1 : 0;
-const endIndex = total ? Math.min(startIndex + count - 1, total) : 0;
+  // For "Showing X–Y of Z"
+  const startIndex = total ? (apiPage - 1) * apiPageSize + 1 : 0;
+  const endIndex = total ? Math.min(startIndex + count - 1, total) : 0;
 
-
-
-const handlePageChange = (p) => {
-  if (p < 1 || p > totalPages) return;
-  const params = new URLSearchParams(searchParams);
-  params.set("page", String(p));
-  setSearchParams(params);
-  setCurrentPage(p);
-  setSelected([]);
-  window.scrollTo({ top: 0, behavior: "smooth" });
-};
-
+  const handlePageChange = (p) => {
+    if (p < 1 || p > totalPages) return;
+    const params = new URLSearchParams(searchParams);
+    params.set("page", String(p));
+    setSearchParams(params);
+    setCurrentPage(p);
+    setSelected([]);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const handleSelectAll = (e) => {
     if (e.target.checked) setSelected(rows.map((r) => r._id));
@@ -416,136 +410,109 @@ const handlePageChange = (p) => {
     );
 
   return (
-    <>
+    <Box
+      sx={{
+        ml: { xs: 0, lg: "var(--Sidebar-width)" },
+        px: "0px",
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+        maxWidth: { xs: "95vw", lg: "84vw" },
+      }}
+    >
       {/* Search */}
       <Box
-        sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          borderRadius: "sm",
-          py: 1,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1.5,
-          "& > *": { minWidth: { xs: "120px", md: "160px" } },
-        }}
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        pb={0.5}
+        flexWrap="wrap"
+        gap={1}
       >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search here</FormLabel>
-          <Input
-            size="sm"
-            placeholder="Search by Logistics Code, PO, Vehicle No., Description"
-            startDecorator={<SearchIcon />}
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              const params = new URLSearchParams(searchParams);
-              params.set("page", "1");
-              setSearchParams(params);
-              setCurrentPage(1);
-            }}
-          />
-        </FormControl>
-      </Box>
+        <Tabs
+          value={selectedTab}
+          onChange={(_, newValue) => {
+            setSelectedTab(newValue);
 
-      {/* Tabs + Rows per page */}
-      <Box
-        display={"flex"}
-        sx={{ marginLeft: { xl: "15%", lg: "18%" } }}
-        justifyContent={"space-between"}
-        width={"full"}
-        alignItems={"center"}
-      >
-        <Box>
-          <Tabs
-            value={selectedTab}
-            onChange={(_, newValue) => {
-              setSelectedTab(newValue);
+            const params = new URLSearchParams(searchParams);
+            params.set("tab", newValue);
+            params.set("page", "1");
 
-              const params = new URLSearchParams(searchParams);
-              params.set("tab", newValue);
-              params.set("page", "1");
+            const statusValue = mapTabToStatus(newValue);
+            if (statusValue) {
+              // write status for Out for delivery / Delivered
+              params.set("status", statusValue);
+            } else {
+              // remove status for All
+              params.delete("status");
+            }
 
-              const statusValue = mapTabToStatus(newValue);
-              if (statusValue) {
-                // write status for Out for delivery / Delivered
-                params.set("status", statusValue);
-              } else {
-                // remove status for All
-                params.delete("status");
-              }
-
-              setSearchParams(params);
-              setCurrentPage(1);
-            }}
-            indicatorPlacement="none"
-            sx={{
-              bgcolor: "background.level1",
-              borderRadius: 9999,
-              boxShadow: "sm",
-              width: "fit-content",
-            }}
-          >
-            <TabList sx={{ gap: 1 }}>
-              {TAB_LABELS.map((label) => (
-                <Tab
-                  key={label}
-                  value={label}
-                  disableIndicator
-                  sx={{
-                    borderRadius: 9999,
-                    fontWeight: "md",
-                    "&.Mui-selected": {
-                      bgcolor: "background.surface",
-                      boxShadow: "sm",
-                    },
-                  }}
-                >
-                  {label}
-                </Tab>
-              ))}
-            </TabList>
-          </Tabs>
-        </Box>
-
-        <Box display="flex" alignItems="center" gap={1} sx={{ padding: "8px 16px" }}>
-          <Typography level="body-sm">Rows Per Page:</Typography>
-          <Select
-            value={rowsPerPage}
-            onChange={(_, newValue) => {
-              if (newValue == null) return;
-              setRowsPerPage(newValue);
-              const params = new URLSearchParams(searchParams);
-              params.set("pageSize", String(newValue));
-              params.set("page", "1");
-              setSearchParams(params);
-              setCurrentPage(1);
-            }}
-            size="sm"
-            variant="outlined"
-            sx={{ minWidth: 80, borderRadius: "md", boxShadow: "sm" }}
-          >
-            {[10, 25, 50, 100].map((v) => (
-              <Option key={v} value={v}>
-                {v}
-              </Option>
+            setSearchParams(params);
+            setCurrentPage(1);
+          }}
+          indicatorPlacement="none"
+          sx={{
+            bgcolor: "background.level1",
+            borderRadius: 9999,
+            boxShadow: "sm",
+            width: "fit-content",
+          }}
+        >
+          <TabList sx={{ gap: 1 }}>
+            {TAB_LABELS.map((label) => (
+              <Tab
+                key={label}
+                value={label}
+                disableIndicator
+                sx={{
+                  borderRadius: 9999,
+                  fontWeight: "md",
+                  "&.Mui-selected": {
+                    bgcolor: "background.surface",
+                    boxShadow: "sm",
+                  },
+                }}
+              >
+                {label}
+              </Tab>
             ))}
-          </Select>
+          </TabList>
+        </Tabs>
+
+        <Box
+          sx={{
+            py: 1,
+            display: "flex",
+            alignItems: "flex-end",
+            gap: 1.5,
+            width: { xs: "100%", md: "50%" },
+          }}
+        >
+          <FormControl sx={{ flex: 1 }} size="sm">
+            <Input
+              size="sm"
+              placeholder="Search by Logistics Code, PO, Vehicle No., Description"
+              startDecorator={<SearchIcon />}
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                const params = new URLSearchParams(searchParams);
+                params.set("page", "1");
+                setSearchParams(params);
+                setCurrentPage(1);
+              }}
+            />
+          </FormControl>
         </Box>
       </Box>
-
       {/* Table */}
       <Sheet
         className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: { xs: "none", sm: "initial" },
+          display: { xs: "none", sm: "block" },
           width: "100%",
           borderRadius: "sm",
-          flexShrink: 1,
+          maxHeight: { xs: "66vh", xl: "73vh" },
           overflow: "auto",
-          minHeight: 0,
-          marginLeft: { lg: "18%", xl: "15%" },
-          maxWidth: { lg: "85%", sm: "100%" },
         }}
       >
         <Box
@@ -655,7 +622,9 @@ const handlePageChange = (p) => {
                             underline="none"
                             sx={{ fontWeight: 600, cursor: "pointer" }}
                             onClick={() =>
-                              navigate(`/logistics-form?mode=edit&id=${row._id}`)
+                              navigate(
+                                `/logistics-form?mode=edit&id=${row._id}`
+                              )
                             }
                           >
                             {safe(row.logistic_code)}
@@ -732,7 +701,8 @@ const handlePageChange = (p) => {
                                       level="body-xs"
                                       sx={{ pl: 1 }}
                                     >
-                                      • {category} {count > 1 ? `(${count})` : ""}
+                                      • {category}{" "}
+                                      {count > 1 ? `(${count})` : ""}
                                     </Typography>
                                   ))}
                                 </Box>
@@ -788,12 +758,11 @@ const handlePageChange = (p) => {
       {/* Pagination */}
       <Box
         sx={{
-          pt: 2,
+          pt: 0.5,
           gap: 1,
           display: "flex",
           flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
-          marginLeft: { lg: "18%", xl: "15%" },
         }}
       >
         <Button
@@ -802,19 +771,19 @@ const handlePageChange = (p) => {
           color="neutral"
           startDecorator={<KeyboardArrowLeftIcon />}
           onClick={() => handlePageChange(apiPage - 1)}
-disabled={apiPage <= 1 || isLoading}
-
-
+          disabled={apiPage <= 1 || isLoading}
         >
           Previous
         </Button>
-<Box>
-  {total
-    ? <>Showing {startIndex}–{endIndex} of {total} results</>
-    : <>Showing 0 of 0 results</>}
-</Box>
-
-
+        <Box>
+          {total ? (
+            <>
+              Showing {startIndex}–{endIndex} of {total} results
+            </>
+          ) : (
+            <>Showing 0 of 0 results</>
+          )}
+        </Box>
 
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
@@ -829,7 +798,6 @@ disabled={apiPage <= 1 || isLoading}
                 key={v}
                 size="sm"
                 variant={v === apiPage ? "solid" : "outlined"}
-
                 color="neutral"
                 onClick={() => handlePageChange(v)}
                 disabled={isLoading}
@@ -839,20 +807,45 @@ disabled={apiPage <= 1 || isLoading}
             )
           )}
         </Box>
-
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={1}
+          sx={{ padding: "8px 16px" }}
+        >
+          <Select
+            value={rowsPerPage}
+            onChange={(_, newValue) => {
+              if (newValue == null) return;
+              setRowsPerPage(newValue);
+              const params = new URLSearchParams(searchParams);
+              params.set("pageSize", String(newValue));
+              params.set("page", "1");
+              setSearchParams(params);
+              setCurrentPage(1);
+            }}
+            size="sm"
+            variant="outlined"
+            sx={{ minWidth: 80, borderRadius: "md", boxShadow: "sm" }}
+          >
+            {[10, 25, 50, 100].map((v) => (
+              <Option key={v} value={v}>
+                {v}
+              </Option>
+            ))}
+          </Select>
+        </Box>
         <Button
           size="sm"
           variant="outlined"
           color="neutral"
           endDecorator={<KeyboardArrowRightIcon />}
           onClick={() => handlePageChange(apiPage + 1)}
-disabled={apiPage >= totalPages || isLoading}
-
-
+          disabled={apiPage >= totalPages || isLoading}
         >
           Next
         </Button>
       </Box>
-    </>
+    </Box>
   );
 }

@@ -1,15 +1,10 @@
 import Box from "@mui/joy/Box";
-import Breadcrumbs from "@mui/joy/Breadcrumbs";
 import Button from "@mui/joy/Button";
 import CssBaseline from "@mui/joy/CssBaseline";
-import Link from "@mui/joy/Link";
 import { CssVarsProvider } from "@mui/joy/styles";
-import Typography from "@mui/joy/Typography";
 import { useRef, useEffect, useState } from "react";
-import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import Sidebar from "../../component/Partials/Sidebar";
 import { useNavigate } from "react-router-dom";
-import Header from "../../component/Partials/Header";
 import PurchaseOrder from "../../component/PurchaseOrderSummary";
 import { toast } from "react-toastify";
 import SubHeader from "../../component/Partials/SubHeader";
@@ -43,7 +38,6 @@ function POSummary() {
 
   // NEW: open logistics with selected PO(s)
   const handleOpenLogisticsWithSeed = () => {
-    // expects PurchaseOrderSummary to expose getSelectedPOSeed() via useImperativeHandle
     const seed = poSummaryRef.current?.getSelectedPOSeed?.();
     const list = seed?.pos || [];
 
@@ -52,9 +46,8 @@ function POSummary() {
       return;
     }
 
-    // Navigate with seed so AddLogisticForm can auto-fill the Products table
     navigate("/logistics-form?mode=add", {
-      state: { logisticSeed: seed }, // shape: { pos: [{ _id, po_number }, ...] }
+      state: { logisticSeed: seed },
     });
   };
 
@@ -68,7 +61,7 @@ function POSummary() {
           <Box display="flex" gap={1}>
             <Button
               size="sm"
-              onClick={() => navigate(`/eng_dash`)}
+              onClick={() => navigate(`/purchase-order`)}
               sx={{
                 color: "white",
                 bgcolor: "transparent",
@@ -86,7 +79,7 @@ function POSummary() {
 
             <Button
               size="sm"
-              onClick={() => navigate(`/inspection`)}
+              onClick={() => navigate(`/logistics`)}
               sx={{
                 color: "white",
                 bgcolor: "transparent",
@@ -102,9 +95,9 @@ function POSummary() {
               Logistics
             </Button>
 
-             <Button
+            <Button
               size="sm"
-              onClick={() => navigate(`/inspection`)}
+              onClick={() => navigate(`/vendor_bill`)}
               sx={{
                 color: "white",
                 bgcolor: "transparent",
@@ -123,22 +116,38 @@ function POSummary() {
         </MainHeader>
         <SubHeader title="Purchase Order" isBackEnabled={false} sticky>
           <Box display="flex" gap={1} alignItems="center">
-              <Button
-                variant="outlined"
-                size="sm"
-                sx={{
-                  color: "#3366a3",
-                  borderColor: "#132e4eff",
-                  backgroundColor: "transparent",
-                  "--Button-hoverBg": "#e0e0e0",
-                  "--Button-hoverBorderColor": "#3366a3",
-                  "&:hover": { color: "#3366a3" },
-                  height: "8px",
-                }}
-              >
-                Export
-              </Button>
-         
+            <Button
+              variant="outlined"
+              size="sm"
+              // onClick={() => handleExport(selectedIds)}
+              sx={{
+                color: "#3366a3",
+                borderColor: "#3366a3",
+                backgroundColor: "transparent",
+                "--Button-hoverBg": "#e0e0e0",
+                "--Button-hoverBorderColor": "#3366a3",
+                "&:hover": { color: "#3366a3" },
+                height: "8px",
+              }}
+            >
+              Export
+            </Button>
+
+            <Button
+              variant="outlined"
+              size="sm"
+              sx={{
+                color: "#3366a3",
+                borderColor: "#132e4eff",
+                backgroundColor: "transparent",
+                "--Button-hoverBg": "#e0e0e0",
+                "--Button-hoverBorderColor": "#3366a3",
+                "&:hover": { color: "#3366a3" },
+                height: "8px",
+              }}
+            >
+              Add Vendor
+            </Button>
 
             <Button
               variant="solid"
@@ -152,7 +161,7 @@ function POSummary() {
                 height: "8px",
               }}
             >
-              Add Task
+              Logistic Form
             </Button>
           </Box>
         </SubHeader>

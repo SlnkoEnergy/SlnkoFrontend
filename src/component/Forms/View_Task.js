@@ -1,6 +1,6 @@
 // src/pages/tasks/ViewTaskPage.jsx
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Box,
   Sheet,
@@ -13,40 +13,37 @@ import {
   Option,
   Avatar,
   Textarea,
-  Input,
   Tooltip,
   Tabs,
   TabList,
   Tab,
   IconButton,
+  Modal,
+  ModalDialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Input,
 } from "@mui/joy";
 
-import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
-import EditRoundedIcon from "@mui/icons-material/EditRounded";
-import SaveRoundedIcon from "@mui/icons-material/SaveRounded";
-import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import CalendarMonthRoundedIcon from "@mui/icons-material/CalendarMonthRounded";
 import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
-import PercentRoundedIcon from "@mui/icons-material/PercentRounded";
-import PriorityHighRoundedIcon from "@mui/icons-material/PriorityHighRounded";
-import GroupRoundedIcon from "@mui/icons-material/GroupRounded";
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
 import KeyboardArrowRightRoundedIcon from "@mui/icons-material/KeyboardArrowRightRounded";
 import WorkOutlineIcon from "@mui/icons-material/WorkOutline";
 import ApartmentIcon from "@mui/icons-material/Apartment";
 import BuildIcon from "@mui/icons-material/Build";
+
 import { toast } from "react-toastify";
 
-// ===== RTKQ hooks you already have =====
 import {
   useGetTaskByIdQuery,
   useUpdateTaskStatusMutation,
-  useDeleteTaskMutation,
-  // useUpdateTaskFieldsMutation,
-  // useAddTaskCommentMutation,
+  useUpdateTaskMutation,
 } from "../../redux/globalTaskSlice";
 
-// ---- helpers ----
+/* ----------------------- helpers & UI primitives ----------------------- */
+
 const typeMeta = (type) => {
   switch ((type || "").toLowerCase()) {
     case "project":
@@ -70,7 +67,7 @@ const statusColor = (s) => {
       return "warning";
     case "completed":
       return "success";
-    case "delayed":
+    case "cancelled":
       return "warning";
     default:
       return "neutral";
@@ -92,86 +89,359 @@ const Field = ({ label, value, decorator, muted }) => (
   </Stack>
 );
 
-// Generic collapsible section
-function Section({ title, open, onToggle, children, right = null, outlined = true }) {
-  return (
-    <Sheet variant={outlined ? "outlined" : "soft"} sx={{ p: 2, borderRadius: "md", mb: 2 }}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between">
-        <Stack direction="row" alignItems="center" gap={1}>
-          <IconButton
-            size="sm"
-            variant="plain"
-            onClick={onToggle}
-            aria-label={open ? "Collapse" : "Expand"}
-          >
-            {open ? <KeyboardArrowDownRoundedIcon /> : <KeyboardArrowRightRoundedIcon />}
-          </IconButton>
-          <Typography level="title-md">{title}</Typography>
-        </Stack>
-        {right}
-      </Stack>
+// people helpers
+const toPeople = (input) => {
+  if (!input) return [];
+  if (Array.isArray(input)) return input.map(toPerson);
+  return [toPerson(input)];
+};
 
-      {open && <Box sx={{ mt: 1.25 }}>{children}</Box>}
+const toPerson = (u = {}) => {
+  if (typeof u === "string") {
+    return { id: u, name: u, avatar: "" };
+  }
+  return {
+    id:
+      u._id || u.id || u.email || u.name || Math.random().toString(36).slice(2),
+    name: u.name || u.fullName || u.displayName || u.email || "User",
+    avatar:
+      u.avatar ||
+      u.photo ||
+      u.image ||
+      u.profilePic ||
+      u.avatar_url ||
+      u.picture ||
+      "",
+  };
+};
+
+const initialsOf = (name = "") =>
+  name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((s) => s[0]?.toUpperCase())
+    .join("") || "U";
+
+const colorFromName = (name = "") => {
+  const palette = [
+    "primary",
+    "success",
+    "info",
+    "warning",
+    "danger",
+    "neutral",
+  ];
+  let sum = 0;
+  for (let i = 0; i < name.length; i++) sum = (sum + name.charCodeAt(i)) % 997;
+  return palette[sum % palette.length];
+};
+
+/** Overlapping avatars with ring, hover lift, and +N avatar */
+const PeopleAvatars = ({ people = [], max = 3, size = "sm" }) => {
+  const shown = people.slice(0, max);
+  const extra = people.slice(max);
+
+  const ringSx = {
+    boxShadow: "0 0 0 1px var(--joy-palette-background-body)",
+  };
+
+  return (
+    <Stack direction="row" alignItems="center" gap={0.75}>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          "& > *": { transition: "transform 120ms ease, z-index 120ms ease" },
+          "& > *:not(:first-of-type)": { ml: "-8px" },
+          "& > *:hover": { zIndex: 2, transform: "translateY(-2px)" },
+        }}
+      >
+        {shown.map((p, i) => {
+          const name = p.name || "User";
+          const src = p.avatar || "";
+          const initials = initialsOf(name);
+          const color = colorFromName(name);
+          return (
+            <Tooltip key={p.id || i} arrow placement="top" title={name}>
+              <Avatar
+                size={size}
+                src={src || undefined}
+                variant={src ? "soft" : "solid"}
+                color={src ? "neutral" : color}
+                sx={ringSx}
+              >
+                {!src && initials}
+              </Avatar>
+            </Tooltip>
+          );
+        })}
+
+        {extra.length > 0 && (
+          <Tooltip
+            arrow
+            placement="bottom"
+            variant="soft"
+            title={
+              <Box
+                sx={{
+                  maxHeight: 260,
+                  overflowY: "auto",
+                  px: 1,
+                  py: 0.5,
+                  maxWidth: 240,
+                }}
+              >
+                {extra.map((p, i) => (
+                  <Box key={p.id || i} sx={{ mb: i !== extra.length - 1 ? 1 : 0 }}>
+                    <Stack direction="row" alignItems="center" gap={1}>
+                      <Avatar
+                        size="sm"
+                        src={p.avatar || undefined}
+                        variant={p.avatar ? "soft" : "solid"}
+                        color={p.avatar ? "neutral" : colorFromName(p.name)}
+                        sx={ringSx}
+                      >
+                        {!p.avatar && initialsOf(p.name)}
+                      </Avatar>
+                      <Typography level="body-sm">{p.name || "User"}</Typography>
+                    </Stack>
+                    {i !== extra.length - 1 && <Divider sx={{ my: 0.75 }} />}
+                  </Box>
+                ))}
+              </Box>
+            }
+          >
+            <Avatar
+              size={size}
+              variant="soft"
+              color="neutral"
+              sx={{ ...ringSx, ml: "-8px", fontSize: 12, cursor: "default" }}
+            >
+              +{extra.length}
+            </Avatar>
+          </Tooltip>
+        )}
+      </Box>
+    </Stack>
+  );
+};
+
+/* ----------------------- status timeline (scrollable) ----------------------- */
+
+const cap = (s = "") =>
+  s
+    .split(" ")
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : ""))
+    .join(" ");
+
+const formatDuration = (ms) => {
+  if (!ms || ms < 1000) return "0 secs";
+  const sec = Math.floor(ms / 1000);
+  const days = Math.floor(sec / 86400);
+  const hrs = Math.floor((sec % 86400) / 3600);
+  const mins = Math.floor((sec % 3600) / 60);
+  const secs = sec % 60;
+  const parts = [];
+  if (days) parts.push(`${days} day${days > 1 ? "s" : ""}`);
+  if (hrs) parts.push(`${hrs} hr${hrs > 1 ? "s" : ""}`);
+  if (mins) parts.push(`${mins} min${mins > 1 ? "s" : ""}`);
+  if (secs && !days) parts.push(`${secs} sec${secs > 1 ? "s" : ""}`);
+  return parts.join(" ");
+};
+
+const Connector = ({ durationLabel = "" }) => (
+  <Box sx={{ position: "relative", minWidth: 160, mx: 1 }}>
+    {durationLabel && (
+      <Typography
+        level="body-xs"
+        sx={{
+          position: "absolute",
+          top: -18,
+          left: "50%",
+          transform: "translateX(-50%)",
+          color: "text.tertiary",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {durationLabel}
+      </Typography>
+    )}
+    <Box
+      sx={{
+        borderTop: "2px dashed",
+        borderColor: "neutral.outlinedBorder",
+        height: 0,
+        width: "100%",
+        position: "relative",
+        mt: 1,
+      }}
+    >
+      <Box
+        sx={{
+          position: "absolute",
+          right: -8,
+          top: -6,
+          width: 0,
+          height: 0,
+          borderTop: "6px solid transparent",
+          borderBottom: "6px solid transparent",
+          borderLeft: "8px solid",
+          borderLeftColor: "neutral.outlinedBorder",
+        }}
+      />
+    </Box>
+  </Box>
+);
+
+const StatusTimeline = ({ history = [], current }) => {
+  const steps = (history || [])
+    .filter((h) => h?.status)
+    .slice()
+    .sort((a, b) => new Date(a.updatedAt || 0) - new Date(b.updatedAt || 0));
+
+  const last = steps[steps.length - 1];
+  if (
+    current?.status &&
+    (!last ||
+      (last.status || "").toLowerCase() !== (current.status || "").toLowerCase())
+  ) {
+    steps.push({
+      status: current.status,
+      updatedAt: current.updatedAt || new Date().toISOString(),
+    });
+  }
+
+  const nodes = steps.map((s) => ({
+    label: cap(s.status || "-"),
+    color: statusColor(s.status),
+    at: s.updatedAt ? new Date(s.updatedAt) : null,
+  }));
+
+  const durations = nodes.map((n, i) => {
+    if (i >= nodes.length - 1) return "";
+    const a = n.at ? n.at.getTime() : 0;
+    const b = nodes[i + 1].at ? nodes[i + 1].at.getTime() : 0;
+    return a && b ? formatDuration(b - a) : "";
+  });
+
+  const isClosed = ["completed", "cancelled"].includes(
+    (current?.status || "").toLowerCase()
+  );
+
+  return (
+    <Sheet
+      variant="soft"
+      sx={{
+        p: 2,
+        borderRadius: "md",
+        bgcolor: "background.level1",
+        overflowX: "auto",
+      }}
+    >
+      <Stack direction="row" alignItems="center" gap={2} sx={{ minWidth: "max-content" }}>
+        {nodes.length === 0 ? (
+          <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
+            No status changes yet.
+          </Typography>
+        ) : (
+          nodes.map((n, i) => (
+            <Box key={`${n.label}-${i}`} sx={{ display: "flex", alignItems: "center" }}>
+              <Chip
+                variant="solid"
+                color={n.color}
+                sx={{
+                  borderRadius: "8px",
+                  px: 1.25,
+                  py: 0.25,
+                  minWidth: 96,
+                  justifyContent: "center",
+                }}
+              >
+                {n.label}
+              </Chip>
+              {i < nodes.length - 1 && <Connector durationLabel={durations[i]} />}
+            </Box>
+          ))
+        )}
+
+        {!isClosed && nodes.length > 0 && (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Connector
+              durationLabel={formatDuration(
+                Date.now() - (nodes[nodes.length - 1]?.at?.getTime?.() ?? Date.now())
+              )}
+            />
+            <Box
+              sx={{
+                position: "relative",
+                px: 1.5,
+                py: 0.5,
+                bgcolor: "neutral.softBg",
+                borderRadius: "999px",
+                "&:after": {
+                  content: '""',
+                  position: "absolute",
+                  left: -8,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  borderTop: "8px solid transparent",
+                  borderBottom: "8px solid transparent",
+                  borderRight: "8px solid var(--joy-palette-neutral-softBg)",
+                },
+              }}
+            >
+              <Typography level="body-sm">Yet to close</Typography>
+            </Box>
+          </Box>
+        )}
+      </Stack>
     </Sheet>
   );
-}
+};
+
+/* --------------------------------- page --------------------------------- */
 
 export default function ViewTaskPage() {
   const [searchParams] = useSearchParams();
   const id = searchParams.get("task");
-  const navigate = useNavigate();
 
-  // queries
   const { data: taskApi, isFetching } = useGetTaskByIdQuery(id, { skip: !id });
 
-  // local state
   const [task, setTask] = useState(null);
   const [note, setNote] = useState("");
   const [status, setStatus] = useState("Select Status");
-  const [editingInfo, setEditingInfo] = useState(false);
+  const [openStatusModal, setOpenStatusModal] = useState(false);
 
-  // collapsible toggles
-  const [openDescription, setOpenDescription] = useState(true);
+  // comment UI state
+  const [commentText, setCommentText] = useState("");
+  const [attachments, setAttachments] = useState([]); // [{name, file, size, type}]
+  const [openAttachModal, setOpenAttachModal] = useState(false);
+  const [attachDocName, setAttachDocName] = useState("");
+  const [attachFiles, setAttachFiles] = useState([]);
+  const [isDragging, setIsDragging] = useState(false);
+
+  // single hidden file input used everywhere
+  const filePickerRef = useRef(null);
+
   const [openInfo, setOpenInfo] = useState(true);
   const [openAssocProject, setOpenAssocProject] = useState(true);
+  const [openTimeline, setOpenTimeline] = useState(true);
   const [openActivity, setOpenActivity] = useState(true);
 
-  // mutations
   const [updateTaskStatus, { isLoading: isUpdating }] =
     useUpdateTaskStatusMutation();
-  const [deleteTask, { isLoading: isDeleting }] = useDeleteTaskMutation();
-
-  // editable fields
-  const [owner, setOwner] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [dueDate, setDueDate] = useState("");
-  const [duration, setDuration] = useState("");
-  const [completion, setCompletion] = useState("");
-  const [priority, setPriority] = useState("");
-  const [tags, setTags] = useState("");
+  const [updateTask] = useUpdateTaskMutation();
 
   useEffect(() => {
     if (taskApi) setTask(taskApi);
   }, [taskApi]);
 
-  // derive status value shown in dropdown
   useEffect(() => {
     const s = task?.current_status?.status;
     if (!s || s.toLowerCase() === "draft") setStatus("Select Status");
     else setStatus(s.toLowerCase());
   }, [task]);
-
-  // hydrate editable fields when entering edit mode or when task changes
-  useEffect(() => {
-    if (!task) return;
-    setOwner(task?.assigned_to?.map((a) => a.name).join(", ") || "");
-    setStartDate(task?.startDate ? task.startDate.slice(0, 10) : "");
-    setDueDate(task?.deadline ? task.deadline.slice(0, 10) : "");
-    setDuration(task?.duration_days ?? task?.duration ?? "");
-    setCompletion(task?.completion_percentage ?? task?.completion ?? "");
-    setPriority(task?.priority ?? "");
-    setTags((task?.tags || []).join(", "));
-  }, [task, editingInfo]);
 
   const projects = useMemo(() => {
     if (Array.isArray(task?.project_id) && task?.project_id?.length) {
@@ -181,12 +451,7 @@ export default function ViewTaskPage() {
       }));
     }
     if (task?.project) {
-      return [
-        {
-          code: task.project.code ?? "-",
-          name: task.project.name ?? "-",
-        },
-      ];
+      return [{ code: task.project.code ?? "-", name: task.project.name ?? "-" }];
     }
     if (task?.project_code || task?.project_name) {
       return [{ code: task.project_code ?? "-", name: task.project_name ?? "-" }];
@@ -194,24 +459,12 @@ export default function ViewTaskPage() {
     return [];
   }, [task]);
 
-  const handleDelete = async () => {
-    if (!id) return toast.error("Task ID not found");
-    try {
-      await deleteTask(id).unwrap();
-      toast.success("Task deleted");
-      navigate("/all_task");
-    } catch (e) {
-      toast.error("Failed to delete task");
-    }
-  };
-
   const handleStatusSubmit = async () => {
     const chosen = status === "Select Status" ? "" : status;
     if (!chosen) return toast.error("Pick a status");
     try {
       await updateTaskStatus({ id, status: chosen, remarks: note }).unwrap();
 
-      // optimistic UI
       const user = JSON.parse(localStorage.getItem("userDetails") || "{}");
       const entry = {
         status: chosen,
@@ -225,33 +478,119 @@ export default function ViewTaskPage() {
         status_history: [...(prev?.status_history || []), entry],
       }));
       setNote("");
+      setOpenStatusModal(false);
       toast.success("Status updated");
     } catch {
       toast.error("Failed to update status");
     }
   };
 
-  const handleSaveInfo = async () => {
-    setTask((prev) => ({
-      ...prev,
-      startDate: startDate || prev?.startDate,
-      deadline: dueDate || prev?.deadline,
-      duration_days: duration || prev?.duration_days,
-      completion_percentage: completion || prev?.completion_percentage,
-      priority: priority || prev?.priority,
-      tags:
-        tags
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean) || prev?.tags,
-      assigned_to:
-        owner?.length > 0
-          ? owner.split(",").map((name, i) => ({ name: name.trim(), _idx: i }))
-          : prev?.assigned_to,
-    }));
-    setEditingInfo(false);
-    toast.success("Updated (local)");
+  // -------- Comments: local add + persist via updateTask ($push) --------
+
+  const handleAttachClick = () => {
+    setAttachDocName("");
+    setAttachFiles([]);
+    setOpenAttachModal(true);
+    setTimeout(() => filePickerRef.current?.click(), 0);
   };
+
+  const onPickFilesFromButton = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setAttachFiles((prev) => [...prev, ...files]);
+    e.target.value = "";
+  };
+
+  const onDropFiles = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const files = Array.from(e.dataTransfer?.files || []);
+    if (!files.length) return;
+    setAttachFiles((prev) => [...prev, ...files]);
+    setIsDragging(false);
+  };
+
+  const handleSaveAttachment = () => {
+    if (!attachFiles.length) {
+      toast.error("Please drop or pick at least one file.");
+      return;
+    }
+    const items = attachFiles.map((f) => ({
+      name: attachDocName?.trim() || f.name,
+      file: f,
+      size: f.size,
+      type: f.type,
+    }));
+    setAttachments((prev) => [...prev, ...items]);
+    setOpenAttachModal(false);
+  };
+
+  const handleRemoveAttachment = (idx) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleSubmitComment = async () => {
+    if (!commentText.trim() && attachments.length === 0) {
+      toast.error("Type a comment or attach a file.");
+      return;
+    }
+    if (!id) {
+      toast.error("Task id missing");
+      return;
+    }
+
+    const user = JSON.parse(localStorage.getItem("userDetails") || "{}");
+    const userId = user?._id || user?.id || user?.user_id;
+    const remarks = commentText.trim();
+
+    try {
+      // Persist server-side: push a new comment { remarks, user_id }
+      await updateTask({
+        id,
+        body: {
+          $push: {
+            comments: {
+              remarks,
+              user_id: userId,
+            },
+          },
+        },
+      }).unwrap();
+
+      // Optimistic local UI (keeps your attachments display local)
+      const newCommentLocal = {
+        text: remarks,
+        remarks,
+        attachments: attachments.map((a) => ({
+          name: a.name,
+          size: a.size,
+          type: a.type,
+        })),
+        user_id: { _id: userId, name: user?.name || "You" },
+        createdAt: new Date().toISOString(),
+      };
+
+      setTask((prev) => ({
+        ...prev,
+        comments: [...(prev?.comments || []), newCommentLocal],
+      }));
+      setCommentText("");
+      setAttachments([]);
+      toast.success("Comment added");
+    } catch (e) {
+      console.error(e);
+      toast.error(e?.data?.message || "Failed to add comment");
+    }
+  };
+
+  const priorityMap = {
+    1: { label: "Low", color: "success" },
+    2: { label: "Medium", color: "warning" },
+    3: { label: "High", color: "danger" },
+  };
+
+  const isCompleted =
+    (task?.current_status?.status || "").toLowerCase() === "completed";
 
   const infoGrid = (
     <Sheet
@@ -263,15 +602,30 @@ export default function ViewTaskPage() {
         gap: 2,
         display: "grid",
         gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+        width: "100%",
       }}
     >
       {/* LHS */}
-      <Box>
-        <Field label="Owner" value={owner || "None"} decorator={<GroupRoundedIcon />} />
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        <Field
+          label="Assign"
+          value={
+            task?.assigned_to?.length ? (
+              <PeopleAvatars people={toPeople(task.assigned_to)} />
+            ) : (
+              "None"
+            )
+          }
+        />
         <Field
           label="Status"
           value={
-            <Chip size="sm" color={statusColor(task?.current_status?.status)}>
+            <Chip
+              size="sm"
+              color={statusColor(task?.current_status?.status)}
+              onClick={() => !isCompleted && setOpenStatusModal(true)}
+              sx={{ cursor: isCompleted ? "not-allowed" : "pointer" }}
+            >
               {task?.current_status?.status
                 ? task.current_status.status
                     .split(" ")
@@ -293,33 +647,24 @@ export default function ViewTaskPage() {
         <Field
           label="Priority"
           value={
-            Number(priority) > 0 ? (
-              <Typography component="span" color="warning">
-                {Array(Number(priority))
-                  .fill(0)
-                  .map((_, i) => (
-                    <span key={i}>⭐</span>
-                  ))}
-              </Typography>
+            Number(task?.priority) > 0 ? (
+              <Chip
+                size="sm"
+                variant="solid"
+                color={priorityMap[Number(task?.priority)]?.color}
+              >
+                {priorityMap[Number(task?.priority)]?.label}
+              </Chip>
             ) : (
               "None"
             )
           }
-          decorator={<PriorityHighRoundedIcon />}
-          muted={!(Number(priority) > 0)}
-        />
-        <Field
-          label="Tags"
-          value={
-            (Array.isArray(task?.tags) && task.tags.length
-              ? task.tags.join(", ")
-              : tags || "—")
-          }
+          muted={!(Number(task?.priority) > 0)}
         />
       </Box>
 
       {/* RHS */}
-      <Box>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
         <Field
           label="Start Date"
           value={
@@ -339,11 +684,9 @@ export default function ViewTaskPage() {
           decorator={<AccessTimeRoundedIcon />}
         />
         <Field
-          label="Completion Percentage"
-          value={`${task?.completion_percentage ?? task?.completion ?? 0} %`}
-          decorator={<PercentRoundedIcon />}
+          label="Created By"
+          value={<PeopleAvatars people={toPeople(task?.createdBy)} max={1} />}
         />
-        <Field label="Created By" value={task?.createdBy?.name || "—"} />
         <Field
           label="Created At"
           value={task?.createdAt ? new Date(task.createdAt).toLocaleString() : "—"}
@@ -351,8 +694,6 @@ export default function ViewTaskPage() {
       </Box>
     </Sheet>
   );
-
-  const isCompleted = (task?.current_status?.status || "").toLowerCase() === "completed";
 
   return (
     <Box
@@ -362,315 +703,286 @@ export default function ViewTaskPage() {
         bgcolor: "background.body",
       }}
     >
-      {/* Top Bar */}
-      <Sheet
-        variant="outlined"
+      {/* Hidden file input used for OS picker (outside + inside modal) */}
+      <input
+        ref={filePickerRef}
+        type="file"
+        multiple
+        onChange={onPickFilesFromButton}
+        style={{ display: "none" }}
+      />
+
+      {/* Row 1: Summary (left) + Task Info (right) */}
+      <Box
         sx={{
-          p: 2,
-          borderRadius: "md",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+          gap: 2,
+          alignItems: "start",
           mb: 2,
-          bgcolor: "background.surface",
+          "& > *": { minWidth: 0 },
         }}
       >
-        <Stack direction="row" gap={1.5} alignItems="center">
-          <Chip size="sm" variant="solid" color="primary">
-            Task
-          </Chip>
-          <Typography level="h4">
-            {task?.title || (isFetching ? "Loading…" : "Task")}
-          </Typography>
-          {task?.taskCode && (
-            <Chip size="sm" variant="soft">
-              {task.taskCode}
-            </Chip>
-          )}
-        </Stack>
-
-        <Stack direction="row" gap={1}>
-          <IconButton
-            variant="outlined"
-            color="neutral"
-            onClick={() => setEditingInfo((v) => !v)}
-          >
-            {editingInfo ? <CloseRoundedIcon /> : <EditRoundedIcon />}
-          </IconButton>
-          {editingInfo && (
-            <IconButton variant="solid" color="primary" onClick={handleSaveInfo}>
-              <SaveRoundedIcon />
-            </IconButton>
-          )}
-          <IconButton
-            variant="outlined"
-            color="danger"
-            loading={isDeleting}
-            onClick={handleDelete}
-          >
-            <DeleteOutlineRoundedIcon />
-          </IconButton>
-        </Stack>
-      </Sheet>
-
-      {/* Normal (non-fixed) Status bar */}
-      <Sheet
-        sx={{
-          mb: 2,
-          p: 1.5,
-          borderRadius: "md",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          bgcolor: "background.level1",
-          boxShadow: "sm",
-        }}
-      >
-        <Stack direction="row" gap={1} alignItems="center">
-          <Chip variant="soft" color={statusColor(task?.current_status?.status)}>
-            {(task?.current_status?.status || "Current Status")
-              .split(" ")
-              .map((w) => w[0]?.toUpperCase() + w.slice(1))
-              .join(" ")}
-          </Chip>
-          {typeMeta(task?.type).icon}
-          <Typography level="body-sm">{typeMeta(task?.type).label}</Typography>
-        </Stack>
-
-        <Stack direction="row" gap={1} alignItems="center">
-          <Select
-            value={status}
-            onChange={(_, v) => setStatus(v)}
-            size="sm"
-            sx={{ minWidth: 180 }}
-            disabled={isCompleted}
-          >
-            <Option disabled value="Select Status">
-              Select Status
-            </Option>
-            <Option value="pending">Pending</Option>
-            <Option value="in progress">In Progress</Option>
-            <Option value="completed">Completed</Option>
-            <Option value="delayed">Delayed</Option>
-          </Select>
-          <Button
-            size="sm"
-            onClick={handleStatusSubmit}
-            loading={isUpdating}
-            disabled={isCompleted}
-          >
-            Update
-          </Button>
-        </Stack>
-      </Sheet>
-
-      {/* Description (collapsible) */}
-      <Section
-        title="Description"
-        open={openDescription}
-        onToggle={() => setOpenDescription((v) => !v)}
-      >
-        <Typography level="body-sm" sx={{ whiteSpace: "pre-line" }}>
-          {task?.description || "—"}
-        </Typography>
-      </Section>
-
-      {/* Task Information (collapsible with edit mirror) */}
-      <Section
-        title="Task Information"
-        open={openInfo}
-        onToggle={() => setOpenInfo((v) => !v)}
-      >
-        {!editingInfo ? (
-          infoGrid
-        ) : (
-          <Sheet
-            variant="soft"
-            sx={{
-              p: 2,
-              borderRadius: "md",
-              bgcolor: "background.level1",
-              gap: 2,
-              display: "grid",
-              gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-            }}
-          >
-            <Box>
-              <Stack gap={1.25}>
-                <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
-                  Owner
-                </Typography>
-                <Input
-                  value={owner}
-                  onChange={(e) => setOwner(e.target.value)}
-                  placeholder="Comma separated names"
-                  size="sm"
-                />
-
-                <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
-                  Due Date
-                </Typography>
-                <Input
-                  type="date"
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                  size="sm"
-                />
-
-                <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
-                  Priority (0-5)
-                </Typography>
-                <Input
-                  type="number"
-                  min={0}
-                  max={5}
-                  value={priority}
-                  onChange={(e) => setPriority(e.target.value)}
-                  size="sm"
-                />
-
-                <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
-                  Tags
-                </Typography>
-                <Input
-                  value={tags}
-                  onChange={(e) => setTags(e.target.value)}
-                  placeholder="tag1, tag2"
-                  size="sm"
-                />
-              </Stack>
-            </Box>
-
-            <Box>
-              <Stack gap={1.25}>
-                <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
-                  Start Date
-                </Typography>
-                <Input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  size="sm"
-                />
-
-                <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
-                  Duration (days)
-                </Typography>
-                <Input
-                  type="number"
-                  min={0}
-                  value={duration}
-                  onChange={(e) => setDuration(e.target.value)}
-                  size="sm"
-                />
-
-                <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
-                  Completion (%)
-                </Typography>
-                <Input
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={completion}
-                  onChange={(e) => setCompletion(e.target.value)}
-                  size="sm"
-                />
-              </Stack>
-            </Box>
-          </Sheet>
-        )}
-      </Section>
-
-      {/* Associated Project (collapsible) */}
-      <Section
-        title="Associated Project"
-        open={openAssocProject}
-        onToggle={() => setOpenAssocProject((v) => !v)}
-        outlined={false}
-      >
+        {/* Summary / header */}
         <Sheet
-          variant="soft"
+          variant="outlined"
           sx={{
             p: 2,
             borderRadius: "md",
             display: "flex",
-            alignItems: "center",
-            gap: 1.25,
+            alignItems: "flex-start",
+            justifyContent: "flex-start",
+            mb: 0,
+            bgcolor: "background.surface",
+            height: "100%",
+            minWidth: 0,
+            overflowX: "hidden",
           }}
         >
-          <Avatar size="md">{projects[0]?.name?.[0]?.toUpperCase() || "P"}</Avatar>
-          <Box>
-            <Typography level="body-md" fontWeight="lg">
-              {projects[0]?.name || "Associated Project"}
-            </Typography>
-            <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
-              {projects[0]?.code || "—"}
-            </Typography>
-          </Box>
-
-          {projects.length > 1 && (
-            <Tooltip
-              arrow
-              variant="soft"
-              placement="top"
-              title={
-                <Box sx={{ maxHeight: 220, overflowY: "auto", px: 1 }}>
-                  {projects.slice(1).map((p, i) => (
-                    <Box key={`${p.code}-${i}`} sx={{ mb: 1 }}>
-                      <Typography fontWeight="md" level="body-sm">
-                        {p.name}
-                      </Typography>
-                      <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
-                        {p.code}
-                      </Typography>
-                      {i !== projects.length - 2 && <Divider sx={{ my: 1 }} />}
-                    </Box>
-                  ))}
-                </Box>
-              }
-            >
-              <Chip size="sm" variant="soft" sx={{ ml: "auto" }}>
-                +{projects.length - 1} more
+          <Stack direction="column" gap={1.5} alignItems="flex-start" sx={{ minWidth: 0, width: "100%" }}>
+            <Stack direction="row" gap={1} alignItems="center" justifyContent="flex-start" sx={{ minWidth: 0 }}>
+              {task?.taskCode && (
+                <Chip size="sm" variant="soft" color="primary">
+                  {task.taskCode}
+                </Chip>
+              )}
+              <Chip
+                variant="soft"
+                color={statusColor(task?.current_status?.status)}
+                onClick={() => !isCompleted && setOpenStatusModal(true)}
+                sx={{ cursor: isCompleted ? "not-allowed" : "pointer" }}
+              >
+                {(task?.current_status?.status || "Current Status")
+                  .split(" ")
+                  .map((w) => w[0]?.toUpperCase() + w.slice(1))
+                  .join(" ")}
               </Chip>
-            </Tooltip>
-          )}
-        </Sheet>
-      </Section>
+              {typeMeta(task?.type).icon}
+              <Typography level="body-sm">{typeMeta(task?.type).label}</Typography>
+            </Stack>
 
-      {/* Activity area (collapsible) */}
-      <Section
-        title="Activity & Notes"
-        open={openActivity}
-        onToggle={() => setOpenActivity((v) => !v)}
-      >
+            {/* Title: wrap + vertical scroll */}
+            <Box sx={{ maxHeight: 72, overflowY: "auto", overflowX: "hidden", width: "100%", pr: 0.5 }}>
+              <Typography
+                level="h4"
+                sx={{
+                  whiteSpace: "pre-wrap",
+                  overflowWrap: "anywhere",
+                  wordBreak: "break-word",
+                  minWidth: 0,
+                }}
+              >
+                {task?.title || (isFetching ? "Loading…" : "Task")}
+              </Typography>
+            </Box>
+
+            {/* Description: wrap + vertical scroll */}
+            <Box sx={{ maxHeight: 180, overflowY: "auto", overflowX: "hidden", width: "100%", pr: 0.5 }}>
+              <Typography
+                level="body-sm"
+                sx={{
+                  whiteSpace: "pre-wrap",
+                  overflowWrap: "anywhere",
+                  wordBreak: "break-word",
+                  minWidth: 0,
+                }}
+              >
+                {task?.description || "—"}
+              </Typography>
+            </Box>
+          </Stack>
+        </Sheet>
+
+        {/* Task Information */}
+        <Sheet
+          variant="outlined"
+          sx={{
+            p: 2,
+            borderRadius: "md",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            justifyContent: "flex-start",
+            mb: 0,
+            bgcolor: "background.surface",
+            height: "100%",
+            minWidth: 0,
+            overflowX: "hidden",
+          }}
+        >
+          <Typography fontSize={"1rem"} fontWeight={600} mb={1}>
+            Task Information
+          </Typography>
+          {infoGrid}
+        </Sheet>
+      </Box>
+
+      {/* Row 2: Associated Project (left) + Status Timeline (right) */}
+      {task?.type === "project" && (
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+            gap: 2,
+            alignItems: "start",
+            mb: 2,
+            "& > *": { minWidth: 0 },
+          }}
+        >
+          <Section
+            title="Associated Project"
+            open={openAssocProject}
+            onToggle={() => setOpenAssocProject((v) => !v)}
+            outlined={false}
+          >
+            <Sheet
+              variant="soft"
+              sx={{
+                p: 2,
+                borderRadius: "md",
+                display: "flex",
+                flexDirection: "column",
+                gap: 1.25,
+              }}
+            >
+              {projects.map((p, i) => (
+                <Box key={`${p.code}-${i}`} sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+                  <Avatar size="md">{p?.name?.[0]?.toUpperCase() || "P"}</Avatar>
+                  <Box>
+                    <Typography level="body-md" fontWeight="lg">
+                      {p?.name || "Associated Project"}
+                    </Typography>
+                    <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
+                      {p?.code || "—"}
+                    </Typography>
+                  </Box>
+                </Box>
+              ))}
+            </Sheet>
+          </Section>
+
+          <Section title="Status Timeline" open={openTimeline} onToggle={() => setOpenTimeline((v) => !v)}>
+            <StatusTimeline history={task?.status_history || []} current={task?.current_status} />
+          </Section>
+        </Box>
+      )}
+
+      {/* Row 3: Activity & Notes (with comment submit + attach) */}
+      <Section title="Activity & Notes" open={openActivity} onToggle={() => setOpenActivity((v) => !v)}>
         <Tabs defaultValue="comments" sx={{ mb: 1 }}>
           <TabList>
             <Tab value="comments">Comments</Tab>
-            <Tab value="subtasks">Subtasks</Tab>
-            <Tab value="log">Log Hours</Tab>
             <Tab value="docs">Documents</Tab>
-            <Tab value="dependency">Dependency</Tab>
-            <Tab value="timeline">Status Timeline</Tab>
-            <Tab value="issues">Issues</Tab>
             <Tab value="activity">Activity Stream</Tab>
           </TabList>
         </Tabs>
 
+        {/* Add Comment */}
         <Typography level="body-sm" sx={{ mb: 0.5 }}>
-          Task Notes
+          Add Comment
         </Typography>
-        <Stack direction="row" gap={1} alignItems="flex-start" sx={{ mb: 1 }}>
+        <Stack gap={1}>
           <Textarea
             minRows={4}
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Add a task note (optional)"
-            sx={{ flex: 1 }}
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            placeholder="Write a comment…"
           />
+
+          {/* selected attachments preview */}
+          {attachments.length > 0 && (
+            <Stack direction="row" gap={1} flexWrap="wrap">
+              {attachments.map((a, idx) => (
+                <Chip
+                  key={`${a.name}-${idx}`}
+                  variant="soft"
+                  endDecorator={
+                    <Button
+                      size="sm"
+                      variant="plain"
+                      onClick={() => handleRemoveAttachment(idx)}
+                      sx={{ minWidth: 0, p: 0.25 }}
+                    >
+                      ✕
+                    </Button>
+                  }
+                >
+                  {a.name}
+                </Chip>
+              ))}
+            </Stack>
+          )}
+
+          <Stack direction="row" gap={1} justifyContent="flex-end">
+            <Button
+              variant="outlined"
+              onClick={handleAttachClick}
+              sx={{
+                color: "#3366a3",
+                borderColor: "#3366a3",
+                backgroundColor: "transparent",
+                "--Button-hoverBg": "#e0e0e0",
+                "--Button-hoverBorderColor": "#3366a3",
+                "&:hover": { color: "#3366a3" },
+                height: "8px",
+              }}
+            >
+              Attach file
+            </Button>
+            <Button
+              onClick={handleSubmitComment}
+              sx={{
+                backgroundColor: "#3366a3",
+                color: "#fff",
+                "&:hover": { backgroundColor: "#285680" },
+                height: "8px",
+              }}
+            >
+              Add Comment
+            </Button>
+          </Stack>
         </Stack>
 
         <Divider sx={{ my: 1.5 }} />
 
+        {/* Comments List */}
+        {(task?.comments || []).length > 0 && (
+          <>
+            <Typography level="title-sm" sx={{ mb: 1 }}>
+              Comments
+            </Typography>
+            <Box sx={{ maxHeight: 260, overflow: "auto", mb: 1.5 }}>
+              {(task?.comments || [])
+                .slice()
+                .reverse()
+                .map((c, i) => (
+                  <Box key={i} sx={{ mb: 1.25 }}>
+                    <Typography level="body-xs" sx={{ color: "text.tertiary", mb: 0.25 }}>
+                      {c?.user_id?.name || "User"} •{" "}
+                      {c?.createdAt ? new Date(c.createdAt).toLocaleString() : "—"}
+                    </Typography>
+                    {(c.remarks || c.text) && (
+                      <Typography level="body-sm">{c.remarks || c.text}</Typography>
+                    )}
+                    {Array.isArray(c.attachments) && c.attachments.length > 0 && (
+                      <Stack direction="row" gap={1} flexWrap="wrap" sx={{ mt: 0.5 }}>
+                        {c.attachments.map((a, idx) => (
+                          <Chip key={idx} size="sm" variant="soft">
+                            {a.name}
+                          </Chip>
+                        ))}
+                      </Stack>
+                    )}
+                    <Divider sx={{ mt: 1 }} />
+                  </Box>
+                ))}
+            </Box>
+
+            <Divider sx={{ my: 1.5 }} />
+          </>
+        )}
+
+        {/* Activity Stream */}
         <Typography level="title-sm" sx={{ mb: 1 }}>
           Activity Stream
         </Typography>
@@ -680,12 +992,7 @@ export default function ViewTaskPage() {
             .reverse()
             .map((h, idx) => (
               <Box key={h._id || idx} sx={{ mb: 1.25 }}>
-                <Chip
-                  size="sm"
-                  variant="soft"
-                  color={statusColor(h.status)}
-                  sx={{ mr: 1 }}
-                >
+                <Chip size="sm" variant="soft" color={statusColor(h.status)} sx={{ mr: 1 }}>
                   {(h.status || "-")
                     .split(" ")
                     .map((w) => w[0]?.toUpperCase() + w.slice(1))
@@ -705,6 +1012,146 @@ export default function ViewTaskPage() {
             ))}
         </Box>
       </Section>
+
+      {/* Status Update Modal */}
+      <Modal open={openStatusModal} onClose={() => setOpenStatusModal(false)}>
+        <ModalDialog variant="outlined" sx={{ maxWidth: 520 }}>
+          <DialogTitle>Update Status</DialogTitle>
+          <DialogContent>Select a new status and add remarks (optional).</DialogContent>
+          <Stack gap={1.25} sx={{ mt: 1 }}>
+            <Select value={status} onChange={(_, v) => setStatus(v)} placeholder="Select Status" disabled={isCompleted}>
+              <Option disabled value="Select Status">
+                Select Status
+              </Option>
+              <Option value="pending">Pending</Option>
+              <Option value="in progress">In Progress</Option>
+              <Option value="completed">Completed</Option>
+              <Option value="cancelled">Cancelled</Option>
+            </Select>
+            <Textarea minRows={4} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Write remarks..." />
+          </Stack>
+          <DialogActions>
+            <Button
+              variant="outlined"
+              onClick={() => setOpenStatusModal(false)}
+              sx={{
+                color: "#3366a3",
+                borderColor: "#3366a3",
+                backgroundColor: "transparent",
+                "--Button-hoverBg": "#e0e0e0",
+                "--Button-hoverBorderColor": "#3366a3",
+                "&:hover": { color: "#3366a3" },
+                height: "8px",
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleStatusSubmit}
+              loading={isUpdating}
+              disabled={isCompleted}
+              sx={{
+                backgroundColor: "#3366a3",
+                color: "#fff",
+                "&:hover": { backgroundColor: "#285680" },
+                height: "8px",
+              }}
+            >
+              Submit
+            </Button>
+          </DialogActions>
+        </ModalDialog>
+      </Modal>
+
+      {/* Attach File Modal (drag & drop + document name) */}
+      <Modal open={openAttachModal} onClose={() => setOpenAttachModal(false)}>
+        <ModalDialog variant="outlined" sx={{ maxWidth: 560 }}>
+          <DialogTitle>Attach file(s)</DialogTitle>
+          <DialogContent>Give your document a name (optional) and drag files below.</DialogContent>
+
+          <Stack gap={1.25} sx={{ mt: 1 }}>
+            <Input
+              placeholder="Document name (optional)"
+              value={attachDocName}
+              onChange={(e) => setAttachDocName(e.target.value)}
+            />
+
+            <Box
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(true);
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(false);
+              }}
+              onDrop={onDropFiles}
+              sx={{
+                p: 3,
+                borderRadius: "md",
+                textAlign: "center",
+                border: "2px dashed",
+                borderColor: isDragging ? "primary.outlinedBorder" : "neutral.outlinedBorder",
+                bgcolor: isDragging ? "primary.softBg" : "background.level1",
+                cursor: "pointer",
+              }}
+            >
+              <Typography level="body-sm" sx={{ mb: 1 }}>
+                Drag & drop files here
+              </Typography>
+              <Typography level="body-xs" sx={{ color: "text.tertiary", mb: 1 }}>
+                or
+              </Typography>
+
+              <Button variant="soft" onClick={() => filePickerRef.current?.click()}>
+                Browse files
+              </Button>
+            </Box>
+
+            {attachFiles.length > 0 && (
+              <Stack gap={0.75}>
+                <Typography level="body-sm">Selected files</Typography>
+                <Stack direction="row" gap={1} flexWrap="wrap">
+                  {attachFiles.map((f, i) => (
+                    <Chip key={`${f.name}-${i}`} variant="soft">
+                      {f.name}
+                    </Chip>
+                  ))}
+                </Stack>
+              </Stack>
+            )}
+          </Stack>
+
+          <DialogActions>
+            <Button variant="plain" onClick={() => setOpenAttachModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveAttachment}>Add attachment(s)</Button>
+          </DialogActions>
+        </ModalDialog>
+      </Modal>
     </Box>
+  );
+}
+
+/* ------------------------------- Section ------------------------------- */
+
+function Section({ title, open, onToggle, children, right = null, outlined = true }) {
+  return (
+    <Sheet variant={outlined ? "outlined" : "soft"} sx={{ p: 2, borderRadius: "md", mb: 2 }}>
+      <Stack direction="row" alignItems="center" justifyContent="space-between">
+        <Stack direction="row" alignItems="center" gap={1}>
+          <IconButton size="sm" variant="plain" onClick={onToggle} aria-label={open ? "Collapse" : "Expand"}>
+            {open ? <KeyboardArrowDownRoundedIcon /> : <KeyboardArrowRightRoundedIcon />}
+          </IconButton>
+          <Typography level="title-md">{title}</Typography>
+        </Stack>
+        {right}
+      </Stack>
+
+      {open && <Box sx={{ mt: 1.25 }}>{children}</Box>}
+    </Sheet>
   );
 }
