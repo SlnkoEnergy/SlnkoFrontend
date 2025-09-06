@@ -3,8 +3,7 @@ FROM node:16-alpine AS build
 
 WORKDIR /protrac/frontend
 
-ARG ENV=dev
-COPY .env.${ENV} .env
+COPY .env .env
 COPY package.json ./
 
 RUN npm install
@@ -15,8 +14,7 @@ RUN npm run build
 # Stage 2: Serve with NGINX
 FROM nginx:alpine
 
-ARG ENV=dev
-ENV SERVER_NAME=dev.slnkoprotrac.com
+ENV SERVER_NAME=slnkoprotrac.droot.cloud
 
 WORKDIR /app
 COPY --from=build /protrac/frontend/build /usr/share/nginx/html
