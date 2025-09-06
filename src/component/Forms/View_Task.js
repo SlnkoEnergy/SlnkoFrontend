@@ -41,6 +41,7 @@ import {
   useUpdateTaskStatusMutation,
   useUpdateTaskMutation,
 } from "../../redux/globalTaskSlice";
+import CommentComposer from "../Comments";
 
 /* ----------------------- helpers & UI primitives ----------------------- */
 
@@ -636,15 +637,6 @@ export default function ViewTaskPage() {
           }
         />
         <Field
-          label="Due Date"
-          value={
-            task?.deadline
-              ? new Date(task.deadline).toLocaleDateString("en-GB")
-              : "—"
-          }
-          decorator={<CalendarMonthRoundedIcon />}
-        />
-        <Field
           label="Priority"
           value={
             Number(task?.priority) > 0 ? (
@@ -666,30 +658,20 @@ export default function ViewTaskPage() {
       {/* RHS */}
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
         <Field
-          label="Start Date"
-          value={
-            task?.startDate
-              ? new Date(task.startDate).toLocaleDateString("en-GB")
-              : "—"
-          }
-          decorator={<CalendarMonthRoundedIcon />}
-        />
-        <Field
-          label="Duration"
-          value={
-            task?.duration_days || task?.duration
-              ? `${task.duration_days ?? task.duration} days`
-              : "—"
-          }
-          decorator={<AccessTimeRoundedIcon />}
-        />
-        <Field
           label="Created By"
           value={<PeopleAvatars people={toPeople(task?.createdBy)} max={1} />}
         />
         <Field
           label="Created At"
           value={task?.createdAt ? new Date(task.createdAt).toLocaleString() : "—"}
+        />
+         <Field
+          label="Due Date"
+          value={
+            task?.deadline
+              ? new Date(task.deadline).toLocaleDateString("en-GB")
+              : "—"
+          }
         />
       </Box>
     </Sheet>
@@ -873,75 +855,21 @@ export default function ViewTaskPage() {
           <TabList>
             <Tab value="comments">Comments</Tab>
             <Tab value="docs">Documents</Tab>
-            <Tab value="activity">Activity Stream</Tab>
           </TabList>
         </Tabs>
 
         {/* Add Comment */}
-        <Typography level="body-sm" sx={{ mb: 0.5 }}>
-          Add Comment
-        </Typography>
-        <Stack gap={1}>
-          <Textarea
-            minRows={4}
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            placeholder="Write a comment…"
-          />
-
-          {/* selected attachments preview */}
-          {attachments.length > 0 && (
-            <Stack direction="row" gap={1} flexWrap="wrap">
-              {attachments.map((a, idx) => (
-                <Chip
-                  key={`${a.name}-${idx}`}
-                  variant="soft"
-                  endDecorator={
-                    <Button
-                      size="sm"
-                      variant="plain"
-                      onClick={() => handleRemoveAttachment(idx)}
-                      sx={{ minWidth: 0, p: 0.25 }}
-                    >
-                      ✕
-                    </Button>
-                  }
-                >
-                  {a.name}
-                </Chip>
-              ))}
-            </Stack>
-          )}
-
-          <Stack direction="row" gap={1} justifyContent="flex-end">
-            <Button
-              variant="outlined"
-              onClick={handleAttachClick}
-              sx={{
-                color: "#3366a3",
-                borderColor: "#3366a3",
-                backgroundColor: "transparent",
-                "--Button-hoverBg": "#e0e0e0",
-                "--Button-hoverBorderColor": "#3366a3",
-                "&:hover": { color: "#3366a3" },
-                height: "8px",
-              }}
-            >
-              Attach file
-            </Button>
-            <Button
-              onClick={handleSubmitComment}
-              sx={{
-                backgroundColor: "#3366a3",
-                color: "#fff",
-                "&:hover": { backgroundColor: "#285680" },
-                height: "8px",
-              }}
-            >
-              Add Comment
-            </Button>
-          </Stack>
-        </Stack>
+       <CommentComposer
+  value={commentText}
+  onChange={setCommentText}
+  onSubmit={handleSubmitComment}
+  onCancel={() => {
+    setCommentText("");
+    setAttachments([]);
+  }}
+  onAttachClick={handleAttachClick}
+  attachments={attachments}
+/>
 
         <Divider sx={{ my: 1.5 }} />
 
