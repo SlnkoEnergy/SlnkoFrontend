@@ -54,7 +54,7 @@ const Add_Money = () => {
       return null;
     };
 
-  // Fetch project data
+
   useEffect(() => {
     const fetchProjectData = async () => {
       try {
@@ -68,7 +68,7 @@ const Add_Money = () => {
 
         project = Number.parseInt(project);
 
-        // console.log(project);
+
 
         if (response && response.data && response.data.data) {
           const matchingItem = response.data.data.find(
@@ -76,7 +76,6 @@ const Add_Money = () => {
           );
 
           if (matchingItem) {
-            // console.log("Matching Add Money Data:", matchingItem);
           setFormValues((prev) => ({
             ...prev,
             p_id: matchingItem.p_id || "",
@@ -97,39 +96,6 @@ const Add_Money = () => {
     fetchProjectData();
   }, []);
 
-  // Fetch data for the selected project ID
-  // useEffect(() => {
-  //   const fetchDataByPId = async (p_id) => {
-  //     if (!p_id) return;
-  //     try {
-  //       const response = await Axios.get(`/get-all-project?p_id=${p_id}`);
-  //       const data = response.data?.data;
-
-  //       if (data) {
-  //         setFormValues((prev) => ({
-  //           ...prev,
-  //           cr_amount: data.cr_amount || "",
-  //           cr_date: data.cr_date || "",
-  //           cr_mode: data.cr_mode || "",
-  //           comment: data.comment || "",
-  //         }));
-  //       } else {
-  //         setError("No data found for the selected project ID.");
-  //       }
-  //     } catch (err) {
-  //       console.error("Error fetching data by project ID:", err);
-  //       setError(
-  //         "Failed to fetch data for the selected project ID. Please try again."
-  //       );
-  //     }
-  //   };
-
-  //   if (formValues.p_id) {
-  //     fetchDataByPId(formValues.p_id);
-  //   }
-  // }, [formValues.p_id]);
-
-  // Handle form changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     if(name === "cr_amount" && value < 0){
@@ -143,7 +109,7 @@ const Add_Money = () => {
     setFormValues((prev) => ({ ...prev, cr_mode: newValue || "" }));
   };
 
-  // Handle form submission
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 

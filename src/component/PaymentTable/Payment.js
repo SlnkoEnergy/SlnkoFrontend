@@ -31,6 +31,7 @@ import { PaymentProvider } from "../../store/Context/Payment_History";
 import PaymentHistory from "../PaymentHistory";
 import { useGetPaymentRecordQuery } from "../../redux/Accounts";
 import dayjs from "dayjs";
+import { useNavigate } from "react-router-dom";
 
 const Label = ({ icon, text, minW = 120 }) => (
   <Box
@@ -142,6 +143,7 @@ const InstantRequest = forwardRef(
     ref
   ) => {
     dayjs.extend(duration);
+    const navigate = useNavigate();
 
     const {
       data: responseData,
@@ -267,7 +269,7 @@ const InstantRequest = forwardRef(
     ]);
 
     /** PaymentId (left column) */
-    const PaymentID = ({ pay_id, dbt_date }) => (
+    const PaymentID = ({ pay_id, dbt_date, p_id }) => (
       <>
         {pay_id && (
           <Chip
@@ -280,6 +282,9 @@ const InstantRequest = forwardRef(
               color: "#fff",
               letterSpacing: 0.2,
             }}
+            onClick={() =>
+                navigate(`/view_detail?page=${currentPage}&p_id=${p_id}`)
+              }
           >
             {pay_id || "N/A"}
           </Chip>
@@ -822,6 +827,7 @@ const InstantRequest = forwardRef(
                         <PaymentID
                           pay_id={payment.pay_id}
                           dbt_date={payment.dbt_date}
+                          p_id={payment.p_id}
                         />
                       </span>
                     </Box>
