@@ -92,17 +92,14 @@ export const GlobalTaskApi = createApi({
 
     /* ------------------------------ UPDATE ------------------------------ */
     updateTask: builder.mutation({
-      query: ({ id, body }) => ({
-        url: `tasks/task/${id}`,
-        method: "PUT",
-        body,
-      }),
-      // Update list + the specific item
-      invalidatesTags: (_res, _err, { id }) => [
-        { type: "Task", id },
-        { type: "Tasks", id: "LIST" },
-      ],
-    }),
+  query: ({ id, body }) => {
+    const q = { url: `tasks/task/${id}`, method: "PUT", body };
+    if (typeof FormData !== "undefined" && body instanceof FormData) q.headers = undefined;
+    return q;
+  },
+  invalidatesTags: (_res, _err, { id }) => [{ type: "Task", id }, { type: "Tasks", id: "LIST" }],
+})
+,
 
     /* ------------------------------ DELETE ------------------------------ */
     deleteTask: builder.mutation({
