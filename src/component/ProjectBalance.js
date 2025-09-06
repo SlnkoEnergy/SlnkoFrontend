@@ -62,7 +62,7 @@ const ProjectBalances = forwardRef(() => {
     data: responseData,
     isLoading,
     refetch,
-    error: fetchError,
+    error
   } = useGetProjectBalanceQuery({
     page: currentPage,
     pageSize: perPage,

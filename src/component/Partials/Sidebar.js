@@ -2773,7 +2773,7 @@ function Sidebar() {
                 </List>
               </Toggler>
             </ListItem>
-            {/* {user?.emp_id === "SE-203" && (
+            {user?.emp_id === "SE-203" && (
               <ListItem nested>
                 <Toggler
                   renderToggle={({ open, setOpen }) => (
@@ -2807,7 +2807,7 @@ function Sidebar() {
                   </List>
                 </Toggler>
               </ListItem>
-            )} */}
+            )}
           </List>
         ) : user?.department === "Engineering" &&
           (user?.name === "Rishav Mahato" ||
