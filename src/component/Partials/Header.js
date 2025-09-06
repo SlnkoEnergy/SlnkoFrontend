@@ -99,12 +99,11 @@ function Header() {
                     position="bottom-end"
                     offset={20}
                     onNotificationClick={(notification) => {
-                      const link = notification?.payload?.link;
-                      if (link) {
-                        navigate(notification.payload.link);
+                      if(notification?.payload?.type === "sales" && notification?.payload?.link1){
+                        navigate(notification?.payload?.link1);
+                      } else if(notification?.payload?.link){
+                        navigate(notification?.payload?.link);
                       }
-
-
                     }}
 
                   >
