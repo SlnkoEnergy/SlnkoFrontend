@@ -2761,6 +2761,41 @@ function Sidebar() {
                 </List>
               </Toggler>
             </ListItem>
+            {user?.emp_id === "SE-203" && (
+              <ListItem nested>
+                <Toggler
+                  renderToggle={({ open, setOpen }) => (
+                    <ListItemButton onClick={() => setOpen(!open)}>
+                      <AccountBalanceIcon />
+                      <ListItemContent>
+                        <Typography level="title-sm">Accounting</Typography>
+                      </ListItemContent>
+                      <KeyboardArrowDownIcon
+                        sx={[
+                          open
+                            ? {
+                                transform: "rotate(180deg)",
+                              }
+                            : {
+                                transform: "none",
+                              },
+                        ]}
+                      />
+                    </ListItemButton>
+                  )}
+                >
+                  <List sx={{ gap: 0.5 }}>
+                    <ListItem>
+                      <ListItemButton
+                        onClick={() => navigate("/daily-payment-request")}
+                      >
+                        Daily Payment Request
+                      </ListItemButton>
+                    </ListItem>
+                  </List>
+                </Toggler>
+              </ListItem>
+            )}
           </List>
         ) : user?.department === "Engineering" &&
           (user?.name === "Rishav Mahato" ||
