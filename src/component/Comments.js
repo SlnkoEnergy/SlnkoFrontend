@@ -306,8 +306,8 @@ export default function CommentComposer({
           </Typography>
         )}
 
-        <Divider />
 
+      </Sheet>
         {/* Footer */}
         <Stack
           direction={{ xs: "column", sm: "row" }}
@@ -383,7 +383,6 @@ export default function CommentComposer({
             </Button>
           </Stack>
         </Stack>
-      </Sheet>
     </Sheet>
   );
 }
