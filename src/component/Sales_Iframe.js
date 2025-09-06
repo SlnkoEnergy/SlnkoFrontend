@@ -8,7 +8,7 @@ const SalesIframe = () => {
   const iframeRef = useRef(null);
   const [searchParams] = useSearchParams();
 
-  const baseUrl = "https://sales.slnkoprotrac.com";
+  const baseUrl = process.env.REACT_APP_SALES_URL;
 
   const savedPath = localStorage.getItem("lastIframePath") || "/";
   const currentSearch = searchParams.toString() ? `?${searchParams.toString()}` : "";
@@ -68,7 +68,7 @@ useEffect(() => {
       };
 
       setTimeout(() => {
-        iframeRef.current?.contentWindow?.postMessage(authData, "https://sales.slnkoprotrac.com");
+        iframeRef.current?.contentWindow?.postMessage(authData, process.env.REACT_APP_SALES_URL);
         console.log("[Parent] Sent auth data to iframe:", authData);
       }, 100);
     }
