@@ -574,7 +574,7 @@ function AttachmentTile({ a }) {
             opacity: 0,
             transition: "opacity 120ms ease",
             backgroundColor: "#eaf1fa",
-            "&:hover": { backgroundColor: "#d0e2f7" }, 
+            "&:hover": { backgroundColor: "#d0e2f7" },
           }}
           component="a"
           href={url || "#"}
@@ -645,7 +645,6 @@ export default function ViewTaskPage() {
   const [task, setTask] = useState(null);
   const [note, setNote] = useState("");
   const [status, setStatus] = useState("Select Status");
-  const [openStatusModal, setOpenStatusModal] = useState(false);
 
   // comment UI state
   const [commentText, setCommentText] = useState("");
@@ -655,8 +654,7 @@ export default function ViewTaskPage() {
   const [isDragging, setIsDragging] = useState(false);
   const filePickerRef = useRef(null);
 
-  const [openAssocProject, setOpenAssocProject] = useState(true);
-  const [openTimeline, setOpenTimeline] = useState(true);
+  // keep only activity expand/collapse (others are always open now)
   const [openActivity, setOpenActivity] = useState(true);
 
   const [tabValue, setTabValue] = useState("comments");
@@ -711,7 +709,6 @@ export default function ViewTaskPage() {
         status_history: [...(prev?.status_history || []), entry],
       }));
       setNote("");
-      setOpenStatusModal(false);
       toast.success("Status updated");
     } catch {
       toast.error("Failed to update status");
@@ -824,7 +821,10 @@ export default function ViewTaskPage() {
             <Chip
               size="sm"
               color={statusColor(task?.current_status?.status)}
-              onClick={() => !isCompleted && setOpenStatusModal(true)}
+              onClick={() =>
+                !isCompleted &&
+                document.querySelector("[data-status-modal]")?.click()
+              }
               sx={{ cursor: isCompleted ? "not-allowed" : "pointer" }}
             >
               {task?.current_status?.status
@@ -1007,7 +1007,7 @@ export default function ViewTaskPage() {
               <Chip
                 variant="soft"
                 color={statusColor(task?.current_status?.status)}
-                onClick={() => !isCompleted && setOpenStatusModal(true)}
+                data-status-modal
                 sx={{ cursor: isCompleted ? "not-allowed" : "pointer" }}
               >
                 {(task?.current_status?.status || "Current Status")
@@ -1088,11 +1088,12 @@ export default function ViewTaskPage() {
             "& > *": { minWidth: 0 },
           }}
         >
+          {/* Associated Project: no toggle, fixed height + scroll */}
           <Section
             title="Associated Project"
-            open={openAssocProject}
-            onToggle={() => setOpenAssocProject((v) => !v)}
             outlined={false}
+            collapsible={false}
+            contentSx={{ height: '100%', overflow: "auto" }}
           >
             <Sheet
               variant="soft"
@@ -1130,10 +1131,11 @@ export default function ViewTaskPage() {
             </Sheet>
           </Section>
 
+          {/* Status Timeline: no toggle, fixed height + scroll */}
           <Section
             title="Status Timeline"
-            open={openTimeline}
-            onToggle={() => setOpenTimeline((v) => !v)}
+            collapsible={false}
+            contentSx={{ height: '100%', overflow: "auto" }}
           >
             <StatusTimeline
               history={task?.status_history || []}
@@ -1143,7 +1145,6 @@ export default function ViewTaskPage() {
         </Box>
       )}
 
-      {/* Row 3: Activity & Documents */}
       <Section
         title="Activity & Notes"
         open={openActivity}
@@ -1168,7 +1169,6 @@ export default function ViewTaskPage() {
             <Tab value="docs">Documents</Tab>
           </TabList>
 
-          {/* COMMENTS TAB */}
           <TabPanel value="comments" sx={{ p: 0, pt: 1 }}>
             <CommentComposer
               value={commentText}
@@ -1278,7 +1278,6 @@ export default function ViewTaskPage() {
             </Box>
           </TabPanel>
 
-          {/* DOCUMENTS TAB */}
           <TabPanel value="docs" sx={{ p: 0, pt: 1 }}>
             {documents.length === 0 ? (
               <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
@@ -1301,9 +1300,10 @@ export default function ViewTaskPage() {
                   <Typography level="body-sm">Name</Typography>
                   <Typography level="body-sm">Type/Size</Typography>
                   <Typography level="body-sm">Uploaded By / When</Typography>
-                  <Typography level="body-sm" sx={{ textAlign: "right" }}>
-                    {/* Actions (hover) */}
-                  </Typography>
+                  <Typography
+                    level="body-sm"
+                    sx={{ textAlign: "right" }}
+                  ></Typography>
                 </Box>
 
                 {documents.map((a, i) => {
@@ -1330,7 +1330,6 @@ export default function ViewTaskPage() {
                         borderBottom:
                           i === documents.length - 1 ? "none" : "1px solid",
                         borderColor: "neutral.outlinedBorder",
-                        "&:hover .dl": { opacity: 1 },
                       }}
                     >
                       <Stack direction="row" alignItems="center" gap={1}>
@@ -1377,8 +1376,7 @@ export default function ViewTaskPage() {
                             variant="solid"
                             sx={{
                               "--Icon-color": "#3366a3",
-                              opacity: 0,
-                              transition: "opacity 120ms ease",
+                              opacity: 1, // always visible
                               backgroundColor: "#eaf1fa",
                               "&:hover": { backgroundColor: "#d0e2f7" },
                             }}
@@ -1401,7 +1399,7 @@ export default function ViewTaskPage() {
       </Section>
 
       {/* Status Update Modal */}
-      <Modal open={openStatusModal} onClose={() => setOpenStatusModal(false)}>
+      <Modal open={false /* opened via UI elsewhere if needed */}>
         <ModalDialog variant="outlined" sx={{ maxWidth: 520 }}>
           <DialogTitle>Update Status</DialogTitle>
           <DialogContent>
@@ -1432,7 +1430,6 @@ export default function ViewTaskPage() {
           <DialogActions>
             <Button
               variant="outlined"
-              onClick={() => setOpenStatusModal(false)}
               sx={{
                 color: "#3366a3",
                 borderColor: "#3366a3",
@@ -1555,13 +1552,17 @@ export default function ViewTaskPage() {
   );
 }
 
+/* ============================= Section ============================= */
+
 function Section({
   title,
-  open,
+  open = true,
   onToggle,
   children,
   right = null,
   outlined = true,
+  collapsible = true,
+  contentSx = {},
 }) {
   return (
     <Sheet
@@ -1570,23 +1571,27 @@ function Section({
     >
       <Stack direction="row" alignItems="center" justifyContent="space-between">
         <Stack direction="row" alignItems="center" gap={1}>
-          <IconButton
-            size="sm"
-            variant="plain"
-            onClick={onToggle}
-            aria-label={open ? "Collapse" : "Expand"}
-          >
-            {open ? (
-              <KeyboardArrowDownRoundedIcon />
-            ) : (
-              <KeyboardArrowRightRoundedIcon />
-            )}
-          </IconButton>
+          {collapsible ? (
+            <IconButton
+              size="sm"
+              variant="plain"
+              onClick={onToggle}
+              aria-label={open ? "Collapse" : "Expand"}
+            >
+              {open ? (
+                <KeyboardArrowDownRoundedIcon />
+              ) : (
+                <KeyboardArrowRightRoundedIcon />
+              )}
+            </IconButton>
+          ) : null}
           <Typography level="title-md">{title}</Typography>
         </Stack>
         {right}
       </Stack>
-      {open && <Box sx={{ mt: 1.25 }}>{children}</Box>}
+      {(collapsible ? open : true) && (
+        <Box sx={{ mt: 1.25, ...contentSx }}>{children}</Box>
+      )}
     </Sheet>
   );
 }
