@@ -14,10 +14,13 @@ import MainHeader from "../../component/Partials/MainHeader";
 import SubHeader from "../../component/Partials/SubHeader";
 import { Add } from "@mui/icons-material";
 import Filter, { buildQueryParams } from "../../component/Partials/Filter";
-
+import { IconButton, Modal, ModalDialog } from "@mui/joy";
+import AddTask from "../../component/Forms/Add_Task";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 function AllTask() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+const [openAddTaskModal, setOpenAddTaskModal] = useState(false);
 
   const [user, setUser] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
@@ -155,20 +158,20 @@ function AllTask() {
               </Button>
             )}
 
-            <Button
-              variant="solid"
-              size="sm"
-              startDecorator={<Add />}
-              onClick={() => navigate("/add_task")}
-              sx={{
-                backgroundColor: "#3366a3",
-                color: "#fff",
-                "&:hover": { backgroundColor: "#285680" },
-                height: "8px",
-              }}
-            >
-              Add Task
-            </Button>
+           <Button
+  variant="solid"
+  size="sm"
+  startDecorator={<Add />}
+  onClick={() => setOpenAddTaskModal(true)}   // ⟵ open modal instead of navigate
+  sx={{
+    backgroundColor: "#3366a3",
+    color: "#fff",
+    "&:hover": { backgroundColor: "#285680" },
+    height: "8px",
+  }}
+>
+  Add Task
+</Button>
 
             {/* 🔽 Reusable Filter in SubHeader */}
             <Filter
@@ -187,7 +190,7 @@ function AllTask() {
                   delete merged.createdByName;
                   return {
                     ...merged,
-                    page: "1", 
+                    page: "1",
                     ...(values.status && { status: String(values.status) }),
                     ...(values.createdAt && {
                       createdAt: String(values.createdAt),
@@ -244,6 +247,62 @@ function AllTask() {
             setSearchParams={setSearchParams}
           />
         </Box>
+
+
+       <Modal
+  open={openAddTaskModal}
+  onClose={() => setOpenAddTaskModal(false)}
+  slotProps={{
+    backdrop: {
+      sx: {
+        // keep background visible (no blur); tweak opacity if you want a dim
+        backgroundColor: "transparent",
+        backdropFilter: "none",
+      },
+    },
+  }}
+>
+  <ModalDialog
+    variant="outlined"
+    sx={{
+      p: 0,                  // no padding around your page
+      borderRadius: "md",
+      boxShadow: "lg",
+      overflow: "hidden",    // the inner Box will scroll
+      // IMPORTANT: let content decide size
+      width: "auto",
+      height: "auto",
+      maxWidth: "unset",
+      maxHeight: "unset",
+      backgroundColor: "background.surface",
+    }}
+  >
+    {/* wrapper sets the desired modal size; use the same width your AddTask uses */}
+    <Box
+      sx={{
+        width: { xs: "95vw", sm: 720 },  // match AddTask page/container width
+        maxHeight: "85vh",
+        overflow: "auto",
+        position: "relative",
+      }}
+    >
+      <IconButton
+        variant="plain"
+        color="neutral"
+        onClick={() => setOpenAddTaskModal(false)}
+        sx={{ position: "sticky", top: 8, left: "calc(100% - 40px)", zIndex: 2 }}
+      >
+        <CloseRoundedIcon />
+      </IconButton>
+
+      {/* Render your full AddTask page/component */}
+      <AddTask />
+    </Box>
+  </ModalDialog>
+</Modal>
+
+
+
       </Box>
     </CssVarsProvider>
   );

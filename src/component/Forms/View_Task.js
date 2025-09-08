@@ -1,3 +1,4 @@
+// ViewTaskPage.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -24,6 +25,7 @@ import {
   DialogContent,
   DialogActions,
   Input,
+  Autocomplete,
 } from "@mui/joy";
 
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
@@ -40,21 +42,20 @@ import TableChartOutlinedIcon from "@mui/icons-material/TableChartOutlined";
 import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
 import ArchiveOutlinedIcon from "@mui/icons-material/ArchiveOutlined";
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
-import PersonOutlineRoundedIcon from "@mui/icons-material/PersonOutlineRounded";
-
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
 import { toast } from "react-toastify";
 import DOMPurify from "dompurify";
-
 import {
   useGetTaskByIdQuery,
   useUpdateTaskStatusMutation,
   useUpdateTaskMutation,
+  useGetAllUserQuery,
 } from "../../redux/globalTaskSlice";
 
 import CommentComposer from ".././Comments";
 
-/* ============================= helpers ============================= */
-
+/* ---------------- meta / utils ---------------- */
 const typeMeta = (type) => {
   switch ((type || "").toLowerCase()) {
     case "project":
@@ -100,27 +101,33 @@ const Field = ({ label, value, decorator, muted }) => (
   </Stack>
 );
 
+const safeUrl = (u = "") => {
+  try {
+    const x = new URL(u);
+    return x.href;
+  } catch {
+    return "";
+  }
+};
+const getAvatarUrl = (u = {}) => safeUrl(u.attachment?.url || "");
+
+const idOf = (u) => u?._id || u?.id || u?.email || u?.name;
+
+const toPerson = (u = {}) => {
+  if (typeof u === "string") return { id: u, name: u, avatar: "" };
+  return {
+    id: idOf(u) || Math.random().toString(36).slice(2),
+    name: u.name || u.fullName || u.displayName || u.email || "User",
+    avatar: getAvatarUrl(u),
+  };
+};
+
 const toPeople = (input) => {
   if (!input) return [];
   if (Array.isArray(input)) return input.map(toPerson);
   return [toPerson(input)];
 };
-const toPerson = (u = {}) => {
-  if (typeof u === "string") return { id: u, name: u, avatar: "" };
-  return {
-    id:
-      u._id || u.id || u.email || u.name || Math.random().toString(36).slice(2),
-    name: u.name || u.fullName || u.displayName || u.email || "User",
-    avatar:
-      u.avatar ||
-      u.photo ||
-      u.image ||
-      u.profilePic ||
-      u.avatar_url ||
-      u.picture ||
-      "",
-  };
-};
+
 const initialsOf = (name = "") =>
   name
     .trim()
@@ -220,12 +227,7 @@ const PeopleAvatars = ({ people = [], max = 3, size = "sm" }) => {
               size={size}
               variant="soft"
               color="neutral"
-              sx={{
-                ...ringSx,
-                ml: "-8px",
-                fontSize: 12,
-                cursor: "default",
-              }}
+              sx={{ ...ringSx, ml: "-8px", fontSize: 12, cursor: "default" }}
             >
               +{extra.length}
             </Avatar>
@@ -235,8 +237,6 @@ const PeopleAvatars = ({ people = [], max = 3, size = "sm" }) => {
     </Stack>
   );
 };
-
-/* ============================= utils ============================= */
 
 const cap = (s = "") =>
   s
@@ -270,7 +270,7 @@ const fileExt = (name = "") => (name.split(".").pop() || "").toLowerCase();
 const isImage = (name = "", type = "") => {
   const ext = fileExt(name);
   return (
-    type.startsWith?.("image/") ||
+    type?.startsWith?.("image/") ||
     ["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg"].includes(ext)
   );
 };
@@ -287,17 +287,6 @@ const iconFor = (name = "", type = "") => {
     return <DescriptionOutlinedIcon />;
   return <InsertDriveFileOutlinedIcon />;
 };
-
-const safeUrl = (u = "") => {
-  try {
-    const x = new URL(u);
-    return x.href;
-  } catch {
-    return "";
-  }
-};
-
-/* ============================= timeline ============================= */
 
 const Connector = ({ durationLabel = "" }) => (
   <Box sx={{ position: "relative", minWidth: 160, mx: 1 }}>
@@ -459,8 +448,6 @@ const StatusTimeline = ({ history = [], current }) => {
   );
 };
 
-/* ============================= normalizers ============================= */
-
 const normalizeAttachment = (a) => {
   if (!a) return null;
   const name =
@@ -502,8 +489,6 @@ const normalizeComment = (c) => {
     raw: c,
   };
 };
-
-/* ============================= attachments UI ============================= */
 
 function AttachmentTile({ a }) {
   const name = a?.name || "Attachment";
@@ -563,7 +548,6 @@ function AttachmentTile({ a }) {
           </Box>
         )}
 
-        {/* download-on-hover icon */}
         <IconButton
           className="dl"
           size="sm"
@@ -599,18 +583,6 @@ function AttachmentTile({ a }) {
             {name}
           </Typography>
         </Tooltip>
-        <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
-          {size || fileExt(name).toUpperCase()}
-        </Typography>
-
-        {(by || at) && (
-          <Stack direction="row" alignItems="center" gap={0.5} sx={{ mt: 0.5 }}>
-            <PersonOutlineRoundedIcon fontSize="small" />
-            <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
-              {by || "—"} {at ? ` ${at}` : ""}
-            </Typography>
-          </Stack>
-        )}
       </Box>
     </Sheet>
   );
@@ -634,8 +606,7 @@ function AttachmentGallery({ items = [] }) {
   );
 }
 
-/* ============================= main ============================= */
-
+/* ================== MAIN PAGE ================== */
 export default function ViewTaskPage() {
   const [searchParams] = useSearchParams();
   const id = searchParams.get("task");
@@ -645,23 +616,31 @@ export default function ViewTaskPage() {
   const [task, setTask] = useState(null);
   const [note, setNote] = useState("");
   const [status, setStatus] = useState("Select Status");
-
-  // comment UI state
   const [commentText, setCommentText] = useState("");
-  const [attachments, setAttachments] = useState([]); // local pending uploads
+  const [attachments, setAttachments] = useState([]);
   const [openAttachModal, setOpenAttachModal] = useState(false);
   const [attachDocName, setAttachDocName] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const filePickerRef = useRef(null);
 
-  // keep only activity expand/collapse (others are always open now)
   const [openActivity, setOpenActivity] = useState(true);
 
   const [tabValue, setTabValue] = useState("comments");
+  const [openStatusModal, setOpenStatusModal] = useState(false);
 
   const [updateTaskStatus, { isLoading: isUpdating }] =
     useUpdateTaskStatusMutation();
   const [updateTask] = useUpdateTaskMutation();
+
+  /* ----- Followers modal state ----- */
+  const [openFollowers, setOpenFollowers] = useState(false);
+  const [selectedFollowers, setSelectedFollowers] = useState([]); // {_id,name,avatar}
+  const [savingFollowers, setSavingFollowers] = useState(false);
+
+  // All users for the dropdown
+  const { data: allUsersResp, isFetching: usersLoading } = useGetAllUserQuery({
+    department: "",
+  });
 
   useEffect(() => {
     if (taskApi) setTask(taskApi);
@@ -672,6 +651,75 @@ export default function ViewTaskPage() {
     if (!s || s.toLowerCase() === "draft") setStatus("Select Status");
     else setStatus(s.toLowerCase());
   }, [task]);
+
+  const allUserOptions = useMemo(() => {
+    const apiUsers = Array.isArray(allUsersResp)
+      ? allUsersResp
+      : Array.isArray(allUsersResp?.data)
+      ? allUsersResp.data
+      : [];
+
+    const followerSet = new Set(
+      (task?.followers || []).map((u) => idOf(u)).filter(Boolean)
+    );
+
+    // Only users who are NOT followers
+    const filtered = apiUsers.filter((u) => !followerSet.has(idOf(u)));
+
+    // Normalize & de-dupe just in case
+    const seen = new Set();
+    const out = [];
+    for (const u of filtered) {
+      const id = idOf(u);
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      out.push({
+        _id: id,
+        name: u?.name || "User",
+        avatar: getAvatarUrl(u),
+      });
+    }
+    return out;
+  }, [allUsersResp, task?.followers]);
+
+  console.log({ allUserOptions });
+
+  // Sync modal selected list with task followers
+  useEffect(() => {
+    if (Array.isArray(task?.followers)) {
+      setSelectedFollowers(
+        task.followers.map((u) => ({
+          _id: idOf(u),
+          name: u?.name || u?.fullName || u?.displayName || u?.email || "User",
+          avatar: getAvatarUrl(u),
+        }))
+      );
+    }
+  }, [task]);
+
+  const followerIds = (arr) =>
+    (arr || [])
+      .map((u) => u?._id || u?.id || u?.email || u?.name)
+      .filter(Boolean);
+
+  const handleSaveFollowers = async () => {
+    if (!id) return toast.error("Task id missing");
+    try {
+      setSavingFollowers(true);
+      const ids = followerIds(selectedFollowers);
+      const updated = await updateTask({
+        id,
+        body: { followers: ids },
+      }).unwrap();
+      setTask(updated);
+      setOpenFollowers(false);
+      toast.success("Followers updated");
+    } catch (e) {
+      toast.error(e?.data?.error || "Failed updating followers");
+    } finally {
+      setSavingFollowers(false);
+    }
+  };
 
   const projects = useMemo(() => {
     if (Array.isArray(task?.project_id) && task?.project_id?.length) {
@@ -696,26 +744,29 @@ export default function ViewTaskPage() {
     if (!chosen) return toast.error("Pick a status");
     try {
       await updateTaskStatus({ id, status: chosen, remarks: note }).unwrap();
-      const user = JSON.parse(localStorage.getItem("userDetails") || "{}");
       const entry = {
         status: chosen,
         remarks: note,
-        user_id: { name: user?.name || "You" },
+        user_id: task?.current_status?.user_id || { name: "You" },
         updatedAt: new Date().toISOString(),
       };
-      setTask((prev) => ({
-        ...prev,
-        current_status: { status: chosen, updatedAt: entry.updatedAt },
-        status_history: [...(prev?.status_history || []), entry],
-      }));
+      setTask((prev) =>
+        prev
+          ? {
+              ...prev,
+              current_status: { status: chosen, updatedAt: entry.updatedAt },
+              status_history: [...(prev.status_history || []), entry],
+            }
+          : prev
+      );
       setNote("");
       toast.success("Status updated");
-    } catch {
-      toast.error("Failed to update status");
+      setOpenStatusModal(false);
+    } catch (e) {
+      toast.error(e?.data?.message || "Failed to update status");
     }
   };
 
-  /* ------------------- attachments: modal + pick/drop ------------------- */
   const addPickedFiles = (files) => {
     if (!files?.length) return;
     const items = files.map((f) => ({
@@ -791,94 +842,6 @@ export default function ViewTaskPage() {
   const isCompleted =
     (task?.current_status?.status || "").toLowerCase() === "completed";
 
-  const infoGrid = (
-    <Sheet
-      variant="soft"
-      sx={{
-        p: 2,
-        borderRadius: "md",
-        bgcolor: "background.level1",
-        gap: 2,
-        display: "grid",
-        gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-        width: "100%",
-      }}
-    >
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-        <Field
-          label="Assign"
-          value={
-            task?.assigned_to?.length ? (
-              <PeopleAvatars people={toPeople(task.assigned_to)} />
-            ) : (
-              "None"
-            )
-          }
-        />
-        <Field
-          label="Status"
-          value={
-            <Chip
-              size="sm"
-              color={statusColor(task?.current_status?.status)}
-              onClick={() =>
-                !isCompleted &&
-                document.querySelector("[data-status-modal]")?.click()
-              }
-              sx={{ cursor: isCompleted ? "not-allowed" : "pointer" }}
-            >
-              {task?.current_status?.status
-                ? task.current_status.status
-                    .split(" ")
-                    .map((w) => w[0]?.toUpperCase() + w.slice(1))
-                    .join(" ")
-                : "—"}
-            </Chip>
-          }
-        />
-        <Field
-          label="Priority"
-          value={
-            Number(task?.priority) > 0 ? (
-              <Chip
-                size="sm"
-                variant="solid"
-                color={priorityMap[Number(task?.priority)]?.color}
-              >
-                {priorityMap[Number(task?.priority)]?.label}
-              </Chip>
-            ) : (
-              "None"
-            )
-          }
-          muted={!(Number(task?.priority) > 0)}
-        />
-      </Box>
-
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-        <Field
-          label="Created By"
-          value={<PeopleAvatars people={toPeople(task?.createdBy)} max={1} />}
-        />
-        <Field
-          label="Created At"
-          value={
-            task?.createdAt ? new Date(task.createdAt).toLocaleString() : "—"
-          }
-        />
-        <Field
-          label="Due Date"
-          value={
-            task?.deadline
-              ? new Date(task.deadline).toLocaleDateString("en-GB")
-              : "—"
-          }
-        />
-      </Box>
-    </Sheet>
-  );
-
-  /* ------------------- ACTIVITY ------------------- */
   const activity = useMemo(() => {
     const statuses = (task?.status_history || []).map((h) => ({
       _type: "status",
@@ -909,7 +872,6 @@ export default function ViewTaskPage() {
     );
   }, [task]);
 
-  /* ------------------- DOCUMENTS ------------------- */
   const documents = useMemo(() => {
     const all = [];
     const top = task?.attachments || task?.attachements || [];
@@ -948,16 +910,11 @@ export default function ViewTaskPage() {
         bgcolor: "background.body",
       }}
     >
-      {/* hidden file input for modal Browse */}
       <input
         ref={filePickerRef}
         type="file"
         multiple
-        onChange={(e) => {
-          const files = Array.from(e.target.files || []);
-          addPickedFiles(files);
-          e.target.value = "";
-        }}
+        onChange={onPickFiles}
         style={{ display: "none" }}
       />
 
@@ -967,11 +924,13 @@ export default function ViewTaskPage() {
           display: "grid",
           gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
           gap: 2,
-          alignItems: "start",
+          alignItems: "stretch",
+          gridAutoRows: "1fr",
           mb: 2,
           "& > *": { minWidth: 0 },
         }}
       >
+        {/* FIRST CARD with Followers button */}
         <Sheet
           variant="outlined"
           sx={{
@@ -985,8 +944,39 @@ export default function ViewTaskPage() {
             height: "100%",
             minWidth: 0,
             overflowX: "hidden",
+            position: "relative",
           }}
         >
+          <Tooltip title="Manage followers">
+            <IconButton
+              size="sm"
+              variant="soft"
+              onClick={() => setOpenFollowers(true)}
+              sx={{
+                position: "absolute",
+                top: 8,
+                right: 8,
+                borderRadius: "lg",
+              }}
+            >
+              <GroupOutlinedIcon fontSize="small" />
+              <Chip
+                size="sm"
+                variant="solid"
+                color="primary"
+                sx={{
+                  ml: 0.75,
+                  height: 20,
+                  minHeight: 20,
+                  fontSize: 12,
+                  borderRadius: "999px",
+                }}
+              >
+                {(task?.followers?.length ?? 0).toString()}
+              </Chip>
+            </IconButton>
+          </Tooltip>
+
           <Stack
             direction="column"
             gap={1.5}
@@ -1009,6 +999,7 @@ export default function ViewTaskPage() {
                 color={statusColor(task?.current_status?.status)}
                 data-status-modal
                 sx={{ cursor: isCompleted ? "not-allowed" : "pointer" }}
+                onClick={() => !isCompleted && setOpenStatusModal(true)}
               >
                 {(task?.current_status?.status || "Current Status")
                   .split(" ")
@@ -1053,6 +1044,7 @@ export default function ViewTaskPage() {
           </Stack>
         </Sheet>
 
+        {/* SECOND CARD: Info */}
         <Sheet
           variant="outlined"
           sx={{
@@ -1072,28 +1064,116 @@ export default function ViewTaskPage() {
           <Typography fontSize={"1rem"} fontWeight={600} mb={1}>
             Task Information
           </Typography>
-          {infoGrid}
+
+          <Sheet
+            variant="soft"
+            sx={{
+              p: 2,
+              borderRadius: "md",
+              bgcolor: "background.level1",
+              gap: 2,
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+              width: "100%",
+            }}
+          >
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              <Field
+                label="Assign"
+                value={
+                  task?.assigned_to?.length ? (
+                    <PeopleAvatars people={toPeople(task.assigned_to)} />
+                  ) : (
+                    "None"
+                  )
+                }
+              />
+              <Field
+                label="Status"
+                value={
+                  <Chip
+                    size="sm"
+                    color={statusColor(task?.current_status?.status)}
+                    onClick={() => !isCompleted && setOpenStatusModal(true)}
+                    sx={{ cursor: isCompleted ? "not-allowed" : "pointer" }}
+                  >
+                    {task?.current_status?.status
+                      ? task.current_status.status
+                          .split(" ")
+                          .map((w) => w[0]?.toUpperCase() + w.slice(1))
+                          .join(" ")
+                      : "—"}
+                  </Chip>
+                }
+              />
+              <Field
+                label="Priority"
+                value={
+                  Number(task?.priority) > 0 ? (
+                    <Chip
+                      size="sm"
+                      variant="solid"
+                      color={priorityMap[Number(task?.priority)]?.color}
+                    >
+                      {priorityMap[Number(task?.priority)]?.label}
+                    </Chip>
+                  ) : (
+                    "None"
+                  )
+                }
+                muted={!(Number(task?.priority) > 0)}
+              />
+            </Box>
+
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              <Field
+                label="Created By"
+                value={
+                  <PeopleAvatars people={toPeople(task?.createdBy)} max={1} />
+                }
+              />
+              <Field
+                label="Created At"
+                value={
+                  task?.createdAt
+                    ? new Date(task.createdAt).toLocaleString()
+                    : "—"
+                }
+              />
+              <Field
+                label="Due Date"
+                value={
+                  task?.deadline
+                    ? new Date(task.deadline).toLocaleDateString("en-GB")
+                    : "—"
+                }
+              />
+            </Box>
+          </Sheet>
         </Sheet>
       </Box>
 
-      {/* Row 2: project-only */}
-      {task?.type === "project" && (
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-            gap: 2,
-            alignItems: "start",
-            mb: 2,
-            "& > *": { minWidth: 0 },
-          }}
-        >
-          {/* Associated Project: no toggle, fixed height + scroll */}
+      {/* Row 2: project + timeline */}
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: {
+            xs: "1fr",
+            md: task?.type === "project" ? "1fr 1fr" : "1fr",
+          },
+          gap: 2,
+          alignItems: "stretch",
+          gridAutoRows: "1fr",
+          mb: 2,
+          "& > *": { minWidth: 0 },
+        }}
+      >
+        {task?.type === "project" && (
           <Section
             title="Associated Project"
             outlined={false}
             collapsible={false}
-            contentSx={{ height: '100%', overflow: "auto" }}
+            contentSx={{ height: "100%", overflow: "auto" }}
           >
             <Sheet
               variant="soft"
@@ -1130,21 +1210,21 @@ export default function ViewTaskPage() {
               )}
             </Sheet>
           </Section>
+        )}
 
-          {/* Status Timeline: no toggle, fixed height + scroll */}
-          <Section
-            title="Status Timeline"
-            collapsible={false}
-            contentSx={{ height: '100%', overflow: "auto" }}
-          >
-            <StatusTimeline
-              history={task?.status_history || []}
-              current={task?.current_status}
-            />
-          </Section>
-        </Box>
-      )}
+        <Section
+          title="Status Timeline"
+          collapsible={false}
+          contentSx={{ height: "10vh", overflow: "auto" }}
+        >
+          <StatusTimeline
+            history={task?.status_history || []}
+            current={task?.current_status}
+          />
+        </Section>
+      </Box>
 
+      {/* Activity & Notes */}
       <Section
         title="Activity & Notes"
         open={openActivity}
@@ -1195,84 +1275,100 @@ export default function ViewTaskPage() {
                 </Typography>
               ) : (
                 activity.map((it, idx) => {
-                  const when = it.at ? new Date(it.at).toLocaleString() : "—";
+                  const user = toPerson(it.user || it.user_id || {});
+                  const when = it.at ? new Date(it.at) : null;
+                  const whenLabel = when
+                    ? when.toLocaleString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: true,
+                      })
+                    : "—";
 
-                  if (it._type === "status") {
-                    return (
-                      <Box key={`st-${idx}`} sx={{ mb: 1.25 }}>
-                        <Chip
-                          size="sm"
-                          variant="soft"
-                          color={statusColor(it.status)}
-                          sx={{ mr: 1 }}
+                  const isStatus = it._type === "status";
+                  const statusLabel = cap(it.status || "-");
+
+                  return (
+                    <Box key={`act-${idx}`} sx={{ mb: 1.5 }}>
+                      <Stack direction="row" alignItems="flex-start" gap={1.25}>
+                        <Avatar
+                          src={user.avatar || undefined}
+                          variant={user.avatar ? "soft" : "solid"}
+                          color={
+                            user.avatar ? "neutral" : colorFromName(user.name)
+                          }
+                          sx={{ width: 36, height: 36, fontWeight: 700 }}
                         >
-                          {(it.status || "-")
-                            .split(" ")
-                            .map((w) => w[0]?.toUpperCase() + w.slice(1))
-                            .join(" ")}
-                        </Chip>
-                        <Typography
-                          level="body-xs"
-                          sx={{ color: "text.tertiary" }}
-                        >
-                          <PersonOutlineRoundedIcon fontSize="small" />{" "}
-                          {it?.user?.name || "Unknown"} on {when}
-                        </Typography>
-                        {it?.remarks && (
-                          <Typography level="body-sm" sx={{ mt: 0.25 }}>
-                            {it.remarks}
-                          </Typography>
-                        )}
-                        <Divider sx={{ mt: 1 }} />
-                      </Box>
-                    );
-                  }
+                          {!user.avatar && initialsOf(user.name)}
+                        </Avatar>
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Stack direction="row" alignItems="baseline" gap={1}>
+                            <Typography
+                              level="body-sm"
+                              fontWeight="lg"
+                              sx={{ whiteSpace: "nowrap" }}
+                            >
+                              {user.name}
+                            </Typography>
+                            <Typography
+                              level="body-xs"
+                              sx={{ color: "text.tertiary" }}
+                            >
+                              {whenLabel}
+                            </Typography>
+                          </Stack>
 
-                  if (it._type === "comment") {
-                    return (
-                      <Box key={`cm-${idx}`} sx={{ mb: 1.75 }}>
-                        {it?.html && (
-                          <div
-                            className="comment-body"
-                            style={{
-                              lineHeight: 1.66,
-                              wordBreak: "break-word",
-                              marginTop: 4,
-                            }}
-                            dangerouslySetInnerHTML={{
-                              __html: DOMPurify.sanitize(it.html),
-                            }}
-                          />
-                        )}
-                        <Stack
-                          direction="row"
-                          alignItems="center"
-                          gap={0.5}
-                          sx={{ mt: 0.5 }}
-                        >
-                          <PersonOutlineRoundedIcon fontSize="small" />
-                          <Typography
-                            level="body-xs"
-                            sx={{ color: "text.tertiary" }}
-                          >
-                            {it?.user_id?.name} {when ? `${when}` : ""}
-                          </Typography>
-                        </Stack>
-                        <Divider sx={{ mt: 1 }} />
-                      </Box>
-                    );
-                  }
+                          {it._type === "comment" && it?.html ? (
+                            <div
+                              style={{
+                                marginTop: 2,
+                                lineHeight: 1.66,
+                                wordBreak: "break-word",
+                              }}
+                              dangerouslySetInnerHTML={{
+                                __html: DOMPurify.sanitize(it.html),
+                              }}
+                            />
+                          ) : isStatus ? (
+                            <Stack
+                              direction="row"
+                              alignItems="center"
+                              gap={1}
+                              sx={{ mt: 0.25, flexWrap: "wrap" }}
+                            >
+                              <Chip
+                                size="sm"
+                                variant="soft"
+                                color={statusColor(it.status)}
+                              >
+                                {statusLabel}
+                              </Chip>
+                              {it.remarks && (
+                                <Typography level="body-sm">
+                                  {String(it.remarks).trim()}
+                                </Typography>
+                              )}
+                            </Stack>
+                          ) : it._type === "file" ? (
+                            <Typography level="body-sm" sx={{ mt: 0.25 }}>
+                              {`Uploaded file: ${
+                                it?.attachment?.name || "Attachment"
+                              }`}
+                            </Typography>
+                          ) : null}
 
-                  if (it._type === "file") {
-                    return (
-                      <Box key={`fl-${idx}`} sx={{ mb: 1.75 }}>
-                        <AttachmentGallery items={[it.attachment]} />
-                        <Divider sx={{ mt: 1 }} />
-                      </Box>
-                    );
-                  }
-
-                  return null;
+                          {it._type === "file" && it.attachment ? (
+                            <Box sx={{ mt: 0.75 }}>
+                              <AttachmentGallery items={[it.attachment]} />
+                            </Box>
+                          ) : null}
+                        </Box>
+                      </Stack>
+                      <Divider sx={{ mt: 1 }} />
+                    </Box>
+                  );
                 })
               )}
             </Box>
@@ -1376,7 +1472,7 @@ export default function ViewTaskPage() {
                             variant="solid"
                             sx={{
                               "--Icon-color": "#3366a3",
-                              opacity: 1, // always visible
+                              opacity: 1,
                               backgroundColor: "#eaf1fa",
                               "&:hover": { backgroundColor: "#d0e2f7" },
                             }}
@@ -1399,7 +1495,7 @@ export default function ViewTaskPage() {
       </Section>
 
       {/* Status Update Modal */}
-      <Modal open={false /* opened via UI elsewhere if needed */}>
+      <Modal open={openStatusModal} onClose={() => setOpenStatusModal(false)}>
         <ModalDialog variant="outlined" sx={{ maxWidth: 520 }}>
           <DialogTitle>Update Status</DialogTitle>
           <DialogContent>
@@ -1437,8 +1533,8 @@ export default function ViewTaskPage() {
                 "--Button-hoverBg": "#e0e0e0",
                 "--Button-hoverBorderColor": "#3366a3",
                 "&:hover": { color: "#3366a3" },
-                height: "8px",
               }}
+              onClick={() => setOpenStatusModal(false)}
             >
               Cancel
             </Button>
@@ -1469,12 +1565,6 @@ export default function ViewTaskPage() {
           </DialogContent>
 
           <Stack gap={1.25} sx={{ mt: 1 }}>
-            <Input
-              placeholder="Document name (optional)"
-              value={attachDocName}
-              onChange={(e) => setAttachDocName(e.target.value)}
-            />
-
             <Box
               onDragOver={(e) => {
                 e.preventDefault();
@@ -1498,6 +1588,10 @@ export default function ViewTaskPage() {
                   : "neutral.outlinedBorder",
                 bgcolor: isDragging ? "primary.softBg" : "background.level1",
                 cursor: "pointer",
+                height: "10vh",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
               <Stack
@@ -1521,14 +1615,22 @@ export default function ViewTaskPage() {
                     <Chip
                       key={`${f.name}-${i}`}
                       variant="soft"
+                      size="sm"
+                      clickable={false}
+                      sx={{ "& .chip-close": { pointerEvents: "auto" } }}
                       endDecorator={
                         <IconButton
                           size="sm"
                           variant="plain"
-                          onClick={() => handleRemoveAttachment(i)}
+                          className="chip-close"
                           aria-label="Remove"
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveAttachment(i);
+                          }}
                         >
-                          ✕
+                          <CloseRoundedIcon fontSize="small" />
                         </IconButton>
                       }
                     >
@@ -1541,10 +1643,173 @@ export default function ViewTaskPage() {
           </Stack>
 
           <DialogActions>
-            <Button variant="plain" onClick={() => setOpenAttachModal(false)}>
+            <Button
+              variant="outlined"
+              onClick={() => setOpenAttachModal(false)}
+              sx={{
+                color: "#3366a3",
+                borderColor: "#3366a3",
+                backgroundColor: "transparent",
+                "--Button-hoverBg": "#e0e0e0",
+                "--Button-hoverBorderColor": "#3366a3",
+                "&:hover": { color: "#3366a3" },
+              }}
+            >
               Close
             </Button>
-            <Button onClick={() => setOpenAttachModal(false)}>Done</Button>
+            <Button
+              onClick={() => setOpenAttachModal(false)}
+              sx={{
+                backgroundColor: "#3366a3",
+                color: "#fff",
+                px: 2.25,
+                "&:hover": { backgroundColor: "#285680" },
+              }}
+            >
+              Done
+            </Button>
+          </DialogActions>
+        </ModalDialog>
+      </Modal>
+
+      {/* Followers Manager Modal */}
+      <Modal open={openFollowers} onClose={() => setOpenFollowers(false)}>
+        <ModalDialog variant="outlined" sx={{ maxWidth: 480 }}>
+          <DialogTitle>Add Followers</DialogTitle>
+          <DialogContent>
+            Select or remove followers for this task.
+          </DialogContent>
+
+          <Stack gap={1.25} sx={{ mt: 1 }}>
+            {/* Current followers as removable chips */}
+            <Stack direction="row" gap={0.75} flexWrap="wrap">
+              {selectedFollowers.length === 0 ? (
+                <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
+                  No followers yet.
+                </Typography>
+              ) : (
+                selectedFollowers.map((u, i) => (
+                  <Chip
+                    key={u._id || i}
+                    variant="soft"
+                    size="sm"
+                    clickable={false}
+                    startDecorator={
+                      <Avatar
+                        size="sm"
+                        src={u.avatar || undefined}
+                        variant={u.avatar ? "soft" : "solid"}
+                        color={u.avatar ? "neutral" : colorFromName(u.name)}
+                      >
+                        {!u.avatar && initialsOf(u.name)}
+                      </Avatar>
+                    }
+                    endDecorator={
+                      <IconButton
+                        size="sm"
+                        variant="plain"
+                        className="chip-close"
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedFollowers((prev) =>
+                            prev.filter(
+                              (x) => (x._id || x.name) !== (u._id || u.name)
+                            )
+                          );
+                        }}
+                        aria-label={`Remove ${u.name}`}
+                      >
+                        <CloseRoundedIcon fontSize="small" />
+                      </IconButton>
+                    }
+                    sx={{
+                      "--Chip-gap": "6px",
+                      "& .chip-close": { pointerEvents: "auto" }, // <-- ensure the X is clickable
+                    }}
+                  >
+                    {u.name}
+                  </Chip>
+                ))
+              )}
+            </Stack>
+
+            {/* Add more via Autocomplete (adder behavior) */}
+            <Autocomplete
+              multiple
+              placeholder="Search users to add…"
+              options={allUserOptions}
+              loading={usersLoading}
+              value={[]}
+              onChange={(_, vals) => {
+                const toAdd =
+                  (vals || []).filter(
+                    (v) =>
+                      !selectedFollowers.some(
+                        (s) => (s._id || s.name) === (v._id || v.name)
+                      )
+                  ) || [];
+                if (toAdd.length) {
+                  setSelectedFollowers((prev) => [...prev, ...toAdd]);
+                }
+              }}
+              getOptionLabel={(o) => o?.name || ""}
+              isOptionEqualToValue={(o, v) =>
+                (o?._id || o?.id || o?.email || o?.name) ===
+                (v?._id || v?.id || v?.email || v?.name)
+              }
+              renderOption={(liProps, option) => (
+                <li {...liProps} key={option._id}>
+                  <Stack
+                    sx={{ cursor: "pointer" }}
+                    direction="row"
+                    alignItems="center"
+                    gap={1}
+                  >
+                    <Avatar
+                      size="sm"
+                      src={option.avatar || undefined}
+                      variant={option.avatar ? "soft" : "solid"}
+                      color={
+                        option.avatar ? "neutral" : colorFromName(option.name)
+                      }
+                    >
+                      {!option.avatar && initialsOf(option.name)}
+                    </Avatar>
+                    <Typography level="body-sm">{option.name}</Typography>
+                  </Stack>
+                </li>
+              )}
+              sx={{ "--Listbox-maxHeight": "260px", cursor: "pointer" }}
+            />
+          </Stack>
+
+          <DialogActions>
+            <Button
+              variant="outlined"
+              onClick={() => setOpenFollowers(false)}
+              sx={{
+                color: "#3366a3",
+                borderColor: "#3366a3",
+                backgroundColor: "transparent",
+                "--Button-hoverBg": "#e0e0e0",
+                "--Button-hoverBorderColor": "#3366a3",
+                "&:hover": { color: "#3366a3" },
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveFollowers}
+              loading={savingFollowers}
+              sx={{
+                backgroundColor: "#3366a3",
+                color: "#fff",
+                "&:hover": { backgroundColor: "#285680" },
+              }}
+            >
+              Update
+            </Button>
           </DialogActions>
         </ModalDialog>
       </Modal>
@@ -1552,8 +1817,7 @@ export default function ViewTaskPage() {
   );
 }
 
-/* ============================= Section ============================= */
-
+/* ---------- Section wrapper ---------- */
 function Section({
   title,
   open = true,

@@ -369,23 +369,41 @@ function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
                     </Typography>
 
                     <Box display="flex" alignItems="center" gap={0.5}>
-                      <Tooltip title="Priority">
-                        <Box display="flex">
-                          {[...Array(Number(task.priority || 0))].map(
-                            (_, i) => (
-                              <Typography key={i} level="body-sm">
-                                ⭐
-                              </Typography>
-                            )
-                          )}
-                        </Box>
-                      </Tooltip>
+                      {/* Priority Chip */}
+                      {(() => {
+                        const priorityMap = {
+                          1: { label: "High", color: "danger" },
+                          2: { label: "Medium", color: "warning" },
+                          3: { label: "Low", color: "success" },
+                        };
+                        const pr = Number(task?.priority || 0);
+                        const pm = priorityMap[pr];
+
+                        return pm ? (
+                          <Chip
+                            size="sm"
+                            variant="solid"
+                            color={pm.color}
+                            title="Priority"
+                            sx={{ fontWeight: 600 }}
+                          >
+                            {pm.label}
+                          </Chip>
+                        ) : (
+                          <Typography
+                            level="body-sm"
+                            sx={{ color: "text.tertiary" }}
+                          >
+                            None
+                          </Typography>
+                        );
+                      })()}
                     </Box>
 
-                    <Typography level="body-sm" startDecorator="👤">
+                    <Typography level="body-sm">
                       Created By: {task.createdBy?.name || "-"}
                     </Typography>
-                    <Typography level="body-sm" startDecorator="📆">
+                    <Typography level="body-sm">
                       Created At:{" "}
                       {task.createdAt
                         ? new Date(task.createdAt).toLocaleString("en-IN", {
@@ -456,12 +474,10 @@ function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
                         </Box>
                       </Tooltip>
                     ) : (
-                      <Typography level="body-sm" startDecorator="👥">
-                        -
-                      </Typography>
+                      <Typography level="body-sm">-</Typography>
                     )}
 
-                    <Typography level="body-sm" startDecorator="📅">
+                    <Typography level="body-sm">
                       Deadline: {task.deadline?.split("T")[0] || "-"}
                     </Typography>
 
@@ -508,22 +524,14 @@ function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
 
                           if (toMidnight(completionDate) <= dln) {
                             return (
-                              <Typography
-                                level="body-sm"
-                                color="success"
-                                startDecorator="✅"
-                              >
+                              <Typography level="body-sm" color="success">
                                 Completed in {elapsedDays}{" "}
                                 {elapsedDays === 1 ? "day" : "days"} (on time)
                               </Typography>
                             );
                           } else {
                             return (
-                              <Typography
-                                level="body-sm"
-                                color="danger"
-                                startDecorator="⏰"
-                              >
+                              <Typography level="body-sm" color="danger">
                                 Completed late by {lateBy}{" "}
                                 {lateBy === 1 ? "day" : "days"} · took{" "}
                                 {elapsedDays}{" "}
@@ -539,11 +547,7 @@ function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
                         ) {
                           const diffInDays = daysBetween(today, dln);
                           return (
-                            <Typography
-                              level="body-sm"
-                              color="danger"
-                              startDecorator="⏰"
-                            >
+                            <Typography level="body-sm" color="danger">
                               Delay: {diffInDays}{" "}
                               {diffInDays === 1 ? "day" : "days"}
                             </Typography>
@@ -551,11 +555,7 @@ function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
                         }
 
                         return (
-                          <Typography
-                            level="body-sm"
-                            color="success"
-                            startDecorator="✅"
-                          >
+                          <Typography level="body-sm" color="success">
                             On Time
                           </Typography>
                         );

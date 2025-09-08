@@ -143,8 +143,8 @@ const AddTask = () => {
     <Card
       sx={{
         maxWidth: 700,
-        mt: { xs: "0%", lg: "3%" },
-        ml: { xs: "auto", lg: "30%" },
+        
+        
         mx: "auto",
         p: 3,
         borderRadius: "lg",
