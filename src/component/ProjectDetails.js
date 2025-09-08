@@ -21,7 +21,11 @@ import LocationOnRoundedIcon from "@mui/icons-material/LocationOnOutlined";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import { useGetProjectByIdQuery } from "../redux/projectsSlice";
-import { useGetPostsQuery, useFollowMutation, useUnfollowMutation } from "../redux/postsSlice";
+import {
+  useGetPostsQuery,
+  useFollowMutation,
+  useUnfollowMutation,
+} from "../redux/postsSlice";
 import { useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import Overview from "./Forms/Engineering/Eng_Overview/Overview";
@@ -35,7 +39,11 @@ const Project_Detail = () => {
   const project_id = searchParams.get("project_id") || "";
 
   // Base project details
-  const { data: getProject, isLoading, error } = useGetProjectByIdQuery(project_id);
+  const {
+    data: getProject,
+    isLoading,
+    error,
+  } = useGetProjectByIdQuery(project_id);
   const projectDetails = getProject?.data || {};
 
   // Pull the Posts doc to read followers array
@@ -84,32 +92,49 @@ const Project_Detail = () => {
       const first = Array.isArray(posts) ? posts[0] : null;
       const followers = first?.followers || [];
       const meIsFollowing =
-        !!currentUserId && followers.some((f) => String(f?.user_id?._id || f?.user_id) === String(currentUserId));
+        !!currentUserId &&
+        followers.some(
+          (f) => String(f?.user_id?._id || f?.user_id) === String(currentUserId)
+        );
       setIsFollowing(meIsFollowing);
-    } catch {
-
-    }
+    } catch {}
   }, [postsResp, currentUserId]);
 
   const handleFollowToggle = async () => {
     if (!currentUserId || !project_id) {
-      setToast({ open: true, msg: "Missing user or project context.", color: "danger" });
+      setToast({
+        open: true,
+        msg: "Missing user or project context.",
+        color: "danger",
+      });
       return;
     }
-    const payload = { project_id, followers: [ currentUserId] };
+    const payload = { project_id, followers: [currentUserId] };
     const prev = isFollowing;
-    setIsFollowing(!prev); 
+    setIsFollowing(!prev);
     try {
       if (!prev) {
         await follow(payload).unwrap();
-        setToast({ open: true, msg: "You’re now following this project.", color: "success" });
+        setToast({
+          open: true,
+          msg: "You’re now following this project.",
+          color: "success",
+        });
       } else {
         await unfollow(payload).unwrap();
-        setToast({ open: true, msg: "You unfollowed this project.", color: "success" });
+        setToast({
+          open: true,
+          msg: "You unfollowed this project.",
+          color: "success",
+        });
       }
     } catch (e) {
       setIsFollowing(prev);
-      setToast({ open: true, msg: "Action failed. Please try again.", color: "danger" });
+      setToast({
+        open: true,
+        msg: "Action failed. Please try again.",
+        color: "danger",
+      });
     }
   };
 
@@ -154,16 +179,22 @@ const Project_Detail = () => {
                   alt={projectDetails?.customer || "Customer"}
                   sx={{ width: 64, height: 64 }}
                 />
-                <Typography level="title-md">{projectDetails?.customer}</Typography>
+                <Typography level="title-md">
+                  {projectDetails?.customer}
+                </Typography>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <EmailOutlinedIcon fontSize="small" />
-                  <Typography level="body-sm">{projectDetails?.email || "-"}</Typography>
+                  <Typography level="body-sm">
+                    {projectDetails?.email || "-"}
+                  </Typography>
                 </Stack>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <PhoneOutlinedIcon fontSize="small" />
                   <Typography level="body-sm">
                     {projectDetails?.number}
-                    {projectDetails?.alt_number ? `, ${getProject?.data?.alt_number}` : ""}
+                    {projectDetails?.alt_number
+                      ? `, ${getProject?.data?.alt_number}`
+                      : ""}
                   </Typography>
                 </Stack>
               </Stack>
@@ -171,7 +202,9 @@ const Project_Detail = () => {
 
             {/* Right side → Follow button */}
             <Box>
-              <Tooltip title={isFollowing ? "Unfollow Project" : "Follow Project"}>
+              <Tooltip
+                title={isFollowing ? "Unfollow Project" : "Follow Project"}
+              >
                 <IconButton
                   variant="soft"
                   size="sm"
@@ -204,7 +237,8 @@ const Project_Detail = () => {
             <Stack direction="row" spacing={1} alignItems="center">
               <LocationOnRoundedIcon fontSize="small" />
               <Typography level="body-sm" sx={{ ml: 0.5 }}>
-                {typeof projectDetails?.site_address === "object" && projectDetails?.site_address !== null
+                {typeof projectDetails?.site_address === "object" &&
+                projectDetails?.site_address !== null
                   ? [
                       projectDetails?.site_address?.village_name,
                       projectDetails?.site_address?.district_name,
@@ -231,7 +265,8 @@ const Project_Detail = () => {
                 try {
                   const parsed = JSON.parse(projectDetails?.land);
                   const { acres, type } = parsed || {};
-                  if (acres || type) return `${acres || ""} ${type || ""}`.trim();
+                  if (acres || type)
+                    return `${acres || ""} ${type || ""}`.trim();
                   return null;
                 } catch {
                   return projectDetails?.land || "N/A";
@@ -277,7 +312,10 @@ const Project_Detail = () => {
 
               <TabPanel value={1}>
                 <Box maxHeight="70vh" overflow-y="auto">
-                  <ScopeDetail project_id={project_id} project_code={projectDetails?.code} />
+                  <ScopeDetail
+                    project_id={project_id}
+                    project_code={projectDetails?.code}
+                  />
                 </Box>
               </TabPanel>
 
@@ -288,13 +326,23 @@ const Project_Detail = () => {
               </TabPanel>
 
               <TabPanel value={3}>
-                <Box display="flex" alignItems="flex-start" height="70vh" overflow-y="auto">
+                <Box
+                  display="flex"
+                  alignItems="flex-start"
+                  height="70vh"
+                  overflow-y="auto"
+                >
                   <Overview />
                 </Box>
               </TabPanel>
 
               <TabPanel value={4}>
-                <Box display="flex" alignItems="flex-start" height="70vh" overflow-y="auto">
+                <Box
+                  display="flex"
+                  alignItems="flex-start"
+                  height="70vh"
+                  overflow-y="auto"
+                >
                   <Posts projectId={project_id} />
                 </Box>
               </TabPanel>

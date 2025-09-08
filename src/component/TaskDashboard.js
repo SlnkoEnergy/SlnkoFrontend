@@ -578,17 +578,23 @@ function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
 
                   <td style={{ padding: 8, borderBottom: "1px solid #ddd" }}>
                     {(() => {
-                      // Normalize to an array of { code, name }
-                      let projects = [];
+                      // Normalize to an array of { id, code, name }
+                      let projects: {
+                        id?: string,
+                        code: string,
+                        name: string,
+                      }[] = [];
 
                       // case 1: array from API
                       if (
                         Array.isArray(task.project_details) &&
                         task.project_details.length > 0
                       ) {
-                        projects = task.project_details.map((p) => ({
-                          code: p.code ?? p.projectCode ?? "-",
-                          name: p.name ?? p.projectName ?? "-",
+                        projects = task.project_details.map((p: any) => ({
+                          id:
+                            p?._id ?? p?.projectId ?? p?.id ?? task.project_id, // fallback
+                          code: p?.code ?? p?.projectCode ?? "-",
+                          name: p?.name ?? p?.projectName ?? "-",
                         }));
                       }
 
@@ -599,22 +605,32 @@ function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
                       ) {
                         projects = [
                           {
+                            id:
+                              task.project?._id ??
+                              task.project?.projectId ??
+                              task.project?.id ??
+                              task.project_id,
                             code:
-                              task.project.code ??
-                              task.project.projectCode ??
+                              task.project?.code ??
+                              task.project?.projectCode ??
                               "-",
                             name:
-                              task.project.name ??
-                              task.project.projectName ??
+                              task.project?.name ??
+                              task.project?.projectName ??
                               "-",
                           },
                         ];
                       }
 
                       // case 3: flat fields
-                      else if (task.project_code || task.project_name) {
+                      else if (
+                        task.project_code ||
+                        task.project_name ||
+                        task.project_id
+                      ) {
                         projects = [
                           {
+                            id: task.project_id,
                             code: task.project_code ?? "-",
                             name: task.project_name ?? "-",
                           },
@@ -625,41 +641,84 @@ function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
                         return <Typography fontWeight="lg">N/A</Typography>;
                       }
 
+                      // Single project → clickable row
                       if (projects.length === 1) {
+                        const p = projects[0];
+                        const canGo = !!p.id;
                         return (
-                          <div>
-                            <Typography fontWeight="lg">
-                              {projects[0].code}
-                            </Typography>
+                          <Box
+                            onClick={() =>
+                              canGo &&
+                              navigate(
+                                `/project_detail?page=1&project_id=${p.id}`
+                              )
+                            }
+                            sx={{
+                              cursor: canGo ? "pointer" : "default",
+                              "&:hover": canGo
+                                ? { bgcolor: "neutral.softBg" }
+                                : undefined,
+                              borderRadius: "sm",
+                              p: 0.5,
+                            }}
+                          >
+                            <Typography fontWeight="lg">{p.code}</Typography>
                             <Typography level="body-sm" sx={{ color: "#666" }}>
-                              {projects[0].name}
+                              {p.name}
                             </Typography>
-                          </div>
+                          </Box>
                         );
                       }
 
-                      // >1 projects with tooltip
+                      // > 1 projects → tooltip list + main clickable
+                      const main = projects[0];
+                      const canGoMain = !!main.id;
+
                       return (
                         <Tooltip
                           title={
                             <Box
                               sx={{ maxHeight: 200, overflowY: "auto", pr: 1 }}
                             >
-                              {projects.slice(1).map((p, i) => (
-                                <Box key={`${p.code}-${i}`} sx={{ mb: 1 }}>
-                                  <Typography level="body-md" fontWeight="lg">
-                                    {p.code}
-                                  </Typography>
-                                  <Typography level="body-sm">
-                                    {p.name}
-                                  </Typography>
-                                  {i !== projects.length - 2 && (
-                                    <Box
-                                      sx={{ height: 1, bgcolor: "#eee", my: 1 }}
-                                    />
-                                  )}
-                                </Box>
-                              ))}
+                              {projects.slice(1).map((p, i) => {
+                                const canGo = !!p.id;
+                                return (
+                                  <Box
+                                    key={`${p.code}-${i}`}
+                                    sx={{
+                                      mb: 1,
+                                      cursor: canGo ? "pointer" : "default",
+                                      "&:hover": canGo
+                                        ? { bgcolor: "neutral.softBg" }
+                                        : undefined,
+                                      borderRadius: "sm",
+                                      p: 0.5,
+                                    }}
+                                    onClick={() =>
+                                      canGo &&
+                                      navigate(
+                                        `/project_detail?page=1&project_id=${p.id}`
+                                      )
+                                    }
+                                  >
+                                    <Typography level="body-md" fontWeight="lg">
+                                      {p.code}
+                                    </Typography>
+                                    <Typography level="body-sm">
+                                      {p.name}
+                                    </Typography>
+                                    {i !== projects.length - 2 && (
+                                      <Box
+                                        sx={{
+                                          height: 1,
+                                          bgcolor: "#eee",
+                                          my: 1,
+                                        }}
+                                      />
+                                    )}
+                                  </Box>
+                                );
+                              })}
                             </Box>
                           }
                           arrow
@@ -671,18 +730,29 @@ function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
                               display: "flex",
                               alignItems: "center",
                               gap: 1.2,
-                              cursor: "pointer",
-                              "&:hover .project-count-badge": {
-                                backgroundColor: "#0056d2",
-                              },
+                              cursor: canGoMain ? "pointer" : "default",
+                              "&:hover .project-count-badge": canGoMain
+                                ? { backgroundColor: "#0056d2" }
+                                : undefined,
+                              "&:hover": canGoMain
+                                ? { bgcolor: "neutral.softBg" }
+                                : undefined,
+                              borderRadius: "sm",
+                              p: 0.5,
                             }}
+                            onClick={() =>
+                              canGoMain &&
+                              navigate(
+                                `/project_detail?page=1&project_id=${main.id}`
+                              )
+                            }
                           >
                             <Box>
                               <Typography fontWeight="lg">
-                                {projects[0].code}
+                                {main.code}
                               </Typography>
                               <Typography level="body-sm">
-                                {projects[0].name}
+                                {main.name}
                               </Typography>
                             </Box>
                             <Box

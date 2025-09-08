@@ -1,6 +1,6 @@
 // ViewTaskPage.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Box,
   Sheet,
@@ -902,6 +902,8 @@ export default function ViewTaskPage() {
     return uniq;
   }, [task]);
 
+  const navigate = useNavigate();
+
   return (
     <Box
       sx={{
@@ -1189,7 +1191,22 @@ export default function ViewTaskPage() {
                 (p, i) => (
                   <Box
                     key={`${p.code || p.projectCode || i}`}
-                    sx={{ display: "flex", alignItems: "center", gap: 1.25 }}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1.25,
+                      cursor: "pointer",
+                      "&:hover": { bgcolor: "neutral.softBg" },
+                      borderRadius: "sm",
+                      p: 1,
+                    }}
+                    onClick={() =>
+                      navigate(
+                        `/project_detail?page=1&project_id=${
+                          p?._id || p?.projectId
+                        }`
+                      )
+                    }
                   >
                     <Avatar size="md">
                       {(p?.name || p?.projectName || "P")[0]}
