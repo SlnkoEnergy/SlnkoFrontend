@@ -12,6 +12,12 @@ import {
   Grid,
   IconButton,
   Input,
+  Link,
+  Stack,
+  Tab,
+  TabList,
+  TabPanel,
+  Tabs,
   Typography,
 } from "@mui/joy";
 import Sheet from "@mui/joy/Sheet";
@@ -30,6 +36,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import Img12 from "../../assets/slnko_blue_logo.png";
+import AttachFileIcon from "@mui/icons-material/AttachFile";
 import Axios from "../../utils/Axios";
 import CurrencyRupee from "@mui/icons-material/CurrencyRupee";
 import { useGetCustomerSummaryQuery } from "../../redux/Accounts";
@@ -75,6 +82,7 @@ const Customer_Payment_Summary = () => {
     credit = { history: [], total: 0 },
     debit = { history: [], total: 0 },
     clientHistory = { data: [], meta: {} },
+    salesHistory = { data: [], meta: {} },
     adjustment = { history: [], totalCredit: 0, totalDebit: 0 },
   } = responseData || {};
 
@@ -82,6 +90,8 @@ const Customer_Payment_Summary = () => {
   const DebitSummary = debit.history || [];
   const ClientSummary = clientHistory.data || [];
   const ClientTotal = clientHistory.meta || [];
+   const SalesSummary = salesHistory.data || [];
+  const SalesTotal = salesHistory.meta || [];
   const AdjustmentSummary = adjustment.history || [];
 
   useEffect(() => {
@@ -214,8 +224,8 @@ const Customer_Payment_Summary = () => {
           billing_type === "Composite"
             ? "GST (13.8%)"
             : billing_type === "Individual"
-              ? "GST (18%)"
-              : "GST(Type - N/A)",
+            ? "GST (18%)"
+            : "GST(Type - N/A)",
           gst_with_type_percentage,
         ],
         ["10", "Total Billed Value", total_billed_value],
@@ -303,6 +313,25 @@ const Customer_Payment_Summary = () => {
       prev.includes(_id) ? prev.filter((id) => id !== _id) : [...prev, _id]
     );
   };
+
+  const [searchSales, setSearchSales] = useState("");
+const [selectedSales, setSelectedSales] = useState([]);
+
+// const handleSelectAllSales = (e) => {
+//   const allIds = (SalesSummary || []).map((r) => r._id);
+//   setSelectedSales(e.target.checked ? allIds : []);
+// };
+
+// const handleSalesCheckboxChange = (id) => {
+//   setSelectedSales((prev) =>
+//     prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+//   );
+// };
+
+// const handleDeleteSales = () => {
+
+// };
+
 
   const [user, setUser] = useState(null);
 
@@ -408,7 +437,7 @@ const Customer_Payment_Summary = () => {
 
       toast.success("Credit(s) deleted successfully.");
       setSelectedCredits([]);
-      refetch(); // 🔄 Refresh credit data from backend
+      refetch();
     } catch (err) {
       console.error("Error deleting credits:", err);
       const msg =
@@ -453,7 +482,7 @@ const Customer_Payment_Summary = () => {
 
       toast.success("Adjustment(s) deleted successfully.");
       setSelectedAdjust([]);
-      refetch(); // 🔄 Refresh adjustment history from backend
+      refetch();
     } catch (err) {
       console.error("Error deleting adjustments:", err);
       const msg =
@@ -569,8 +598,8 @@ const Customer_Payment_Summary = () => {
         billing_type === "Composite"
           ? "GST (13.8%)"
           : billing_type === "Individual"
-            ? "GST (18%)"
-            : "GST (Type - N/A)",
+          ? "GST (18%)"
+          : "GST (Type - N/A)",
         gst_with_type_percentage,
       ],
       ["10", "Total Billed Value", total_billed_value],
@@ -1316,198 +1345,521 @@ const Customer_Payment_Summary = () => {
 
       {/* Client History Section */}
       <Box>
-        <Chip
-          color="warning"
-          variant="soft"
-          size="md"
-          sx={{ fontSize: "1.1rem", fontWeight: 600, px: 2, py: 1, mt: 3 }}
-        >
-          Purchase History
-        </Chip>
-        <Divider sx={{ borderWidth: "2px", marginBottom: "20px", mt: 2 }} />
+        <Tabs defaultValue={0} sx={{ mt: 1 }}>
+          <TabList>
+            <Tab>Purchase History</Tab>
+            <Tab>Sales History</Tab>
+          </TabList>
 
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexDirection: { xs: "column", md: "row" },
-            gap: 2,
-            mb: 2,
-            "@media print": {
-              display: "none",
-            },
-          }}
-        >
-          {/* Search Input */}
-          <Input
-            placeholder="Search Client"
-            value={searchClient}
-            onChange={(e) => setSearchClient(e.target.value)}
-            sx={{ width: { xs: "100%", md: 250 } }}
-          />
-
-          {/* Delete Button (Admin only) */}
-          {["IT Team", "Guddu Rani Dubey", "Prachi Singh", "admin"].includes(
-            user?.name
-          ) && (
-            <IconButton
-              color="danger"
-              disabled={selectedClients.length === 0}
-              onClick={handleDeleteClient}
-            >
-              <DeleteIcon />
-            </IconButton>
-          )}
-        </Box>
-
-        <Sheet
-          variant="outlined"
-          sx={{
-            borderRadius: "12px",
-            overflow: "hidden",
-            p: 2,
-            boxShadow: "md",
-            maxWidth: "100%",
-            "@media print": {
-              boxShadow: "none",
-              p: 0,
-              borderRadius: 0,
-              overflow: "visible",
-            },
-          }}
-        >
-          <Table
-            borderAxis="both"
-            sx={{
-              minWidth: "100%",
-              "& thead": {
-                backgroundColor: "neutral.softBg",
-                "@media print": {
-                  backgroundColor: "#eee",
-                },
-              },
-              "& th, & td": {
-                textAlign: "left",
-                px: 2,
-                py: 1.5,
-                "@media print": {
-                  px: 1,
+          {/* -------------------- PURCHASE HISTORY -------------------- */}
+          <TabPanel value={0} sx={{ p: 0, pt: 2 }}>
+            <Box>
+              <Chip
+                color="warning"
+                variant="soft"
+                size="md"
+                sx={{
+                  fontSize: "1.1rem",
+                  fontWeight: 600,
+                  px: 2,
                   py: 1,
-                  fontSize: "12px",
-                  border: "1px solid #ccc",
-                },
-              },
-              "@media print": {
-                borderCollapse: "collapse",
-                width: "100%",
-                tableLayout: "fixed",
-              },
-            }}
-          >
-            {/* Table Header */}
-            <thead>
-              <tr>
-                <th>PO Number</th>
-                <th>Vendor</th>
-                <th>Item Name</th>
-                <th>PO Value (₹)</th>
-                <th>Advance Paid (₹)</th>
-                <th>Remaining Amount (₹)</th>
-                <th>Total Billed Value (₹)</th>
-                <th style={{ textAlign: "center" }}>
-                  <Checkbox
-                    onChange={handleSelectAllClient}
-                    checked={selectedClients.length === ClientSummary.length}
-                  />
-                </th>
-              </tr>
-            </thead>
+                  mt: 3,
+                }}
+              >
+                Purchase History
+              </Chip>
+              <Divider
+                sx={{ borderWidth: "2px", marginBottom: "20px", mt: 2 }}
+              />
 
-            {/* Table Body */}
-            <tbody>
-              {isLoading ? (
-                <tr>
-                  <td
-                    colSpan={8}
-                    style={{ textAlign: "center", padding: "20px" }}
-                  >
-                    <Typography level="body-md" sx={{ fontStyle: "italic" }}>
-                      Loading purchase history...
-                    </Typography>
-                  </td>
-                </tr>
-              ) : ClientSummary.length > 0 ? (
-                ClientSummary.map((client) => (
-                  <tr key={client._id}>
-                    <td>{client.po_number || "N/A"}</td>
-                    <td>{client.vendor || "N/A"}</td>
-                    <td>{client.item_name || "N/A"}</td>
-                    <td>₹ {(client?.po_value || 0).toLocaleString("en-IN")}</td>
-                    <td>
-                      ₹ {(client?.advance_paid || 0).toLocaleString("en-IN")}
-                    </td>
-                    <td>
-                      ₹{" "}
-                      {(client?.remaining_amount || 0).toLocaleString("en-IN")}
-                    </td>
-                    <td>
-                      ₹{" "}
-                      {(client?.total_billed_value || 0).toLocaleString(
-                        "en-IN"
-                      )}
-                    </td>
-                    <td style={{ textAlign: "center" }}>
-                      <Checkbox
-                        checked={selectedClients.includes(client._id)}
-                        onChange={() => handleClientCheckboxChange(client._id)}
-                        aria-label={`Select client ${client.po_number || client._id}`}
-                      />
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    colSpan={8}
-                    style={{ textAlign: "center", padding: "20px" }}
-                  >
-                    <Typography level="body-md">
-                      No purchase history available
-                    </Typography>
-                  </td>
-                </tr>
-              )}
-            </tbody>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexDirection: { xs: "column", md: "row" },
+                  gap: 2,
+                  mb: 2,
+                  "@media print": {
+                    display: "none",
+                  },
+                }}
+              >
+                {/* Search Input */}
+                <Input
+                  placeholder="Search Client"
+                  value={searchClient}
+                  onChange={(e) => setSearchClient(e.target.value)}
+                  sx={{ width: { xs: "100%", md: 250 } }}
+                />
 
-            {/* Total Row */}
-            <tfoot>
-              {ClientSummary.length > 0 && (
-                <tr style={{ fontWeight: "bold", backgroundColor: "#f5f5f5" }}>
-                  <td colSpan={3} style={{ textAlign: "right" }}>
-                    Total:{" "}
-                  </td>
-                  <td>
-                    ₹ {ClientTotal?.total_po_value?.toLocaleString("en-IN")}
-                  </td>
-                  <td>
-                    ₹ {ClientTotal?.total_advance_paid?.toLocaleString("en-IN")}
-                  </td>
-                  <td>
-                    ₹{" "}
-                    {ClientTotal?.total_remaining_amount?.toLocaleString(
-                      "en-IN"
+                {/* Delete Button (Admin only) */}
+                {[
+                  "IT Team",
+                  "Guddu Rani Dubey",
+                  "Prachi Singh",
+                  "admin",
+                ].includes(user?.name) && (
+                  <IconButton
+                    color="danger"
+                    disabled={selectedClients.length === 0}
+                    onClick={handleDeleteClient}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                )}
+              </Box>
+
+              <Sheet
+                variant="outlined"
+                sx={{
+                  borderRadius: "12px",
+                  overflow: "hidden",
+                  p: 2,
+                  boxShadow: "md",
+                  maxWidth: "100%",
+                  "@media print": {
+                    boxShadow: "none",
+                    p: 0,
+                    borderRadius: 0,
+                    overflow: "visible",
+                  },
+                }}
+              >
+                <Table
+                  borderAxis="both"
+                  sx={{
+                    minWidth: "100%",
+                    "& thead": {
+                      backgroundColor: "neutral.softBg",
+                      "@media print": {
+                        backgroundColor: "#eee",
+                      },
+                    },
+                    "& th, & td": {
+                      textAlign: "left",
+                      px: 2,
+                      py: 1.5,
+                      "@media print": {
+                        px: 1,
+                        py: 1,
+                        fontSize: "12px",
+                        border: "1px solid #ccc",
+                      },
+                    },
+                    "@media print": {
+                      borderCollapse: "collapse",
+                      width: "100%",
+                      tableLayout: "fixed",
+                    },
+                  }}
+                >
+                  {/* Table Header */}
+                  <thead>
+                    <tr>
+                      <th>PO Number</th>
+                      <th>Vendor</th>
+                      <th>Item Name</th>
+                      <th>PO Value (₹)</th>
+                      <th>Advance Paid (₹)</th>
+                      <th>Remaining Amount (₹)</th>
+                      <th>Total Billed Value (₹)</th>
+                      <th style={{ textAlign: "center" }}>
+                        <Checkbox
+                          onChange={handleSelectAllClient}
+                          checked={
+                            ClientSummary.length > 0 &&
+                            selectedClients.length === ClientSummary.length
+                          }
+                          disabled={ClientSummary.length === 0}
+                        />
+                      </th>
+                    </tr>
+                  </thead>
+
+                  {/* Table Body */}
+                  <tbody>
+                    {isLoading ? (
+                      <tr>
+                        <td
+                          colSpan={8}
+                          style={{ textAlign: "center", padding: "20px" }}
+                        >
+                          <Typography
+                            level="body-md"
+                            sx={{ fontStyle: "italic" }}
+                          >
+                            Loading purchase history...
+                          </Typography>
+                        </td>
+                      </tr>
+                    ) : ClientSummary.length > 0 ? (
+                      ClientSummary.map((client) => (
+                        <tr key={client._id}>
+                          <td>{client.po_number || "N/A"}</td>
+                          <td>{client.vendor || "N/A"}</td>
+                          <td>{client.item_name || "N/A"}</td>
+                          <td>
+                            ₹ {(client?.po_value || 0).toLocaleString("en-IN")}
+                          </td>
+                          <td>
+                            ₹{" "}
+                            {(client?.advance_paid || 0).toLocaleString(
+                              "en-IN"
+                            )}
+                          </td>
+                          <td>
+                            ₹{" "}
+                            {(client?.remaining_amount || 0).toLocaleString(
+                              "en-IN"
+                            )}
+                          </td>
+                          <td>
+                            ₹{" "}
+                            {(client?.total_billed_value || 0).toLocaleString(
+                              "en-IN"
+                            )}
+                          </td>
+                          <td style={{ textAlign: "center" }}>
+                            <Checkbox
+                              checked={selectedClients.includes(client._id)}
+                              onChange={() =>
+                                handleClientCheckboxChange(client._id)
+                              }
+                              aria-label={`Select client ${
+                                client.po_number || client._id
+                              }`}
+                            />
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={8}
+                          style={{ textAlign: "center", padding: "20px" }}
+                        >
+                          <Typography level="body-md">
+                            No purchase history available
+                          </Typography>
+                        </td>
+                      </tr>
                     )}
-                  </td>
-                  <td>
-                    ₹ {ClientTotal?.total_billed_value?.toLocaleString("en-IN")}
-                  </td>
-                  <td />
-                </tr>
-              )}
-            </tfoot>
-          </Table>
-        </Sheet>
+                  </tbody>
+
+                  {/* Total Row */}
+                  <tfoot>
+                    {ClientSummary.length > 0 && (
+                      <tr
+                        style={{
+                          fontWeight: "bold",
+                          backgroundColor: "#f5f5f5",
+                        }}
+                      >
+                        <td colSpan={3} style={{ textAlign: "right" }}>
+                          Total:{" "}
+                        </td>
+                        <td>
+                          ₹{" "}
+                          {ClientTotal?.total_po_value?.toLocaleString("en-IN")}
+                        </td>
+                        <td>
+                          ₹{" "}
+                          {ClientTotal?.total_advance_paid?.toLocaleString(
+                            "en-IN"
+                          )}
+                        </td>
+                        <td>
+                          ₹{" "}
+                          {ClientTotal?.total_remaining_amount?.toLocaleString(
+                            "en-IN"
+                          )}
+                        </td>
+                        <td>
+                          ₹{" "}
+                          {ClientTotal?.total_billed_value?.toLocaleString(
+                            "en-IN"
+                          )}
+                        </td>
+                        <td />
+                      </tr>
+                    )}
+                  </tfoot>
+                </Table>
+              </Sheet>
+            </Box>
+          </TabPanel>
+
+          {/* -------------------- SALES HISTORY -------------------- */}
+          <TabPanel value={1} sx={{ p: 0, pt: 2 }}>
+            <Box>
+              <Chip
+                color="primary"
+                variant="soft"
+                size="md"
+                sx={{
+                  fontSize: "1.1rem",
+                  fontWeight: 600,
+                  px: 2,
+                  py: 1,
+                  mt: 3,
+                }}
+              >
+                Sales History
+              </Chip>
+              <Divider
+                sx={{ borderWidth: "2px", marginBottom: "20px", mt: 2 }}
+              />
+
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexDirection: { xs: "column", md: "row" },
+                  gap: 2,
+                  mb: 2,
+                  "@media print": {
+                    display: "none",
+                  },
+                }}
+              >
+                {/* Search Input */}
+                <Input
+                  placeholder="Search Customer / Vendor / PO"
+                  value={searchSales}
+                  onChange={(e) => setSearchSales(e.target.value)}
+                  sx={{ width: { xs: "100%", md: 300 } }}
+                />
+
+                {/* Delete Button (Admin only) */}
+                {[
+                  "IT Team",
+                  "Guddu Rani Dubey",
+                  "Prachi Singh",
+                  "admin",
+                ].includes(user?.name) && (
+                  <IconButton
+                    color="danger"
+                    disabled={selectedSales.length === 0}
+                    // onClick={handleDeleteSales}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                )}
+              </Box>
+
+              <Sheet
+                variant="outlined"
+                sx={{
+                  borderRadius: "12px",
+                  overflow: "hidden",
+                  p: 2,
+                  boxShadow: "md",
+                  maxWidth: "100%",
+                  "@media print": {
+                    boxShadow: "none",
+                    p: 0,
+                    borderRadius: 0,
+                    overflow: "visible",
+                  },
+                }}
+              >
+                <Table
+                  borderAxis="both"
+                  sx={{
+                    minWidth: "100%",
+                    "& thead": {
+                      backgroundColor: "neutral.softBg",
+                      "@media print": {
+                        backgroundColor: "#eee",
+                      },
+                    },
+                    "& th, & td": {
+                      textAlign: "left",
+                      px: 2,
+                      py: 1.5,
+                      "@media print": {
+                        px: 1,
+                        py: 1,
+                        fontSize: "12px",
+                        border: "1px solid #ccc",
+                      },
+                    },
+                    "@media print": {
+                      borderCollapse: "collapse",
+                      width: "100%",
+                      tableLayout: "fixed",
+                    },
+                  }}
+                >
+                  <thead>
+                    <tr>
+                      <th style={{ width: 280 }}>PO Number / Attachments</th>
+                      <th>Vendor</th>
+                      <th>Item</th>
+                      <th>Total PO (₹)</th>
+                      <th>Advance Paid (₹)</th>
+                      {/* <th style={{ textAlign: "center" }}>
+                        <Checkbox
+                          onChange={handleSelectAllSales}
+                          checked={
+                            (SalesSummary?.length || 0) > 0 &&
+                            selectedSales.length === SalesSummary.length
+                          }
+                          disabled={(SalesSummary?.length || 0) === 0}
+                        />
+                      </th> */}
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {isLoading ? (
+                      <tr>
+                        <td
+                          colSpan={6}
+                          style={{ textAlign: "center", padding: "20px" }}
+                        >
+                          <Typography
+                            level="body-md"
+                            sx={{ fontStyle: "italic" }}
+                          >
+                            Loading sales history...
+                          </Typography>
+                        </td>
+                      </tr>
+                    ) : (SalesSummary?.length || 0) > 0 ? (
+                      (SalesSummary || [])
+                        .filter((s) => {
+                          if (!searchSales?.trim()) return true;
+                          const q = searchSales.toLowerCase();
+                          return (
+                            (s.po_number || "").toLowerCase().includes(q) ||
+                            (s.vendor || "").toLowerCase().includes(q) ||
+                            (s.item || "").toLowerCase().includes(q)
+                          );
+                        })
+                        .map((sale) => (
+                          <tr key={sale._id}>
+                            <td>
+                              <Stack spacing={0.75}>
+                                <Typography
+                                  level="body-sm"
+                                  sx={{ fontWeight: 600 }}
+                                >
+                                  {sale.po_number || "N/A"}
+                                </Typography>
+
+                                {/* Attachments under PO number */}
+                                <Stack
+                                  direction="row"
+                                  spacing={1}
+                                  flexWrap="wrap"
+                                  useFlexGap
+                                >
+                                  {(sale.attachments || []).map((att, idx) => (
+                                    <Link
+                                      key={`${sale._id}-att-${idx}`}
+                                      href={att?.url || "#"}
+                                      target="_blank"
+                                      rel="noopener"
+                                      underline="hover"
+                                      sx={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: 0.5,
+                                        fontSize: 12,
+                                        px: 1,
+                                        py: 0.25,
+                                        borderRadius: "8px",
+                                        backgroundColor: "neutral.softBg",
+                                      }}
+                                    >
+                                      <AttachFileIcon sx={{ fontSize: 16 }} />
+                                      {att?.name || `File ${idx + 1}`}
+                                    </Link>
+                                  ))}
+                                  {(sale.attachments || []).length === 0 && (
+                                    <Typography
+                                      level="body-xs"
+                                      sx={{ opacity: 0.7 }}
+                                    >
+                                      No attachments
+                                    </Typography>
+                                  )}
+                                </Stack>
+                              </Stack>
+                            </td>
+
+                            <td>{sale.vendor || "N/A"}</td>
+                            <td>{sale.item || "N/A"}</td>
+
+                            <td>
+                              ₹ {(sale?.total_po || 0).toLocaleString("en-IN")}
+                            </td>
+                            <td>
+                              ₹{" "}
+                              {(sale?.advance_paid || 0).toLocaleString(
+                                "en-IN"
+                              )}
+                            </td>
+
+                            {/* <td style={{ textAlign: "center" }}>
+                              <Checkbox
+                                checked={selectedSales.includes(sale._id)}
+                                onChange={() =>
+                                  handleSalesCheckboxChange(sale._id)
+                                }
+                                aria-label={`Select sale ${
+                                  sale.po_number || sale._id
+                                }`}
+                              />
+                            </td> */}
+                          </tr>
+                        ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={5}
+                          style={{ textAlign: "center", padding: "20px" }}
+                        >
+                          <Typography level="body-md">
+                            No sales history available
+                          </Typography>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+
+                  <tfoot>
+                    {(SalesSummary?.length || 0) > 0 && (
+                      <tr
+                        style={{
+                          fontWeight: "bold",
+                          backgroundColor: "#f5f5f5",
+                        }}
+                      >
+                        <td colSpan={3} style={{ textAlign: "right" }}>
+                          Total:{" "}
+                        </td>
+                        <td>
+                          ₹ {SalesTotal?.total_po?.toLocaleString("en-IN")}
+                        </td>
+                        <td>
+                          ₹{" "}
+                          {SalesTotal?.total_advance_paid?.toLocaleString(
+                            "en-IN"
+                          )}
+                        </td>
+                        <td />
+                      </tr>
+                    )}
+                  </tfoot>
+                </Table>
+              </Sheet>
+            </Box>
+          </TabPanel>
+        </Tabs>
       </Box>
 
       {/* Adjust History Section */}
@@ -1658,12 +2010,16 @@ const Customer_Payment_Summary = () => {
                     <td>{row.comment || "-"}</td>
                     <td>
                       {row.adj_type === "Add"
-                        ? `₹ ${parseFloat(row.adj_amount).toLocaleString("en-IN")}`
+                        ? `₹ ${parseFloat(row.adj_amount).toLocaleString(
+                            "en-IN"
+                          )}`
                         : "-"}
                     </td>
                     <td>
                       {row.adj_type === "Subtract"
-                        ? `₹ ${parseFloat(row.adj_amount).toLocaleString("en-IN")}`
+                        ? `₹ ${parseFloat(row.adj_amount).toLocaleString(
+                            "en-IN"
+                          )}`
                         : "-"}
                     </td>
                     <td style={{ textAlign: "center" }}>
