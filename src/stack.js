@@ -1,13 +1,9 @@
 import { StackClientApp } from "@stackframe/react";
-import { useNavigate } from "react-router-dom";
 
 export const stackClientApp = new StackClientApp({
-  // You should store these in environment variables based on your project setup
-  //! to be added in environment variables
-  projectId: "8b39fccc-1657-4320-8df0-d7caf86db049",
-  publishableClientKey: "pck_5eqzj6zznasj24mgarqyfm12ek2xgwhymwhbfdft19hqr",
+  projectId: process.env.REACT_APP_STACK_PROJECT_ID,
+  publishableClientKey: process.env.REACT_APP_STACK_PUBLISHABLE_KEY,
   tokenStore: "cookie",
-  redirectMethod: {
-    useNavigate,
-  }
+  redirectUrl: process.env.REACT_APP_STACK_REDIRECT_URL,
+  postLogoutRedirectUrl: process.env.REACT_APP_STACK_POST_LOGOUT_REDIRECT,
 });
