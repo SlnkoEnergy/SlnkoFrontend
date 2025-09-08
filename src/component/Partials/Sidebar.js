@@ -2748,18 +2748,7 @@ function Sidebar() {
           user?.department === "Infra" ||
           user?.department === "Marketing" ||
           user?.department === "Internal" ||
-          user?.department === "Loan" ||
-          (user?.department === "Engineering" &&
-            user?.name !== "Rishav Mahato" &&
-            user?.name !== "Piyush Rathour Raj" &&
-            user?.name !== "Naresh Kumar" &&
-            user?.name !== "Md Asif" &&
-            user?.name !== "Rahul Bhati" &&
-            user?.name !== "Sachin Jangid" &&
-            user?.name !== "Vishal Kushwaha" &&
-            user?.name !== "Hitesh Jangid" &&
-            user?.emp_id !== "SE-184" &&
-            user?.emp_id !== "SE-193") ||
+          user?.department === "Loan"  ||
           user?.name === "Manish Shah" ||
           (user?.department === "CAM" && user?.name !== "Shantanu Sameer") ? (
           <List
@@ -2883,17 +2872,7 @@ function Sidebar() {
               </ListItem>
             )}
           </List>
-        ) : user?.department === "Engineering" &&
-          (user?.name === "Rishav Mahato" ||
-            user?.name !== "Piyush Rathour Raj" ||
-            user?.name !== "Naresh Kumar" ||
-            user?.name !== "Md Asif" ||
-            user?.name !== "Rahul Bhati" ||
-            user?.name !== "Sachin Jangid" ||
-            user?.name !== "Vishal Kushwaha" ||
-            user?.name !== "Hitesh Jangid" ||
-            user?.emp_id !== "SE-184" ||
-            user?.emp_id !== "SE-193") ? (
+        ) : user?.department === "Engineering" ? (
           <List>
             <ListItem nested>
               <Toggler
