@@ -11,35 +11,54 @@ import {
   Card,
   Divider,
   Stack,
+  Tooltip,
+  IconButton,
+  Snackbar,
 } from "@mui/joy";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
 import LocationOnRoundedIcon from "@mui/icons-material/LocationOnOutlined";
+import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
+import FavoriteIcon from "@mui/icons-material/Favorite";
 import { useGetProjectByIdQuery } from "../redux/projectsSlice";
+import { useGetPostsQuery, useFollowMutation, useUnfollowMutation } from "../redux/postsSlice";
 import { useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
 import Overview from "./Forms/Engineering/Eng_Overview/Overview";
 import CamHandoverSheetForm from "./Lead Stage/Handover/CAMHandover";
 import PurchaseRequestCard from "./PurchaseRequestCard";
-import { useEffect, useState } from "react";
 import ScopeDetail from "./Scope";
+import Posts from "./Posts";
 
 const Project_Detail = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const project_id = searchParams.get("project_id");
-  const {
-    data: getProject,
-    isLoading,
-    error,
-  } = useGetProjectByIdQuery(project_id);
+  const project_id = searchParams.get("project_id") || "";
 
+  // Base project details
+  const { data: getProject, isLoading, error } = useGetProjectByIdQuery(project_id);
+  const projectDetails = getProject?.data || {};
+
+  // Pull the Posts doc to read followers array
+  const { data: postsResp } = useGetPostsQuery({ project_id });
+
+  // Logged-in user from localStorage
+  const currentUserId = useMemo(() => {
+    try {
+      const raw = localStorage.getItem("userDetails");
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return parsed?.userID || null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  // tabs
   const initialTab = parseInt(searchParams.get("tab") || "0");
   const [tabValue, setTabValue] = useState(initialTab);
+  useEffect(() => setTabValue(initialTab), [initialTab]);
 
-  useEffect(() => {
-    setTabValue(initialTab);
-  }, [initialTab]);
-
-  const handleTabChange = (event, newValue) => {
+  const handleTabChange = (_e, newValue) => {
     setTabValue(newValue);
     setSearchParams((prev) => {
       const params = new URLSearchParams(prev);
@@ -48,20 +67,67 @@ const Project_Detail = () => {
     });
   };
 
-  const projectDetails = getProject?.data || [];
+  // follow/unfollow state
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [follow, { isLoading: isFollowingCall }] = useFollowMutation();
+  const [unfollow, { isLoading: isUnfollowingCall }] = useUnfollowMutation();
+  const [toast, setToast] = useState({
+    open: false,
+    msg: "",
+    color: "success",
+  });
+
+  // Determine following from server data
+  useEffect(() => {
+    try {
+      const posts = postsResp?.data || [];
+      const first = Array.isArray(posts) ? posts[0] : null;
+      const followers = first?.followers || [];
+      const meIsFollowing =
+        !!currentUserId && followers.some((f) => String(f?.user_id?._id || f?.user_id) === String(currentUserId));
+      setIsFollowing(meIsFollowing);
+    } catch {
+
+    }
+  }, [postsResp, currentUserId]);
+
+  const handleFollowToggle = async () => {
+    if (!currentUserId || !project_id) {
+      setToast({ open: true, msg: "Missing user or project context.", color: "danger" });
+      return;
+    }
+    const payload = { project_id, followers: [ currentUserId] };
+    const prev = isFollowing;
+    setIsFollowing(!prev); 
+    try {
+      if (!prev) {
+        await follow(payload).unwrap();
+        setToast({ open: true, msg: "You’re now following this project.", color: "success" });
+      } else {
+        await unfollow(payload).unwrap();
+        setToast({ open: true, msg: "You unfollowed this project.", color: "success" });
+      }
+    } catch (e) {
+      setIsFollowing(prev);
+      setToast({ open: true, msg: "Action failed. Please try again.", color: "danger" });
+    }
+  };
+
   return (
-    <Box p={2}>
+    <Box
+      sx={{
+        ml: { lg: "var(--Sidebar-width)" },
+        px: "0px",
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+      }}
+    >
       <Box
         sx={{
-          marginLeft: { xl: "15%", lg: "16%" },
           borderRadius: "sm",
-          py: 2,
+          py: 1,
           display: "flex",
           flexWrap: "wrap",
           gap: 1.5,
-          "& > *": {
-            minWidth: { xs: "120px", md: "160px" },
-          },
         }}
       >
         {/* Left Card - Profile Info */}
@@ -73,29 +139,57 @@ const Project_Detail = () => {
             borderRadius: "lg",
           }}
         >
-          <Stack spacing={1} alignItems="center">
-            <Avatar
-              src="/path-to-profile-pic.jpg"
-              alt="Shankar Prasad"
-              sx={{ width: 64, height: 64 }}
-            />
-            <Typography level="title-md">{projectDetails?.customer}</Typography>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <EmailOutlinedIcon fontSize="small" />
-              <Typography level="body-sm">
-                {projectDetails?.email || "-"}{" "}
-              </Typography>
-            </Stack>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <PhoneOutlinedIcon fontSize="small" />
-              <Typography level="body-sm">
-                {projectDetails?.number}
-                {projectDetails?.alt_number
-                  ? `, ${getProject.data.alt_number}`
-                  : ""}
-              </Typography>
-            </Stack>
-          </Stack>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+            }}
+          >
+            {/* Left side → Profile details */}
+            <Box>
+              <Stack spacing={1} alignItems="flex-start">
+                <Avatar
+                  src="/path-to-profile-pic.jpg"
+                  alt={projectDetails?.customer || "Customer"}
+                  sx={{ width: 64, height: 64 }}
+                />
+                <Typography level="title-md">{projectDetails?.customer}</Typography>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <EmailOutlinedIcon fontSize="small" />
+                  <Typography level="body-sm">{projectDetails?.email || "-"}</Typography>
+                </Stack>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <PhoneOutlinedIcon fontSize="small" />
+                  <Typography level="body-sm">
+                    {projectDetails?.number}
+                    {projectDetails?.alt_number ? `, ${getProject?.data?.alt_number}` : ""}
+                  </Typography>
+                </Stack>
+              </Stack>
+            </Box>
+
+            {/* Right side → Follow button */}
+            <Box>
+              <Tooltip title={isFollowing ? "Unfollow Project" : "Follow Project"}>
+                <IconButton
+                  variant="soft"
+                  size="sm"
+                  onClick={handleFollowToggle}
+                  disabled={isFollowingCall || isUnfollowingCall}
+                  sx={{
+                    "--Icon-color": "#3366a3", // icon color
+                    color: "#3366a3", // text/icon fallback
+                    "&:hover": {
+                      backgroundColor: "rgba(51, 102, 163, 0.08)",
+                    },
+                  }}
+                >
+                  {isFollowing ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+                </IconButton>
+              </Tooltip>
+            </Box>
+          </Box>
 
           <Divider sx={{ my: 1 }} />
 
@@ -110,8 +204,7 @@ const Project_Detail = () => {
             <Stack direction="row" spacing={1} alignItems="center">
               <LocationOnRoundedIcon fontSize="small" />
               <Typography level="body-sm" sx={{ ml: 0.5 }}>
-                {typeof projectDetails?.site_address === "object" &&
-                projectDetails?.site_address !== null
+                {typeof projectDetails?.site_address === "object" && projectDetails?.site_address !== null
                   ? [
                       projectDetails?.site_address?.village_name,
                       projectDetails?.site_address?.district_name,
@@ -138,8 +231,7 @@ const Project_Detail = () => {
                 try {
                   const parsed = JSON.parse(projectDetails?.land);
                   const { acres, type } = parsed || {};
-                  if (acres || type)
-                    return `${acres || ""} ${type || ""}`.trim();
+                  if (acres || type) return `${acres || ""} ${type || ""}`.trim();
                   return null;
                 } catch {
                   return projectDetails?.land || "N/A";
@@ -158,7 +250,7 @@ const Project_Detail = () => {
         </Card>
 
         {/* Right Section - Notes & Tasks */}
-        <Card width="100%" sx={{ flex: 1, borderRadius: "lg", p: 2 }}>
+        <Card width="100%" sx={{ flex: 1, borderRadius: "lg", p: 1 }}>
           <Box flex={1}>
             <Tabs value={tabValue} onChange={handleTabChange}>
               <TabList>
@@ -166,11 +258,12 @@ const Project_Detail = () => {
                 <Tab>Scope</Tab>
                 <Tab>Purchase Summary</Tab>
                 <Tab>Engineering</Tab>
+                <Tab>Posts</Tab>
               </TabList>
 
               <TabPanel value={0}>
                 <Box
-                  style={{
+                  sx={{
                     height: "60vh",
                     overflowY: "auto",
                     display: "flex",
@@ -183,33 +276,44 @@ const Project_Detail = () => {
               </TabPanel>
 
               <TabPanel value={1}>
-                <Box maxHeight="70vh" overflowY="auto">
-                  <ScopeDetail
-                    project_id={project_id}
-                    project_code={projectDetails?.code}
-                  />
+                <Box maxHeight="70vh" overflow-y="auto">
+                  <ScopeDetail project_id={project_id} project_code={projectDetails?.code} />
                 </Box>
               </TabPanel>
+
               <TabPanel value={2}>
-                <Box overflowY="auto">
+                <Box overflow-y="auto">
                   <PurchaseRequestCard project_code={projectDetails?.code} />
                 </Box>
               </TabPanel>
 
               <TabPanel value={3}>
-                <Box
-                  display="flex"
-                  alignItems="flex-start"
-                  height="70vh"
-                  overflowY="auto"
-                >
+                <Box display="flex" alignItems="flex-start" height="70vh" overflow-y="auto">
                   <Overview />
+                </Box>
+              </TabPanel>
+
+              <TabPanel value={4}>
+                <Box display="flex" alignItems="flex-start" height="70vh" overflow-y="auto">
+                  <Posts projectId={project_id} />
                 </Box>
               </TabPanel>
             </Tabs>
           </Box>
         </Card>
       </Box>
+
+      {/* Toast */}
+      <Snackbar
+        open={toast.open}
+        variant="soft"
+        color={toast.color}
+        onClose={() => setToast((t) => ({ ...t, open: false }))}
+        autoHideDuration={2200}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        {toast.msg}
+      </Snackbar>
     </Box>
   );
 };
