@@ -60,31 +60,6 @@ SectionRow.propTypes = {
   defaultOpen: PropTypes.bool,
 };
 
-function OperatorSelect({ value, onChange, options }) {
-  const _ops =
-    Array.isArray(options) && options.length ? options : ["is", "contains"];
-  return (
-    <Select
-      value={value}
-      onChange={(_, v) => onChange(v)}
-      size="sm"
-      sx={{ minWidth: 120 }}
-    >
-      {_ops.map((op) => (
-        <Option key={String(op)} value={op}>
-          {String(op)}
-        </Option>
-      ))}
-    </Select>
-  );
-}
-
-OperatorSelect.propTypes = {
-  value: PropTypes.any,
-  onChange: PropTypes.func.isRequired,
-  options: PropTypes.array,
-};
-
 // Normalize any options input into stable [{label, value}] without throwing
 function normalizeOptions(list) {
   const arr = Array.isArray(list) ? list : [];
@@ -306,6 +281,7 @@ export default function Filter({
   }));
   const [exiting, setExiting] = useState(false);
   const initAppliedRef = useRef(false);
+
   useEffect(() => {
     if (!initAppliedRef.current) {
       setValues((v) => ({
@@ -319,10 +295,12 @@ export default function Filter({
 
   const setFieldValue = (key, next) =>
     setValues((prev) => ({ ...prev, [key]: next }));
+
   const resetAll = () => {
     const resetVals = { matcher: values.matcher || "AND" };
     (fields || []).forEach((f) => {
       resetVals[f.key] = undefined;
+      // we no longer keep or reset any `${key}__op` since operator UI is removed
     });
     setValues(resetVals);
     onReset && onReset();
@@ -347,16 +325,44 @@ export default function Filter({
 
   return (
     <>
-      <IconButton
-        variant="soft"
-        size="sm"
-        sx={{
-          "--Icon-color": "#3366a3",
-        }}
-        onClick={() => onOpenChange(true)}
-      >
-        <FilterAltRoundedIcon />
-      </IconButton>
+      {/* Filter trigger with red +N badge */}
+      <Box sx={{ position: "relative", display: "inline-block" }}>
+        <IconButton
+          variant="soft"
+          size="sm"
+          sx={{ "--Icon-color": "#3366a3" }}
+          onClick={() => onOpenChange(true)}
+        >
+          <FilterAltRoundedIcon />
+        </IconButton>
+
+        {appliedCount > 0 && (
+          <Box
+            sx={{
+              position: "absolute",
+              top: -6,
+              right: -6,
+              bgcolor: "var(--joy-palette-danger-solidBg)",
+              color: "#fff",
+              fontSize: 10,
+              fontWeight: 700,
+              lineHeight: 1,
+              px: 0.5,
+              minWidth: 20,
+              height: 20,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: "999px",
+              border: "2px solid var(--joy-palette-background-body)",
+              pointerEvents: "none",
+              zIndex: 1,
+            }}
+          >
+            {`+${appliedCount}`}
+          </Box>
+        )}
+      </Box>
 
       <Modal
         open={!!open}
@@ -368,9 +374,7 @@ export default function Filter({
           }, 280);
         }}
         keepMounted
-        slotProps={{
-          backdrop: { sx: { transition: "opacity 0.28s ease" } },
-        }}
+        slotProps={{ backdrop: { sx: { transition: "opacity 0.28s ease" } } }}
       >
         <Sheet
           variant="soft"
@@ -417,15 +421,6 @@ export default function Filter({
 
           <Box sx={{ flex: 1, overflow: "auto" }}>
             {(fields || []).map((f) => {
-              const operatorOptions =
-                f.operators ||
-                (f.type === "text"
-                  ? ["contains", "is"]
-                  : f.type === "daterange"
-                  ? ["between", "on", "before", "after"]
-                  : ["is"]);
-              const opKey = `${f.key}__op`;
-              const opVal = values[opKey] || f.operator || operatorOptions[0];
               const fieldVal = values[f.key];
 
               return (
@@ -434,19 +429,8 @@ export default function Filter({
                   title={f.label}
                   defaultOpen={!!f.startOpen}
                 >
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <OperatorSelect
-                      value={opVal}
-                      onChange={(v) => setFieldValue(opKey, v)}
-                      options={operatorOptions}
-                    />
+                  <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                    {/* Operator UI removed */}
                     <Box sx={{ flex: 1, minWidth: 220 }}>
                       <FieldRenderer
                         field={f}
@@ -488,9 +472,7 @@ export default function Filter({
                 backgroundColor: "transparent",
                 "--Button-hoverBg": "#e0e0e0",
                 "--Button-hoverBorderColor": "#3366a3",
-                "&:hover": {
-                  color: "#3366a3",
-                },
+                "&:hover": { color: "#3366a3" },
                 height: "8px",
               }}
               onClick={resetAll}
@@ -503,9 +485,7 @@ export default function Filter({
               sx={{
                 backgroundColor: "#3366a3",
                 color: "#fff",
-                "&:hover": {
-                  backgroundColor: "#285680",
-                },
+                "&:hover": { backgroundColor: "#285680" },
                 height: "8px",
               }}
               onClick={() => onApply && onApply(values, { appliedCount })}
@@ -564,6 +544,8 @@ export function buildQueryParams(
     if (val === undefined || val === null) return;
     if (Array.isArray(val) && val.length === 0) return;
 
+    // We still *support* op params if set programmatically,
+    // but the UI no longer sets them.
     const op = values[`${key}__op`];
 
     if (dateKeys.includes(key) && typeof val === "object" && val) {
@@ -588,4 +570,3 @@ export function buildQueryParams(
 
   return params.toString();
 }
-

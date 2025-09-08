@@ -7,15 +7,12 @@ import {
   Grid,
   FormControl,
   FormLabel,
-  IconButton,
   Switch,
   Box,
   Tabs,
   TabList,
   Tab,
 } from "@mui/joy";
-import StarIcon from "@mui/icons-material/Star";
-import StarBorderIcon from "@mui/icons-material/StarBorder";
 import { useState } from "react";
 import { useGetProjectDropdownQuery } from "../../redux/projectsSlice";
 import {
@@ -25,7 +22,33 @@ import {
 } from "../../redux/globalTaskSlice";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import Select from "react-select";
+import Select, { components } from "react-select";
+
+/* ---------------------------------------------------
+   Shared react-select styles (Joy-like blue border)
+--------------------------------------------------- */
+const joySelectStyles = {
+  control: (base, state) => ({
+    ...base,
+    minHeight: 40,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: state.isFocused
+      ? "#3366a3"
+      : "var(--joy-palette-neutral-outlinedBorder)",
+    boxShadow: state.isFocused ? "0 0 0 3px rgba(51, 102, 163, 0.16)" : "none",
+    "&:hover": {
+      borderColor: state.isFocused
+        ? "#3366a3"
+        : "var(--joy-palette-neutral-outlinedBorder)",
+    },
+    fontSize: 14,
+  }),
+  valueContainer: (b) => ({ ...b, padding: "0 10px" }),
+  placeholder: (b) => ({ ...b, color: "var(--joy-palette-text-tertiary)" }),
+  menu: (b) => ({ ...b, zIndex: 1301 }),
+  menuPortal: (b) => ({ ...b, zIndex: 1301 }),
+};
 
 const AddTask = () => {
   const [tab, setTab] = useState("project");
@@ -38,31 +61,23 @@ const AddTask = () => {
   const [note, setNote] = useState("");
   const [assignedTo, setAssignedTo] = useState([]);
   const [subtype, setSubType] = useState("");
-  const navigate = useNavigate();
 
   const { data: getProjectDropdown, isLoading } = useGetProjectDropdownQuery();
   const [createTask, { isLoading: isSubmitting }] = useCreateTaskMutation();
-  const { data: getAllUser } = useGetAllUserQuery();
+  const { data: getAllUser } = useGetAllUserQuery({ department: "" });
   const { data: getAllDept } = useGetAllDeptQuery();
 
+  /* ---------------- Submit ---------------- */
   const handleSubmit = async () => {
     const isProjectTab = tab === "project";
     const isHelpdeskTab = tab === "helpdesk";
 
-    // Validate required fields
-    if (
-      !title ||
-      !priority ||
-      (isProjectTab && (!selectedProject || selectedProject.length === 0))
-    ) {
-      return alert("Required fields missing");
+    if (!title || !priority || (isProjectTab && selectedProject.length === 0)) {
+      return toast.error("Required fields missing (Title, Priority, Project).");
     }
 
-    // Extract project IDs if multiple selected
     const projectIds = isProjectTab
-      ? Array.isArray(selectedProject)
-        ? selectedProject.map((p) => p._id)
-        : [selectedProject._id]
+      ? selectedProject.map((p) => p._id)
       : undefined;
 
     const payload = {
@@ -73,10 +88,10 @@ const AddTask = () => {
       assigned_to: isHelpdeskTab
         ? []
         : assignToTeam
-          ? []
-          : Array.isArray(assignedTo)
-            ? assignedTo
-            : [],
+        ? []
+        : Array.isArray(assignedTo)
+        ? assignedTo
+        : [],
       priority: priority.toString(),
       type: tab,
       sub_type: isHelpdeskTab ? subtype : null,
@@ -88,63 +103,116 @@ const AddTask = () => {
         team: isHelpdeskTab
           ? "superadmin"
           : assignToTeam
-            ? assignedTo
-            : undefined,
+          ? assignedTo
+          : undefined,
       }).unwrap();
 
       toast.success("Task created successfully");
-      setTimeout(() => navigate("/all_task"), 1000);
+      setPriority("");
+      setAssignToTeam("");
+      setSearchText("");
+      setSelectedProject("");
+      setDueDate("");
+      setTitle("");
+      setNote("");
+      setAssignedTo("");
     } catch (error) {
       toast.error("Error creating task");
     }
   };
 
-  const customStyles = {
-    menu: (provided) => ({
-      ...provided,
-      maxWidth: 250,
-      overflowX: "auto",
-    }),
-  };
-
+  /* ---------------- Project options ---------------- */
   const optionsProject = (getProjectDropdown?.data || []).map((project) => ({
     value: project.code,
     label: project.code,
   }));
 
-  const options = assignToTeam
+  /* ---------------- Assign To (users/teams) ---------------- */
+  const rawOptions = assignToTeam
     ? Array.isArray(getAllDept?.data)
       ? getAllDept.data.filter((dept) => dept.trim() !== "")
       : []
     : Array.isArray(getAllUser?.data)
-      ? getAllUser.data
-      : [];
+    ? getAllUser.data
+    : [];
 
-  const selectOptions = options.map((item) =>
+  const selectOptions = rawOptions.map((item) =>
     assignToTeam
       ? { value: item, label: item }
       : { value: item._id, label: item.name }
   );
 
-  const value = assignToTeam
+  const assignValue = assignToTeam
     ? assignedTo
       ? { value: assignedTo, label: assignedTo }
       : null
     : Array.isArray(assignedTo)
-      ? assignedTo
-          .map((userId) => {
-            const user = options.find((item) => item._id === userId);
-            return user ? { value: user._id, label: user.name } : null;
-          })
-          .filter(Boolean)
-      : [];
+    ? assignedTo
+        .map((userId) => {
+          const user = rawOptions.find((u) => u._id === userId);
+          return user ? { value: user._id, label: user.name } : null;
+        })
+        .filter(Boolean)
+    : [];
+
+  /* ---------------- Priority react-select ---------------- */
+  const priorityMeta = {
+    1: { label: "High", bg: "#d32f2f" },
+    2: { label: "Medium", bg: "#ed6c02" },
+    3: { label: "Low", bg: "#2e7d32" },
+  };
+  const priorityOptions = [
+    { value: 1, label: "High" },
+    { value: 2, label: "Medium" },
+    { value: 3, label: "Low" },
+  ];
+
+  const PrioritySingleValue = (props) => {
+    const { data } = props;
+    const meta = priorityMeta[data?.value];
+    return (
+      <components.SingleValue {...props}>
+        <span
+          style={{
+            display: "inline-block",
+            padding: "2px 8px",
+            borderRadius: 999,
+            fontSize: 12,
+            fontWeight: 600,
+            color: "#fff",
+            background: meta?.bg ?? "#64748b",
+          }}
+        >
+          {meta?.label || "Select priority"}
+        </span>
+      </components.SingleValue>
+    );
+  };
+
+  const PriorityOption = (props) => {
+    const { data } = props;
+    const meta = priorityMeta[data.value];
+    return (
+      <components.Option {...props}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: "50%",
+              background: meta?.bg ?? "#64748b",
+            }}
+          />
+          <span>{meta?.label || data.label}</span>
+        </div>
+      </components.Option>
+    );
+  };
 
   return (
     <Card
       sx={{
         maxWidth: 700,
-        
-        
         mx: "auto",
         p: 3,
         borderRadius: "lg",
@@ -154,7 +222,7 @@ const AddTask = () => {
         Add Task
       </Typography>
 
-      <Tabs value={tab} onChange={(_, newVal) => setTab(newVal)} sx={{ mb: 3 }}>
+      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
         <TabList>
           <Tab value="project">Project</Tab>
           <Tab value="internal">Internal</Tab>
@@ -175,73 +243,71 @@ const AddTask = () => {
         </Grid>
 
         {tab === "project" && (
-          <>
-            <Grid xs={12}>
-              <FormControl fullWidth>
-                <FormLabel>Project Id</FormLabel>
-                <Select
-                  isMulti
-                  isLoading={isLoading}
-                  isClearable
-                  isSearchable
-                  placeholder="Search project..."
-                  value={
-                    selectedProject?.length
-                      ? selectedProject.map((proj) => ({
-                          value: proj.code,
-                          label: proj.code,
-                        }))
-                      : []
-                  }
-                  onChange={(selectedOptions) => {
-                    if (Array.isArray(selectedOptions)) {
-                      const selectedProjects = selectedOptions
-                        .map((opt) =>
-                          getProjectDropdown?.data?.find(
-                            (proj) => proj.code === opt.value
-                          )
+          <Grid xs={12}>
+            <FormControl fullWidth>
+              <FormLabel>Project Id</FormLabel>
+              <Select
+                isMulti
+                isLoading={isLoading}
+                isClearable
+                isSearchable
+                placeholder="Search project..."
+                value={
+                  selectedProject?.length
+                    ? selectedProject.map((proj) => ({
+                        value: proj.code,
+                        label: proj.code,
+                      }))
+                    : []
+                }
+                onChange={(selectedOptions) => {
+                  if (Array.isArray(selectedOptions)) {
+                    const selectedProjects = selectedOptions
+                      .map((opt) =>
+                        getProjectDropdown?.data?.find(
+                          (proj) => proj.code === opt.value
                         )
-                        .filter(Boolean); // remove nulls
-                      setSelectedProject(selectedProjects);
-                    } else {
-                      setSelectedProject([]);
-                    }
-                    setSearchText("");
-                  }}
-                  onInputChange={(inputValue, { action }) => {
-                    if (action === "input-change") {
-                      setSearchText(inputValue);
-                    }
-                  }}
-                  options={optionsProject.filter((project) =>
-                    project.label
-                      .toLowerCase()
-                      .includes(searchText.toLowerCase())
-                  )}
-                  styles={customStyles}
-                />
-              </FormControl>
-            </Grid>
-          </>
+                      )
+                      .filter(Boolean);
+                    setSelectedProject(selectedProjects);
+                  } else {
+                    setSelectedProject([]);
+                  }
+                  setSearchText("");
+                }}
+                onInputChange={(inputValue, { action }) => {
+                  if (action === "input-change") setSearchText(inputValue);
+                }}
+                options={optionsProject.filter((p) =>
+                  p.label.toLowerCase().includes(searchText.toLowerCase())
+                )}
+                styles={joySelectStyles}
+                menuPortalTarget={document.body}
+              />
+            </FormControl>
+          </Grid>
         )}
 
         <Grid xs={6}>
           <FormControl fullWidth>
             <FormLabel>Priority</FormLabel>
-            <Box display="flex" gap={1}>
-              {[1, 2, 3].map((level) => (
-                <IconButton
-                  key={level}
-                  variant="plain"
-                  color="warning"
-                  onClick={() =>
-                    setPriority((prev) => (prev === level ? 0 : level))
-                  }
-                >
-                  {priority >= level ? <StarIcon /> : <StarBorderIcon />}
-                </IconButton>
-              ))}
-            </Box>
+            <Select
+              options={priorityOptions}
+              isClearable
+              value={
+                priorityOptions.find((o) => o.value === Number(priority)) ||
+                null
+              }
+              onChange={(opt) => setPriority(opt?.value ?? 0)}
+              components={{
+                SingleValue: PrioritySingleValue,
+                Option: PriorityOption,
+                IndicatorSeparator: () => null,
+              }}
+              styles={joySelectStyles}
+              menuPortalTarget={document.body}
+              placeholder="Select priority"
+            />
           </FormControl>
         </Grid>
 
@@ -255,44 +321,42 @@ const AddTask = () => {
             />
           </FormControl>
         </Grid>
+
         {tab === "helpdesk" && (
-          <>
-            <Grid xs={6}>
-              <FormControl fullWidth>
-                <FormLabel>Type</FormLabel>
-                <Select
-                  isLoading={isLoading}
-                  isClearable
-                  isSearchable
-                  placeholder="Search Type..."
-                  options={[
-                    { label: "Changes", value: "changes" },
-                    { label: "New Feature", value: "new feature" },
-                    { label: "Issue", value: "issue" },
-                  ]}
-                  value={
-                    subtype
-                      ? {
-                          label: subtype.replace(/\b\w/g, (c) =>
-                            c.toUpperCase()
-                          ),
-                          value: subtype,
-                        }
-                      : null
-                  }
-                  onChange={(selectedOption) => {
-                    setSubType(selectedOption ? selectedOption.value : "");
-                  }}
-                />
-              </FormControl>
-            </Grid>
-          </>
+          <Grid xs={6}>
+            <FormControl fullWidth>
+              <FormLabel>Type</FormLabel>
+              <Select
+                isLoading={isLoading}
+                isClearable
+                isSearchable
+                placeholder="Search Type..."
+                options={[
+                  { label: "Changes", value: "changes" },
+                  { label: "New Feature", value: "new feature" },
+                  { label: "Issue", value: "issue" },
+                ]}
+                value={
+                  subtype
+                    ? {
+                        label: subtype.replace(/\b\w/g, (c) => c.toUpperCase()),
+                        value: subtype,
+                      }
+                    : null
+                }
+                onChange={(opt) => setSubType(opt ? opt.value : "")}
+                styles={joySelectStyles}
+                menuPortalTarget={document.body}
+              />
+            </FormControl>
+          </Grid>
         )}
+
         <Grid xs={12}>
           <FormControl fullWidth>
             <FormLabel>Assigned To</FormLabel>
 
-            {tab !== "helpdesk" && (
+            {tab !== "helpdesk" ? (
               <>
                 <Box
                   display="flex"
@@ -315,22 +379,22 @@ const AddTask = () => {
                   isMulti={!assignToTeam}
                   placeholder={assignToTeam ? "Select a team" : "Select Users"}
                   options={selectOptions}
-                  value={value}
+                  value={assignValue}
                   onChange={(selected) => {
                     if (assignToTeam) {
                       setAssignedTo(selected?.value || null);
                     } else {
-                      const ids = selected
-                        ? selected.map((opt) => opt.value)
-                        : [];
+                      const ids = selected ? selected.map((o) => o.value) : [];
                       setAssignedTo(ids);
                     }
                   }}
+                  styles={joySelectStyles}
+                  menuPortalTarget={document.body}
                 />
               </>
+            ) : (
+              <Input value="IT Team" disabled />
             )}
-
-            {tab === "helpdesk" && <Input value="IT Team" disabled />}
           </FormControl>
         </Grid>
 
@@ -348,7 +412,7 @@ const AddTask = () => {
 
         <Grid xs={12} display="flex" justifyContent="flex-end" gap={1}>
           <Button
-            variant="solid"
+            variant="outlined"
             color="danger"
             onClick={() => {
               const confirmDiscard = window.confirm(
@@ -358,12 +422,21 @@ const AddTask = () => {
                 setPriority(0);
                 setAssignToTeam(false);
                 setSearchText("");
-                setSelectedProject(null);
+                setSelectedProject([]);
                 setTitle("");
                 setDueDate("");
                 setNote("");
                 setAssignedTo([]);
               }
+            }}
+            sx={{
+              color: "#3366a3",
+              borderColor: "#3366a3",
+              backgroundColor: "transparent",
+              "--Button-hoverBg": "#e0e0e0",
+              "--Button-hoverBorderColor": "#3366a3",
+              "&:hover": { color: "#3366a3" },
+              height: "8px",
             }}
           >
             Discard
@@ -374,6 +447,12 @@ const AddTask = () => {
             color="primary"
             onClick={handleSubmit}
             loading={isSubmitting}
+            sx={{
+              backgroundColor: "#3366a3",
+              color: "#fff",
+              "&:hover": { backgroundColor: "#285680" },
+              height: "8px",
+            }}
           >
             Submit
           </Button>

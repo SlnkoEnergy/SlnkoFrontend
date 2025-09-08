@@ -44,7 +44,7 @@ function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
   const department = searchParams.get("department") || "";
   const assignedToName = searchParams.get("assignedToName") || "";
   const createdByName = searchParams.get("createdByName") || "";
-
+  const priorityFilter = searchParams.get("priorityFilter") || "";
   const statusFromTab =
     {
       Pending: "pending",
@@ -78,16 +78,8 @@ function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
     hide_inprogress: hideProgress,
     assignedToName,
     createdByName,
+    priorityFilter,
   });
-
-  const { data: deptApiData } = useGetAllDeptQuery();
-
-  const shouldLoadUsers = !!department;
-  const {
-    data: usersResp,
-    isFetching: isUsersLoading,
-    isError: isUsersError,
-  } = useGetAllUserQuery({ department }, { skip: !shouldLoadUsers });
 
   const patchParams = useCallback(
     (patchObj) => {

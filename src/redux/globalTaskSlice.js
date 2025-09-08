@@ -43,9 +43,9 @@ export const GlobalTaskApi = createApi({
         hide_pending = false,
         assignedToName = "",
         createdByName = "",
+        priorityFilter = "",
       }) =>
-        `tasks/task?page=${page}&search=${search}&status=${status}&createdAt=${createdAt}&deadline=${deadline}&department=${department}&limit=${limit}&hide_completed=${hide_completed}&hide_inprogress=${hide_inprogress}&hide_pending=${hide_pending}&assignedToName=${assignedToName}&createdByName=${createdByName}`,
-      // Provide LIST tag and (if available) per-item tags for fine-grained invalidation
+        `tasks/task?page=${page}&search=${search}&status=${status}&createdAt=${createdAt}&deadline=${deadline}&department=${department}&limit=${limit}&hide_completed=${hide_completed}&hide_inprogress=${hide_inprogress}&hide_pending=${hide_pending}&assignedToName=${assignedToName}&createdByName=${createdByName}&priorityFilter=${priorityFilter}`,
       providesTags: (result) => {
         const items = Array.isArray(result)
           ? result
@@ -53,7 +53,7 @@ export const GlobalTaskApi = createApi({
           ? result.data
           : Array.isArray(result?.tasks)
           ? result.tasks
-          : []; // fallback if your API wraps the array differently
+          : [];
 
         return [
           { type: "Tasks", id: "LIST" },
