@@ -111,6 +111,8 @@ import LogisticsForm from "../pages/SCM/LogisticsForm";
 import Inspection from "../pages/Eng/Inspection";
 import Inspection_Form from "../pages/Eng/Inspection_Form";
 import Category_Form from "../pages/Databases/Category_Form";
+import RequireAuth from "../redux/auth/RequireAuth";
+import RequirePermission from "../redux/auth/RequirePermission";
 
 function index() {
   return (
@@ -524,13 +526,16 @@ function index() {
         }
       />
       <Route
-        path="/pay_request"
-        element={
-          <PrivateRoute>
-            <AddPayment_Request />
-          </PrivateRoute>
-        }
-      />
+  path="/pay_Request"
+  element={
+    <RequireAuth>
+      <RequirePermission permission="add_new_payment" /* teamId={teamId} */>
+        <AddPayment_Request />
+      </RequirePermission>
+    </RequireAuth>
+  }
+/>
+
       <Route
         path="/adjust_request"
         element={

@@ -17,16 +17,54 @@ import { useGetPaymentRecordQuery } from "../redux/Accounts";
 import InstantRequest from "./PaymentTable/Payment";
 import CreditRequest from "./PaymentTable/Credit";
 
+// RBAC wrapper + Stack app
+import RequirePermission from "../redux/auth/RequirePermission";
+import { stackClientApp } from "../stack";
+
 const PaymentRequest = forwardRef(() => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+
   const initialPage = parseInt(searchParams.get("page")) || 1;
-  const initialPageSize = parseInt(searchParams.get("pageSize")) || 10; 
+  const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
+
   const [perPage, setPerPage] = useState(initialPageSize);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [searchQuery, setSearchQuery] = useState("");
   const [status, setStatus] = useState("");
   const [activeTab, setActiveTab] = useState(0);
+
+  // 🔐 team id resolved from Stack (Accounts team preferred)
+  const [teamId, setTeamId] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const token = await stackClientApp.getToken();
+        if (!token) return;
+
+        const url = new URL("https://api.stack-auth.com/api/v1/teams");
+        url.searchParams.set("user_id", "me");
+
+        const r = await fetch(url.toString(), {
+          headers: {
+            "x-stack-access-type": "client",
+            "x-stack-project-id": process.env.REACT_APP_STACK_PROJECT_ID,
+            "x-stack-publishable-client-key": process.env.REACT_APP_STACK_PUBLISHABLE_KEY,
+            "x-stack-access-token": token,
+          },
+        });
+        const { items = [] } = await r.json();
+
+        const accounts = items.find(
+          (t) => (t.name || "").toLowerCase() === "accounts"
+        );
+        setTeamId(accounts?.id || items[0]?.id || null);
+      } catch (e) {
+        console.warn("teams fetch failed", e);
+      }
+    })();
+  }, []);
 
   const {
     data: responseData,
@@ -39,7 +77,6 @@ const PaymentRequest = forwardRef(() => {
     status: status,
     tab: activeTab === 0 ? "instant" : "credit",
   });
-  // console.log(responseData?.data);
 
   const [paginatedData, setPaginatedData] = useState(responseData?.data || []);
   const total = responseData?.total || 0;
@@ -52,27 +89,17 @@ const PaymentRequest = forwardRef(() => {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const userData = getUserData();
-    setUser(userData);
-  }, []);
-
-  const getUserData = () => {
     const userData = localStorage.getItem("userDetails");
-    if (userData) {
-      return JSON.parse(userData);
-    }
-    return null;
-  };
+    setUser(userData ? JSON.parse(userData) : null);
+  }, []);
 
   useEffect(() => {
     const params = {};
-
     if (currentPage > 1) params.page = currentPage;
     if (perPage !== 10) params.pageSize = perPage;
     if (searchQuery) params.search = searchQuery;
     if (status) params.status = status;
     params.tab = activeTab === 0 ? "instant" : "credit";
-
     setSearchParams(params, { replace: true });
   }, [currentPage, perPage, searchQuery, status, activeTab, setSearchParams]);
 
@@ -157,14 +184,8 @@ const PaymentRequest = forwardRef(() => {
           }}
         >
           <Box sx={{ display: "flex", gap: 1 }}>
-            {" "}
-            {(user?.name === "IT Team" ||
-              user?.name === "Guddu Rani Dubey" ||
-              user?.name === "Prachi Singh" ||
-              user?.department === "admin" ||
-              user?.name === "Shubham Gupta" ||
-              user?.name === "Gagan Tayal" ||
-              user?.name === "Ajay Singh") && (
+            {/* 🔐 RBAC: Add New Payment button gated by Stack permission in chosen team */}
+            <RequirePermission permission="add_new_payment" teamId={teamId}>
               <Button
                 color="primary"
                 size="sm"
@@ -172,7 +193,9 @@ const PaymentRequest = forwardRef(() => {
               >
                 Add New Payment +
               </Button>
-            )}
+            </RequirePermission>
+
+            {/* existing Trash access (unchanged) */}
             {(user?.name === "IT Team" ||
               user?.name === "Guddu Rani Dubey" ||
               user?.name === "Prachi Singh" ||
@@ -223,12 +246,8 @@ const PaymentRequest = forwardRef(() => {
             gap: 2,
             px: 1,
             py: 1,
-            // bgcolor: "background.level1",
-            borderRadius: "md",
-            // mb: 2,
           }}
         >
-          {/* Horizontal Tabs like screenshot */}
           <Tabs
             value={activeTab}
             onChange={(_, value) => {
@@ -262,9 +281,7 @@ const PaymentRequest = forwardRef(() => {
                   fontWeight: 500,
                   transition: "all 0.2s",
                   minHeight: "36px",
-                  "&:hover": {
-                    backgroundColor: "neutral.softHoverBg",
-                  },
+                  "&:hover": { backgroundColor: "neutral.softHoverBg" },
                   ...(activeTab === 0),
                 }}
               >
@@ -278,9 +295,7 @@ const PaymentRequest = forwardRef(() => {
                   fontWeight: 500,
                   transition: "all 0.2s",
                   minHeight: "36px",
-                  "&:hover": {
-                    backgroundColor: "neutral.softHoverBg",
-                  },
+                  "&:hover": { backgroundColor: "neutral.softHoverBg" },
                   ...(activeTab === 1),
                 }}
               >
@@ -288,11 +303,11 @@ const PaymentRequest = forwardRef(() => {
               </Tab>
             </TabList>
           </Tabs>
+
           <Box
             className="SearchAndFilters-tabletUp"
             sx={{
               borderRadius: "sm",
-              // py: 2,
               display: "flex",
               flexDirection: { xs: "column", md: "row" },
               flexWrap: "wrap",
@@ -310,43 +325,31 @@ const PaymentRequest = forwardRef(() => {
                 onChange={(e) => handleSearch(e.target.value)}
                 sx={{
                   width: 350,
-
                   borderColor: "neutral.outlinedBorder",
-                  borderBottom: searchQuery
-                    ? "2px solid #1976d2"
-                    : "1px solid #ddd",
+                  borderBottom: searchQuery ? "2px solid #1976d2" : "1px solid #ddd",
                   borderRadius: 5,
                   boxShadow: "none",
-                  "&:hover": {
-                    borderBottom: "2px solid #1976d2",
-                  },
-                  "&:focus-within": {
-                    borderBottom: "2px solid #1976d2",
-                  },
+                  "&:hover": { borderBottom: "2px solid #1976d2" },
+                  "&:focus-within": { borderBottom: "2px solid #1976d2" },
                 }}
               />
             </FormControl>
             {renderFilters()}
           </Box>
         </Box>
+
         {/* Pagination Controls */}
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
-            justifyContent:"flex-end",
+            justifyContent: "flex-end",
             flexWrap: "wrap",
-            padding:"5px"
+            padding: "5px",
           }}
         >
-          {/* Rows per page */}
           <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "flex-end",
-              gap: 1,
-            }}
+            sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 1 }}
           >
             <Typography level="body-sm">Rows per page:</Typography>
             <Select
@@ -368,18 +371,10 @@ const PaymentRequest = forwardRef(() => {
             </Select>
           </Box>
 
-          {/* Pagination info */}
-          <Typography level="body-sm">
-            {`${startIndex}-${endIndex} of ${total}`}
-          </Typography>
+          <Typography level="body-sm">{`${startIndex}-${endIndex} of ${total}`}</Typography>
 
-          {/* Navigation buttons */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <IconButton
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(1)}
-            >
+            <IconButton size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage(1)}>
               <KeyboardDoubleArrowLeft />
             </IconButton>
             <IconButton
@@ -392,9 +387,7 @@ const PaymentRequest = forwardRef(() => {
             <IconButton
               size="sm"
               disabled={currentPage === totalPages}
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-              }
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
             >
               <KeyboardArrowRight />
             </IconButton>
