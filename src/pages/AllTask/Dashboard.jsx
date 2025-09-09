@@ -17,9 +17,9 @@ import Filter from "../../component/Partials/Filter";
 import { IconButton, Modal, ModalDialog } from "@mui/joy";
 import AddTask from "../../component/All_Tasks/Add_Task";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
-import TaskSummary from "../../component/All_Tasks/TaskDashboard";
-import TaskSummaryCards from "../../component/All_Tasks/TaskDashboardCards";
 import AllTaskDashboard from "../../component/All_Tasks/Dashboard";
+
+
 function TaskDashboard() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
