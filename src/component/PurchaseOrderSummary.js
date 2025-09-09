@@ -1237,9 +1237,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       case "out_for_delivery":
         return "orange";
       case "partially_delivered":
-        return "#f59e0b";
+        return "#f59e0b"; // amber
       case "short_quantity":
-        return "#b45309";
+        return "#b45309"; // darker amber
       case "delivered":
         return "green";
       case "etd pending":
@@ -1252,54 +1252,50 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   };
 
   return (
-    <Box
-      sx={{
-        ml: { xs:0,lg: "var(--Sidebar-width)" },
-        px: "0px",
-        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
-        maxWidth:{xs:'95vw', lg:'84vw'}
-      }}
-    >
+    <>
+      {/* Search + Filters */}
       <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        pb={0.5}
-        flexWrap="wrap"
-        gap={1}
+        className="SearchAndFilters-tabletUp"
+        sx={{
+          marginLeft: isFromCAM || isFromPR ? 0 : { xl: "15%", lg: "18%" },
+          borderRadius: "sm",
+          py: 1,
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 1.5,
+          "& > *": {
+            minWidth: { xs: "120px", md: "160px" },
+          },
+        }}
       >
-        {/* {renderFilters()} */}
-        <Box
-          className="SearchAndFilters-tabletUp"
-          sx={{
-            py: 1,
-            display: "flex",
-            alignItems: "flex-end",
-            gap: 1.5,
-            width: { xs: "100%", md: "50%" },
-          }}
-        >
-          <FormControl sx={{ flex: 2, }} size="sm">
-            <Input
-              size="sm"
-              placeholder="Search Project Id, PO Number, Vendor"
-              startDecorator={<SearchIcon />}
-              value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
-            />
-          </FormControl>
-        </Box>
+        <FormControl sx={{ flex: 2, minWidth: 280 }} size="sm">
+          <FormLabel>Search here</FormLabel>
+          <Input
+            size="sm"
+            placeholder="Search Project Id, PO Number, Vendor"
+            startDecorator={<SearchIcon />}
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+          />
+        </FormControl>
+
+        {renderFilters()}
       </Box>
+
       {/* Table */}
       <Sheet
         className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: { xs: "none", sm: "block" },
+          display:
+            isFromCAM || isFromPR ? "flex" : { xs: "none", sm: "initial" },
           width: "100%",
           borderRadius: "sm",
-          maxHeight: { xs: "66vh", xl: "75vh" },
+          flexShrink: 1,
           overflow: "auto",
+          minHeight: 0,
+          marginLeft: isFromCAM || isFromPR ? 0 : { xl: "15%", lg: "18%" },
+          maxWidth: isFromCAM || isFromPR ? "100%" : { lg: "85%", sm: "100%" },
         }}
       >
         <Box
@@ -1630,7 +1626,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         padding: 1,
                         textAlign: "left",
                         borderBottom: "1px solid",
-                        minWidth: 150,
+                        minWidth: 100,
                       }}
                     >
                       {etd ? (
@@ -1658,7 +1654,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                             gap: 0.5,
                           }}
                         >
-                          ⚠️ ETD NOT FOUND
+                          ⚠️
                         </Typography>
                       )}
                     </Box>
@@ -1726,6 +1722,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           display: "flex",
           alignItems: "center",
           flexDirection: { xs: "column", md: "row" },
+          marginLeft: isFromCAM || isFromPR ? 0 : { xl: "15%", lg: "18%" },
         }}
       >
         <Button
@@ -1767,7 +1764,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           )}
         </Box>
 
-        <FormControl size="sm">
+        <FormControl size="sm" sx={{ minWidth: 120 }}>
           <Select
             value={perPage}
             onChange={(e, newValue) => {
@@ -1777,7 +1774,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           >
             {[10, 30, 60, 100].map((num) => (
               <Option key={num} value={num}>
-                {num}
+                {num}/Page
               </Option>
             ))}
           </Select>
@@ -1857,7 +1854,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
         />
       </Box>
-    </Box>
+    </>
   );
 });
 

@@ -14,7 +14,6 @@ const baseQuery = fetchBaseQuery({
 export const GlobalTaskApi = createApi({
   reducerPath: "GlobalTaskApi",
   baseQuery,
-  // Use consistent tag names throughout
   tagTypes: ["Tasks", "Task", "Users", "Depts"],
   endpoints: (builder) => ({
     /* ------------------------------ CREATE ------------------------------ */
@@ -24,7 +23,6 @@ export const GlobalTaskApi = createApi({
         method: "POST",
         body: payload,
       }),
-      // ensure the list page refetches
       invalidatesTags: [{ type: "Tasks", id: "LIST" }],
     }),
 
@@ -75,14 +73,12 @@ export const GlobalTaskApi = createApi({
     }),
 
     /* ------------------------- STATUS UPDATE (PUT) ---------------------- */
-    // Matches your backend: PUT /tasks/:id/updateTaskStatus  body: { status, remarks }
     updateTaskStatus: builder.mutation({
       query: ({ id, status, remarks }) => ({
         url: `tasks/${id}/updateTaskStatus`,
         method: "PUT",
         body: { status, remarks },
       }),
-      // Refetch both this task and the list after a status change
       invalidatesTags: (_res, _err, { id }) => [
         { type: "Task", id },
         { type: "Tasks", id: "LIST" },
@@ -93,8 +89,10 @@ export const GlobalTaskApi = createApi({
     updateTask: builder.mutation({
       query: ({ id, body }) => {
         const q = { url: `tasks/task/${id}`, method: "PUT", body };
-        if (typeof FormData !== "undefined" && body instanceof FormData)
+        // Let the browser set multipart headers
+        if (typeof FormData !== "undefined" && body instanceof FormData) {
           q.headers = undefined;
+        }
         return q;
       },
       invalidatesTags: (_res, _err, { id }) => [
@@ -102,6 +100,7 @@ export const GlobalTaskApi = createApi({
         { type: "Tasks", id: "LIST" },
       ],
     }),
+
     /* ------------------------------ DELETE ------------------------------ */
     deleteTask: builder.mutation({
       query: (id) => ({
@@ -140,6 +139,19 @@ export const GlobalTaskApi = createApi({
       }),
       providesTags: [{ type: "Depts", id: "LIST" }],
     }),
+    createSubTask: builder.mutation({
+      query: ({ taskId, body }) => {
+        const q = { url: `tasks/subtask/${taskId}`, method: "PUT", body };
+        if (typeof FormData !== "undefined" && body instanceof FormData) {
+          q.headers = undefined;
+        }
+        return q;
+      },
+      invalidatesTags: (_res, _err, { taskId }) => [
+        { type: "Task", id: taskId },
+        { type: "Tasks", id: "LIST" },
+      ],
+    }),
   }),
 });
 
@@ -153,4 +165,5 @@ export const {
   useDeleteTaskMutation,
   useExportTasksToCsvMutation,
   useUpdateTaskMutation,
+  useCreateSubTaskMutation
 } = GlobalTaskApi;
