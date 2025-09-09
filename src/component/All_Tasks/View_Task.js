@@ -55,7 +55,7 @@ import {
   useCreateSubTaskMutation,
 } from "../../redux/globalTaskSlice";
 
-import CommentComposer from ".././Comments";
+import CommentComposer from "../Comments";
 
 /* ---------------- meta / utils ---------------- */
 const typeMeta = (type) => {
@@ -138,7 +138,14 @@ const initialsOf = (name = "") =>
     .map((s) => s[0]?.toUpperCase())
     .join("") || "U";
 const colorFromName = (name = "") => {
-  const palette = ["primary", "success", "info", "warning", "danger", "neutral"];
+  const palette = [
+    "primary",
+    "success",
+    "info",
+    "warning",
+    "danger",
+    "neutral",
+  ];
   let sum = 0;
   for (let i = 0; i < name.length; i++) sum = (sum + name.charCodeAt(i)) % 997;
   return palette[sum % palette.length];
@@ -194,7 +201,10 @@ const PeopleAvatars = ({ people = [], max = 3, size = "sm" }) => {
                 }}
               >
                 {extra.map((p, i) => (
-                  <Box key={p.id || i} sx={{ mb: i !== extra.length - 1 ? 1 : 0 }}>
+                  <Box
+                    key={p.id || i}
+                    sx={{ mb: i !== extra.length - 1 ? 1 : 0 }}
+                  >
                     <Stack direction="row" alignItems="center" gap={1}>
                       <Avatar
                         size="sm"
@@ -205,7 +215,9 @@ const PeopleAvatars = ({ people = [], max = 3, size = "sm" }) => {
                       >
                         {!p.avatar && initialsOf(p.name)}
                       </Avatar>
-                      <Typography level="body-sm">{p.name || "User"}</Typography>
+                      <Typography level="body-sm">
+                        {p.name || "User"}
+                      </Typography>
                     </Stack>
                     {i !== extra.length - 1 && <Divider sx={{ my: 0.75 }} />}
                   </Box>
@@ -267,11 +279,14 @@ const isImage = (name = "", type = "") => {
 
 const iconFor = (name = "", type = "") => {
   const ext = fileExt(name);
-  if (type?.includes?.("pdf") || ext === "pdf") return <PictureAsPdfOutlinedIcon />;
+  if (type?.includes?.("pdf") || ext === "pdf")
+    return <PictureAsPdfOutlinedIcon />;
   if (isImage(name, type)) return <ImageOutlinedIcon />;
   if (["xls", "xlsx", "csv"].includes(ext)) return <TableChartOutlinedIcon />;
-  if (["zip", "rar", "7z", "tar", "gz"].includes(ext)) return <ArchiveOutlinedIcon />;
-  if (["doc", "docx", "rtf", "txt", "md"].includes(ext)) return <DescriptionOutlinedIcon />;
+  if (["zip", "rar", "7z", "tar", "gz"].includes(ext))
+    return <ArchiveOutlinedIcon />;
+  if (["doc", "docx", "rtf", "txt", "md"].includes(ext))
+    return <DescriptionOutlinedIcon />;
   return <InsertDriveFileOutlinedIcon />;
 };
 
@@ -328,7 +343,9 @@ const StatusTimeline = ({ history = [], current }) => {
   const last = steps[steps.length - 1];
   if (
     current?.status &&
-    (!last || (last.status || "").toLowerCase() !== (current.status || "").toLowerCase())
+    (!last ||
+      (last.status || "").toLowerCase() !==
+        (current.status || "").toLowerCase())
   ) {
     steps.push({
       status: current.status,
@@ -348,7 +365,9 @@ const StatusTimeline = ({ history = [], current }) => {
     return a && b ? formatDuration(b - a) : "";
   });
 
-  const isClosed = ["completed", "cancelled"].includes((current?.status || "").toLowerCase());
+  const isClosed = ["completed", "cancelled"].includes(
+    (current?.status || "").toLowerCase()
+  );
 
   return (
     <Sheet
@@ -360,14 +379,22 @@ const StatusTimeline = ({ history = [], current }) => {
         overflowX: "auto",
       }}
     >
-      <Stack direction="row" alignItems="center" gap={2} sx={{ minWidth: "max-content" }}>
+      <Stack
+        direction="row"
+        alignItems="center"
+        gap={2}
+        sx={{ minWidth: "max-content" }}
+      >
         {nodes.length === 0 ? (
           <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
             No status changes yet.
           </Typography>
         ) : (
           nodes.map((n, i) => (
-            <Box key={`${n.label}-${i}`} sx={{ display: "flex", alignItems: "center" }}>
+            <Box
+              key={`${n.label}-${i}`}
+              sx={{ display: "flex", alignItems: "center" }}
+            >
               <Chip
                 variant="solid"
                 color={n.color}
@@ -381,7 +408,9 @@ const StatusTimeline = ({ history = [], current }) => {
               >
                 {n.label}
               </Chip>
-              {i < nodes.length - 1 && <Connector durationLabel={durations[i]} />}
+              {i < nodes.length - 1 && (
+                <Connector durationLabel={durations[i]} />
+              )}
             </Box>
           ))
         )}
@@ -389,7 +418,8 @@ const StatusTimeline = ({ history = [], current }) => {
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Connector
               durationLabel={formatDuration(
-                Date.now() - (nodes[nodes.length - 1]?.at?.getTime?.() ?? Date.now())
+                Date.now() -
+                  (nodes[nodes.length - 1]?.at?.getTime?.() ?? Date.now())
               )}
             />
             <Box
@@ -449,7 +479,9 @@ const normalizeAttachment = (a) => {
 const normalizeComment = (c) => {
   const t = c?.updatedAt || c?.createdAt;
   const attRaw = c?.attachments || c?.attachements || c?.files || [];
-  const atts = Array.isArray(attRaw) ? attRaw.map(normalizeAttachment).filter(Boolean) : [];
+  const atts = Array.isArray(attRaw)
+    ? attRaw.map(normalizeAttachment).filter(Boolean)
+    : [];
   return {
     _type: "comment",
     at: t ? new Date(t).getTime() : 0,
@@ -507,7 +539,9 @@ function AttachmentTile({ a }) {
             }}
           />
         ) : (
-          <Box sx={{ fontSize: 52, opacity: 0.7 }}>{iconFor(name, a?.type)}</Box>
+          <Box sx={{ fontSize: 52, opacity: 0.7 }}>
+            {iconFor(name, a?.type)}
+          </Box>
         )}
 
         <IconButton
@@ -595,7 +629,8 @@ export default function ViewTaskPage() {
   const [tabValue, setTabValue] = useState("comments");
   const [openStatusModal, setOpenStatusModal] = useState(false);
 
-  const [updateTaskStatus, { isLoading: isUpdating }] = useUpdateTaskStatusMutation();
+  const [updateTaskStatus, { isLoading: isUpdating }] =
+    useUpdateTaskStatusMutation();
   const [updateTask] = useUpdateTaskMutation();
 
   /* ----- Followers modal state ----- */
@@ -654,7 +689,9 @@ export default function ViewTaskPage() {
       ? allUsersResp.data
       : [];
 
-    const followerSet = new Set((task?.followers || []).map((u) => idOf(u)).filter(Boolean));
+    const followerSet = new Set(
+      (task?.followers || []).map((u) => idOf(u)).filter(Boolean)
+    );
 
     const filtered = apiUsers.filter((u) => !followerSet.has(idOf(u)));
 
@@ -687,7 +724,9 @@ export default function ViewTaskPage() {
   }, [task]);
 
   const followerIds = (arr) =>
-    (arr || []).map((u) => u?._id || u?.id || u?.email || u?.name).filter(Boolean);
+    (arr || [])
+      .map((u) => u?._id || u?.id || u?.email || u?.name)
+      .filter(Boolean);
 
   const handleSaveFollowers = async () => {
     if (!id) return toast.error("Task id missing");
@@ -716,9 +755,13 @@ export default function ViewTaskPage() {
       }));
     }
     if (task?.project)
-      return [{ code: task.project.code ?? "-", name: task.project.name ?? "-" }];
+      return [
+        { code: task.project.code ?? "-", name: task.project.name ?? "-" },
+      ];
     if (task?.project_code || task?.project_name)
-      return [{ code: task.project_code ?? "-", name: task.project_name ?? "-" }];
+      return [
+        { code: task.project_code ?? "-", name: task.project_name ?? "-" },
+      ];
     return [];
   }, [task]);
 
@@ -784,7 +827,8 @@ export default function ViewTaskPage() {
     const html = (commentText || "").trim();
     const hasFiles = attachments.length > 0;
 
-    if (!html && !hasFiles) return toast.error("Type a comment or attach a file.");
+    if (!html && !hasFiles)
+      return toast.error("Type a comment or attach a file.");
     if (!id) return toast.error("Task id missing");
 
     try {
@@ -814,7 +858,9 @@ export default function ViewTaskPage() {
       setAttachments([]);
     } catch (e) {
       console.error(e);
-      toast.error(e?.data?.error || e?.data?.message || "Failed to update task");
+      toast.error(
+        e?.data?.error || e?.data?.message || "Failed to update task"
+      );
     }
   };
 
@@ -824,7 +870,8 @@ export default function ViewTaskPage() {
     3: { label: "High", color: "danger" },
   };
 
-  const isCompleted = (effectiveCurrentStatus?.status || "").toLowerCase() === "completed";
+  const isCompleted =
+    (effectiveCurrentStatus?.status || "").toLowerCase() === "completed";
 
   const activity = useMemo(() => {
     const statuses = (task?.status_history || []).map((h) => ({
@@ -851,7 +898,9 @@ export default function ViewTaskPage() {
       attachment: a,
     }));
 
-    return [...statuses, ...comments, ...filesAsActivity].sort((a, b) => b.at - a.at);
+    return [...statuses, ...comments, ...filesAsActivity].sort(
+      (a, b) => b.at - a.at
+    );
   }, [task]);
 
   const documents = useMemo(() => {
@@ -894,7 +943,9 @@ export default function ViewTaskPage() {
       ? allUsersResp.data
       : [];
 
-    const assignedIds = new Set((task?.assigned_to || []).map((u) => idOf(u)).filter(Boolean));
+    const assignedIds = new Set(
+      (task?.assigned_to || []).map((u) => idOf(u)).filter(Boolean)
+    );
 
     const seen = new Set();
     const out = [];
@@ -926,7 +977,9 @@ export default function ViewTaskPage() {
         title: `Reassigned to ${selectedAssignees.length} user(s)`,
         remarks: "Task reassigned via ViewTaskPage",
         assigned_to: selectedAssignees.map((u) => u._id), // array of ids
-        ...(reassignDeadline ? { deadline: new Date(reassignDeadline).toISOString() } : {}),
+        ...(reassignDeadline
+          ? { deadline: new Date(reassignDeadline).toISOString() }
+          : {}),
       };
 
       const updated = await createSubTask({ taskId: id, body }).unwrap();
@@ -940,7 +993,9 @@ export default function ViewTaskPage() {
       setReassignDeadline("");
     } catch (e) {
       console.error(e);
-      toast.error(e?.data?.message || e?.data?.error || "Failed to create subtask");
+      toast.error(
+        e?.data?.message || e?.data?.error || "Failed to create subtask"
+      );
     } finally {
       setSavingReassign(false);
     }
@@ -954,7 +1009,13 @@ export default function ViewTaskPage() {
         bgcolor: "background.body",
       }}
     >
-      <input ref={filePickerRef} type="file" multiple onChange={onPickFiles} style={{ display: "none" }} />
+      <input
+        ref={filePickerRef}
+        type="file"
+        multiple
+        onChange={onPickFiles}
+        style={{ display: "none" }}
+      />
 
       {/* Row 1 */}
       <Box
@@ -1015,8 +1076,18 @@ export default function ViewTaskPage() {
             </IconButton>
           </Tooltip>
 
-          <Stack direction="column" gap={1.5} alignItems="flex-start" sx={{ minWidth: 0, width: "100%" }}>
-            <Stack direction="row" gap={1} alignItems="center" sx={{ minWidth: 0 }}>
+          <Stack
+            direction="column"
+            gap={1.5}
+            alignItems="flex-start"
+            sx={{ minWidth: 0, width: "100%" }}
+          >
+            <Stack
+              direction="row"
+              gap={1}
+              alignItems="center"
+              sx={{ minWidth: 0 }}
+            >
               {task?.taskCode && (
                 <Chip size="sm" variant="soft" color="primary">
                   {task.taskCode}
@@ -1037,10 +1108,14 @@ export default function ViewTaskPage() {
                   : "—"}
               </Chip>
               {typeMeta(task?.type).icon}
-              <Typography level="body-sm">{typeMeta(task?.type).label}</Typography>
+              <Typography level="body-sm">
+                {typeMeta(task?.type).label}
+              </Typography>
             </Stack>
 
-            <Box sx={{ maxHeight: 72, overflowY: "auto", width: "100%", pr: 0.5 }}>
+            <Box
+              sx={{ maxHeight: 72, overflowY: "auto", width: "100%", pr: 0.5 }}
+            >
               <Typography
                 level="h4"
                 sx={{
@@ -1053,7 +1128,9 @@ export default function ViewTaskPage() {
               </Typography>
             </Box>
 
-            <Box sx={{ maxHeight: 180, overflowY: "auto", width: "100%", pr: 0.5 }}>
+            <Box
+              sx={{ maxHeight: 180, overflowY: "auto", width: "100%", pr: 0.5 }}
+            >
               <Typography
                 level="body-sm"
                 sx={{
@@ -1162,7 +1239,7 @@ export default function ViewTaskPage() {
                         ? new Date(mySubtask.deadline).toLocaleString()
                         : subtasks.length === 1 && subtasks[0]?.deadline
                         ? new Date(subtasks[0].deadline).toLocaleString()
-                        : "Multiple"
+                        : "-"
                     }
                   />
                 </>
@@ -1171,7 +1248,11 @@ export default function ViewTaskPage() {
                 label="Priority"
                 value={
                   Number(task?.priority) > 0 ? (
-                    <Chip size="sm" variant="solid" color={priorityMap[Number(task?.priority)]?.color}>
+                    <Chip
+                      size="sm"
+                      variant="solid"
+                      color={priorityMap[Number(task?.priority)]?.color}
+                    >
                       {priorityMap[Number(task?.priority)]?.label}
                     </Chip>
                   ) : (
@@ -1183,15 +1264,28 @@ export default function ViewTaskPage() {
             </Box>
 
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-              <Field label="Created By" value={<PeopleAvatars people={toPeople(task?.createdBy)} max={1} />} />
+              <Field
+                label="Created By"
+                value={
+                  <PeopleAvatars people={toPeople(task?.createdBy)} max={1} />
+                }
+              />
               <Field
                 label="Created At"
-                value={task?.createdAt ? new Date(task.createdAt).toLocaleString() : "—"}
+                value={
+                  task?.createdAt
+                    ? new Date(task.createdAt).toLocaleString()
+                    : "—"
+                }
               />
               {!viewIsSubtask && (
                 <Field
                   label="Due Date"
-                  value={task?.deadline ? new Date(task.deadline).toLocaleDateString("en-GB") : "—"}
+                  value={
+                    task?.deadline
+                      ? new Date(task.deadline).toLocaleDateString("en-GB")
+                      : "—"
+                  }
                 />
               )}
 
@@ -1250,39 +1344,57 @@ export default function ViewTaskPage() {
                 gap: 1.25,
               }}
             >
-              {(Array.isArray(task?.project_id) ? task.project_id : []).map((p, i) => (
-                <Box
-                  key={`${p.code || p.projectCode || i}`}
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1.25,
-                    cursor: "pointer",
-                    "&:hover": { bgcolor: "neutral.softBg" },
-                    borderRadius: "sm",
-                    p: 1,
-                  }}
-                  onClick={() =>
-                    navigate(`/project_detail?page=1&project_id=${p?._id || p?.projectId}`)
-                  }
-                >
-                  <Avatar size="md">{(p?.name || p?.projectName || "P")[0]}</Avatar>
-                  <Box>
-                    <Typography level="body-md" fontWeight="lg">
-                      {p?.name || p?.projectName || "Project"}
-                    </Typography>
-                    <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
-                      {p?.code || p?.projectCode || "—"}
-                    </Typography>
+              {(Array.isArray(task?.project_id) ? task.project_id : []).map(
+                (p, i) => (
+                  <Box
+                    key={`${p.code || p.projectCode || i}`}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1.25,
+                      cursor: "pointer",
+                      "&:hover": { bgcolor: "neutral.softBg" },
+                      borderRadius: "sm",
+                      p: 1,
+                    }}
+                    onClick={() =>
+                      navigate(
+                        `/project_detail?page=1&project_id=${
+                          p?._id || p?.projectId
+                        }`
+                      )
+                    }
+                  >
+                    <Avatar size="md">
+                      {(p?.name || p?.projectName || "P")[0]}
+                    </Avatar>
+                    <Box>
+                      <Typography level="body-md" fontWeight="lg">
+                        {p?.name || p?.projectName || "Project"}
+                      </Typography>
+                      <Typography
+                        level="body-sm"
+                        sx={{ color: "text.tertiary" }}
+                      >
+                        {p?.code || p?.projectCode || "—"}
+                      </Typography>
+                    </Box>
                   </Box>
-                </Box>
-              ))}
+                )
+              )}
             </Sheet>
           </Section>
         )}
 
-        <Section title="Status Timeline" collapsible={false} contentSx={{ height: "10vh", overflow: "auto" }}>
-          <StatusTimeline history={effectiveStatusHistory} current={effectiveCurrentStatus} />
+        <Section
+          title="Status Timeline"
+          collapsible={false}
+          contentSx={{ height: "10vh", overflow: "auto" }}
+        >
+          <StatusTimeline
+            history={effectiveStatusHistory}
+            current={effectiveCurrentStatus}
+          />
         </Section>
       </Box>
 
@@ -1292,12 +1404,20 @@ export default function ViewTaskPage() {
         open={openActivity}
         onToggle={() => setOpenActivity((v) => !v)}
         right={
-          <Chip size="sm" variant="soft" startDecorator={<TimelineRoundedIcon />}>
+          <Chip
+            size="sm"
+            variant="soft"
+            startDecorator={<TimelineRoundedIcon />}
+          >
             {activity.length} activities
           </Chip>
         }
       >
-        <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)} sx={{ mb: 1 }}>
+        <Tabs
+          value={tabValue}
+          onChange={(_, v) => setTabValue(v)}
+          sx={{ mb: 1 }}
+        >
           <TabList>
             <Tab value="comments">Comments</Tab>
             <Tab value="docs">Documents</Tab>
@@ -1350,17 +1470,26 @@ export default function ViewTaskPage() {
                         <Avatar
                           src={user.avatar || undefined}
                           variant={user.avatar ? "soft" : "solid"}
-                          color={user.avatar ? "neutral" : colorFromName(user.name)}
+                          color={
+                            user.avatar ? "neutral" : colorFromName(user.name)
+                          }
                           sx={{ width: 36, height: 36, fontWeight: 700 }}
                         >
                           {!user.avatar && initialsOf(user.name)}
                         </Avatar>
                         <Box sx={{ flex: 1, minWidth: 0 }}>
                           <Stack direction="row" alignItems="baseline" gap={1}>
-                            <Typography level="body-sm" fontWeight="lg" sx={{ whiteSpace: "nowrap" }}>
+                            <Typography
+                              level="body-sm"
+                              fontWeight="lg"
+                              sx={{ whiteSpace: "nowrap" }}
+                            >
                               {user.name}
                             </Typography>
-                            <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
+                            <Typography
+                              level="body-xs"
+                              sx={{ color: "text.tertiary" }}
+                            >
                               {whenLabel}
                             </Typography>
                           </Stack>
@@ -1383,16 +1512,24 @@ export default function ViewTaskPage() {
                               gap={1}
                               sx={{ mt: 0.25, flexWrap: "wrap" }}
                             >
-                              <Chip size="sm" variant="soft" color={statusColor(it.status)}>
+                              <Chip
+                                size="sm"
+                                variant="soft"
+                                color={statusColor(it.status)}
+                              >
                                 {statusLabel}
                               </Chip>
                               {it.remarks && (
-                                <Typography level="body-sm">{String(it.remarks).trim()}</Typography>
+                                <Typography level="body-sm">
+                                  {String(it.remarks).trim()}
+                                </Typography>
                               )}
                             </Stack>
                           ) : it._type === "file" ? (
                             <Typography level="body-sm" sx={{ mt: 0.25 }}>
-                              {`Uploaded file: ${it?.attachment?.name || "Attachment"}`}
+                              {`Uploaded file: ${
+                                it?.attachment?.name || "Attachment"
+                              }`}
                             </Typography>
                           ) : null}
 
@@ -1457,12 +1594,15 @@ export default function ViewTaskPage() {
                         alignItems: "center",
                         px: 1,
                         py: 1,
-                        borderBottom: i === documents.length - 1 ? "none" : "1px solid",
+                        borderBottom:
+                          i === documents.length - 1 ? "none" : "1px solid",
                         borderColor: "neutral.outlinedBorder",
                       }}
                     >
                       <Stack direction="row" alignItems="center" gap={1}>
-                        <Box sx={{ fontSize: 22, opacity: 0.75 }}>{iconFor(name, a?.type)}</Box>
+                        <Box sx={{ fontSize: 22, opacity: 0.75 }}>
+                          {iconFor(name, a?.type)}
+                        </Box>
                         <Tooltip title={name}>
                           <Typography
                             level="body-sm"
@@ -1479,12 +1619,18 @@ export default function ViewTaskPage() {
                         </Tooltip>
                       </Stack>
 
-                      <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
+                      <Typography
+                        level="body-sm"
+                        sx={{ color: "text.tertiary" }}
+                      >
                         {typeOrExt}
                         {size ? ` • ${size}` : ""}
                       </Typography>
 
-                      <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
+                      <Typography
+                        level="body-sm"
+                        sx={{ color: "text.tertiary" }}
+                      >
                         {who}
                         {when ? ` • ${when}` : ""}
                       </Typography>
@@ -1523,9 +1669,16 @@ export default function ViewTaskPage() {
       <Modal open={openStatusModal} onClose={() => setOpenStatusModal(false)}>
         <ModalDialog variant="outlined" sx={{ maxWidth: 520 }}>
           <DialogTitle>Update Status</DialogTitle>
-          <DialogContent>Select a new status and add remarks (optional).</DialogContent>
+          <DialogContent>
+            Select a new status and add remarks (optional).
+          </DialogContent>
           <Stack gap={1.25} sx={{ mt: 1 }}>
-            <Select value={status} onChange={(_, v) => setStatus(v)} placeholder="Select Status" disabled={isCompleted}>
+            <Select
+              value={status}
+              onChange={(_, v) => setStatus(v)}
+              placeholder="Select Status"
+              disabled={isCompleted}
+            >
               <Option disabled value="Select Status">
                 Select Status
               </Option>
@@ -1534,7 +1687,12 @@ export default function ViewTaskPage() {
               <Option value="completed">Completed</Option>
               <Option value="cancelled">Cancelled</Option>
             </Select>
-            <Textarea minRows={4} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Write remarks..." />
+            <Textarea
+              minRows={4}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Write remarks..."
+            />
           </Stack>
           <DialogActions>
             <Button
@@ -1572,7 +1730,10 @@ export default function ViewTaskPage() {
       <Modal open={openAttachModal} onClose={() => setOpenAttachModal(false)}>
         <ModalDialog variant="outlined" sx={{ maxWidth: 560 }}>
           <DialogTitle>Attach file(s)</DialogTitle>
-          <DialogContent>Give your document a name (optional), then drag files below or browse.</DialogContent>
+          <DialogContent>
+            Give your document a name (optional), then drag files below or
+            browse.
+          </DialogContent>
 
           <Stack gap={1.25} sx={{ mt: 1 }}>
             <Box
@@ -1593,7 +1754,9 @@ export default function ViewTaskPage() {
                 borderRadius: "md",
                 textAlign: "center",
                 border: "2px dashed",
-                borderColor: isDragging ? "primary.outlinedBorder" : "neutral.outlinedBorder",
+                borderColor: isDragging
+                  ? "primary.outlinedBorder"
+                  : "neutral.outlinedBorder",
                 bgcolor: isDragging ? "primary.softBg" : "background.level1",
                 cursor: "pointer",
                 height: "10vh",
@@ -1602,7 +1765,12 @@ export default function ViewTaskPage() {
                 justifyContent: "center",
               }}
             >
-              <Stack direction="row" gap={1} alignItems="center" justifyContent="center">
+              <Stack
+                direction="row"
+                gap={1}
+                alignItems="center"
+                justifyContent="center"
+              >
                 <CloudUploadRoundedIcon />
                 <Typography level="body-sm">
                   Drag & drop files here, or <strong>click to browse</strong>
@@ -1679,7 +1847,9 @@ export default function ViewTaskPage() {
       <Modal open={openFollowers} onClose={() => setOpenFollowers(false)}>
         <ModalDialog variant="outlined" sx={{ maxWidth: 480 }}>
           <DialogTitle>Add Followers</DialogTitle>
-          <DialogContent>Select or remove followers for this task.</DialogContent>
+          <DialogContent>
+            Select or remove followers for this task.
+          </DialogContent>
 
           <Stack gap={1.25} sx={{ mt: 1 }}>
             {/* Current followers as removable chips */}
@@ -1714,7 +1884,9 @@ export default function ViewTaskPage() {
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedFollowers((prev) =>
-                            prev.filter((x) => (x._id || x.name) !== (u._id || u.name))
+                            prev.filter(
+                              (x) => (x._id || x.name) !== (u._id || u.name)
+                            )
                           );
                         }}
                         aria-label={`Remove ${u.name}`}
@@ -1744,7 +1916,9 @@ export default function ViewTaskPage() {
                 const toAdd =
                   (vals || []).filter(
                     (v) =>
-                      !selectedFollowers.some((s) => (s._id || s.name) === (v._id || v.name))
+                      !selectedFollowers.some(
+                        (s) => (s._id || s.name) === (v._id || v.name)
+                      )
                   ) || [];
                 if (toAdd.length) {
                   setSelectedFollowers((prev) => [...prev, ...toAdd]);
@@ -1757,12 +1931,19 @@ export default function ViewTaskPage() {
               }
               renderOption={(liProps, option) => (
                 <li {...liProps} key={option._id}>
-                  <Stack sx={{ cursor: "pointer" }} direction="row" alignItems="center" gap={1}>
+                  <Stack
+                    sx={{ cursor: "pointer" }}
+                    direction="row"
+                    alignItems="center"
+                    gap={1}
+                  >
                     <Avatar
                       size="sm"
                       src={option.avatar || undefined}
                       variant={option.avatar ? "soft" : "solid"}
-                      color={option.avatar ? "neutral" : colorFromName(option.name)}
+                      color={
+                        option.avatar ? "neutral" : colorFromName(option.name)
+                      }
                     >
                       {!option.avatar && initialsOf(option.name)}
                     </Avatar>
@@ -1808,7 +1989,10 @@ export default function ViewTaskPage() {
       <Modal open={openReassign} onClose={() => setOpenReassign(false)}>
         <ModalDialog variant="outlined" sx={{ maxWidth: 520 }}>
           <DialogTitle>Reassign Task</DialogTitle>
-          <DialogContent>Select users and (optionally) set a deadline for the reassignment subtask.</DialogContent>
+          <DialogContent>
+            Select users and (optionally) set a deadline for the reassignment
+            subtask.
+          </DialogContent>
 
           <Stack gap={1.25} sx={{ mt: 1 }}>
             {/* Multi-select users */}
@@ -1831,7 +2015,9 @@ export default function ViewTaskPage() {
                       size="sm"
                       src={option.avatar || undefined}
                       variant={option.avatar ? "soft" : "solid"}
-                      color={option.avatar ? "neutral" : colorFromName(option.name)}
+                      color={
+                        option.avatar ? "neutral" : colorFromName(option.name)
+                      }
                     >
                       {!option.avatar && initialsOf(option.name)}
                     </Avatar>
@@ -1845,9 +2031,10 @@ export default function ViewTaskPage() {
             {/* Deadline */}
             <Stack gap={0.5}>
               <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
-                Deadline (optional)
+                Deadline
               </Typography>
               <Input
+                required
                 type="datetime-local"
                 value={reassignDeadline}
                 onChange={(e) => setReassignDeadline(e.target.value)}
@@ -1887,8 +2074,6 @@ export default function ViewTaskPage() {
     </Box>
   );
 }
-
-
 
 /* ---------- Section wrapper ---------- */
 function Section({

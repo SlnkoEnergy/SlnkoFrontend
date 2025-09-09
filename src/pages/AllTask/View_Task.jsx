@@ -4,7 +4,7 @@ import Box from "@mui/joy/Box";
 import Sidebar from "../../component/Partials/Sidebar";
 import Header from "../../component/Partials/Header";
 import { useNavigate } from "react-router-dom";
-import ViewTaskPage from "../../component/Forms/View_Task";
+import ViewTaskPage from "../../component/All_Tasks/View_Task";
 import SubHeader from "../../component/Partials/SubHeader";
 import MainHeader from "../../component/Partials/MainHeader";
 import { Button } from "@mui/joy";
@@ -21,7 +21,7 @@ const View_Task = () => {
           <Box display="flex" gap={1}>
             <Button
               size="sm"
-              onClick={() => navigate(`/eng_dash`)}
+              onClick={() => navigate(`/task_dashboard`)}
               sx={{
                 color: "white",
                 bgcolor: "transparent",
@@ -39,7 +39,7 @@ const View_Task = () => {
 
             <Button
               size="sm"
-              onClick={() => navigate(`/inspection`)}
+              onClick={() => navigate(`/all_task`)}
               sx={{
                 color: "white",
                 bgcolor: "transparent",

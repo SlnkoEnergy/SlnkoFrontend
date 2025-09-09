@@ -17,7 +17,10 @@ import Filter from "../../component/Partials/Filter";
 import { IconButton, Modal, ModalDialog } from "@mui/joy";
 import AddTask from "../../component/All_Tasks/Add_Task";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
-function AllTask() {
+import TaskSummary from "../../component/All_Tasks/TaskDashboard";
+import TaskSummaryCards from "../../component/All_Tasks/TaskDashboardCards";
+import AllTaskDashboard from "../../component/All_Tasks/Dashboard";
+function TaskDashboard() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [openAddTaskModal, setOpenAddTaskModal] = useState(false);
@@ -147,27 +150,8 @@ function AllTask() {
           </Box>
         </MainHeader>
 
-        <SubHeader title="All Tasks" isBackEnabled={false} sticky>
+        <SubHeader title="Dashboard" isBackEnabled={false} sticky>
           <Box display="flex" gap={1} alignItems="center">
-            {selectedIds?.length > 0 && (
-              <Button
-                variant="outlined"
-                size="sm"
-                onClick={() => handleExport(selectedIds)}
-                sx={{
-                  color: "#3366a3",
-                  borderColor: "#3366a3",
-                  backgroundColor: "transparent",
-                  "--Button-hoverBg": "#e0e0e0",
-                  "--Button-hoverBorderColor": "#3366a3",
-                  "&:hover": { color: "#3366a3" },
-                  height: "8px",
-                }}
-              >
-                Export
-              </Button>
-            )}
-
             <Button
               variant="solid"
               size="sm"
@@ -191,8 +175,6 @@ function AllTask() {
               onApply={(values) => {
                 setSearchParams((prev) => {
                   const merged = Object.fromEntries(prev.entries());
-
-                  // cleanup old params
                   delete merged.priorityFilter;
                   delete merged.status;
                   delete merged.createdAt;
@@ -257,22 +239,12 @@ function AllTask() {
             px: "24px",
           }}
         >
-          <Dash_task
-            selected={selectedIds}
-            setSelected={setSelectedIds}
-            searchParams={searchParams}
-            setSearchParams={setSearchParams}
-          />
+          <AllTaskDashboard /> 
         </Box>
 
         <Modal
           open={openAddTaskModal}
           onClose={() => setOpenAddTaskModal(false)}
-          slotProps={{
-            backdrop: {
-              sx: {},
-            },
-          }}
         >
           <ModalDialog
             variant="outlined"
@@ -319,4 +291,4 @@ function AllTask() {
   );
 }
 
-export default AllTask;
+export default TaskDashboard;

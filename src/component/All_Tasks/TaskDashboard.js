@@ -24,12 +24,10 @@ import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import WorkOutlineIcon from "@mui/icons-material/WorkOutline";
 import ApartmentIcon from "@mui/icons-material/Apartment";
 import BuildIcon from "@mui/icons-material/Build";
-import NoData from "../assets/alert-bell.svg";
+import NoData from "../../assets/alert-bell.svg";
 import {
   useGetAllTasksQuery,
-  useGetAllDeptQuery,
-  useGetAllUserQuery,
-} from "../redux/globalTaskSlice";
+} from "../../redux/globalTaskSlice";
 
 function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
   const navigate = useNavigate();
