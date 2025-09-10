@@ -27,6 +27,7 @@ import {
   Input,
   Autocomplete,
 } from "@mui/joy";
+import { Dropdown, Menu, MenuButton, MenuItem } from "@mui/joy";
 
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
 import KeyboardArrowRightRoundedIcon from "@mui/icons-material/KeyboardArrowRightRounded";
@@ -196,55 +197,71 @@ const PeopleAvatars = ({ people = [], max = 3, size = "sm", onPersonClick }) => 
           );
         })}
         {extra.length > 0 && (
-          <Tooltip
-            arrow
-            placement="bottom"
-            variant="soft"
-            title={
-              <Box
-                sx={{
-                  maxHeight: 260,
-                  overflowY: "auto",
-                  px: 1,
-                  py: 0.5,
-                  maxWidth: 240,
-                }}
-              >
-                {extra.map((p, i) => (
-                  <Box
-                    key={p.id || i}
-                    sx={{ mb: i !== extra.length - 1 ? 1 : 0 }}
-                  >
-                    <Stack direction="row" alignItems="center" gap={1}>
-                      <Avatar
-                        size="sm"
-                        src={p.avatar || undefined}
-                        variant={p.avatar ? "soft" : "solid"}
-                        color={p.avatar ? "neutral" : colorFromName(p.name)}
-                        sx={ringSx}
-                      >
-                        {!p.avatar && initialsOf(p.name)}
-                      </Avatar>
-                      <Typography level="body-sm">
-                        {p.name || "User"}
-                      </Typography>
-                    </Stack>
-                    {i !== extra.length - 1 && <Divider sx={{ my: 0.75 }} />}
-                  </Box>
-                ))}
-              </Box>
-            }
-          >
-            <Avatar
-              size={size}
-              variant="soft"
-              color="neutral"
-              sx={{ ...ringSx, ml: "-8px", fontSize: 12, cursor: "default" }}
+  <Tooltip
+    arrow
+    placement="bottom"
+    variant="soft"
+    disableInteractive={false}
+    slotProps={{ tooltip: { sx: { pointerEvents: "auto" } } }}
+    title={
+      <Box
+        sx={{
+          maxHeight: 260,
+          overflowY: "auto",
+          px: 1,
+          py: 0.5,
+          maxWidth: 240,
+        }}
+      >
+        {extra.map((p, i) => (
+          <Box key={p.id || i} sx={{ mb: i !== extra.length - 1 ? 1 : 0 }}>
+            <Stack
+              direction="row"
+              alignItems="center"
+              gap={1}
+              role={onPersonClick ? "button" : undefined}
+              tabIndex={onPersonClick ? 0 : undefined}
+              onClick={onPersonClick ? () => onPersonClick(p) : undefined}
+              onKeyDown={
+                onPersonClick
+                  ? (e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onPersonClick(p);
+                      }
+                    }
+                  : undefined
+              }
+              sx={{ cursor: onPersonClick ? "pointer" : "default" }}
             >
-              +{extra.length}
-            </Avatar>
-          </Tooltip>
-        )}
+              <Avatar
+                size="sm"
+                src={p.avatar || undefined}
+                variant={p.avatar ? "soft" : "solid"}
+                color={p.avatar ? "neutral" : colorFromName(p.name)}
+                sx={ringSx}
+              >
+                {!p.avatar && initialsOf(p.name)}
+              </Avatar>
+              <Typography level="body-sm">{p.name || "User"}</Typography>
+            </Stack>
+            {i !== extra.length - 1 && <Divider sx={{ my: 0.75 }} />}
+          </Box>
+        ))}
+      </Box>
+    }
+  >
+    <Avatar
+      size={size}
+      variant="soft"
+      color="neutral"
+      sx={{ ...ringSx, ml: "-8px", fontSize: 12, cursor: "default" }}
+    >
+      +{extra.length}
+    </Avatar>
+  </Tooltip>
+)}
+
       </Box>
     </Stack>
   );

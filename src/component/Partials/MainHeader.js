@@ -13,19 +13,19 @@ import {
   MenuItem,
   MenuList,
   ListItemDecorator,
-  ListDivider,
+  // ListDivider,
 } from "@mui/joy";
 
-import Notification from "./Notification";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
 
-// ⬇️ bring the same hook you use in UserProfilePanel
+// use the RTKQ query that returns a single user
 import { useGetUserByIdQuery } from "../../redux/loginSlice";
 
-// --- small helpers ---
+/* ---------------- helpers ---------------- */
 const LS_KEY = "userDetails";
+
 const readUser = () => {
   try {
     const raw = localStorage.getItem(LS_KEY);
@@ -34,73 +34,104 @@ const readUser = () => {
     return null;
   }
 };
+
 const writeUser = (obj) => {
   localStorage.setItem(LS_KEY, JSON.stringify(obj));
   // notify same-tab listeners
   window.dispatchEvent(new CustomEvent("userDetails:update", { detail: obj }));
 };
 
-// Build absolute URL if backend returns relative path
+// Build absolute URL if backend returns a relative path
 const buildAvatarUrl = (src) => {
   if (!src) return "";
   if (/^https?:\/\//i.test(src)) return src;
   const base =
-    import.meta?.env?.VITE_FILES_BASE || process.env.REACT_APP_FILES_BASE || "";
-  return base ? `${base.replace(/\/+$/, "")}/${String(src).replace(/^\/+/, "")}` : src;
+    (typeof import.meta !== "undefined" && import.meta.env?.VITE_FILES_BASE) ||
+    process.env.REACT_APP_FILES_BASE ||
+    "";
+  return base
+    ? `${base.replace(/\/+$/, "")}/${String(src).replace(/^\/+/, "")}`
+    : src;
 };
 
+/* ---------------- component ---------------- */
 export default function MainHeader({ title, children }) {
   const navigate = useNavigate();
 
   const [user, setUser] = useState(() => readUser());
   const [avatarErr, setAvatarErr] = useState(false);
 
-  // Keep in sync with other parts of app updating LS
+  // keep in sync with other parts of app updating LS
   useEffect(() => {
-    const handle = (e) => {
+    const onAny = (e) => {
       if (e.type === "storage" && e.key !== LS_KEY) return;
       if (e.type === "userDetails:update" || e.key === LS_KEY) {
         setUser(readUser());
         setAvatarErr(false);
       }
     };
-    window.addEventListener("storage", handle);
-    window.addEventListener("userDetails:update", handle);
+    window.addEventListener("storage", onAny);
+    window.addEventListener("userDetails:update", onAny);
     return () => {
-      window.removeEventListener("storage", handle);
-      window.removeEventListener("userDetails:update", handle);
+      window.removeEventListener("storage", onAny);
+      window.removeEventListener("userDetails:update", onAny);
     };
   }, []);
 
-  const storedUserId = useMemo(() => user?.userID || user?._id || null, [user]);
+  const storedUserId = useMemo(
+    () => user?.userID || user?._id || null,
+    [user]
+  );
 
-  // ⬇️ HYDRATE ON LOGIN: if we have an id but no avatar, fetch once
-  const shouldFetch = !!storedUserId && !(user?.avatar_url || user?.attachment_url);
-  const { data, isSuccess } = useGetUserByIdQuery(storedUserId, { skip: !shouldFetch });
 
+  const {
+    data,
+    isSuccess,
+    refetch,
+  } = useGetUserByIdQuery(storedUserId, {
+    skip: !storedUserId,
+    refetchOnMountOrArgChange: true, 
+    refetchOnFocus: true,            
+  });
+
+  
+  useEffect(() => {
+    const h = () => refetch();
+    window.addEventListener("profile:updated", h);
+    return () => window.removeEventListener("profile:updated", h);
+  }, [refetch]);
+
+  // Update LS + cache-bust when fresh user data arrives
   useEffect(() => {
     if (!isSuccess || !data?.user) return;
+
     const u = data.user;
+
+    // detect if avatar/attachment changed to bump cache version
+    const prevSrc = user?.attachment_url || user?.avatar_url || "";
+    const nextSrc = u.attachment_url || "";
 
     const next = {
       ...(user || {}),
-      name: u.name || user?.name || "",
-      email: u.email || user?.email || "",
+      name: u.name ?? user?.name ?? "",
+      email: u.email ?? user?.email ?? "",
       phone: String(u.phone ?? user?.phone ?? ""),
       department: u.department ?? user?.department ?? "",
       location: u.location ?? user?.location ?? "",
       about: u.about ?? user?.about ?? "",
       userID: u._id || storedUserId,
-      attachment_url: u.attachment_url || user?.attachment_url || "",
-      avatar_url: u.attachment_url || user?.avatar_url || "",
-      // cache-buster so new image shows immediately
-      avatar_version: Date.now(),
+      attachment_url: nextSrc,
+      avatar_url: nextSrc, // keep a single source of truth
+      avatar_version:
+        nextSrc && nextSrc !== prevSrc
+          ? Date.now() // bump to bust browser cache when image changed
+          : user?.avatar_version ?? Date.now(),
     };
 
     writeUser(next);
     setUser(next);
     setAvatarErr(false);
-  }, [isSuccess, data, storedUserId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isSuccess, data]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // compute avatar src (+version for cache busting)
   const rawSrc = user?.avatar_url || user?.attachment_url || "";
@@ -180,7 +211,6 @@ export default function MainHeader({ title, children }) {
             overflowX: { xs: "auto", sm: "visible" },
           }}
         >
-          {/* <Notification /> */}
           <Dropdown>
             <MenuButton
               variant="plain"
@@ -206,7 +236,10 @@ export default function MainHeader({ title, children }) {
                 border: "none",
                 zIndex: 10000,
                 "--ListItemDecorator-size": "1.5em",
-                "& .MuiMenuItem-root": { borderRadius: "sm", "&:hover": { bgcolor: "neutral.softBg" } },
+                "& .MuiMenuItem-root": {
+                  borderRadius: "sm",
+                  "&:hover": { bgcolor: "neutral.softBg" },
+                },
               }}
             >
               <MenuList variant="plain" sx={{ outline: "none", border: "none", p: 0.5 }}>
@@ -216,22 +249,23 @@ export default function MainHeader({ title, children }) {
                   </ListItemDecorator>
                   My Profile
                 </MenuItem>
-                {/* <ListDivider /> */}
-                {/* <MenuItem>
+
+                {/* Example extra items if you re-enable later
+                <ListDivider />
+                <MenuItem>
                   <ListItemDecorator>
                     <GroupOutlinedIcon fontSize="small" />
                   </ListItemDecorator>
                   Users
                 </MenuItem>
-
                 <ListDivider />
-
                 <MenuItem color="danger" onClick={() => navigate("/logout")}>
                   <ListItemDecorator>
                     <LogoutRoundedIcon fontSize="small" />
                   </ListItemDecorator>
                   Logout
-                </MenuItem> */}
+                </MenuItem>
+                */}
               </MenuList>
             </Menu>
           </Dropdown>
