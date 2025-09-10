@@ -6,6 +6,8 @@ import {
   CardContent,
   Checkbox,
   Chip,
+  DialogContent,
+  DialogTitle,
   Divider,
   FormControl,
   FormLabel,
@@ -13,11 +15,15 @@ import {
   IconButton,
   Input,
   Link,
+  Modal,
+  ModalDialog,
   Stack,
   Tab,
   TabList,
   TabPanel,
   Tabs,
+  Textarea,
+  Tooltip,
   Typography,
 } from "@mui/joy";
 import Sheet from "@mui/joy/Sheet";
@@ -28,19 +34,26 @@ import GroupsIcon from "@mui/icons-material/Groups";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import FolderIcon from "@mui/icons-material/Folder";
 import Table from "@mui/joy/Table";
+import VisibilityRounded from "@mui/icons-material/VisibilityRounded";
 import { saveAs } from "file-saver";
 import PrintIcon from "@mui/icons-material/Print";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import Img12 from "../../assets/slnko_blue_logo.png";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
+import InsertDriveFileRounded from "@mui/icons-material/InsertDriveFileRounded";
+import CloseRounded from "@mui/icons-material/CloseRounded";
 import Axios from "../../utils/Axios";
 import CurrencyRupee from "@mui/icons-material/CurrencyRupee";
-import { useGetCustomerSummaryQuery } from "../../redux/Accounts";
+import {
+  useGetCustomerSummaryQuery,
+  useUpdateSalesPOMutation,
+} from "../../redux/Accounts";
 import { debounce } from "lodash";
+import { useMemo } from "react";
 
 const Customer_Payment_Summary = () => {
   const navigate = useNavigate();
@@ -50,7 +63,7 @@ const Customer_Payment_Summary = () => {
 
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
-
+  const [tabIndex, setTabIndex] = useState(0);
   const [searchClient, setSearchClient] = useState("");
   const [searchDebit, setSearchDebit] = useState("");
   const [searchAdjustment, setSearchAdjustment] = useState("");
@@ -58,6 +71,8 @@ const Customer_Payment_Summary = () => {
   const [selectedAdjust, setSelectedAdjust] = useState([]);
   const [selectedCredits, setSelectedCredits] = useState([]);
   const [selectedDebits, setSelectedDebits] = useState([]);
+
+  const [searchSales, setSearchSales] = useState("");
 
   const {
     data: responseData,
@@ -78,21 +93,81 @@ const Customer_Payment_Summary = () => {
 
   const {
     projectDetails = {},
-    balanceSummary = [],
+    balanceSummary = {},
     credit = { history: [], total: 0 },
     debit = { history: [], total: 0 },
     clientHistory = { data: [], meta: {} },
     salesHistory = { data: [], meta: {} },
     adjustment = { history: [], totalCredit: 0, totalDebit: 0 },
-  } = responseData || {};
+  } = responseData ?? {};
 
-  const CreditSummary = credit.history || [];
-  const DebitSummary = debit.history || [];
-  const ClientSummary = clientHistory.data || [];
-  const ClientTotal = clientHistory.meta || [];
-   const SalesSummary = salesHistory.data || [];
-  const SalesTotal = salesHistory.meta || [];
-  const AdjustmentSummary = adjustment.history || [];
+  const CreditSummary = Array.isArray(credit.history) ? credit.history : [];
+  const DebitSummary = Array.isArray(debit.history) ? debit.history : [];
+  const ClientSummary = Array.isArray(clientHistory.data)
+    ? clientHistory.data
+    : [];
+  const ClientTotal = clientHistory?.meta ?? {};
+  const SalesSummary = Array.isArray(salesHistory.data)
+    ? salesHistory.data
+    : [];
+  const SalesTotal = salesHistory?.meta ?? {};
+  const AdjustmentSummary = Array.isArray(adjustment.history)
+    ? adjustment.history
+    : [];
+
+  const fmtINR = (n) => Number(n || 0).toLocaleString("en-IN");
+  const formatDateTime = (d) => {
+    if (!d) return "—";
+    const x = new Date(d);
+    return isNaN(x) ? "—" : `${x.toLocaleDateString()}`;
+  };
+
+  const normalizeAttachments = (atts) =>
+    (Array.isArray(atts) ? atts : [])
+      .map((a) => ({
+        url: a?.url || a?.attachment_url || "",
+        name: a?.name || a?.attachment_name || "File",
+      }))
+      .filter((a) => a.url);
+
+  const getItemLabel = (row) => {
+    if (typeof row?.item === "string") return row.item;
+    if (Array.isArray(row?.item)) {
+      return row.item
+        .map(
+          (it) => it?.product_name || it?.category?.name || it?.category || ""
+        )
+        .filter(Boolean)
+        .join(", ");
+    }
+    return row?.item_name || "-";
+  };
+
+  const filteredSales = useMemo(() => {
+    const q = (searchSales || "").trim().toLowerCase();
+    if (!q) return SalesSummary || [];
+    return (SalesSummary || []).filter((s) => {
+      const po = String(s?.po_number || "").toLowerCase();
+      const vendor = String(s?.vendor || "").toLowerCase();
+      const item = getItemLabel(s).toLowerCase();
+      return po.includes(q) || vendor.includes(q) || item.includes(q);
+    });
+  }, [SalesSummary, searchSales]);
+
+  const saleTotalsFiltered = useMemo(
+    () =>
+      (filteredSales || []).reduce(
+        (acc, s) => {
+          const po = Number(s?.po_value ?? s?.total_po ?? 0);
+          const adv = Number(s?.advance_paid ?? 0);
+          acc.total_sale += po;
+          acc.total_advance_paid += adv;
+          return acc;
+        },
+        { total_sale: 0, total_advance_paid: 0 }
+      ),
+    [filteredSales]
+  );
 
   useEffect(() => {
     const delayedSearch = debounce(() => {
@@ -224,8 +299,8 @@ const Customer_Payment_Summary = () => {
           billing_type === "Composite"
             ? "GST (13.8%)"
             : billing_type === "Individual"
-            ? "GST (18%)"
-            : "GST(Type - N/A)",
+              ? "GST (18%)"
+              : "GST(Type - N/A)",
           gst_with_type_percentage,
         ],
         ["10", "Total Billed Value", total_billed_value],
@@ -313,25 +388,6 @@ const Customer_Payment_Summary = () => {
       prev.includes(_id) ? prev.filter((id) => id !== _id) : [...prev, _id]
     );
   };
-
-  const [searchSales, setSearchSales] = useState("");
-const [selectedSales, setSelectedSales] = useState([]);
-
-// const handleSelectAllSales = (e) => {
-//   const allIds = (SalesSummary || []).map((r) => r._id);
-//   setSelectedSales(e.target.checked ? allIds : []);
-// };
-
-// const handleSalesCheckboxChange = (id) => {
-//   setSelectedSales((prev) =>
-//     prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-//   );
-// };
-
-// const handleDeleteSales = () => {
-
-// };
-
 
   const [user, setUser] = useState(null);
 
@@ -522,6 +578,7 @@ const [selectedSales, setSelectedSales] = useState([]);
     gst_with_type_percentage,
     gst_difference,
     total_po_value,
+    total_sales,
     total_billed_value,
     net_advanced_paid,
     billing_type,
@@ -593,13 +650,14 @@ const [selectedSales, setSelectedSales] = useState([]);
       ["6", "Total PO Basic Value", Math.round(total_po_basic)],
       ["7", "GST Value as per PO", Math.round(gst_as_po_basic)],
       ["8", "Total PO with GST", Math.round(total_po_with_gst)],
+      ["8A", "Total Sales with GST", Math.round(total_sales)],
       [
         "9",
         billing_type === "Composite"
           ? "GST (13.8%)"
           : billing_type === "Individual"
-          ? "GST (18%)"
-          : "GST (Type - N/A)",
+            ? "GST (18%)"
+            : "GST (Type - N/A)",
         gst_with_type_percentage,
       ],
       ["10", "Total Billed Value", total_billed_value],
@@ -720,6 +778,110 @@ const [selectedSales, setSelectedSales] = useState([]);
         </Grid>
       </Grid>
     );
+  };
+
+  const [updateSalesPO, { isLoading: isConverting }] =
+    useUpdateSalesPOMutation();
+
+  const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
+  const [salesOpen, setSalesOpen] = useState(false);
+  const [salesRemarks, setSalesRemarks] = useState("");
+  const [salesFiles, setSalesFiles] = useState([]);
+  const fileInputRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const formatBytes = (b) => {
+    if (!b && b !== 0) return "—";
+    const u = ["B", "KB", "MB", "GB"];
+    let i = 0,
+      n = b;
+    while (n >= 1024 && i < u.length - 1) {
+      n /= 1024;
+      i++;
+    }
+    return `${n.toFixed(n < 10 && i > 0 ? 1 : 0)} ${u[i]}`;
+  };
+
+  const handleSalesConvert = async () => {
+    try {
+      if (!selectedClients.length) return;
+
+      await Promise.all(
+        selectedClients.map((id) =>
+          updateSalesPO({
+            id,
+            remarks: salesRemarks.trim(),
+            files: salesFiles,
+          }).unwrap()
+        )
+      );
+
+      toast.success(`Converted ${selectedClients.length} PO(s)`);
+      setSalesOpen(false);
+      setSalesRemarks("");
+      setSalesFiles([]);
+      setSelectedClients([]);
+      refetch();
+    } catch (err) {
+      const msg =
+        err?.data?.message || err?.error || "Failed to convert selected PO(s).";
+      toast.error(msg);
+    }
+  };
+
+  const addFiles = (files) => {
+    const incoming = Array.from(files || []).map((f) => ({
+      file: f,
+      attachment_name: f.name,
+    }));
+
+    setSalesFiles((prev) => {
+      const map = new Map(
+        prev.map((x) => [x.file.name + x.file.size + x.file.lastModified, x])
+      );
+      incoming.forEach((x) => {
+        const k = x.file.name + x.file.size + x.file.lastModified;
+        if (!map.has(k)) map.set(k, x);
+      });
+      return Array.from(map.values());
+    });
+  };
+
+  const onFileInputChange = (e) => addFiles(e.target.files);
+  const onDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    addFiles(e.dataTransfer.files);
+  };
+  const onDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+  const onDragLeave = () => setIsDragging(false);
+
+  const removeFile = (file) => {
+    setSalesFiles((prev) =>
+      prev.filter(
+        (f) =>
+          !(
+            f.file.name === file.name &&
+            f.file.size === file.size &&
+            f.file.lastModified === file.lastModified
+          )
+      )
+    );
+  };
+  const clearAllFiles = () => setSalesFiles([]);
+  const [saleDetailOpen, setSaleDetailOpen] = useState(false);
+  const [activeSale, setActiveSale] = useState(null);
+
+  const openSaleDetail = (sale) => {
+    setActiveSale(sale);
+    setSaleDetailOpen(true);
+  };
+  const closeSaleDetail = () => {
+    setSaleDetailOpen(false);
+    setActiveSale(null);
   };
 
   return (
@@ -1345,422 +1507,493 @@ const [selectedSales, setSelectedSales] = useState([]);
 
       {/* Client History Section */}
       <Box>
-        <Tabs defaultValue={0} sx={{ mt: 1 }}>
-          <TabList>
-            <Tab>Purchase History</Tab>
-            <Tab>Sales History</Tab>
+        <Tabs
+          value={tabIndex}
+          onChange={(_, v) => setTabIndex(v)}
+          sx={{
+            "--Tabs-indicatorThickness": "0px",
+            "--Tabs-indicatorColor": "transparent",
+            backgroundColor: "transparent",
+          }}
+          slotProps={{ tabIndicator: { sx: { display: "none" } } }}
+        >
+          <TabList
+            variant="plain"
+            sx={{
+              "--Tabs-gap": "8px",
+              "--Tabs-radius": "999px",
+              p: 0.5,
+              borderRadius: "999px",
+              boxShadow: "sm",
+              width: "fit-content",
+              padding: "9px",
+              mt: 2,
+              bgcolor: "transparent",
+              "& .MuiTab-root::after": { display: "none" },
+              "& .Mui-selected::after": { display: "none" },
+            }}
+          >
+            <Tab
+              variant="plain"
+              sx={{
+                borderRadius: "999px",
+                letterSpacing: 0.2,
+                fontSize: "1.1rem",
+                 fontWeight: 600, 
+                 px: 2, 
+                 py: 1,
+                "&:hover": { bgcolor: "neutral.softHoverBg" },
+                '&[aria-selected="false"]': {
+                  bgcolor: "neutral.softBg",
+                  color: "neutral.softColor",
+                },
+                '&[aria-selected="true"]': {
+                  bgcolor: "warning.softBg",
+                  color: "warning.softColor",
+                  boxShadow: "sm",
+                },
+                "&::after": { display: "none" },
+              }}
+            >
+              Purchase History
+            </Tab>&nbsp;&nbsp;
+            <Tab
+              variant="plain"
+              sx={{
+                borderRadius: "999px",
+                fontSize: "1.1rem",
+                 fontWeight: 600, 
+                 px: 2, 
+                 py: 1,
+                letterSpacing: 0.2,
+                "&:hover": { bgcolor: "neutral.softHoverBg" },
+                '&[aria-selected="false"]': {
+                  bgcolor: "neutral.softBg",
+                  color: "neutral.softColor",
+                },
+                '&[aria-selected="true"]': {
+                  bgcolor: "primary.softBg",
+                  color: "primary.softColor",
+                  boxShadow: "sm",
+                },
+                "&::after": { display: "none" },
+              }}
+            >
+              Sales History
+            </Tab>
           </TabList>
+          <Divider sx={{ borderWidth: "2px", marginBottom: "20px", mt: 2 }} />
 
           {/* -------------------- PURCHASE HISTORY -------------------- */}
           <TabPanel value={0} sx={{ p: 0, pt: 2 }}>
-            <Box>
-              <Chip
-                color="warning"
-                variant="soft"
-                size="md"
-                sx={{
-                  fontSize: "1.1rem",
-                  fontWeight: 600,
-                  px: 2,
-                  py: 1,
-                  mt: 3,
-                }}
-              >
-                Purchase History
-              </Chip>
-              <Divider
-                sx={{ borderWidth: "2px", marginBottom: "20px", mt: 2 }}
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexDirection: { xs: "column", md: "row" },
+                gap: 2,
+                mb: 2,
+                "@media print": { display: "none" },
+              }}
+            >
+              {/* Search Input */}
+              <Input
+                placeholder="Search Client"
+                value={searchClient}
+                onChange={(e) => setSearchClient(e.target.value)}
+                sx={{ width: { xs: "100%", md: 250 } }}
               />
 
+              {/* Actions: Delete + Sales Conversion */}
               <Box
                 sx={{
                   display: "flex",
-                  justifyContent: "space-between",
                   alignItems: "center",
-                  flexDirection: { xs: "column", md: "row" },
-                  gap: 2,
-                  mb: 2,
-                  "@media print": {
-                    display: "none",
-                  },
+                  gap: 1,
                 }}
               >
-                {/* Search Input */}
-                <Input
-                  placeholder="Search Client"
-                  value={searchClient}
-                  onChange={(e) => setSearchClient(e.target.value)}
-                  sx={{ width: { xs: "100%", md: 250 } }}
-                />
-
-                {/* Delete Button (Admin only) */}
                 {[
                   "IT Team",
                   "Guddu Rani Dubey",
                   "Prachi Singh",
                   "admin",
                 ].includes(user?.name) && (
-                  <IconButton
-                    color="danger"
-                    disabled={selectedClients.length === 0}
-                    onClick={handleDeleteClient}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
+                  <>
+                    <Button
+                      variant="solid"
+                      color="primary"
+                      disabled={selectedClients.length === 0}
+                      onClick={() => setConfirmCloseOpen(true)}
+                    >
+                      Sales Conversion
+                    </Button>
+                    {/* Divider between actions */}
+                    <Divider orientation="vertical" flexItem />
+
+                    <IconButton
+                      color="danger"
+                      disabled={selectedClients.length === 0}
+                      onClick={handleDeleteClient}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </>
                 )}
               </Box>
+            </Box>
 
-              <Sheet
-                variant="outlined"
+            <Sheet
+              variant="outlined"
+              sx={{
+                borderRadius: "12px",
+                overflow: "hidden",
+                p: 2,
+                boxShadow: "md",
+                maxWidth: "100%",
+                "@media print": {
+                  boxShadow: "none",
+                  p: 0,
+                  borderRadius: 0,
+                  overflow: "visible",
+                },
+              }}
+            >
+              <Table
+                borderAxis="both"
                 sx={{
-                  borderRadius: "12px",
-                  overflow: "hidden",
-                  p: 2,
-                  boxShadow: "md",
-                  maxWidth: "100%",
+                  minWidth: "100%",
+                  "& thead": {
+                    backgroundColor: "neutral.softBg",
+                    "@media print": {
+                      backgroundColor: "#eee",
+                    },
+                  },
+                  "& th, & td": {
+                    textAlign: "left",
+                    px: 2,
+                    py: 1.5,
+                    "@media print": {
+                      px: 1,
+                      py: 1,
+                      fontSize: "12px",
+                      border: "1px solid #ccc",
+                    },
+                  },
                   "@media print": {
-                    boxShadow: "none",
-                    p: 0,
-                    borderRadius: 0,
-                    overflow: "visible",
+                    borderCollapse: "collapse",
+                    width: "100%",
+                    tableLayout: "fixed",
                   },
                 }}
               >
-                <Table
-                  borderAxis="both"
-                  sx={{
-                    minWidth: "100%",
-                    "& thead": {
-                      backgroundColor: "neutral.softBg",
-                      "@media print": {
-                        backgroundColor: "#eee",
-                      },
-                    },
-                    "& th, & td": {
-                      textAlign: "left",
-                      px: 2,
-                      py: 1.5,
-                      "@media print": {
-                        px: 1,
-                        py: 1,
-                        fontSize: "12px",
-                        border: "1px solid #ccc",
-                      },
-                    },
-                    "@media print": {
-                      borderCollapse: "collapse",
-                      width: "100%",
-                      tableLayout: "fixed",
-                    },
-                  }}
-                >
-                  {/* Table Header */}
-                  <thead>
+                {/* Table Header */}
+                <thead>
+                  <tr>
+                    <th>PO Number</th>
+                    <th>Vendor</th>
+                    <th>Item Name</th>
+                    <th>PO Value (₹)</th>
+                    <th>Advance Paid (₹)</th>
+                    <th>Remaining Amount (₹)</th>
+                    <th>Total Billed Value (₹)</th>
+                    <th style={{ textAlign: "center" }}>
+                      <Checkbox
+                        onChange={handleSelectAllClient}
+                        checked={
+                          ClientSummary.length > 0 &&
+                          selectedClients.length === ClientSummary.length
+                        }
+                        disabled={ClientSummary.length === 0}
+                      />
+                    </th>
+                  </tr>
+                </thead>
+
+                {/* Table Body */}
+                <tbody>
+                  {isLoading ? (
                     <tr>
-                      <th>PO Number</th>
-                      <th>Vendor</th>
-                      <th>Item Name</th>
-                      <th>PO Value (₹)</th>
-                      <th>Advance Paid (₹)</th>
-                      <th>Remaining Amount (₹)</th>
-                      <th>Total Billed Value (₹)</th>
-                      <th style={{ textAlign: "center" }}>
-                        <Checkbox
-                          onChange={handleSelectAllClient}
-                          checked={
-                            ClientSummary.length > 0 &&
-                            selectedClients.length === ClientSummary.length
-                          }
-                          disabled={ClientSummary.length === 0}
-                        />
-                      </th>
-                    </tr>
-                  </thead>
-
-                  {/* Table Body */}
-                  <tbody>
-                    {isLoading ? (
-                      <tr>
-                        <td
-                          colSpan={8}
-                          style={{ textAlign: "center", padding: "20px" }}
-                        >
-                          <Typography
-                            level="body-md"
-                            sx={{ fontStyle: "italic" }}
-                          >
-                            Loading purchase history...
-                          </Typography>
-                        </td>
-                      </tr>
-                    ) : ClientSummary.length > 0 ? (
-                      ClientSummary.map((client) => (
-                        <tr key={client._id}>
-                          <td>{client.po_number || "N/A"}</td>
-                          <td>{client.vendor || "N/A"}</td>
-                          <td>{client.item_name || "N/A"}</td>
-                          <td>
-                            ₹ {(client?.po_value || 0).toLocaleString("en-IN")}
-                          </td>
-                          <td>
-                            ₹{" "}
-                            {(client?.advance_paid || 0).toLocaleString(
-                              "en-IN"
-                            )}
-                          </td>
-                          <td>
-                            ₹{" "}
-                            {(client?.remaining_amount || 0).toLocaleString(
-                              "en-IN"
-                            )}
-                          </td>
-                          <td>
-                            ₹{" "}
-                            {(client?.total_billed_value || 0).toLocaleString(
-                              "en-IN"
-                            )}
-                          </td>
-                          <td style={{ textAlign: "center" }}>
-                            <Checkbox
-                              checked={selectedClients.includes(client._id)}
-                              onChange={() =>
-                                handleClientCheckboxChange(client._id)
-                              }
-                              aria-label={`Select client ${
-                                client.po_number || client._id
-                              }`}
-                            />
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan={8}
-                          style={{ textAlign: "center", padding: "20px" }}
-                        >
-                          <Typography level="body-md">
-                            No purchase history available
-                          </Typography>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-
-                  {/* Total Row */}
-                  <tfoot>
-                    {ClientSummary.length > 0 && (
-                      <tr
-                        style={{
-                          fontWeight: "bold",
-                          backgroundColor: "#f5f5f5",
-                        }}
+                      <td
+                        colSpan={8}
+                        style={{ textAlign: "center", padding: "20px" }}
                       >
-                        <td colSpan={3} style={{ textAlign: "right" }}>
-                          Total:{" "}
+                        <Typography
+                          level="body-md"
+                          sx={{ fontStyle: "italic" }}
+                        >
+                          Loading purchase history...
+                        </Typography>
+                      </td>
+                    </tr>
+                  ) : ClientSummary.length > 0 ? (
+                    ClientSummary.map((client) => (
+                      <tr key={client._id}>
+                        <td>{client.po_number || "N/A"}</td>
+                        <td>{client.vendor || "N/A"}</td>
+                        <td>{client.item_name || "N/A"}</td>
+                        <td>
+                          ₹ {(client?.po_value || 0).toLocaleString("en-IN")}
                         </td>
                         <td>
                           ₹{" "}
-                          {ClientTotal?.total_po_value?.toLocaleString("en-IN")}
+                          {(client?.advance_paid || 0).toLocaleString("en-IN")}
                         </td>
                         <td>
                           ₹{" "}
-                          {ClientTotal?.total_advance_paid?.toLocaleString(
+                          {(client?.remaining_amount || 0).toLocaleString(
                             "en-IN"
                           )}
                         </td>
                         <td>
                           ₹{" "}
-                          {ClientTotal?.total_remaining_amount?.toLocaleString(
+                          {(client?.total_billed_value || 0).toLocaleString(
                             "en-IN"
                           )}
                         </td>
-                        <td>
-                          ₹{" "}
-                          {ClientTotal?.total_billed_value?.toLocaleString(
-                            "en-IN"
-                          )}
+                        <td style={{ textAlign: "center" }}>
+                          <Checkbox
+                            checked={selectedClients.includes(client._id)}
+                            onChange={() =>
+                              handleClientCheckboxChange(client._id)
+                            }
+                            aria-label={`Select client ${
+                              client.po_number || client._id
+                            }`}
+                          />
                         </td>
-                        <td />
                       </tr>
-                    )}
-                  </tfoot>
-                </Table>
-              </Sheet>
-            </Box>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={8}
+                        style={{ textAlign: "center", padding: "20px" }}
+                      >
+                        <Typography level="body-md">
+                          No purchase history available
+                        </Typography>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+
+                {/* Total Row */}
+                <tfoot>
+                  {ClientSummary.length > 0 && (
+                    <tr
+                      style={{
+                        fontWeight: "bold",
+                        backgroundColor: "#f5f5f5",
+                      }}
+                    >
+                      <td colSpan={3} style={{ textAlign: "right" }}>
+                        Total:{" "}
+                      </td>
+                      <td>
+                        ₹ {ClientTotal?.total_po_value?.toLocaleString("en-IN")}
+                      </td>
+                      <td>
+                        ₹{" "}
+                        {ClientTotal?.total_advance_paid?.toLocaleString(
+                          "en-IN"
+                        )}
+                      </td>
+                      <td>
+                        ₹{" "}
+                        {ClientTotal?.total_remaining_amount?.toLocaleString(
+                          "en-IN"
+                        )}
+                      </td>
+                      <td>
+                        ₹{" "}
+                        {ClientTotal?.total_billed_value?.toLocaleString(
+                          "en-IN"
+                        )}
+                      </td>
+                      <td />
+                    </tr>
+                  )}
+                </tfoot>
+              </Table>
+            </Sheet>
           </TabPanel>
 
           {/* -------------------- SALES HISTORY -------------------- */}
           <TabPanel value={1} sx={{ p: 0, pt: 2 }}>
-            <Box>
-              <Chip
-                color="primary"
-                variant="soft"
-                size="md"
-                sx={{
-                  fontSize: "1.1rem",
-                  fontWeight: 600,
-                  px: 2,
-                  py: 1,
-                  mt: 3,
-                }}
-              >
-                Sales History
-              </Chip>
-              <Divider
-                sx={{ borderWidth: "2px", marginBottom: "20px", mt: 2 }}
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexDirection: { xs: "column", md: "row" },
+                gap: 2,
+                mb: 2,
+                "@media print": { display: "none" },
+              }}
+            >
+              <Input
+                placeholder="Search Vendor or Item or PO"
+                value={searchSales ?? ""}
+                onChange={(e) => setSearchSales(e.target.value)}
+                sx={{ width: { xs: "100%", md: 300 } }}
               />
 
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  flexDirection: { xs: "column", md: "row" },
-                  gap: 2,
-                  mb: 2,
-                  "@media print": {
-                    display: "none",
-                  },
-                }}
-              >
-                {/* Search Input */}
-                <Input
-                  placeholder="Search Customer / Vendor / PO"
-                  value={searchSales}
-                  onChange={(e) => setSearchSales(e.target.value)}
-                  sx={{ width: { xs: "100%", md: 300 } }}
-                />
+              {/* {["IT Team", "Guddu Rani Dubey", "Prachi Singh", "admin"].includes(
+      user?.name
+    ) && (
+      <IconButton color="danger" disabled={selectedSales.length === 0}>
+        <DeleteIcon />
+      </IconButton>
+    )} */}
+            </Box>
 
-                {/* Delete Button (Admin only) */}
-                {[
-                  "IT Team",
-                  "Guddu Rani Dubey",
-                  "Prachi Singh",
-                  "admin",
-                ].includes(user?.name) && (
-                  <IconButton
-                    color="danger"
-                    disabled={selectedSales.length === 0}
-                    // onClick={handleDeleteSales}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                )}
-              </Box>
-
-              <Sheet
-                variant="outlined"
+            <Sheet
+              variant="outlined"
+              sx={{
+                borderRadius: "12px",
+                overflow: "hidden",
+                p: 2,
+                boxShadow: "md",
+                maxWidth: "100%",
+                "@media print": {
+                  boxShadow: "none",
+                  p: 0,
+                  borderRadius: 0,
+                  overflow: "visible",
+                },
+              }}
+            >
+              <Table
+                borderAxis="both"
                 sx={{
-                  borderRadius: "12px",
-                  overflow: "hidden",
-                  p: 2,
-                  boxShadow: "md",
-                  maxWidth: "100%",
-                  "@media print": {
-                    boxShadow: "none",
-                    p: 0,
-                    borderRadius: 0,
-                    overflow: "visible",
+                  minWidth: "100%",
+                  "& thead": {
+                    backgroundColor: "neutral.softBg",
+                    "@media print": { backgroundColor: "#eee" },
                   },
-                }}
-              >
-                <Table
-                  borderAxis="both"
-                  sx={{
-                    minWidth: "100%",
-                    "& thead": {
-                      backgroundColor: "neutral.softBg",
-                      "@media print": {
-                        backgroundColor: "#eee",
-                      },
-                    },
-                    "& th, & td": {
-                      textAlign: "left",
-                      px: 2,
-                      py: 1.5,
-                      "@media print": {
-                        px: 1,
-                        py: 1,
-                        fontSize: "12px",
-                        border: "1px solid #ccc",
-                      },
-                    },
+                  "& th, & td": {
+                    textAlign: "left",
+                    px: 2,
+                    py: 1.5,
                     "@media print": {
-                      borderCollapse: "collapse",
-                      width: "100%",
-                      tableLayout: "fixed",
+                      px: 1,
+                      py: 1,
+                      fontSize: "12px",
+                      border: "1px solid #ccc",
                     },
-                  }}
-                >
-                  <thead>
+                  },
+                  "@media print": {
+                    borderCollapse: "collapse",
+                    width: "100%",
+                    tableLayout: "fixed",
+                  },
+                }}
+              >
+                <thead>
+                  <tr>
+                    <th style={{ width: 320 }}>Converted PO's</th>
+                    <th>Conversion Date</th>
+                    <th>Vendor</th>
+                    <th>Item</th>
+                    <th>Sales Value (₹)</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {isLoading ? (
                     <tr>
-                      <th style={{ width: 280 }}>PO Number / Attachments</th>
-                      <th>Vendor</th>
-                      <th>Item</th>
-                      <th>Total PO (₹)</th>
-                      <th>Advance Paid (₹)</th>
-                      {/* <th style={{ textAlign: "center" }}>
-                        <Checkbox
-                          onChange={handleSelectAllSales}
-                          checked={
-                            (SalesSummary?.length || 0) > 0 &&
-                            selectedSales.length === SalesSummary.length
-                          }
-                          disabled={(SalesSummary?.length || 0) === 0}
-                        />
-                      </th> */}
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {isLoading ? (
-                      <tr>
-                        <td
-                          colSpan={6}
-                          style={{ textAlign: "center", padding: "20px" }}
+                      <td
+                        colSpan={5}
+                        style={{ textAlign: "center", padding: 20 }}
+                      >
+                        <Typography
+                          level="body-md"
+                          sx={{ fontStyle: "italic" }}
                         >
-                          <Typography
-                            level="body-md"
-                            sx={{ fontStyle: "italic" }}
-                          >
-                            Loading sales history...
-                          </Typography>
-                        </td>
-                      </tr>
-                    ) : (SalesSummary?.length || 0) > 0 ? (
-                      (SalesSummary || [])
-                        .filter((s) => {
-                          if (!searchSales?.trim()) return true;
-                          const q = searchSales.toLowerCase();
-                          return (
-                            (s.po_number || "").toLowerCase().includes(q) ||
-                            (s.vendor || "").toLowerCase().includes(q) ||
-                            (s.item || "").toLowerCase().includes(q)
-                          );
-                        })
-                        .map((sale) => (
-                          <tr key={sale._id}>
-                            <td>
-                              <Stack spacing={0.75}>
-                                <Typography
-                                  level="body-sm"
-                                  sx={{ fontWeight: 600 }}
-                                >
-                                  {sale.po_number || "N/A"}
-                                </Typography>
+                          Loading sales history...
+                        </Typography>
+                      </td>
+                    </tr>
+                  ) : (SalesSummary?.length || 0) === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        style={{ textAlign: "center", padding: 20 }}
+                      >
+                        <Typography level="body-md">
+                          No sales history available
+                        </Typography>
+                      </td>
+                    </tr>
+                  ) : filteredSales.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        style={{ textAlign: "center", padding: 20 }}
+                      >
+                        <Typography level="body-md">
+                          No matching results
+                        </Typography>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredSales.map((sale, idx) => {
+                      const atts = normalizeAttachments(sale.attachments);
+                      return (
+                        <tr key={sale._id || `${sale.po_number}-${idx}`}>
+                          <td>
+                            <Stack spacing={0.75}>
+                              <Stack
+                                direction="row"
+                                spacing={0.5}
+                                alignItems="center"
+                              >
+                                <Chip size="sm" variant="soft" color="primary">
+                                  <Typography
+                                    level="body-sm"
+                                    sx={{
+                                      fontWeight: 700,
+                                      maxWidth: 220,
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      whiteSpace: "nowrap",
+                                    }}
+                                    title={sale.po_number || "N/A"}
+                                  >
+                                    {sale.po_number || "N/A"}
+                                  </Typography>
+                                </Chip>
 
-                                {/* Attachments under PO number */}
-                                <Stack
-                                  direction="row"
-                                  spacing={1}
-                                  flexWrap="wrap"
-                                  useFlexGap
+                                <Tooltip
+                                  title="View conversion"
+                                  placement="top"
                                 >
-                                  {(sale.attachments || []).map((att, idx) => (
+                                  <IconButton
+                                    size="sm"
+                                    variant="plain"
+                                    onClick={() => openSaleDetail(sale)}
+                                    aria-label={`View conversion for PO ${
+                                      sale.po_number || sale._id
+                                    }`}
+                                  >
+                                    <VisibilityRounded fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              </Stack>
+
+                              {/* Attachments */}
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                                flexWrap="wrap"
+                                useFlexGap
+                              >
+                                {atts.length > 0 ? (
+                                  atts.map((att, i) => (
                                     <Link
-                                      key={`${sale._id}-att-${idx}`}
-                                      href={att?.url || "#"}
+                                      key={att.url || `${sale._id}-att-${i}`}
+                                      href={att.url}
                                       target="_blank"
                                       rel="noopener"
                                       underline="hover"
@@ -1773,91 +2006,184 @@ const [selectedSales, setSelectedSales] = useState([]);
                                         py: 0.25,
                                         borderRadius: "8px",
                                         backgroundColor: "neutral.softBg",
+                                        maxWidth: 180,
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap",
                                       }}
+                                      title={att.name}
                                     >
                                       <AttachFileIcon sx={{ fontSize: 16 }} />
-                                      {att?.name || `File ${idx + 1}`}
+                                      {att.name || `File ${i + 1}`}
                                     </Link>
-                                  ))}
-                                  {(sale.attachments || []).length === 0 && (
-                                    <Typography
-                                      level="body-xs"
-                                      sx={{ opacity: 0.7 }}
-                                    >
-                                      No attachments
-                                    </Typography>
-                                  )}
-                                </Stack>
+                                  ))
+                                ) : (
+                                  <Typography
+                                    level="body-xs"
+                                    sx={{ opacity: 0.7 }}
+                                  >
+                                    No attachments
+                                  </Typography>
+                                )}
                               </Stack>
-                            </td>
+                            </Stack>
+                          </td>
 
-                            <td>{sale.vendor || "N/A"}</td>
-                            <td>{sale.item || "N/A"}</td>
+                          <td style={{ fontSize: "0.9rem" }}>
+                            {formatDateTime(sale?.converted_at)}
+                          </td>
 
-                            <td>
-                              ₹ {(sale?.total_po || 0).toLocaleString("en-IN")}
-                            </td>
-                            <td>
-                              ₹{" "}
-                              {(sale?.advance_paid || 0).toLocaleString(
-                                "en-IN"
-                              )}
-                            </td>
+                          <td>{sale.vendor || "N/A"}</td>
 
-                            {/* <td style={{ textAlign: "center" }}>
-                              <Checkbox
-                                checked={selectedSales.includes(sale._id)}
-                                onChange={() =>
-                                  handleSalesCheckboxChange(sale._id)
-                                }
-                                aria-label={`Select sale ${
-                                  sale.po_number || sale._id
-                                }`}
-                              />
-                            </td> */}
-                          </tr>
-                        ))
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan={5}
-                          style={{ textAlign: "center", padding: "20px" }}
-                        >
-                          <Typography level="body-md">
-                            No sales history available
-                          </Typography>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
+                          {/* Item with ellipsis + tooltip */}
+                          <td title={getItemLabel(sale)}>
+                            <span
+                              style={{
+                                maxWidth: 280,
+                                display: "inline-block",
+                                overflow: "hidden",
+                                whiteSpace: "nowrap",
+                                textOverflow: "ellipsis",
+                                verticalAlign: "bottom",
+                              }}
+                            >
+                              {getItemLabel(sale)}
+                            </span>
+                          </td>
 
-                  <tfoot>
-                    {(SalesSummary?.length || 0) > 0 && (
-                      <tr
-                        style={{
-                          fontWeight: "bold",
-                          backgroundColor: "#f5f5f5",
+                          <td>
+                            ₹{" "}
+                            {Math.round(sale?.po_value || 0).toLocaleString(
+                              "en-IN"
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+
+                <tfoot>
+                  {filteredSales.length > 0 && (
+                    <tr
+                      style={{
+                        fontWeight: "bold",
+                        backgroundColor: "#f5f5f5",
+                      }}
+                    >
+                      <td colSpan={4} style={{ textAlign: "right" }}>
+                        Total:
+                      </td>
+                      <td>₹ {Math.round(saleTotalsFiltered.total_sale)}</td>
+                    </tr>
+                  )}
+                </tfoot>
+              </Table>
+            </Sheet>
+
+            {/* --- Conversion Details Modal --- */}
+            <Modal open={saleDetailOpen} onClose={closeSaleDetail}>
+              <ModalDialog sx={{ width: 520 }}>
+                <DialogTitle>Sales Conversion</DialogTitle>
+                <DialogContent>
+                  <Stack spacing={1.25}>
+                    <Typography level="title-sm">
+                      PO: <strong>{activeSale?.po_number ?? "—"}</strong>
+                    </Typography>
+
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Typography level="body-sm">
+                        <strong>Converted At:</strong>
+                      </Typography>
+                      <Chip size="sm" variant="soft">
+                        {formatDateTime(activeSale?.converted_at)}
+                      </Chip>
+                    </Stack>
+
+                    <Typography level="body-sm">
+                      <strong>Converted By:</strong>{" "}
+                      {activeSale?.user_name ?? "—"}
+                    </Typography>
+
+                    <Typography level="body-sm" sx={{ whiteSpace: "pre-wrap" }}>
+                      <strong>Remarks:</strong>{" "}
+                      {activeSale?.remarks?.trim() ? activeSale.remarks : "—"}
+                    </Typography>
+
+                    <Box>
+                      <Typography level="body-sm" sx={{ mb: 0.5 }}>
+                        <strong>Attachments</strong>
+                      </Typography>
+                      <Sheet
+                        variant="soft"
+                        sx={{
+                          p: 1,
+                          borderRadius: "md",
+                          maxHeight: 220,
+                          overflow: "auto",
                         }}
                       >
-                        <td colSpan={3} style={{ textAlign: "right" }}>
-                          Total:{" "}
-                        </td>
-                        <td>
-                          ₹ {SalesTotal?.total_po?.toLocaleString("en-IN")}
-                        </td>
-                        <td>
-                          ₹{" "}
-                          {SalesTotal?.total_advance_paid?.toLocaleString(
-                            "en-IN"
+                        <Stack spacing={0.75}>
+                          {normalizeAttachments(activeSale?.attachments)
+                            .length ? (
+                            normalizeAttachments(activeSale?.attachments).map(
+                              (a, i) => (
+                                <Box
+                                  key={a.url || `file-${i}`}
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    gap: 1,
+                                    px: 1,
+                                    py: 0.75,
+                                    borderRadius: "sm",
+                                    "&:hover": {
+                                      backgroundColor: "neutral.plainHoverBg",
+                                    },
+                                  }}
+                                >
+                                  <Stack
+                                    direction="row"
+                                    spacing={1}
+                                    alignItems="center"
+                                  >
+                                    <InsertDriveFileRounded fontSize="small" />
+                                    <Link
+                                      href={a.url}
+                                      target="_blank"
+                                      rel="noopener"
+                                      underline="hover"
+                                    >
+                                      {a.name}
+                                    </Link>
+                                  </Stack>
+                                </Box>
+                              )
+                            )
+                          ) : (
+                            <Typography level="body-xs" sx={{ opacity: 0.7 }}>
+                              No attachments
+                            </Typography>
                           )}
-                        </td>
-                        <td />
-                      </tr>
-                    )}
-                  </tfoot>
-                </Table>
-              </Sheet>
-            </Box>
+                        </Stack>
+                      </Sheet>
+                    </Box>
+
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      justifyContent="flex-end"
+                      sx={{ mt: 1 }}
+                    >
+                      <Button variant="plain" onClick={closeSaleDetail}>
+                        Close
+                      </Button>
+                    </Stack>
+                  </Stack>
+                </DialogContent>
+              </ModalDialog>
+            </Modal>
           </TabPanel>
         </Tabs>
       </Box>
@@ -2120,6 +2446,222 @@ const [selectedSales, setSelectedSales] = useState([]);
           CSV
         </Button>
       </Box>
+
+      {/* Confirm first */}
+      <Modal open={confirmCloseOpen} onClose={() => setConfirmCloseOpen(false)}>
+        <ModalDialog sx={{ width: 420 }}>
+          <DialogTitle>
+            Close selected PO{selectedClients.length > 1 ? "s" : ""}?
+          </DialogTitle>
+          <DialogContent>
+            Are you sure you want to close {selectedClients.length} PO
+            {selectedClients.length > 1 ? "s" : ""}? This will convert them to
+            Sales.
+          </DialogContent>
+          <Stack direction="row" spacing={1} justifyContent="flex-end">
+            <Button variant="plain" onClick={() => setConfirmCloseOpen(false)}>
+              No
+            </Button>
+            <Button
+              variant="solid"
+              color="danger"
+              onClick={() => {
+                setConfirmCloseOpen(false);
+                setSalesOpen(true);
+              }}
+            >
+              Yes, continue
+            </Button>
+          </Stack>
+        </ModalDialog>
+      </Modal>
+
+      {/* Sales Conversion modal */}
+      <Modal open={salesOpen} onClose={() => setSalesOpen(false)}>
+        <ModalDialog
+          aria-labelledby="sales-convert-title"
+          sx={{ width: 520, borderRadius: "md", boxShadow: "lg", p: 3 }}
+        >
+          <DialogTitle id="sales-convert-title">Sales Conversion</DialogTitle>
+          <DialogContent>
+            <Stack spacing={2}>
+              {/* Dotted dropzone */}
+              <Box
+                onClick={() => fileInputRef.current?.click()}
+                onDrop={onDrop}
+                onDragOver={onDragOver}
+                onDragLeave={onDragLeave}
+                sx={{
+                  border: "2px dashed",
+                  borderColor: isDragging
+                    ? "primary.solidBg"
+                    : "neutral.outlinedBorder",
+                  backgroundColor: isDragging
+                    ? "neutral.softBg"
+                    : "transparent",
+                  borderRadius: "md",
+                  p: 3,
+                  textAlign: "center",
+                  cursor: "pointer",
+                  transition: "all .15s ease",
+                  "&:hover": {
+                    borderColor: "primary.solidBg",
+                    backgroundColor: "neutral.softBg",
+                  },
+                }}
+              >
+                <Typography level="title-sm" sx={{ mb: 0.5 }}>
+                  Drop files here or <u>browse</u>
+                </Typography>
+                <Typography level="body-xs" color="neutral">
+                  You can select multiple files. (PNG/JPG/PDF)
+                </Typography>
+
+                {/* Hidden native input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  name="file"
+                  multiple
+                  accept="image/*,application/pdf"
+                  onChange={(e) => onFileInputChange(e)}
+                  style={{ display: "none" }}
+                />
+
+                <Typography level="body-sm" sx={{ mt: 1.25 }}>
+                  {salesFiles.length
+                    ? `${salesFiles.length} file(s) selected`
+                    : "No files selected"}
+                </Typography>
+              </Box>
+
+              {/* Preview + editable attachment_name */}
+              {salesFiles.length > 0 && (
+                <Sheet
+                  variant="soft"
+                  sx={{
+                    p: 1,
+                    borderRadius: "md",
+                    maxHeight: 240,
+                    overflow: "auto",
+                  }}
+                >
+                  <Stack spacing={0.75}>
+                    {salesFiles.map((f, idx) => {
+                      const key = `${f.file.name}-${f.file.size}-${f.file.lastModified}`;
+                      return (
+                        <Box
+                          key={key}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 1,
+                            px: 1,
+                            py: 0.75,
+                            borderRadius: "sm",
+                            "&:hover": {
+                              backgroundColor: "neutral.plainHoverBg",
+                            },
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                              flexGrow: 1,
+                            }}
+                          >
+                            <InsertDriveFileRounded fontSize="small" />
+                            <Box sx={{ flexGrow: 1 }}>
+                              <Typography
+                                level="body-sm"
+                                sx={{ lineHeight: 1.1 }}
+                              >
+                                {f.file.name}
+                              </Typography>
+                              <Typography level="body-xs" color="neutral">
+                                {formatBytes(f.file.size)}
+                              </Typography>
+
+                              <Input
+                                size="sm"
+                                placeholder="Attachment name"
+                                value={f.attachment_name}
+                                onChange={(e) => {
+                                  const newName = e.target.value;
+                                  setSalesFiles((prev) =>
+                                    prev.map((item, i) =>
+                                      i === idx
+                                        ? { ...item, attachment_name: newName }
+                                        : item
+                                    )
+                                  );
+                                }}
+                                sx={{ mt: 0.5 }}
+                              />
+                            </Box>
+                          </Box>
+
+                          <IconButton
+                            size="sm"
+                            variant="plain"
+                            color="danger"
+                            onClick={() => removeFile(f.file)}
+                            aria-label={`Remove ${f.file.name}`}
+                          >
+                            <CloseRounded />
+                          </IconButton>
+                        </Box>
+                      );
+                    })}
+                    <Box sx={{ textAlign: "right", mt: 0.5 }}>
+                      <Button
+                        size="sm"
+                        variant="plain"
+                        color="neutral"
+                        onClick={clearAllFiles}
+                      >
+                        Clear all
+                      </Button>
+                    </Box>
+                  </Stack>
+                </Sheet>
+              )}
+
+              {/* Remarks */}
+              <Textarea
+                minRows={3}
+                placeholder="Enter remarks..."
+                variant="soft"
+                value={salesRemarks}
+                onChange={(e) => setSalesRemarks(e.target.value)}
+              />
+
+              {/* Actions */}
+              <Stack direction="row" spacing={1.5} justifyContent="flex-end">
+                <Button
+                  variant="plain"
+                  color="neutral"
+                  onClick={() => setSalesOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="solid"
+                  color="primary"
+                  loading={isConverting}
+                  disabled={!salesRemarks.trim()}
+                  onClick={handleSalesConvert}
+                >
+                  Convert
+                </Button>
+              </Stack>
+            </Stack>
+          </DialogContent>
+        </ModalDialog>
+      </Modal>
     </Sheet>
   );
 };
