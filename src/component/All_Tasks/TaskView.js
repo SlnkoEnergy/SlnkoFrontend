@@ -17,6 +17,13 @@ import Typography from "@mui/joy/Typography";
 import Tabs from "@mui/joy/Tabs";
 import TabList from "@mui/joy/TabList";
 import Tab from "@mui/joy/Tab";
+import Modal from "@mui/joy/Modal";
+import ModalDialog from "@mui/joy/ModalDialog";
+import DialogTitle from "@mui/joy/DialogTitle";
+import DialogContent from "@mui/joy/DialogContent";
+import DialogActions from "@mui/joy/DialogActions";
+import Textarea from "@mui/joy/Textarea";
+import CircularProgress from "@mui/joy/CircularProgress";
 import SearchIcon from "@mui/icons-material/Search";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
@@ -26,7 +33,10 @@ import WorkOutlineIcon from "@mui/icons-material/WorkOutline";
 import ApartmentIcon from "@mui/icons-material/Apartment";
 import BuildIcon from "@mui/icons-material/Build";
 import NoData from "../../assets/alert-bell.svg";
-import { useGetAllTasksQuery } from "../../redux/globalTaskSlice";
+import {
+  useGetAllTasksQuery,
+  useUpdateTaskStatusMutation, // <-- NEW
+} from "../../redux/globalTaskSlice";
 import { Avatar } from "@mui/joy";
 
 /* ---------- helpers: title + time/diff ---------- */
@@ -91,7 +101,12 @@ function TitleWithTooltip({ title }) {
   );
 }
 
-function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
+export default function Dash_task({
+  selected,
+  setSelected,
+  searchParams,
+  setSearchParams,
+}) {
   const navigate = useNavigate();
 
   const tabLabel = searchParams.get("tab") || "Pending";
@@ -271,6 +286,69 @@ function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
     }
     return out;
   };
+
+  /* =========================
+     Status modal state + API
+     ========================= */
+  const [statusOpen, setStatusOpen] = useState(false);
+  const [statusTaskId, setStatusTaskId] = useState(null);
+  const [statusValue, setStatusValue] = useState("");
+  const [statusRemarks, setStatusRemarks] = useState("");
+  const [statusError, setStatusError] = useState("");
+
+  const [updateTaskStatus, { isLoading: isUpdating }] =
+    useUpdateTaskStatusMutation();
+
+  const STATUS_OPTIONS = [
+    { val: "pending", label: "Pending" },
+    { val: "in progress", label: "In Progress" },
+    { val: "completed", label: "Completed" },
+    { val: "cancelled", label: "Cancelled" },
+  ];
+
+  const openStatusModal = (task) => {
+    setStatusTaskId(task._id);
+    const curr = task?.current_status?.status || "pending";
+    setStatusValue(curr);
+    // (optional) prefill remarks with last status remark
+    setStatusRemarks("");
+    setStatusError("");
+    setStatusOpen(true);
+  };
+
+  const submitStatus = async () => {
+    setStatusError("");
+    if (!statusTaskId) return;
+
+    try {
+      await updateTaskStatus({
+        id: statusTaskId,
+        status: statusValue,
+        remarks: statusRemarks?.trim() || undefined,
+      }).unwrap();
+      setStatusOpen(false);
+      // reset
+      setStatusTaskId(null);
+      setStatusRemarks("");
+    } catch (e) {
+      setStatusError(
+        e?.data?.message ||
+          e?.error ||
+          "Failed to update status. Please try again."
+      );
+    }
+  };
+
+  const chipColor = (st) =>
+    st === "draft"
+      ? "primary"
+      : st === "pending"
+      ? "danger"
+      : st === "in progress"
+      ? "warning"
+      : st === "completed"
+      ? "success"
+      : "neutral";
 
   return (
     <Box
@@ -698,7 +776,7 @@ function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
                               p?._id ??
                               p?.projectId ??
                               p?.id ??
-                              task.project_id, // fallback
+                              task.project_id,
                             code: p?.code ?? p?.projectCode ?? "-",
                             name: p?.name ?? p?.projectName ?? "-",
                           }));
@@ -1063,7 +1141,7 @@ function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
                                           WebkitBoxOrient: "vertical",
                                           overflow: "hidden",
                                           whiteSpace: "normal",
-                                          overflowWrap: "anywhere", // <- also keep preview safe
+                                          overflowWrap: "anywhere",
                                           wordBreak: "break-word",
                                           maxWidth: 360,
                                           cursor: "default",
@@ -1081,36 +1159,20 @@ function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
                       })()}
                     </td>
 
-                    {/* Status */}
+                    {/* Status (clickable -> open modal) */}
                     <td style={{ padding: 8, borderBottom: "1px solid #ddd" }}>
-                      <Tooltip
-                        title={task.current_status?.remarks || ""}
+                      <Chip
                         variant="soft"
-                        slotProps={WRAP_TOOLTIP_SLOTPROPS}
+                        color={chipColor(task.current_status?.status)}
+                        size="sm"
+                        onClick={() => openStatusModal(task)}
+                        sx={{ cursor: "pointer" }}
                       >
-                        <Chip
-                          variant="soft"
-                          color={
-                            task.current_status?.status === "draft"
-                              ? "primary"
-                              : task.current_status?.status === "pending"
-                              ? "danger"
-                              : task.current_status?.status === "in progress"
-                              ? "warning"
-                              : task.current_status?.status === "completed"
-                              ? "success"
-                              : "neutral"
-                          }
-                          size="sm"
-                        >
-                          {task.current_status?.status
-                            ? task.current_status.status
-                                .charAt(0)
-                                .toUpperCase() +
-                              task.current_status.status.slice(1)
-                            : "-"}
-                        </Chip>
-                      </Tooltip>
+                        {task.current_status?.status
+                          ? task.current_status.status.charAt(0).toUpperCase() +
+                            task.current_status.status.slice(1)
+                          : "-"}
+                      </Chip>
                     </td>
                   </tr>
                 );
@@ -1216,8 +1278,89 @@ function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
           Next
         </Button>
       </Box>
+
+      {/* =========================
+          Update Status Modal
+          ========================= */}
+      <Modal
+        open={statusOpen}
+        onClose={() => !isUpdating && setStatusOpen(false)}
+      >
+        <ModalDialog
+          aria-labelledby="update-status-title"
+          variant="soft"
+          sx={{ minWidth: 420, borderRadius: 16 }}
+        >
+          <DialogTitle id="update-status-title">Update Status</DialogTitle>
+          <DialogContent sx={{ mt: 0.5, color: "text.tertiary" }}>
+            Select a new status and add remarks (optional).
+          </DialogContent>
+
+          <Box sx={{ mt: 1.5, display: "grid", gap: 1 }}>
+            <FormControl size="sm">
+              <Select
+                value={statusValue}
+                onChange={(_, v) => setStatusValue(v)}
+                indicator={null}
+                sx={{ borderRadius: 10 }}
+              >
+                {STATUS_OPTIONS.map((o) => (
+                  <Option key={o.val} value={o.val}>
+                    {o.label}
+                  </Option>
+                ))}
+              </Select>
+            </FormControl>
+
+            <Textarea
+              minRows={4}
+              placeholder="Write remarks..."
+              value={statusRemarks}
+              onChange={(e) => setStatusRemarks(e.target.value)}
+              sx={{ borderRadius: 12 }}
+            />
+
+            {statusError && (
+              <Typography level="body-sm" sx={{ color: "danger.600" }}>
+                {statusError}
+              </Typography>
+            )}
+          </Box>
+
+          <DialogActions sx={{ mt: 1 }}>
+            <Button
+              variant="outlined"
+              color="neutral"
+              onClick={() => setStatusOpen(false)}
+              disabled={isUpdating}
+              sx={{
+                color: "#3366a3",
+                borderColor: "#3366a3",
+                backgroundColor: "transparent",
+                "--Button-hoverBg": "#e0e0e0",
+                "--Button-hoverBorderColor": "#3366a3",
+                "&:hover": { color: "#3366a3" },
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={submitStatus}
+              disabled={isUpdating}
+              startDecorator={
+                isUpdating ? <CircularProgress size="sm" /> : null
+              }
+              sx={{
+                backgroundColor: "#3366a3",
+                color: "#fff",
+                "&:hover": { backgroundColor: "#285680" },
+              }}
+            >
+              {isUpdating ? "Saving..." : "Submit"}
+            </Button>
+          </DialogActions>
+        </ModalDialog>
+      </Modal>
     </Box>
   );
 }
-
-export default Dash_task;
