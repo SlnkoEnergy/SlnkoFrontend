@@ -43,9 +43,7 @@ const statusChip = (status) => {
 };
 
 const firstInitial = (s) =>
-  typeof s === "string" && s.trim()
-    ? s.trim().charAt(0).toUpperCase()
-    : "";
+  typeof s === "string" && s.trim() ? s.trim().charAt(0).toUpperCase() : "";
 
 /* Vertical tooltip content: Created by + list of assignees (with avatars) */
 const AssigneeTooltipContent = ({ createdBy, assignees = [] }) => (
@@ -161,16 +159,7 @@ function Row({ item, showDivider }) {
         </Typography>
 
         {/* Created-by avatar (tooltip shows vertical lists) */}
-        <Tooltip
-          variant="soft"
-          placement="top"
-          title={
-            <AssigneeTooltipContent
-              createdBy={createdBy}
-              assignees={assignees}
-            />
-          }
-        >
+        <Tooltip variant="soft" placement="top">
           <Avatar size="sm" {...createdAvatarProps}>
             {firstInitial(createdBy)}
           </Avatar>
@@ -180,12 +169,7 @@ function Row({ item, showDivider }) {
         <Tooltip
           variant="soft"
           placement="top"
-          title={
-            <AssigneeTooltipContent
-              createdBy={createdBy}
-              assignees={assignees}
-            />
-          }
+          title={<AssigneeTooltipContent assignees={assignees} />}
         >
           <AvatarGroup size="sm" sx={{ "--Avatar-size": "28px" }}>
             {assignees.slice(0, 3).map((u) => (
@@ -193,25 +177,18 @@ function Row({ item, showDivider }) {
                 {firstInitial(u?.name)}
               </Avatar>
             ))}
-            {assignees.length > 3 && (
-              <Avatar>+{assignees.length - 3}</Avatar>
-            )}
+            {assignees.length > 3 && <Avatar>+{assignees.length - 3}</Avatar>}
           </AvatarGroup>
         </Tooltip>
       </Box>
 
-      {showDivider && (
-        <Divider sx={{ borderColor: "rgba(2,6,23,0.06)" }} />
-      )}
+      {showDivider && <Divider sx={{ borderColor: "rgba(2,6,23,0.06)" }} />}
     </Box>
   );
 }
 
 /* ---------- main card ---------- */
-export default function TaskStatusList({
-  title = "Task Status",
-  items = [],
-}) {
+export default function TaskStatusList({ title = "Task Status", items = [] }) {
   return (
     <Card
       variant="soft"
@@ -232,7 +209,7 @@ export default function TaskStatusList({
             "0 6px 16px rgba(15,23,42,0.10), 0 20px 36px rgba(15,23,42,0.08)",
         },
         maxHeight: "500px",
-        height:'500px',
+        height: "500px",
         overflowY: "auto",
         gap: 0,
       }}

@@ -15,8 +15,19 @@ export default function ActivityFeedCard({
     DOMPurify.sanitize(String(html || ""), {
       USE_PROFILES: { html: true },
       ALLOWED_TAGS: [
-        "b", "strong", "i", "em", "u", "s", "del",
-        "span", "br", "p", "ul", "ol", "li"
+        "b",
+        "strong",
+        "i",
+        "em",
+        "u",
+        "s",
+        "del",
+        "span",
+        "br",
+        "p",
+        "ul",
+        "ol",
+        "li",
       ],
       ALLOWED_ATTR: ["style"],
     });
@@ -109,9 +120,9 @@ export default function ActivityFeedCard({
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                       }}
-                      title={`${it.name} ${it.action || "updated"} ${it.project}${
-                        it.task_code ? ` (${it.task_code})` : ""
-                      }`}
+                      title={`${it.name} ${it.action || "updated"} ${
+                        it.project
+                      }${it.task_code ? ` (${it.task_code})` : ""}`}
                     >
                       <b>{it.name}</b>{" "}
                       <span style={{ opacity: 0.9 }}>
@@ -122,7 +133,11 @@ export default function ActivityFeedCard({
                         <Typography
                           component="span"
                           level="body-sm"
-                          sx={{ ml: 0.5, color: "text.tertiary", fontWeight: 600 }}
+                          sx={{
+                            ml: 0.5,
+                            color: "text.tertiary",
+                            fontWeight: 600,
+                          }}
                         >
                           ({it.task_code})
                         </Typography>
@@ -134,12 +149,22 @@ export default function ActivityFeedCard({
                       <Box
                         sx={{
                           mt: 0.25,
-                          // make long words / continuous strings wrap:
+                          fontSize: "14px",
+                          lineHeight: 1.35,
+                          color: "text.secondary",
                           wordBreak: "break-word",
                           overflowWrap: "anywhere",
                           whiteSpace: "normal",
+
+                          // make inner elements respect the small size
+                          "& p, & span, & li": {
+                            fontSize: "inherit",
+                            lineHeight: "inherit",
+                          },
                           "& ol, & ul": { pl: 2, m: 0 },
                           "& li": { mb: 0.25 },
+                          "& b, & strong": { fontWeight: 700 },
+                          "& i, & em": { fontStyle: "italic" },
                         }}
                         dangerouslySetInnerHTML={{ __html: safeRemarks }}
                       />
@@ -147,8 +172,12 @@ export default function ActivityFeedCard({
                   </Box>
 
                   <Typography
-                    level="body-sm"
-                    sx={{ color: "text.tertiary", whiteSpace: "nowrap" }}
+                    fontSize="0.7rem"
+                    fontWeight={600}
+                    sx={{
+                      color: "var(--joy-palette-neutral-500)",
+                      whiteSpace: "nowrap",
+                    }}
                   >
                     {it.ago}
                   </Typography>

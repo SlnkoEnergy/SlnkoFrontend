@@ -52,7 +52,9 @@ export default function TasksByAgingBar({
   const [maxDays, setMaxDays] = React.useState(defaultMaxDays);
 
   // If parent changes default, reset internal (using key is fine too)
-  React.useEffect(() => { setMaxDays(defaultMaxDays); }, [defaultMaxDays]);
+  React.useEffect(() => {
+    setMaxDays(defaultMaxDays);
+  }, [defaultMaxDays]);
 
   const marks = React.useMemo(
     () =>
@@ -141,7 +143,10 @@ export default function TasksByAgingBar({
       {/* Chart */}
       <Box sx={{ height: 340, mt: 1 }}>
         <ResponsiveContainer>
-          <BarChart data={chartData} margin={{ top: 8, right: 16, bottom: 24, left: 0 }}>
+          <BarChart
+            data={chartData}
+            margin={{ top: 8, right: 16, bottom: 24, left: 0 }}
+          >
             <CartesianGrid stroke="rgba(15,23,42,0.08)" vertical={false} />
             <XAxis
               dataKey="bucket"
@@ -165,9 +170,21 @@ export default function TasksByAgingBar({
               }}
             />
             <Legend wrapperStyle={{ paddingTop: 8 }} iconType="circle" />
-            <Bar dataKey="Completed" fill={COLORS.completed} radius={[6, 6, 0, 0]} />
-            <Bar dataKey="Pending" fill={COLORS.pending} radius={[6, 6, 0, 0]} />
-            <Bar dataKey="Cancelled" fill={COLORS.cancelled} radius={[6, 6, 0, 0]} />
+            <Bar
+              dataKey="Completed"
+              fill={COLORS.completed}
+              radius={[6, 6, 0, 0]}
+            />
+            <Bar
+              dataKey="Pending"
+              fill={COLORS.pending}
+              radius={[6, 6, 0, 0]}
+            />
+            <Bar
+              dataKey="Cancelled"
+              fill={COLORS.cancelled}
+              radius={[6, 6, 0, 0]}
+            />
           </BarChart>
         </ResponsiveContainer>
       </Box>
