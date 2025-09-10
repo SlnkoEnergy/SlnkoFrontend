@@ -93,7 +93,7 @@ export default function MainHeader({ title, children }) {
             overflowX: { xs: "auto", sm: "visible" },
           }}
         >
-          <Notification />
+          {/* <Notification /> */}
           <Dropdown>
             <MenuButton
               variant="plain"
@@ -139,8 +139,8 @@ export default function MainHeader({ title, children }) {
                   </ListItemDecorator>
                   My Profile
                 </MenuItem>
-                <ListDivider />
-                <MenuItem>
+                {/* <ListDivider /> */}
+                {/* <MenuItem>
                   <ListItemDecorator>
                     <GroupOutlinedIcon fontSize="small" />
                   </ListItemDecorator>
@@ -152,7 +152,7 @@ export default function MainHeader({ title, children }) {
                     <LogoutRoundedIcon fontSize="small" />
                   </ListItemDecorator>
                   Logout
-                </MenuItem>
+                </MenuItem> */}
               </MenuList>
             </Menu>
           </Dropdown>
@@ -161,4 +161,3 @@ export default function MainHeader({ title, children }) {
     </Sheet>
   );
 }
-

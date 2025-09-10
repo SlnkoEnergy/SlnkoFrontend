@@ -408,7 +408,7 @@ function Sidebar() {
               <ListItemButton onClick={() => navigate("/eng_dash")}>
                 <BuildIcon />
                 <ListItemContent>
-                  <Typography level="title-sm">Eng</Typography>
+                  <Typography level="title-sm">Engineering</Typography>
                 </ListItemContent>
               </ListItemButton>
             </ListItem>
@@ -544,37 +544,13 @@ function Sidebar() {
                 </List>
               </Toggler>
             </ListItem>
-
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <TaskIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Task</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
-                      Task View
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/task_dashboard")}>
+                <TaskIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Task</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
 
             <ListItem nested>
@@ -793,36 +769,13 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <TaskIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Task</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
-                      Task View
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/task_dashboard")}>
+                <TaskIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Task</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
           </List>
         ) : user?.department === "BD" ? (
@@ -914,36 +867,13 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <TaskIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Task</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
-                      Task View
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/task_dashboard")}>
+                <TaskIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Task</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
           </List>
         ) : user?.department === "Accounts" &&
@@ -1048,36 +978,13 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <TaskIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Task</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
-                      Task View
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/task_dashboard")}>
+                <TaskIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Task</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
             <ListItem nested>
               <Toggler
@@ -1351,36 +1258,13 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <TaskIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Task</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
-                      Task View
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/task_dashboard")}>
+                <TaskIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Task</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
 
             <ListItem nested>
@@ -1665,37 +1549,13 @@ function Sidebar() {
                 </List>
               </Toggler>
             </ListItem>
-
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <TaskIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Task</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
-                      Task View
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/task_dashboard")}>
+                <TaskIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Task</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
           </List>
         ) : user?.role === "manager" && user?.name === "Naresh Kumar" ? (
@@ -1903,36 +1763,13 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <TaskIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Task</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
-                      Task View
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/task_dashboard")}>
+                <TaskIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Task</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
           </List>
         ) : user?.role === "visitor" &&
@@ -2113,36 +1950,13 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <TaskIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Task</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
-                      Task View
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/task_dashboard")}>
+                <TaskIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Task</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
 
             <ListItem nested>
@@ -2348,36 +2162,13 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <TaskIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Task</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
-                      Task View
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/task_dashboard")}>
+                <TaskIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Task</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
 
             <ListItem nested>
@@ -2421,41 +2212,13 @@ function Sidebar() {
               "--ListItem-radius": (theme) => theme.vars.radius.sm,
             }}
           >
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <BuildIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Eng</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List>
-                  <ListItem>
-                    <ListItemButton onClick={() => navigate("/eng_dash")}>
-                      Dashboard
-                    </ListItemButton>
-                  </ListItem>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/inspection")}>
-                      Inspection
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/eng_dash")}>
+                <BuildIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Engineering</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
 
             <ListItem nested>
@@ -2499,36 +2262,13 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <TaskIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Task</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
-                      Task View
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/task_dashboard")}>
+                <TaskIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Task</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
           </List>
         ) : user?.role === "manager" && user?.name === "Shruti Tripathi" ? (
@@ -2586,36 +2326,13 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <TaskIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Task</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
-                      Task View
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/task_dashboard")}>
+                <TaskIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Task</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
           </List>
         ) : user?.department === "HR" ? (
@@ -2733,36 +2450,13 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <TaskIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Task</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
-                      Task View
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/task_dashboard")}>
+                <TaskIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Task</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
           </List>
         ) : user?.department === "Engineering" &&
@@ -2777,41 +2471,13 @@ function Sidebar() {
             user?.emp_id !== "SE-184" ||
             user?.emp_id !== "SE-193") ? (
           <List>
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <BuildIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Eng</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List>
-                  <ListItem>
-                    <ListItemButton onClick={() => navigate("/eng_dash")}>
-                      Dashboard
-                    </ListItemButton>
-                  </ListItem>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/inspection")}>
-                      Inspection
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/eng_dash")}>
+                <BuildIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Engineering</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
 
             <ListItem nested>
@@ -2848,36 +2514,13 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <TaskIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Task</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
-                      Task View
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/task_dashboard")}>
+                <TaskIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Task</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
           </List>
         ) : user?.department === "CAM" && user?.name === "Shantanu Sameer" ? (
@@ -3084,36 +2727,13 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <TaskIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Task</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
-                      Task View
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/task_dashboard")}>
+                <TaskIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Task</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
           </List>
         ) : user?.department === "Tender" &&
@@ -3198,36 +2818,13 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <TaskIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Task</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
-                      Task View
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/task_dashboard")}>
+                <TaskIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Task</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
           </List>
         ) : user?.department === "Logistic" &&
@@ -3316,39 +2913,56 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <TaskIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Task</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all_task")}>
-                      Task View
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/task_dashboard")}>
+                <TaskIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Task</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
           </List>
         ) : null}
+
+        <List
+          size="sm"
+          sx={{
+            mt: "auto",
+            flexGrow: 0,
+            "--ListItem-radius": (theme) => theme.vars.radius.sm,
+            "--List-gap": "8px",
+            mb: 2,
+          }}
+        ></List>
+
+        <Card
+          invertedColors
+          variant="soft"
+          color="danger"
+          orientation="horizontal"
+          sx={{
+            flexGrow: 0,
+            py: 1,
+            px: 0,
+            gap: 2,
+            bgcolor: "transparent",
+          }}
+        >
+          <Avatar />
+          <Stack>
+            <Typography fontWeight="lg">{user?.name}</Typography>
+            <Typography level="body-sm">{user?.emp_id}</Typography>
+          </Stack>
+          <IconButton
+            onClick={handleLogout}
+            size="sm"
+            variant="plain"
+            color="danger"
+            sx={{ ml: "auto" }}
+          >
+            <LogoutRoundedIcon />
+          </IconButton>
+        </Card>
       </Box>
     </Sheet>
   );

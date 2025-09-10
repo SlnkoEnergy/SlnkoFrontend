@@ -1,24 +1,17 @@
-import React, { useMemo } from "react";
-import { Card, Box, Typography, Chip, IconButton } from "@mui/joy";
+import { Card, Box, Typography } from "@mui/joy";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-import { MoreVertical } from "lucide-react";
 
 export default function ProjectsWorkedCard({
-  title = "Projects worked",
-  deltaPct = -5,
-  data = [
-    { name: "Over9k", value: 44, color: "#f59e0b" },
-    { name: "MagnumShop", value: 24, color: "#22c55e" },
-    { name: "Doctor+", value: 18, color: "#ef4444" },
-    { name: "AfterMidnight", value: 14, color: "#3b82f6" },
-  ],
+  title = "Task State",
+  data = [],
+  total = 0,
   totalLabel = "Projects",
   sx = {},
 }) {
-  const total = useMemo(
-    () => data.reduce((a, b) => a + (Number(b.value) || 0), 0),
-    [data]
-  );
+  // fallback if someone forgets to pass total
+  const totalToShow = Number.isFinite(total)
+    ? total
+    : data.reduce((a, b) => a + (Number(b.value) || 0), 0);
 
   return (
     <Card
@@ -40,10 +33,10 @@ export default function ProjectsWorkedCard({
             "0 6px 16px rgba(15,23,42,0.10), 0 20px 36px rgba(15,23,42,0.08)",
         },
         maxHeight: "500px",
-        overflowY: "auto",
+        overflow: "auto",
         height: "500px",
         gap: 0,
-        overflowY: "auto",
+        ...sx,
       }}
     >
       {/* Header */}
@@ -58,25 +51,6 @@ export default function ProjectsWorkedCard({
         <Typography level="title-md" sx={{ color: "#0f172a" }}>
           {title}
         </Typography>
-
-        <Chip
-          size="sm"
-          variant="soft"
-          color={deltaPct < 0 ? "danger" : "success"}
-          sx={{
-            fontWeight: 600,
-            border: "1px solid rgba(0,0,0,0.08)",
-            color: deltaPct < 0 ? "#b91c1c" : "#15803d",
-            bgcolor: "#fff",
-            mr: 0.5,
-          }}
-        >
-          {deltaPct}%
-        </Chip>
-
-        <IconButton variant="plain" color="neutral">
-          <MoreVertical size={18} />
-        </IconButton>
       </Box>
 
       <Box
@@ -87,48 +61,49 @@ export default function ProjectsWorkedCard({
           alignItems: "center",
         }}
       >
-        {/* Donut */}
-        <Box sx={{ width: "100%", height: 160 }}>
+        {/* Donut + centered text (absolute overlay) */}
+        <Box sx={{ width: "100%", height: 180, position: "relative" }}>
           <ResponsiveContainer>
             <PieChart>
               <Pie
                 data={data}
                 dataKey="value"
                 nameKey="name"
-                innerRadius={50}
-                outerRadius={70}
+                innerRadius={58}
+                outerRadius={78}
                 startAngle={90}
                 endAngle={-270}
-                stroke="#fff" // white background → hides seams
+                stroke="#fff"
                 strokeWidth={6}
                 cornerRadius={10}
-                isAnimationActive={true}
+                isAnimationActive
               >
                 {data.map((entry, idx) => (
                   <Cell key={`cell-${idx}`} fill={entry.color} />
                 ))}
               </Pie>
-
-              {/* Center text */}
-              <g transform="translate(210,70)">
-                <text
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  style={{ fill: "#0f172a", fontSize: 28, fontWeight: 800 }}
-                >
-                  {data.length}
-                </text>
-                <text
-                  y={18}
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  style={{ fill: "rgba(17,24,39,0.6)", fontSize: 12 }}
-                >
-                  {totalLabel}
-                </text>
-              </g>
             </PieChart>
           </ResponsiveContainer>
+
+          {/* Center label */}
+          <Box
+            sx={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              pointerEvents: "none",
+            }}
+          >
+            <Typography level="h3" sx={{ fontWeight: 800, color: "#0f172a" }}>
+              {totalToShow}
+            </Typography>
+            <Typography level="body-xs" sx={{ color: "rgba(17,24,39,0.6)" }}>
+              {totalLabel}
+            </Typography>
+          </Box>
         </Box>
 
         {/* Legend */}
@@ -160,7 +135,7 @@ export default function ProjectsWorkedCard({
                 level="body-sm"
                 sx={{ color: "#0f172a", fontWeight: 600 }}
               >
-                {d.value}%
+                {typeof d.value === "number" ? `${d.value}%` : d.value}
               </Typography>
             </Box>
           ))}

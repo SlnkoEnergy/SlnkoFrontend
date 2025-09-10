@@ -4,7 +4,7 @@ import { CssVarsProvider } from "@mui/joy/styles";
 import { useEffect, useState } from "react";
 import Button from "@mui/joy/Button";
 import Sidebar from "../../component/Partials/Sidebar";
-import Dash_task from "../../component/All_Tasks/TaskDashboard";
+import Dash_task from "../../component/All_Tasks/TaskView";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   useExportTasksToCsvMutation,
