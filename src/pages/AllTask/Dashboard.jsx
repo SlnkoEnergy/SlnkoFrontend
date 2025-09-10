@@ -18,7 +18,10 @@ import Filter from "../../component/Partials/Filter";
 import { IconButton, Modal, ModalDialog } from "@mui/joy";
 import AddTask from "../../component/All_Tasks/Add_Task";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
-function AllTask() {
+import AllTaskDashboard from "../../component/All_Tasks/Dashboard";
+import { TaskFilterProvider } from "../../store/Context/TaskFilterContext";
+
+function TaskDashboard() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [openAddTaskModal, setOpenAddTaskModal] = useState(false);
@@ -31,18 +34,18 @@ function AllTask() {
   const deptList = (deptApiData?.data || []).filter(Boolean);
 
   const { data: usersResp, isFetching: isUsersLoading } = useGetAllUserQuery({
-    department: "",
-  });
-  const userOptions = (
-    Array.isArray(usersResp?.data)
-      ? usersResp.data
-      : Array.isArray(usersResp)
-      ? usersResp
-      : []
-  )
-    .filter(Boolean)
-    .map((u) => ({ label: u?.name || "User", value: u?._id || "" }))
-    .filter((o) => o.value);
+      department: "",
+    });
+    const userOptions = (
+      Array.isArray(usersResp?.data)
+        ? usersResp.data
+        : Array.isArray(usersResp)
+        ? usersResp
+        : []
+    )
+      .filter(Boolean)
+      .map((u) => ({ label: u?.name || "User", value: u?._id || "" }))
+      .filter((o) => o.value);
 
   useEffect(() => {
     const userData = localStorage.getItem("userDetails");
@@ -75,16 +78,6 @@ function AllTask() {
 
   const fields = [
     {
-      key: "priorityFilter",
-      label: "Filter By Priority",
-      type: "select",
-      options: [
-        { label: "High", value: "1" },
-        { label: "Medium", value: "2" },
-        { label: "Low", value: "3" },
-      ],
-    },
-    {
       key: "createdAt",
       label: "Filter by Date",
       type: "daterange",
@@ -98,11 +91,9 @@ function AllTask() {
       key: "department",
       label: "Department",
       type: "select",
-      options: isDeptLoading
-        ? []
-        : deptList.map((d) => ({ label: d, value: d })),
+      options: isDeptLoading ? [] : deptList.map((d) => ({ label: d, value: d })),
     },
-    {
+      {
       key: "assigned_to",
       label: "Assigned To",
       type: "select",
@@ -162,27 +153,8 @@ function AllTask() {
           </Box>
         </MainHeader>
 
-        <SubHeader title="All Tasks" isBackEnabled={false} sticky>
+        <SubHeader title="Dashboard" isBackEnabled={false} sticky>
           <Box display="flex" gap={1} alignItems="center">
-            {selectedIds?.length > 0 && (
-              <Button
-                variant="outlined"
-                size="sm"
-                onClick={() => handleExport(selectedIds)}
-                sx={{
-                  color: "#3366a3",
-                  borderColor: "#3366a3",
-                  backgroundColor: "transparent",
-                  "--Button-hoverBg": "#e0e0e0",
-                  "--Button-hoverBorderColor": "#3366a3",
-                  "&:hover": { color: "#3366a3" },
-                  height: "8px",
-                }}
-              >
-                Export
-              </Button>
-            )}
-
             <Button
               variant="solid"
               size="sm"
@@ -206,6 +178,8 @@ function AllTask() {
               onApply={(values) => {
                 setSearchParams((prev) => {
                   const merged = Object.fromEntries(prev.entries());
+
+                  // clear old keys
                   delete merged.priorityFilter;
                   delete merged.status;
                   delete merged.department;
@@ -215,7 +189,6 @@ function AllTask() {
                   delete merged.to;
                   delete merged.deadlineFrom;
                   delete merged.deadlineTo;
-                  delete merged.matchMode;
 
                   const next = {
                     ...merged,
@@ -229,24 +202,16 @@ function AllTask() {
                     }),
                   };
 
-                  // matcher -> matchMode
-                  if (values.matcher) {
-                    next.matchMode = values.matcher === "OR" ? "any" : "all";
-                  }
-
-                  // createdAt range
                   if (values.createdAt?.from)
                     next.from = String(values.createdAt.from);
                   if (values.createdAt?.to)
                     next.to = String(values.createdAt.to);
 
-                  // deadline range
                   if (values.deadline?.from)
                     next.deadlineFrom = String(values.deadline.from);
                   if (values.deadline?.to)
                     next.deadlineTo = String(values.deadline.to);
 
-                  // NEW: user ids
                   if (values.assigned_to)
                     next.assigned_to = String(values.assigned_to);
                   if (values.createdBy)
@@ -261,14 +226,17 @@ function AllTask() {
                   const merged = Object.fromEntries(prev.entries());
                   delete merged.priorityFilter;
                   delete merged.status;
+                  delete merged.createdAt;
+                  delete merged.deadline;
                   delete merged.department;
-                  delete merged.assigned_to;
-                  delete merged.createdBy;
+                  delete merged.assignedToName;
+                  delete merged.createdByName;
+
                   delete merged.from;
                   delete merged.to;
                   delete merged.deadlineFrom;
                   delete merged.deadlineTo;
-                  delete merged.matchMode;
+
                   return { ...merged, page: "1" };
                 });
               }}
@@ -289,22 +257,14 @@ function AllTask() {
             px: "24px",
           }}
         >
-          <Dash_task
-            selected={selectedIds}
-            setSelected={setSelectedIds}
-            searchParams={searchParams}
-            setSearchParams={setSearchParams}
-          />
+          <TaskFilterProvider>
+            <AllTaskDashboard />
+          </TaskFilterProvider>
         </Box>
 
         <Modal
           open={openAddTaskModal}
           onClose={() => setOpenAddTaskModal(false)}
-          slotProps={{
-            backdrop: {
-              sx: {},
-            },
-          }}
         >
           <ModalDialog
             variant="outlined"
@@ -351,4 +311,4 @@ function AllTask() {
   );
 }
 
-export default AllTask;
+export default TaskDashboard;

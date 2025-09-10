@@ -21,7 +21,7 @@ const PaymentRequest = forwardRef(() => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialPage = parseInt(searchParams.get("page")) || 1;
-  const initialPageSize = parseInt(searchParams.get("pageSize")) || 10; 
+  const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
   const [perPage, setPerPage] = useState(initialPageSize);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [searchQuery, setSearchQuery] = useState("");
@@ -160,6 +160,7 @@ const PaymentRequest = forwardRef(() => {
             {" "}
             {(user?.name === "IT Team" ||
               user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
               user?.name === "Prachi Singh" ||
               user?.department === "admin" ||
               user?.name === "Shubham Gupta" ||
@@ -175,6 +176,7 @@ const PaymentRequest = forwardRef(() => {
             )}
             {(user?.name === "IT Team" ||
               user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
               user?.name === "Prachi Singh" ||
               user?.department === "admin" ||
               user?.name === "Ajay Singh" ||
@@ -334,9 +336,9 @@ const PaymentRequest = forwardRef(() => {
           sx={{
             display: "flex",
             alignItems: "center",
-            justifyContent:"flex-end",
+            justifyContent: "flex-end",
             flexWrap: "wrap",
-            padding:"5px"
+            padding: "5px",
           }}
         >
           {/* Rows per page */}
@@ -360,7 +362,7 @@ const PaymentRequest = forwardRef(() => {
               }}
               sx={{ minWidth: 64 }}
             >
-              {[10, 25, 50, 100].map((value) => (
+              {[10, 25, 50, 500].map((value) => (
                 <Option key={value} value={value}>
                   {value}
                 </Option>

@@ -20,7 +20,12 @@ import DownloadIcon from "@mui/icons-material/Download";
 import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { Clock, CheckCircle2, AlarmClockMinusIcon, AlertTriangle } from "lucide-react";
+import {
+  Clock,
+  CheckCircle2,
+  AlarmClockMinusIcon,
+  AlertTriangle,
+} from "lucide-react";
 import {
   forwardRef,
   useCallback,
@@ -127,7 +132,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     catInitialData?.count ??
     catInitialData?.totalCount ??
     topCategories.length;
-
 
   const { search, state } = useLocation();
   const [sp] = useSearchParams();
@@ -493,8 +497,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                 {activeDateFilter === "etd"
                   ? "ETD Date Range"
                   : activeDateFilter === "po"
-                    ? "PO Date Range"
-                    : "Delivery Date Range"}
+                  ? "PO Date Range"
+                  : "Delivery Date Range"}
               </Typography>
 
               <Box display="flex" gap={1}>
@@ -506,8 +510,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       activeDateFilter === "etd"
                         ? etdFrom
                         : activeDateFilter === "po"
-                          ? poFrom
-                          : deliveryFrom
+                        ? poFrom
+                        : deliveryFrom
                     }
                     onChange={(e) => {
                       if (activeDateFilter === "etd")
@@ -528,8 +532,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       activeDateFilter === "etd"
                         ? etdTo
                         : activeDateFilter === "po"
-                          ? poTo
-                          : deliveryTo
+                        ? poTo
+                        : deliveryTo
                     }
                     onChange={(e) => {
                       if (activeDateFilter === "etd") setEtdTo(e.target.value);
@@ -609,6 +613,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           {(user?.name === "IT Team" ||
             user?.name === "admin" ||
             user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Varun Mishra" ||
             user?.name === "Prachi Singh" ||
             user?.department === "SCM") &&
             (current_status?.status === "delivered" ? (
@@ -731,8 +736,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     const label = isFullyBilled
       ? "Fully Billed"
       : isPending
-        ? "Pending"
-        : status;
+      ? "Pending"
+      : status;
 
     const icon = isFullyBilled ? (
       <CheckRoundedIcon />
@@ -1042,8 +1047,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     const categories = Array.isArray(item)
       ? item.filter(Boolean).map(String)
       : item
-        ? [String(item)]
-        : [];
+      ? [String(item)]
+      : [];
 
     const onlyOther =
       categories.length === 1 && categories[0].trim().toLowerCase() === "other";
@@ -1205,9 +1210,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       case "out_for_delivery":
         return <Truck size={18} style={{ marginRight: 6 }} />;
       case "partially_delivered":
-     return <PackageCheck size={18} style={{ marginRight: 6 }} />; // or any "half" metaphor you like
-   case "short_quantity":
-     return <AlertTriangle size={18} style={{ marginRight: 6 }} />;
+        return <PackageCheck size={18} style={{ marginRight: 6 }} />; // or any "half" metaphor you like
+      case "short_quantity":
+        return <AlertTriangle size={18} style={{ marginRight: 6 }} />;
       case "delivered":
         return <Handshake size={18} style={{ marginRight: 6 }} />;
       case "etd pending":
@@ -1621,7 +1626,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                         padding: 1,
                         textAlign: "left",
                         borderBottom: "1px solid",
-                        minWidth: 150,
+                        minWidth: 100,
                       }}
                     >
                       {etd ? (
@@ -1649,7 +1654,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                             gap: 0.5,
                           }}
                         >
-                          ⚠️ ETD NOT FOUND
+                          ⚠️
                         </Typography>
                       )}
                     </Box>

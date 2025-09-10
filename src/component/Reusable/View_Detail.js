@@ -1763,6 +1763,7 @@ const Customer_Payment_Summary = () => {
 
           {(user?.name === "IT Team" ||
             user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Varun Mishra" ||
             user?.name === "Prachi Singh" ||
             user?.name === "admin") && (
             <Box>
@@ -1994,6 +1995,7 @@ const Customer_Payment_Summary = () => {
 
           {(user?.name === "IT Team" ||
             user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Varun Mishra" ||
             user?.name === "Prachi Singh" ||
             user?.name === "admin") && (
             <Box>
@@ -2201,6 +2203,7 @@ const Customer_Payment_Summary = () => {
           </Box>
           {(user?.name === "IT Team" ||
             user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Varun Mishra" ||
             user?.name === "Prachi Singh" ||
             user?.name === "admin") && (
             <Box>
@@ -2373,6 +2376,7 @@ const Customer_Payment_Summary = () => {
           </Box>
           {(user?.name === "IT Team" ||
             user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Varun Mishra" ||
             user?.name === "Prachi Singh" ||
             user?.name === "admin") && (
             <Box>

@@ -93,7 +93,7 @@ function Sidebar() {
       sx={{
         position: "fixed",
         transition: "transform 0.4s, width 0.4s",
-        zIndex: 100,
+        zIndex: 200,
         height: "100dvh",
         width: "var(--Sidebar-width)",
         top: 0,
@@ -128,7 +128,7 @@ function Sidebar() {
         className="Sidebar-overlay"
         sx={{
           position: "fixed",
-          zIndex: 9999,
+          zIndex: 200,
           top: 0,
           left: 0,
           width: "100vw",
@@ -1131,6 +1131,7 @@ function Sidebar() {
             </ListItem>
           </List>
         ) : user?.name === "Guddu Rani Dubey" ||
+          user?.name === "Varun Mishra" ||
           (user?.name === "Prachi Singh" && user?.department === "Internal") ? (
           <List
             size="sm"
@@ -2185,6 +2186,10 @@ function Sidebar() {
             user?.name === "Tanvi Jha" ||
             user?.name === "Saresh" ||
             user?.name === "Deepika Singh" ||
+            user?.name === "Rahul Kushwaha" ||
+            user?.name === "Subhadra" ||
+            user?.name === "Prince Srivastav" ||
+            user?.name === "Aditya Kashyap" ||
             user?.name === "Izhan Mustafa") ? (
           <List
             size="sm"
@@ -3347,46 +3352,6 @@ function Sidebar() {
             </ListItem>
           </List>
         ) : null}
-
-        <List
-          size="sm"
-          sx={{
-            mt: "auto",
-            flexGrow: 0,
-            "--ListItem-radius": (theme) => theme.vars.radius.sm,
-            "--List-gap": "8px",
-            mb: 2,
-          }}
-        ></List>
-
-        <Card
-          invertedColors
-          variant="soft"
-          color="danger"
-          orientation="horizontal"
-          sx={{
-            flexGrow: 0,
-            py: 1,
-            px: 0,
-            gap: 2,
-            bgcolor: "transparent",
-          }}
-        >
-          <Avatar />
-          <Stack>
-            <Typography fontWeight="lg">{user?.name}</Typography>
-            <Typography level="body-sm">{user?.emp_id}</Typography>
-          </Stack>
-          <IconButton
-            onClick={handleLogout}
-            size="sm"
-            variant="plain"
-            color="danger"
-            sx={{ ml: "auto" }}
-          >
-            <LogoutRoundedIcon />
-          </IconButton>
-        </Card>
       </Box>
     </Sheet>
   );

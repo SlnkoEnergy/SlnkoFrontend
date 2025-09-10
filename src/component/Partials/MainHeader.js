@@ -28,7 +28,7 @@ export default function MainHeader({ title, children }) {
       sx={(theme) => ({
         position: "fixed",
         top: 0,
-        zIndex: 9999,
+        zIndex: 200,
         backdropFilter: "saturate(180%) blur(8px)",
         backgroundColor: "#1f487c",
         borderBottom: `1px solid ${theme.vars.palette.neutral.outlinedBorder}`,
@@ -161,3 +161,4 @@ export default function MainHeader({ title, children }) {
     </Sheet>
   );
 }
+
