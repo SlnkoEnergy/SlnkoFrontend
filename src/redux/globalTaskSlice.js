@@ -177,12 +177,9 @@ export const GlobalTaskApi = createApi({
         `tasks/mytasks${buildQS({
           from: q.from ?? "",
           to: q.to ?? "",
-          deadlineFrom: q.deadlineFrom ?? "",
-          deadlineTo: q.deadlineTo ?? "",
           departments: q.departments ?? "",
           createdById: q.createdById ?? "",
           assignedToId: q.assignedToId ?? "",
-          window: q.window ?? "25m",
           q: q.q ?? "",
         })}`,
       providesTags: (result) => {
@@ -213,13 +210,13 @@ export const GlobalTaskApi = createApi({
       query: (q = {}) =>
         `tasks/userperformance${buildQS({
           userId: q.userId ?? "",
-          // backend accepts either `name` or `q`; we send both if provided
           name: q.name ?? "",
           q: q.q ?? "",
           from: q.from ?? "",
           to: q.to ?? "",
           deadlineFrom: q.deadlineFrom ?? "",
           deadlineTo: q.deadlineTo ?? "",
+          departments: q.departments ?? "",
           includeSubtasks:
             typeof q.includeSubtasks === "boolean"
               ? String(q.includeSubtasks)
@@ -235,6 +232,7 @@ export const GlobalTaskApi = createApi({
           to: q.to ?? "",
           deadlineFrom: q.deadlineFrom ?? "",
           deadlineTo: q.deadlineTo ?? "",
+          departments: q.departments ?? "",
         })}`,
       providesTags: [{ type: "TaskStats", id: "PROJECTS_BY_STATE" }],
     }),
@@ -247,6 +245,7 @@ export const GlobalTaskApi = createApi({
           deadlineFrom: q.deadlineFrom ?? "",
           deadlineTo: q.deadlineTo ?? "",
           uptoDays: q.uptoDays ?? 30,
+          departments: q.departments ?? "",
         })}`,
       providesTags: [{ type: "TaskStats", id: "AGING_BY_RESOLUTION" }],
     }),

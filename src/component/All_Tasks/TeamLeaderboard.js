@@ -19,15 +19,7 @@ const pct = (completed, assigned) =>
 const SortIcon = ({ dir }) =>
   dir === "asc" ? <ChevronUp size={16} /> : <ChevronDown size={16} />;
 
-/**
- * Props:
- *  - rows: [{ name, avatar, assigned, completed, delayed }]
- *  - title?: string
- *  - initialSort?: { key: "completion" | "assigned" | "completed" | "delayed" | "name", dir: "desc" | "asc" }
- *  - searchValue?: string
- *  - onSearchChange?: (val: string) => void
- *  - searchPlaceholder?: string
- */
+
 export default function TeamLeaderboard({
   rows = [],
   title = "Team Leaderboard",
