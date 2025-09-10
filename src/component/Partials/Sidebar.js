@@ -29,10 +29,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Main_Logo from "../../assets/protrac_logo.png";
 import { closeSidebar } from "../../utils/utils";
-import {
-  NovuProvider,
-  PopoverNotificationCenter,
-} from "@novu/notification-center";
+
 import DatabaseIcon from "@mui/icons-material/Storage";
 import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 import ColorSchemeToggle from "./ColorSchemeToggle";
