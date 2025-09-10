@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 // Joy UI
 import Box from "@mui/joy/Box";
@@ -69,7 +70,8 @@ const readUserFromLS = () => {
     return null;
   }
 };
-const writeUserToLS = (next) => localStorage.setItem(LS_KEY, JSON.stringify(next));
+const writeUserToLS = (next) =>
+  localStorage.setItem(LS_KEY, JSON.stringify(next));
 
 // preview helper
 const fileToDataURL = (file) =>
@@ -82,10 +84,15 @@ const fileToDataURL = (file) =>
 
 export default function UserProfilePanel() {
   const fileRef = useRef(null);
+  const [searchParams] = useSearchParams();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState({ open: false, color: "success", msg: "" });
+  const [toast, setToast] = useState({
+    open: false,
+    color: "success",
+    msg: "",
+  });
   const [apiError, setApiError] = useState("");
 
   const [user, setUser] = useState(null);
@@ -108,40 +115,50 @@ export default function UserProfilePanel() {
   // NEW: preview modal state
   const [previewOpen, setPreviewOpen] = useState(false);
 
-  // RTK Query
+  // Who am I? And who am I viewing?
   const ls = readUserFromLS();
-  const storedUserId = ls?.userID;
+  const myId =
+    ls?.userID || ls?.userId || ls?._id || ls?.id || ls?.emp_id || "";
+  const viewingIdParam = searchParams.get("user_id") || "";
+  const isOwnProfile =
+    !viewingIdParam || String(viewingIdParam) === String(myId);
+  const effectiveUserId = isOwnProfile ? myId : viewingIdParam;
+
+  // RTK Query: load the profile for the effective id
   const {
     data,
     isLoading: isUserLoading,
     isFetching: isUserFetching,
     error: fetchError,
-  } = useGetUserByIdQuery(storedUserId, { skip: !storedUserId });
+  } = useGetUserByIdQuery(effectiveUserId, { skip: !effectiveUserId });
 
   const [editUser] = useEditUserMutation();
 
-  // Prefill from localStorage quickly
+  // Prefill quickly from localStorage only when viewing self
   useEffect(() => {
     setApiError("");
-    const cache = readUserFromLS();
-    if (cache) {
-      const prefill = {
-        name: cache.name || "",
-        email: cache.email || "",
-        phone: String(cache.phone ?? ""),
-        department: cache.department || "",
-        location: cache.location || "",
-        about: cache.about || "",
-        avatar_url: cache.avatar_url || cache.attachment_url || "",
-      };
-      setForm(prefill);
-      setBaselineForm(prefill);
-      setUser(cache);
+    if (isOwnProfile) {
+      const cache = readUserFromLS();
+      if (cache) {
+        const prefill = {
+          name: cache.name || "",
+          email: cache.email || "",
+          phone: String(cache.phone ?? ""),
+          department: cache.department || "",
+          location: cache.location || "",
+          about: cache.about || "",
+          avatar_url: cache.avatar_url || cache.attachment_url || "",
+        };
+        setForm(prefill);
+        setBaselineForm(prefill);
+        setUser(cache);
+      }
     }
     setLoading(false);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOwnProfile]);
 
-  // Hydrate with fresh API data
+  // Hydrate with fresh API data (for self or others)
   useEffect(() => {
     if (data?.user) {
       const u = data.user;
@@ -158,48 +175,61 @@ export default function UserProfilePanel() {
       setBaselineForm(initial);
       setUser(u);
 
-      writeUserToLS({
-        name: initial.name,
-        email: initial.email,
-        phone: initial.phone,
-        emp_id: u.emp_id || "",
-        role: u.role || "",
-        department: initial.department,
-        userID: u._id || storedUserId,
-        location: initial.location,
-        about: initial.about,
-        attachment_url: initial.avatar_url,
-        avatar_url: initial.avatar_url,
-      });
+      // Only update localStorage cache when it's my own profile
+      if (isOwnProfile) {
+        writeUserToLS({
+          name: initial.name,
+          email: initial.email,
+          phone: initial.phone,
+          emp_id: u.emp_id || "",
+          role: u.role || "",
+          department: initial.department,
+          userID: u._id || myId,
+          location: initial.location,
+          about: initial.about,
+          attachment_url: initial.avatar_url,
+          avatar_url: initial.avatar_url,
+        });
+      }
     } else if (fetchError) {
       setApiError(
         fetchError?.data?.message ||
-          "Live profile could not be fetched. Showing cached profile from this device."
+          (isOwnProfile
+            ? "Live profile could not be fetched. Showing cached profile from this device."
+            : "This profile could not be fetched right now.")
       );
     }
-  }, [data, fetchError, storedUserId]);
+  }, [data, fetchError, isOwnProfile, myId]);
 
-  // permissions (optional)
-  const canEditAll = !!(
-    user?.permissions?.profile_full_edit ||
-    user?.profile_full_edit ||
-    (typeof user?.role === "string" && user.role.toLowerCase() === "admin")
-  );
+  // ---------- Permissions / editability ----------
+  // Requirement: users can edit ONLY their own profile. Even if you have admin flags,
+  // other people's profiles are read-only.
+  const iAmAdmin =
+    !!(
+      ls?.permissions?.profile_full_edit ||
+      ls?.profile_full_edit ||
+      (typeof ls?.role === "string" && ls.role.toLowerCase() === "admin")
+    );
+
+  const canEditAll = isOwnProfile && iAmAdmin; // ALL fields for own profile if admin
   const editableKeys = useMemo(
-    () => (canEditAll ? ALL_KEYS : BASIC_EDIT_KEYS),
-    [canEditAll]
+    () => (isOwnProfile ? (canEditAll ? ALL_KEYS : BASIC_EDIT_KEYS) : []),
+    [isOwnProfile, canEditAll]
   );
+
   const isFieldEditable = (key) =>
-    canEditAll ? true : BASIC_EDIT_KEYS.includes(key);
+    isOwnProfile ? (canEditAll ? true : BASIC_EDIT_KEYS.includes(key)) : false;
 
   const hasEditableChanges = useMemo(() => {
     if (!baselineForm) return false;
+    if (!isOwnProfile) return false;
     const a = JSON.stringify(pick(form, editableKeys));
     const b = JSON.stringify(pick(baselineForm, editableKeys));
     return a !== b;
-  }, [form, baselineForm, editableKeys]);
+  }, [form, baselineForm, editableKeys, isOwnProfile]);
 
-  const hasAvatarChange = !!pendingAvatarFile || pendingAvatarRemove;
+  const hasAvatarChange =
+    isOwnProfile && (!!pendingAvatarFile || pendingAvatarRemove);
 
   const handleField = (key) => (e, val) => {
     const value = e?.target ? e.target.value : val;
@@ -207,16 +237,35 @@ export default function UserProfilePanel() {
   };
 
   // --- Avatar handlers (no immediate upload) ---
-  const handleAvatarClick = () => fileRef.current?.click();
+  const handleAvatarClick = () => {
+    if (!isOwnProfile) return;
+    fileRef.current?.click();
+  };
 
   const handleAvatarSelect = async (file) => {
+    if (!isOwnProfile) {
+      setToast({
+        open: true,
+        color: "warning",
+        msg: "You can only change your own photo.",
+      });
+      return;
+    }
     if (!file) return;
     if (!file.type?.startsWith("image/")) {
-      setToast({ open: true, color: "warning", msg: "Please choose an image file." });
+      setToast({
+        open: true,
+        color: "warning",
+        msg: "Please choose an image file.",
+      });
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setToast({ open: true, color: "warning", msg: "Please upload an image ≤ 5MB." });
+      setToast({
+        open: true,
+        color: "warning",
+        msg: "Please upload an image ≤ 5MB.",
+      });
       return;
     }
     // stage for upload on Save, and show preview
@@ -227,6 +276,7 @@ export default function UserProfilePanel() {
   };
 
   const markRemoveAvatar = () => {
+    if (!isOwnProfile) return;
     // mark for removal on Save; also reflect visually
     setPendingAvatarFile(null);
     setPendingAvatarRemove(true);
@@ -236,12 +286,20 @@ export default function UserProfilePanel() {
 
   // --- Save handler: JSON only OR JSON + avatar OR avatar only OR remove avatar ---
   const saveProfile = async () => {
+    if (!isOwnProfile) {
+      setToast({
+        open: true,
+        color: "warning",
+        msg: "You can only edit your own profile.",
+      });
+      return;
+    }
     if (!hasEditableChanges && !hasAvatarChange) return;
     setSaving(true);
     setApiError("");
 
     const currentLS = readUserFromLS();
-    const userId = currentLS?.userID || user?._id;
+    const userId = currentLS?.userID || user?._id || myId;
 
     try {
       if (!userId) throw new Error("No user id to update.");
@@ -277,22 +335,31 @@ export default function UserProfilePanel() {
       setBaselineForm(nextBaseline);
       setForm((f) => ({ ...nextBaseline }));
 
-      writeUserToLS({
-        ...(readUserFromLS() || {}),
-        ...nextBaseline,
-        userID: userId,
-        attachment_url: nextBaseline.avatar_url,
-        avatar_url: nextBaseline.avatar_url,
-      });
+      // update LS only for self
+      if (isOwnProfile) {
+        writeUserToLS({
+          ...(readUserFromLS() || {}),
+          ...nextBaseline,
+          userID: userId,
+          attachment_url: nextBaseline.avatar_url,
+          avatar_url: nextBaseline.avatar_url,
+        });
+      }
 
       // clear staged avatar changes
       setPendingAvatarFile(null);
       setPendingAvatarRemove(false);
       setAvatarPreview("");
 
-      setToast({ open: true, color: "success", msg: "Profile updated successfully." });
+      setToast({
+        open: true,
+        color: "success",
+        msg: "Profile updated successfully.",
+      });
     } catch (err) {
-      setApiError(err?.data?.message || err?.message || "Failed to save profile.");
+      setApiError(
+        err?.data?.message || err?.message || "Failed to save profile."
+      );
     } finally {
       setSaving(false);
     }
@@ -342,6 +409,13 @@ export default function UserProfilePanel() {
         </Alert>
       )}
 
+      {!isOwnProfile && (
+        <Alert color="neutral" variant="soft" sx={{ mb: 2 }}>
+          You’re viewing <b>{form.name || "this user"}</b>’s profile. Editing is
+          disabled.
+        </Alert>
+      )}
+
       <Grid container spacing={2} sx={{ alignItems: "stretch" }}>
         {/* LEFT: Profile Card */}
         <Grid xs={12} md={5} sx={{ display: "flex" }}>
@@ -386,15 +460,23 @@ export default function UserProfilePanel() {
                   </Chip>
                 )}
 
-                <Tooltip title="Change photo">
-                  <IconButton
-                    size="sm"
-                    variant="soft"
-                    onClick={handleAvatarClick}
-                    sx={{ position: "absolute", right: -6, bottom: -6, borderRadius: "50%" }}
-                  >
-                    <CameraAltOutlined />
-                  </IconButton>
+                <Tooltip title={isOwnProfile ? "Change photo" : "Read-only"}>
+                  <span>
+                    <IconButton
+                      size="sm"
+                      variant="soft"
+                      onClick={handleAvatarClick}
+                      disabled={!isOwnProfile}
+                      sx={{
+                        position: "absolute",
+                        right: -6,
+                        bottom: -6,
+                        borderRadius: "50%",
+                      }}
+                    >
+                      <CameraAltOutlined />
+                    </IconButton>
+                  </span>
                 </Tooltip>
 
                 <input
@@ -417,21 +499,30 @@ export default function UserProfilePanel() {
 
               <Dropdown>
                 <MenuButton
+                  disabled={!isOwnProfile}
                   slots={{ root: IconButton }}
-                  slotProps={{ root: { variant: "plain", color: "neutral" } }}
+                  slotProps={{
+                    root: { variant: "plain", color: "neutral" },
+                  }}
                 >
                   <EditRounded />
                 </MenuButton>
                 <Menu placement="bottom-end">
-                  <MenuItem onClick={handleAvatarClick}>
-                    <UploadFileOutlined fontSize="small" style={{ marginRight: 8 }} />
+                  <MenuItem onClick={handleAvatarClick} disabled={!isOwnProfile}>
+                    <UploadFileOutlined
+                      fontSize="small"
+                      style={{ marginRight: 8 }}
+                    />
                     Choose new photo
                   </MenuItem>
                   <MenuItem
                     onClick={markRemoveAvatar}
-                    disabled={!form.avatar_url && !avatarPreview}
+                    disabled={!isOwnProfile || (!form.avatar_url && !avatarPreview)}
                   >
-                    <DeleteOutline fontSize="small" style={{ marginRight: 8 }} />
+                    <DeleteOutline
+                      fontSize="small"
+                      style={{ marginRight: 8 }}
+                    />
                     Remove photo
                   </MenuItem>
                 </Menu>
@@ -446,11 +537,12 @@ export default function UserProfilePanel() {
               <InfoRow label="Location" value={form.location || "—"} />
             </Stack>
 
-            {!canEditAll && (
+            {isOwnProfile && !canEditAll && (
               <>
                 <Divider />
                 <Typography level="body-xs" color="neutral">
-                  You can edit: <b>Phone</b>, <b>Location</b>, <b>About</b>, and change your photo.
+                  You can edit: <b>Phone</b>, <b>Location</b>, <b>About</b>, and
+                  change your photo.
                 </Typography>
               </>
             )}
@@ -548,7 +640,9 @@ export default function UserProfilePanel() {
                   loading={saving}
                   startDecorator={<SaveRounded />}
                   onClick={saveProfile}
-                  disabled={saving || (!hasEditableChanges && !hasAvatarChange)}
+                  disabled={
+                    saving || !isOwnProfile || (!hasEditableChanges && !hasAvatarChange)
+                  }
                 >
                   Save changes
                 </Button>

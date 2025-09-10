@@ -104,14 +104,16 @@ const Field = ({ label, value, decorator, muted }) => (
 );
 
 const safeUrl = (u = "") => {
+  if (!u) return "";
   try {
-    const x = new URL(u);
-    return x.href;
+    return new URL(u, window.location.origin).href;
   } catch {
     return "";
   }
 };
-const getAvatarUrl = (u = {}) => safeUrl(u.attachment?.url || "");
+  
+const getAvatarUrl = (u = {}) =>
+  safeUrl(u?.attachment_url || u?.user_id?.attachment_url || "");
 
 const idOf = (u) => u?._id || u?.id || u?.email || u?.name;
 
@@ -151,7 +153,7 @@ const colorFromName = (name = "") => {
   return palette[sum % palette.length];
 };
 
-const PeopleAvatars = ({ people = [], max = 3, size = "sm" }) => {
+const PeopleAvatars = ({ people = [], max = 3, size = "sm", onPersonClick }) => {
   const shown = people.slice(0, max);
   const extra = people.slice(max);
   const ringSx = { boxShadow: "0 0 0 1px var(--joy-palette-background-body)" };
@@ -174,11 +176,19 @@ const PeopleAvatars = ({ people = [], max = 3, size = "sm" }) => {
           return (
             <Tooltip key={p.id || i} arrow placement="top" title={name}>
               <Avatar
+             role={onPersonClick ? "button" : undefined}
+             tabIndex={onPersonClick ? 0 : undefined}
+             onClick={onPersonClick ? () => onPersonClick(p) : undefined}
+             onKeyDown={
+               onPersonClick
+                 ? (e) => (e.key === "Enter" || e.key === " ") && onPersonClick(p)
+                 : undefined
+             }
                 size={size}
                 src={src || undefined}
                 variant={src ? "soft" : "solid"}
                 color={src ? "neutral" : color}
-                sx={ringSx}
+                sx={{ ...ringSx, cursor: onPersonClick ? "pointer" : "default" }}
               >
                 {!src && initials}
               </Avatar>
@@ -934,7 +944,16 @@ export default function ViewTaskPage() {
   }, [task]);
 
   const navigate = useNavigate();
-
+ const goToProfile = (personOrUserObj) => {
+   const uid =
+     personOrUserObj?.id ||
+     personOrUserObj?._id ||
+     personOrUserObj?.user_id ||
+     personOrUserObj?.email ||
+     personOrUserObj?.name;
+   if (!uid) return;
+   navigate(`/user_profile?user_id=${encodeURIComponent(String(uid))}`);
+ };
   // Reassign assignee options (exclude already assigned_to, and no user_id field)
   const allAssigneeOptions = useMemo(() => {
     const apiUsers = Array.isArray(allUsersResp)
@@ -1214,7 +1233,7 @@ export default function ViewTaskPage() {
                 value={
                   <Stack direction="row" alignItems="center" gap={1}>
                     {task?.assigned_to?.length ? (
-                      <PeopleAvatars people={toPeople(task.assigned_to)} />
+                      <PeopleAvatars people={toPeople(task.assigned_to)} onPersonClick={goToProfile} />
                     ) : (
                       <Typography level="body-sm">None</Typography>
                     )}
@@ -1259,6 +1278,7 @@ export default function ViewTaskPage() {
                             return Array.from(uniq.values());
                           })()
                         )}
+                        onPersonClick={goToProfile}
                       />
                     }
                   />
@@ -1297,7 +1317,7 @@ export default function ViewTaskPage() {
               <Field
                 label="Created By"
                 value={
-                  <PeopleAvatars people={toPeople(task?.createdBy)} max={1} />
+                  <PeopleAvatars people={toPeople(task?.createdBy)} max={1} onPersonClick={goToProfile} />
                 }
               />
               <Field
@@ -1498,12 +1518,16 @@ export default function ViewTaskPage() {
                     <Box key={`act-${idx}`} sx={{ mb: 1.5 }}>
                       <Stack direction="row" alignItems="flex-start" gap={1.25}>
                         <Avatar
+                        role="button" 
+                        tabIndex={0}
+                        onClick={() => goToProfile(user)}
+                        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && goToProfile(user)}
                           src={user.avatar || undefined}
                           variant={user.avatar ? "soft" : "solid"}
                           color={
                             user.avatar ? "neutral" : colorFromName(user.name)
                           }
-                          sx={{ width: 36, height: 36, fontWeight: 700 }}
+                          sx={{ width: 36, height: 36, fontWeight: 700, cursor: "pointer" }}
                         >
                           {!user.avatar && initialsOf(user.name)}
                         </Avatar>
