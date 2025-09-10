@@ -38,6 +38,10 @@ import CameraAltOutlined from "@mui/icons-material/CameraAltOutlined";
 import UploadFileOutlined from "@mui/icons-material/UploadFileOutlined";
 import DeleteOutline from "@mui/icons-material/DeleteOutline";
 
+//emojis
+import InsertEmoticonOutlined from "@mui/icons-material/InsertEmoticonOutlined";
+
+
 // RTK Query hooks
 import { useGetUserByIdQuery, useEditUserMutation } from "../redux/loginSlice";
 
@@ -80,6 +84,65 @@ const fileToDataURL = (file) =>
   });
 
 export default function UserProfilePanel() {
+
+  const aboutRef = useRef(null);
+  const caretRef = useRef({ start: null, end: null });
+
+const saveCaret = () => {
+  const el = aboutRef.current;
+  if (el) caretRef.current = {
+    start: el.selectionStart,
+    end: el.selectionEnd,
+  };
+};
+
+const EMOJI_CHOICES = [
+  "😀","😁","😂","🤣","😊","😍","😘","😎","🤩","🥳",
+  "🙂","😉","😌","😴","🤔","😅","😭","😤","😡",
+  "👍","👎","👏","🙏","💪","🔥","✨","🎉","✅","❌","⭐","📝"
+];
+
+const insertEmoji = (emoji) => {
+  const el = aboutRef.current;
+
+  // Fallback: if we somehow don't have the ref yet, just append
+  if (!el) {
+    setForm((f) => ({ ...f, about: (f.about || "") + emoji }));
+    return;
+  }
+
+  // Ensure the textarea has focus
+  el.focus();
+
+  // Use the last saved caret (before the menu opened); fall back to current caret or end
+  const currentVal = el.value || "";
+  const saved = caretRef.current || {};
+  const s = Number.isInteger(saved.start) ? saved.start : (el.selectionStart ?? currentVal.length);
+  const e = Number.isInteger(saved.end)   ? saved.end   : (el.selectionEnd   ?? s);
+
+  // Restore the selection to where it was
+  if (typeof el.setSelectionRange === "function") el.setSelectionRange(s, e);
+
+  if (typeof el.setRangeText === "function") {
+    // Insert and move caret to the end of inserted emoji
+    el.setRangeText(emoji, s, e, "end");
+    setForm((f) => ({ ...f, about: el.value }));
+    const newPos = el.selectionStart ?? (s + emoji.length);
+    caretRef.current = { start: newPos, end: newPos };
+  } else {
+    // Older fallback
+    const next = currentVal.slice(0, s) + emoji + currentVal.slice(e);
+    setForm((f) => ({ ...f, about: next }));
+    requestAnimationFrame(() => {
+      const newPos = s + emoji.length;
+      el.focus();
+      el.setSelectionRange(newPos, newPos);
+      caretRef.current = { start: newPos, end: newPos };
+    });
+  }
+};
+
+
   const fileRef = useRef(null);
   const [searchParams] = useSearchParams();
 
@@ -782,12 +845,71 @@ export default function UserProfilePanel() {
               </Typography>
               <FormControl>
                 <Textarea
-                  minRows={3}
-                  value={form.about}
-                  onChange={handleField("about")}
-                  placeholder="Short bio / responsibilities…"
-                  disabled={!isFieldEditable("about")}
-                />
+  minRows={3}
+  value={form.about}
+  onChange={handleField("about")}
+  placeholder="Short bio / responsibilities…"
+  disabled={!isFieldEditable("about")}
+   slotProps={{
+    textarea: {
+      ref: aboutRef,
+      onSelect: saveCaret,
+      onKeyUp: saveCaret,
+      onClick: saveCaret,
+      onBlur: saveCaret,
+    },
+  }}
+  endDecorator={
+    <Box sx={{ width: "100%", display: "flex", justifyContent: "flex-end" }}>
+      <Dropdown>
+        <MenuButton
+  slots={{ root: IconButton }}
+  slotProps={{
+    root: {
+      variant: "plain",
+      size: "sm",
+      // keep focus in the textarea and remember caret
+      onMouseDown: (e) => { e.preventDefault(); saveCaret(); },
+    },
+  }}
+  disabled={!isFieldEditable("about")}
+  title="Insert emoji"
+  aria-label="Insert emoji"
+>
+  <InsertEmoticonOutlined />
+</MenuButton>
+
+        <Menu
+          placement="top-end"
+          sx={{ p: 1, maxWidth: 280 }}
+        >
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "repeat(8, 1fr)",
+              gap: 0.5,
+              fontSize: 20,
+              lineHeight: 1
+            }}
+          >
+            {EMOJI_CHOICES.map((e) => (
+              <IconButton
+                key={e}
+                variant="soft"
+                size="sm"
+                onClick={() => insertEmoji(e)}
+                sx={{ p: 0.25 }}
+              >
+                {e}
+              </IconButton>
+            ))}
+          </Box>
+        </Menu>
+      </Dropdown>
+    </Box>
+  }
+/>
+
               </FormControl>
             </Sheet>
 
