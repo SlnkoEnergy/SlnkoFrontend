@@ -103,7 +103,7 @@ export default function TeamLeaderboard({
       variant="soft"
       sx={{
         position: "relative",
-        overflow: "hidden", // <-- no scrolling here
+        overflow: "hidden",
         borderRadius: 28,
         p: { xs: 1, sm: 0.5, md: 1.5 },
         bgcolor: "#fff",
@@ -117,6 +117,7 @@ export default function TeamLeaderboard({
           boxShadow:
             "0 6px 16px rgba(15,23,42,0.10), 0 20px 36px rgba(15,23,42,0.08)",
         },
+        height:'500px',
         ...sx,
       }}
     >
