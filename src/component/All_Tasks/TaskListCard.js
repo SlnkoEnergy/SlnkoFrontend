@@ -1,4 +1,4 @@
-// TaskStatusList.jsx (pure white, same look as top cards)
+// TaskStatusList.jsx
 import { useMemo } from "react";
 import {
   Box,
@@ -6,19 +6,24 @@ import {
   Typography,
   Chip,
   Avatar,
-  Radio,
+  AvatarGroup,
   Divider,
-  Button,
+  Tooltip,
 } from "@mui/joy";
+import { useNavigate } from "react-router-dom";
 
 /* ---------- helpers ---------- */
 const statusChip = (status) => {
   if (!status || status === "none") return null;
+  const key = String(status).toLowerCase();
   const map = {
-    feedback: { label: "feedback requested", color: "warning", icon: "🗣️" },
-    paused: { label: "paused", color: "neutral", icon: "⏸️" },
+    "in progress": { label: "In progress", color: "warning" },
+    completed: { label: "Completed", color: "success" },
+    pending: { label: "Pending", color: "primary" },
+    cancelled: { label: "Cancelled", color: "danger" },
   };
-  const cfg = map[status] || { label: status, color: "neutral", icon: "•" };
+  const cfg = map[key] || { label: status, color: "neutral" };
+
   return (
     <Chip
       size="sm"
@@ -26,41 +31,108 @@ const statusChip = (status) => {
       color={cfg.color}
       sx={{
         ml: 1,
-        textTransform: "none",
         fontWeight: 600,
-        gap: 0.5,
-        borderRadius: 10,
-        bgcolor: "#FFF", // keep chip on clean white
-        border: "1px solid rgba(2,6,23,0.06)",
+        borderRadius: 999,
+        textTransform: "none",
+        px: 1.25,
       }}
     >
-      <span style={{ opacity: 0.9 }}>{cfg.icon}</span> {cfg.label}
+      {cfg.label}
     </Chip>
   );
 };
 
-function Row({ item, onSelect, showDivider }) {
+const firstInitial = (s) =>
+  typeof s === "string" && s.trim()
+    ? s.trim().charAt(0).toUpperCase()
+    : "";
+
+/* Vertical tooltip content: Created by + list of assignees (with avatars) */
+const AssigneeTooltipContent = ({ createdBy, assignees = [] }) => (
+  <Box sx={{ p: 0.5, maxHeight: 240, overflow: "auto" }}>
+    {createdBy ? (
+      <Box sx={{ mb: 1 }}>
+        <Typography level="body-sm" sx={{ fontWeight: 600, mb: 0.5 }}>
+          Created by
+        </Typography>
+        <Typography level="body-sm">{createdBy}</Typography>
+      </Box>
+    ) : null}
+
+    <Typography level="body-sm" sx={{ fontWeight: 600, mb: 0.5 }}>
+      Assigned to
+    </Typography>
+    {assignees.length ? (
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+        {assignees.map((u) => (
+          <Box
+            key={u?._id || u?.id || u?.name}
+            sx={{ display: "flex", alignItems: "center", gap: 1 }}
+          >
+            <Avatar src={u?.avatar} size="sm">
+              {firstInitial(u?.name)}
+            </Avatar>
+            <Typography level="body-sm">{u?.name || "—"}</Typography>
+          </Box>
+        ))}
+      </Box>
+    ) : (
+      <Typography level="body-sm">—</Typography>
+    )}
+  </Box>
+);
+
+/* ---------- row ---------- */
+function Row({ item, showDivider }) {
   const chip = useMemo(() => statusChip(item.status), [item.status]);
+  const navigate = useNavigate();
+
+  const createdBy =
+    item.created_by || item.createdBy?.name || item.createdBy || "—";
+  const createdAvatarProps = {};
+  if (item.creator?.avatar) createdAvatarProps.src = item.creator.avatar;
+
+  const assignees = Array.isArray(item.assigned_to) ? item.assigned_to : [];
+
+  const goToTask = () => {
+    if (item?.id || item?._id) {
+      const id = item.id ?? item._id;
+      navigate(`/view_task?task=${encodeURIComponent(id)}`);
+    }
+  };
+
+  const onKey = (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      goToTask();
+    }
+  };
+
   return (
     <Box sx={{ bgcolor: "#FFF" }}>
       <Box
+        role="button"
+        tabIndex={0}
+        onClick={goToTask}
+        onKeyDown={onKey}
         sx={{
           display: "grid",
-          gridTemplateColumns: "28px 1fr 120px 40px",
+          gridTemplateColumns: "1fr 100px 50px 150px", // title | time | creator | assignees
           alignItems: "center",
           px: 2,
           py: 1.25,
-          bgcolor: "#FFF", // row stays white
-          "&:hover": { backgroundColor: "#FAFAFA" }, // subtle hover
+          bgcolor: "#FFF",
+          cursor: "pointer",
+          "&:hover": { backgroundColor: "#FAFAFA" },
+          "&:focus-visible": {
+            outline: "2px solid rgba(59,130,246,0.6)",
+            outlineOffset: "2px",
+            borderRadius: 10,
+          },
+          columnGap: 8,
         }}
       >
-        <Radio
-          checked={!!item.selected}
-          onChange={() => onSelect?.(item)}
-          variant="plain"
-          sx={{ "--Radio-actionRadius": "20px" }}
-        />
-
+        {/* Title + status chip */}
         <Box sx={{ display: "flex", alignItems: "center", minWidth: 0 }}>
           <Typography
             level="title-sm"
@@ -69,12 +141,14 @@ function Row({ item, onSelect, showDivider }) {
               overflow: "hidden",
               textOverflow: "ellipsis",
             }}
+            title={item.title}
           >
             {item.title}
           </Typography>
           {chip}
         </Box>
 
+        {/* Time */}
         <Typography
           level="title-sm"
           sx={{
@@ -86,11 +160,44 @@ function Row({ item, onSelect, showDivider }) {
           {item.time || "—"}
         </Typography>
 
-        <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-          <Avatar src={item.assignee?.avatar} size="sm">
-            {item.assignee?.name?.[0]}
+        {/* Created-by avatar (tooltip shows vertical lists) */}
+        <Tooltip
+          variant="soft"
+          placement="top"
+          title={
+            <AssigneeTooltipContent
+              createdBy={createdBy}
+              assignees={assignees}
+            />
+          }
+        >
+          <Avatar size="sm" {...createdAvatarProps}>
+            {firstInitial(createdBy)}
           </Avatar>
-        </Box>
+        </Tooltip>
+
+        {/* Assigned-to avatars (up to 3 + "+N"), same vertical tooltip */}
+        <Tooltip
+          variant="soft"
+          placement="top"
+          title={
+            <AssigneeTooltipContent
+              createdBy={createdBy}
+              assignees={assignees}
+            />
+          }
+        >
+          <AvatarGroup size="sm" sx={{ "--Avatar-size": "28px" }}>
+            {assignees.slice(0, 3).map((u) => (
+              <Avatar key={u?._id || u?.id || u?.name} src={u?.avatar}>
+                {firstInitial(u?.name)}
+              </Avatar>
+            ))}
+            {assignees.length > 3 && (
+              <Avatar>+{assignees.length - 3}</Avatar>
+            )}
+          </AvatarGroup>
+        </Tooltip>
       </Box>
 
       {showDivider && (
@@ -104,38 +211,33 @@ function Row({ item, onSelect, showDivider }) {
 export default function TaskStatusList({
   title = "Task Status",
   items = [],
-  activeTab = "all",
-  onTabChange,
-  onSelect,
-  sx = {},
 }) {
   return (
-   <Card
-  variant="soft"
-  sx={{
-    position: "relative",
-    overflow: "hidden",
-    borderRadius: 28, 
-    p: { xs: 2, sm: 2.5, md: 1.5 },
-    bgcolor: "#fff", 
-    border: "1px solid",
-    borderColor: "rgba(15,23,42,0.08)",
-    boxShadow:
-      "0 2px 6px rgba(15,23,42,0.06), 0 18px 32px rgba(15,23,42,0.06)",
-    transition: "transform .16s ease, box-shadow .16s ease",
-    "&:hover": {
-      transform: "translateY(-2px)",
-      boxShadow:
-        "0 6px 16px rgba(15,23,42,0.10), 0 20px 36px rgba(15,23,42,0.08)",
-    },
-    maxHeight: "500px",  
-    overflowY: "auto", 
-    gap:0  
-  }}
->
-
-
-      {/* header */}
+    <Card
+      variant="soft"
+      sx={{
+        position: "relative",
+        overflow: "hidden",
+        borderRadius: 28,
+        p: { xs: 2, sm: 2.5, md: 1.5 },
+        bgcolor: "#fff",
+        border: "1px solid",
+        borderColor: "rgba(15,23,42,0.08)",
+        boxShadow:
+          "0 2px 6px rgba(15,23,42,0.06), 0 18px 32px rgba(15,23,42,0.06)",
+        transition: "transform .16s ease, box-shadow .16s ease",
+        "&:hover": {
+          transform: "translateY(-2px)",
+          boxShadow:
+            "0 6px 16px rgba(15,23,42,0.10), 0 20px 36px rgba(15,23,42,0.08)",
+        },
+        maxHeight: "500px",
+        height:'500px',
+        overflowY: "auto",
+        gap: 0,
+      }}
+    >
+      {/* Header */}
       <Box
         sx={{
           display: "grid",
@@ -143,61 +245,17 @@ export default function TaskStatusList({
           alignItems: "center",
           px: 1,
           py: 0.5,
-          bgcolor: "#fff", 
+          bgcolor: "#fff",
         }}
       >
         <Typography level="title-lg" sx={{ ml: 0.5, color: "#0f172a" }}>
           {title}
         </Typography>
-
-        {/* segmented buttons */}
-        <Box
-          sx={{
-            display: "inline-flex",
-            gap: 0.5,
-            p: 0.5,
-            borderRadius: 999,
-            backgroundColor: "#F1F5F9", // light gray like mock
-          }}
-        >
-          <Button
-            size="sm"
-            variant={activeTab === "all" ? "soft" : "plain"}
-            sx={{
-              px: 1.25,
-              borderRadius: 999,
-              bgcolor: activeTab === "all" ? "#FFF" : "transparent",
-              color: "#0f172a",
-              boxShadow:
-                activeTab === "all" ? "inset 0 1px 0 rgba(0,0,0,0.04)" : "none",
-            }}
-            onClick={() => onTabChange?.("all")}
-          >
-            All Task
-          </Button>
-          <Button
-            size="sm"
-            variant={activeTab === "mine" ? "soft" : "plain"}
-            sx={{
-              px: 1.25,
-              borderRadius: 999,
-              bgcolor: activeTab === "mine" ? "#FFF" : "transparent",
-              color: "#0f172a",
-              boxShadow:
-                activeTab === "mine"
-                  ? "inset 0 1px 0 rgba(0,0,0,0.04)"
-                  : "none",
-            }}
-            onClick={() => onTabChange?.("mine")}
-          >
-            My tasks
-          </Button>
-        </Box>
       </Box>
 
-      <Divider sx={{ borderColor: "rgba(2,6,23,0.08)", }} />
+      <Divider sx={{ borderColor: "rgba(2,6,23,0.08)" }} />
 
-      {/* rows */}
+      {/* Rows */}
       <Box sx={{ bgcolor: "#FFF" }}>
         {items.length === 0 ? (
           <Typography
@@ -209,9 +267,8 @@ export default function TaskStatusList({
         ) : (
           items.map((it, idx) => (
             <Row
-              key={it.id ?? idx}
+              key={it.id ?? it._id ?? idx}
               item={it}
-              onSelect={onSelect}
               showDivider={idx < items.length - 1}
             />
           ))

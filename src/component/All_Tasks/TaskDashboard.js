@@ -25,9 +25,7 @@ import WorkOutlineIcon from "@mui/icons-material/WorkOutline";
 import ApartmentIcon from "@mui/icons-material/Apartment";
 import BuildIcon from "@mui/icons-material/Build";
 import NoData from "../../assets/alert-bell.svg";
-import {
-  useGetAllTasksQuery,
-} from "../../redux/globalTaskSlice";
+import { useGetAllTasksQuery } from "../../redux/globalTaskSlice";
 
 function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
   const navigate = useNavigate();
@@ -41,9 +39,14 @@ function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
   const createdTo = searchParams.get("to") || "";
   const deadlineFrom = searchParams.get("deadlineFrom") || "";
   const deadlineTo = searchParams.get("deadlineTo") || "";
-  const department = searchParams.get("department") || "";
-  const assignedTo = searchParams.get("assigned_to") || "";
-  const createdBy = searchParams.get("createdBy") || "";
+  const department =
+    searchParams.get("department") || searchParams.get("departments") || "";
+  const assignedTo =
+    searchParams.get("assigned_to") || searchParams.get("assignedToId") || "";
+
+  const createdBy =
+    searchParams.get("createdBy") || searchParams.get("createdById") || "";
+
   const priorityFilter = searchParams.get("priorityFilter") || "";
   const statusFromTab =
     {
@@ -69,17 +72,17 @@ function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
     page: currentPage,
     search: searchQuery,
     status: statusFromTab,
-    from:createdFrom,
-    to:createdTo,
-    deadlineFrom:deadlineFrom,
-    deadlineTo:deadlineTo,
+    from: createdFrom,
+    to: createdTo,
+    deadlineFrom: deadlineFrom,
+    deadlineTo: deadlineTo,
     department,
     limit: itemsPerPage,
     hide_completed: hideCompleted,
     hide_pending: hidePending,
     hide_inprogress: hideProgress,
-    assignedToId:assignedTo,
-    createdById:createdBy,
+    assignedToId: assignedTo,
+    createdById: createdBy,
     priorityFilter,
   });
 

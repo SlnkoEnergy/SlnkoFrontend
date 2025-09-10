@@ -11,14 +11,12 @@ import {
   Bar,
 } from "recharts";
 
-// Joy-white-card colors you’ve been using
 const COLORS = {
-  completed: "#22c55e", // green
-  pending: "#3b82f6", // blue
-  cancelled: "#ef4444", // red
+  completed: "#22c55e",
+  pending: "#3b82f6",
+  cancelled: "#ef4444",
 };
 
-// Buckets in order with their label and max days threshold
 const BUCKET_DEFS = [
   { key: "0", label: "Same day", max: 0 },
   { key: "1", label: "1 day", max: 1 },
@@ -31,17 +29,13 @@ const BUCKET_DEFS = [
 
 /**
  * Props:
- *  - statsByBucket: {
- *      "0": { completed: n, pending: n, cancelled: n },
- *      "1": { ... },
- *      ...
- *    }
- *    (keys should be the same as BUCKET_DEFS keys above; missing keys default to 0s)
+ *  - statsByBucket: { "0":{completed,pending,cancelled}, ... }
  *  - title?: string
- *  - defaultMaxDays?: number (one of 0,1,2,3,7,14,30)
+ *  - defaultMaxDays?: 0|1|2|3|7|14|30
+ *  - onMaxDaysChange?: (days:number) => void
  */
 export default function TasksByAgingBar({
-  title = "Conversion Rate",
+  title = "Tasks by Resolution Time",
   statsByBucket = {
     0: { completed: 10, pending: 4, cancelled: 1 },
     1: { completed: 7, pending: 3, cancelled: 0 },
@@ -52,12 +46,14 @@ export default function TasksByAgingBar({
     30: { completed: 0, pending: 1, cancelled: 0 },
   },
   defaultMaxDays = 7,
+  onMaxDaysChange,
   sx = {},
 }) {
-  // internal: which max bucket is selected
   const [maxDays, setMaxDays] = React.useState(defaultMaxDays);
 
-  // slider marks
+  // If parent changes default, reset internal (using key is fine too)
+  React.useEffect(() => { setMaxDays(defaultMaxDays); }, [defaultMaxDays]);
+
   const marks = React.useMemo(
     () =>
       BUCKET_DEFS.map((b) => ({
@@ -67,18 +63,24 @@ export default function TasksByAgingBar({
     []
   );
 
-  // build recharts data up to the selected maxDays
-  const chartData = React.useMemo(() => {
-    return BUCKET_DEFS.filter((b) => b.max <= maxDays).map((b) => {
-      const s = statsByBucket[b.key] || {};
-      return {
-        bucket: b.label,
-        Completed: Number(s.completed || 0),
-        Pending: Number(s.pending || 0),
-        Cancelled: Number(s.cancelled || 0),
-      };
-    });
-  }, [maxDays, statsByBucket]);
+  const chartData = React.useMemo(
+    () =>
+      BUCKET_DEFS.filter((b) => b.max <= maxDays).map((b) => {
+        const s = statsByBucket[b.key] || {};
+        return {
+          bucket: b.label,
+          Completed: Number(s.completed || 0),
+          Pending: Number(s.pending || 0),
+          Cancelled: Number(s.cancelled || 0),
+        };
+      }),
+    [maxDays, statsByBucket]
+  );
+
+  const handleSlider = (_, v) => {
+    setMaxDays(v);
+    onMaxDaysChange?.(v);
+  };
 
   return (
     <Card
@@ -99,6 +101,7 @@ export default function TasksByAgingBar({
           boxShadow:
             "0 6px 16px rgba(15,23,42,0.10), 0 20px 36px rgba(15,23,42,0.08)",
         },
+        ...sx,
       }}
     >
       {/* Header */}
@@ -114,7 +117,6 @@ export default function TasksByAgingBar({
           {title}
         </Typography>
 
-        {/* Range selector: choose how many buckets to include (by max days) */}
         <Box sx={{ width: 280, display: "flex", alignItems: "center", gap: 1 }}>
           <Typography level="body-sm" sx={{ color: "#334155", minWidth: 90 }}>
             Up to (days)
@@ -126,7 +128,7 @@ export default function TasksByAgingBar({
             marks={marks}
             min={0}
             max={30}
-            onChange={(_, v) => setMaxDays(v)}
+            onChange={handleSlider}
             sx={{
               flex: 1,
               "--Slider-trackSize": "3px",
@@ -139,10 +141,7 @@ export default function TasksByAgingBar({
       {/* Chart */}
       <Box sx={{ height: 340, mt: 1 }}>
         <ResponsiveContainer>
-          <BarChart
-            data={chartData}
-            margin={{ top: 8, right: 16, bottom: 24, left: 0 }}
-          >
+          <BarChart data={chartData} margin={{ top: 8, right: 16, bottom: 24, left: 0 }}>
             <CartesianGrid stroke="rgba(15,23,42,0.08)" vertical={false} />
             <XAxis
               dataKey="bucket"
@@ -166,22 +165,9 @@ export default function TasksByAgingBar({
               }}
             />
             <Legend wrapperStyle={{ paddingTop: 8 }} iconType="circle" />
-
-            <Bar
-              dataKey="Completed"
-              fill={COLORS.completed}
-              radius={[6, 6, 0, 0]}
-            />
-            <Bar
-              dataKey="Pending"
-              fill={COLORS.pending}
-              radius={[6, 6, 0, 0]}
-            />
-            <Bar
-              dataKey="Cancelled"
-              fill={COLORS.cancelled}
-              radius={[6, 6, 0, 0]}
-            />
+            <Bar dataKey="Completed" fill={COLORS.completed} radius={[6, 6, 0, 0]} />
+            <Bar dataKey="Pending" fill={COLORS.pending} radius={[6, 6, 0, 0]} />
+            <Bar dataKey="Cancelled" fill={COLORS.cancelled} radius={[6, 6, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </Box>

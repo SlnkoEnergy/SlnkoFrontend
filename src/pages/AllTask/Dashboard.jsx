@@ -34,18 +34,18 @@ function TaskDashboard() {
   const deptList = (deptApiData?.data || []).filter(Boolean);
 
   const { data: usersResp, isFetching: isUsersLoading } = useGetAllUserQuery({
-      department: "",
-    });
-    const userOptions = (
-      Array.isArray(usersResp?.data)
-        ? usersResp.data
-        : Array.isArray(usersResp)
-        ? usersResp
-        : []
-    )
-      .filter(Boolean)
-      .map((u) => ({ label: u?.name || "User", value: u?._id || "" }))
-      .filter((o) => o.value);
+    department: "",
+  });
+  const userOptions = (
+    Array.isArray(usersResp?.data)
+      ? usersResp.data
+      : Array.isArray(usersResp)
+      ? usersResp
+      : []
+  )
+    .filter(Boolean)
+    .map((u) => ({ label: u?.name || "User", value: u?._id || "" }))
+    .filter((o) => o.value);
 
   useEffect(() => {
     const userData = localStorage.getItem("userDetails");
@@ -91,9 +91,11 @@ function TaskDashboard() {
       key: "department",
       label: "Department",
       type: "select",
-      options: isDeptLoading ? [] : deptList.map((d) => ({ label: d, value: d })),
+      options: isDeptLoading
+        ? []
+        : deptList.map((d) => ({ label: d, value: d })),
     },
-      {
+    {
       key: "assigned_to",
       label: "Assigned To",
       type: "select",
