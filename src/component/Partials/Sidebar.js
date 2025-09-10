@@ -549,7 +549,7 @@ function Sidebar() {
             </ListItem>
             <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/task_dashboard")}>
-                <BuildIcon />
+                <TaskIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Task</Typography>
                 </ListItemContent>
@@ -774,7 +774,7 @@ function Sidebar() {
 
             <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/task_dashboard")}>
-                <BuildIcon />
+                <TaskIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Task</Typography>
                 </ListItemContent>
@@ -872,7 +872,7 @@ function Sidebar() {
 
             <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/task_dashboard")}>
-                <BuildIcon />
+                <TaskIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Task</Typography>
                 </ListItemContent>
@@ -983,7 +983,7 @@ function Sidebar() {
 
             <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/task_dashboard")}>
-                <BuildIcon />
+                <TaskIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Task</Typography>
                 </ListItemContent>
@@ -1263,7 +1263,7 @@ function Sidebar() {
 
             <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/task_dashboard")}>
-                <BuildIcon />
+                <TaskIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Task</Typography>
                 </ListItemContent>
@@ -1554,7 +1554,7 @@ function Sidebar() {
             </ListItem>
             <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/task_dashboard")}>
-                <BuildIcon />
+                <TaskIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Task</Typography>
                 </ListItemContent>
@@ -1768,7 +1768,7 @@ function Sidebar() {
 
             <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/task_dashboard")}>
-                <BuildIcon />
+                <TaskIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Task</Typography>
                 </ListItemContent>
@@ -1955,7 +1955,7 @@ function Sidebar() {
 
             <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/task_dashboard")}>
-                <BuildIcon />
+                <TaskIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Task</Typography>
                 </ListItemContent>
@@ -2167,7 +2167,7 @@ function Sidebar() {
 
             <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/task_dashboard")}>
-                <BuildIcon />
+                <TaskIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Task</Typography>
                 </ListItemContent>
@@ -2267,7 +2267,7 @@ function Sidebar() {
 
             <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/task_dashboard")}>
-                <BuildIcon />
+                <TaskIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Task</Typography>
                 </ListItemContent>
@@ -2331,7 +2331,7 @@ function Sidebar() {
 
             <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/task_dashboard")}>
-                <BuildIcon />
+                <TaskIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Task</Typography>
                 </ListItemContent>
@@ -2455,7 +2455,7 @@ function Sidebar() {
 
             <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/task_dashboard")}>
-                <BuildIcon />
+                <TaskIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Task</Typography>
                 </ListItemContent>
@@ -2519,7 +2519,7 @@ function Sidebar() {
 
             <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/task_dashboard")}>
-                <BuildIcon />
+                <TaskIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Task</Typography>
                 </ListItemContent>
@@ -2732,7 +2732,7 @@ function Sidebar() {
 
             <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/task_dashboard")}>
-                <BuildIcon />
+                <TaskIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Task</Typography>
                 </ListItemContent>
@@ -2823,7 +2823,7 @@ function Sidebar() {
 
             <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/task_dashboard")}>
-                <BuildIcon />
+                <TaskIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Task</Typography>
                 </ListItemContent>
@@ -2918,7 +2918,7 @@ function Sidebar() {
 
             <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/task_dashboard")}>
-                <BuildIcon />
+                <TaskIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Task</Typography>
                 </ListItemContent>
