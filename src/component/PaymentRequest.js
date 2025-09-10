@@ -17,9 +17,10 @@ import { useGetPaymentRecordQuery } from "../redux/Accounts";
 import InstantRequest from "./PaymentTable/Payment";
 import CreditRequest from "./PaymentTable/Credit";
 
-// RBAC wrapper + Stack app
+// RBAC wrapper
 import RequirePermission from "../redux/auth/RequirePermission";
-import { stackClientApp } from "../stack";
+// If you later want to use selected team id, import this:
+// import { useUser } from "@stackframe/react";
 
 const PaymentRequest = forwardRef(() => {
   const navigate = useNavigate();
@@ -33,38 +34,6 @@ const PaymentRequest = forwardRef(() => {
   const [searchQuery, setSearchQuery] = useState("");
   const [status, setStatus] = useState("");
   const [activeTab, setActiveTab] = useState(0);
-
-  // 🔐 team id resolved from Stack (Accounts team preferred)
-  const [teamId, setTeamId] = useState(null);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const token = await stackClientApp.getToken();
-        if (!token) return;
-
-        const url = new URL("https://api.stack-auth.com/api/v1/teams");
-        url.searchParams.set("user_id", "me");
-
-        const r = await fetch(url.toString(), {
-          headers: {
-            "x-stack-access-type": "client",
-            "x-stack-project-id": process.env.REACT_APP_STACK_PROJECT_ID,
-            "x-stack-publishable-client-key": process.env.REACT_APP_STACK_PUBLISHABLE_KEY,
-            "x-stack-access-token": token,
-          },
-        });
-        const { items = [] } = await r.json();
-
-        const accounts = items.find(
-          (t) => (t.name || "").toLowerCase() === "accounts"
-        );
-        setTeamId(accounts?.id || items[0]?.id || null);
-      } catch (e) {
-        console.warn("teams fetch failed", e);
-      }
-    })();
-  }, []);
 
   const {
     data: responseData,
@@ -87,7 +56,6 @@ const PaymentRequest = forwardRef(() => {
   const endIndex = Math.min(startIndex + count - 1, total);
 
   const [user, setUser] = useState(null);
-
   useEffect(() => {
     const userData = localStorage.getItem("userDetails");
     setUser(userData ? JSON.parse(userData) : null);
@@ -136,7 +104,7 @@ const PaymentRequest = forwardRef(() => {
           <FormLabel>Select Status</FormLabel>
           <Select
             value={status || ""}
-            onChange={(e, newValue) => {
+            onChange={(_e, newValue) => {
               setStatus(newValue);
               setCurrentPage(1);
             }}
@@ -184,8 +152,7 @@ const PaymentRequest = forwardRef(() => {
           }}
         >
           <Box sx={{ display: "flex", gap: 1 }}>
-            {/* 🔐 RBAC: Add New Payment button gated by Stack permission in chosen team */}
-            <RequirePermission permission="add_new_payment" teamId={teamId}>
+            <RequirePermission permission="add_new_payment">
               <Button
                 color="primary"
                 size="sm"
@@ -427,4 +394,5 @@ const PaymentRequest = forwardRef(() => {
     </>
   );
 });
+
 export default PaymentRequest;
