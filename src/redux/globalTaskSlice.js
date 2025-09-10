@@ -171,6 +171,85 @@ export const GlobalTaskApi = createApi({
       }),
       providesTags: [{ type: "TaskStats", id: "SUMMARY" }],
     }),
+
+    getMyTasks: builder.query({
+      query: (q = {}) =>
+        `tasks/mytasks${buildQS({
+          from: q.from ?? "",
+          to: q.to ?? "",
+          deadlineFrom: q.deadlineFrom ?? "",
+          deadlineTo: q.deadlineTo ?? "",
+          departments: q.departments ?? "",
+          createdById: q.createdById ?? "",
+          assignedToId: q.assignedToId ?? "",
+          window: q.window ?? "25m",
+          q: q.q ?? "",
+        })}`,
+      providesTags: (result) => {
+        const items = Array.isArray(result?.data) ? result.data : [];
+        return [
+          { type: "Tasks", id: "LIST" },
+          ...items
+            .filter(Boolean)
+            .map((t) =>
+              t?.id || t?._id ? { type: "Task", id: t.id || t._id } : null
+            )
+            .filter(Boolean),
+        ];
+      },
+    }),
+    getActivityFeed: builder.query({
+      query: () => ({ url: "tasks/activityfeed", method: "GET" }),
+      providesTags: (result) => {
+        const items = Array.isArray(result?.data) ? result.data : [];
+        return [
+          { type: "Tasks", id: "LIST" },
+          ...items.map((i) => ({ type: "Task", id: i.task_id })),
+        ];
+      },
+    }),
+
+    getUserPerformance: builder.query({
+      query: (q = {}) =>
+        `tasks/userperformance${buildQS({
+          userId: q.userId ?? "",
+          // backend accepts either `name` or `q`; we send both if provided
+          name: q.name ?? "",
+          q: q.q ?? "",
+          from: q.from ?? "",
+          to: q.to ?? "",
+          deadlineFrom: q.deadlineFrom ?? "",
+          deadlineTo: q.deadlineTo ?? "",
+          includeSubtasks:
+            typeof q.includeSubtasks === "boolean"
+              ? String(q.includeSubtasks)
+              : q.includeSubtasks ?? "true",
+        })}`,
+      providesTags: [{ type: "Perf", id: "LIST" }],
+    }),
+
+    getProjectsByState: builder.query({
+      query: (q = {}) =>
+        `tasks/projectstate${buildQS({
+          from: q.from ?? "",
+          to: q.to ?? "",
+          deadlineFrom: q.deadlineFrom ?? "",
+          deadlineTo: q.deadlineTo ?? "",
+        })}`,
+      providesTags: [{ type: "TaskStats", id: "PROJECTS_BY_STATE" }],
+    }),
+
+    getTasksAgingByResolution: builder.query({
+      query: (q = {}) =>
+        `tasks/agingbyresolution${buildQS({
+          from: q.from ?? "",
+          to: q.to ?? "",
+          deadlineFrom: q.deadlineFrom ?? "",
+          deadlineTo: q.deadlineTo ?? "",
+          uptoDays: q.uptoDays ?? 30,
+        })}`,
+      providesTags: [{ type: "TaskStats", id: "AGING_BY_RESOLUTION" }],
+    }),
   }),
 });
 
@@ -186,4 +265,9 @@ export const {
   useUpdateTaskMutation,
   useCreateSubTaskMutation,
   useGetTaskStatsQuery,
+  useGetMyTasksQuery,
+  useGetActivityFeedQuery,
+  useGetUserPerformanceQuery,
+  useGetProjectsByStateQuery,
+  useGetTasksAgingByResolutionQuery,
 } = GlobalTaskApi;

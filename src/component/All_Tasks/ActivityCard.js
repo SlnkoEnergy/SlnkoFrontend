@@ -1,26 +1,26 @@
 // ActivityFeedCard.jsx
-import {
-  Card,
-  Box,
-  Typography,
-  Avatar,
-  Link,
-  Divider,
-  IconButton,
-} from "@mui/joy";
-import MoreVertRoundedIcon from "@mui/icons-material/MoreVertRounded";
-
-/** Brand blues */
-const COLOR_A = "#1f487c";
-const COLOR_B = "#3366a3";
+import DOMPurify from "dompurify";
+import { Card, Box, Typography, Avatar, Link, Divider } from "@mui/joy";
+import { useNavigate } from "react-router-dom";
 
 export default function ActivityFeedCard({
   title = "Activity Feed",
   items = [],
-  height = 360,
   onSeeAll,
   sx = {},
 }) {
+  const navigate = useNavigate();
+
+  const sanitize = (html) =>
+    DOMPurify.sanitize(String(html || ""), {
+      USE_PROFILES: { html: true },
+      ALLOWED_TAGS: [
+        "b", "strong", "i", "em", "u", "s", "del",
+        "span", "br", "p", "ul", "ol", "li"
+      ],
+      ALLOWED_ATTR: ["style"],
+    });
+
   return (
     <Card
       variant="soft"
@@ -40,116 +40,126 @@ export default function ActivityFeedCard({
           boxShadow:
             "0 6px 16px rgba(15,23,42,0.10), 0 20px 36px rgba(15,23,42,0.08)",
         },
-         maxHeight: "500px",  
-    overflowY: "auto", 
-    height:'500px',
-        gap: 0,
-        overflowY: "auto",
+        maxHeight: 500,
+        height: 500,
+        ...sx,
       }}
     >
       {/* Header */}
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: "1fr auto auto",
+          gridTemplateColumns: "1fr auto",
           alignItems: "center",
         }}
       >
-        <Typography level="title-lg" >
-          {title}
-        </Typography>
-
-        <Link
-          component="button"
-          onClick={onSeeAll}
-          underline="none"
-          sx={{
-            fontWeight: 600,
-            mr: 0.5,
-          }}
-        >
-          See All
-        </Link>
-
+        <Typography level="title-lg">{title}</Typography>
       </Box>
 
-      <Divider sx={{ my: 0.5, borderColor: "rgba(255,255,255,0.08)" }} />
+      <Divider sx={{ my: 0.5, borderColor: "rgba(0,0,0,0.06)" }} />
 
       {/* Feed list */}
       <Box
         sx={{
-          maxHeight: height,
+          maxHeight: "100%",
           overflowY: "auto",
           "&::-webkit-scrollbar": { width: 4 },
           "&::-webkit-scrollbar-thumb": {
-            backgroundColor: "rgba(255,255,255,0.18)",
+            backgroundColor: "rgba(0,0,0,0.18)",
             borderRadius: 8,
           },
           "&::-webkit-scrollbar-track": { background: "transparent" },
         }}
       >
         {items.length === 0 ? (
-          <Typography
-            level="body-sm"
-            sx={{ color: "rgba(255,255,255,0.7)", p: 2 }}
-          >
+          <Typography level="body-sm" sx={{ color: "text.secondary", p: 2 }}>
             No recent activity.
           </Typography>
         ) : (
-          items.map((it, idx) => (
-            <Box key={it.id ?? idx}>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "flex-start",
-                  gap: 1,
-                  alignItems: "center",
-                  p: 0.5,
-                }}
-              >
-                <Avatar src={it.avatar} size="sm">
-                  {it.name?.[0]}
-                </Avatar>
+          items.map((it, idx) => {
+            const safeRemarks = sanitize(it.remarks);
+            const goToTask = () =>
+              it.task_id &&
+              navigate(`/view_task?task=${encodeURIComponent(it.task_id)}`);
 
+            return (
+              <Box key={it.id ?? idx}>
                 <Box
                   sx={{
-                    minWidth: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
+                    display: "grid",
+                    gridTemplateColumns: "36px 1fr auto",
+                    gap: 1,
+                    alignItems: "start",
+                    p: 0.75,
+                    cursor: it.task_id ? "pointer" : "default",
+                    "&:hover": { backgroundColor: "rgba(0,0,0,0.02)" },
                   }}
+                  onClick={goToTask}
                 >
-                  <Typography
-                    level="body-md"
-                    sx={{
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    <b style={{}}>{it.name}</b>{" "}
-                    <span style={{ opacity: 0.9 }}>
-                      {it.action || "updated"}
-                    </span>{" "}
-                    <b style={{ color: "#b9d4ff" }}>{it.project}</b>
-                  </Typography>
+                  <Avatar src={it.avatar} size="sm">
+                    {it.name?.[0]}
+                  </Avatar>
+
+                  <Box sx={{ minWidth: 0 }}>
+                    {/* Header line (kept single line w/ ellipsis) */}
+                    <Typography
+                      level="body-md"
+                      sx={{
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                      title={`${it.name} ${it.action || "updated"} ${it.project}${
+                        it.task_code ? ` (${it.task_code})` : ""
+                      }`}
+                    >
+                      <b>{it.name}</b>{" "}
+                      <span style={{ opacity: 0.9 }}>
+                        {it.action || "updated"}
+                      </span>{" "}
+                      <b style={{ color: "#1e40af" }}>{it.project}</b>
+                      {it.task_code ? (
+                        <Typography
+                          component="span"
+                          level="body-sm"
+                          sx={{ ml: 0.5, color: "text.tertiary", fontWeight: 600 }}
+                        >
+                          ({it.task_code})
+                        </Typography>
+                      ) : null}
+                    </Typography>
+
+                    {/* Sanitized remarks HTML (WRAPS LONG CONTENT) */}
+                    {safeRemarks && (
+                      <Box
+                        sx={{
+                          mt: 0.25,
+                          // make long words / continuous strings wrap:
+                          wordBreak: "break-word",
+                          overflowWrap: "anywhere",
+                          whiteSpace: "normal",
+                          "& ol, & ul": { pl: 2, m: 0 },
+                          "& li": { mb: 0.25 },
+                        }}
+                        dangerouslySetInnerHTML={{ __html: safeRemarks }}
+                      />
+                    )}
+                  </Box>
 
                   <Typography
                     level="body-sm"
-                    sx={{ color: "rgba(255,255,255,0.6)" }}
+                    sx={{ color: "text.tertiary", whiteSpace: "nowrap" }}
                   >
                     {it.ago}
                   </Typography>
                 </Box>
-              </Box>
 
-              {idx < items.length - 1 && (
-                <Divider
-                  sx={{ mx: 0, borderColor: "rgba(255,255,255,0.06)" }}
-                />
-              )}
-            </Box>
-          ))
+                {idx < items.length - 1 && (
+                  <Divider sx={{ mx: 0, borderColor: "rgba(0,0,0,0.06)" }} />
+                )}
+              </Box>
+            );
+          })
         )}
       </Box>
     </Card>

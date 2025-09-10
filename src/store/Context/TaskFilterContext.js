@@ -31,8 +31,8 @@ export const TaskFilterProvider = ({ children }) => {
       createdAt,
       deadline,
       department,
-      assignedToName,
-      createdByName,
+      assigned_to,
+      createdBy,
       matchMode,
     } = raw;
 
@@ -58,8 +58,8 @@ export const TaskFilterProvider = ({ children }) => {
       ...createdRange,      
       ...deadlineRange,      
       departments: department || "",
-      assignedNames: assignedToName || "",
-      createdNames: createdByName || "",
+      assignedToId: assigned_to || "",
+      createdById: createdBy || "",
       mode: matchMode === "any" ? "any" : "all",
     };
   }, [raw]);
