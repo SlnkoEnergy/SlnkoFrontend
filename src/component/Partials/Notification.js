@@ -235,7 +235,7 @@ const AppNotification = () => {
                   }}
                 >
                   <NotificationsNoneIcon
-                    sx={{ width: 20, height: 20, color: "text.primary" }} // Bell equivalent
+                    sx={{ width: 20, height: 20, color: "white" }} // Bell equivalent
                   />
 
                   {(unseenCount ?? 0) > 0 && (
