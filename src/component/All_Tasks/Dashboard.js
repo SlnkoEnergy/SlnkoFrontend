@@ -1,4 +1,3 @@
-// AllTaskDashboard.jsx
 import { Box, Grid } from "@mui/joy";
 import CloudStatCard from "./TaskDashboardCards";
 import HourglassTopRoundedIcon from "@mui/icons-material/HourglassTopRounded";
@@ -6,6 +5,12 @@ import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import CancelRoundedIcon from "@mui/icons-material/CancelRounded";
 import TaskStatusList from "./TaskListCard";
 import ActivityFeedCard from "./ActivityCard";
+import ProjectsWorkedCard from "./Charts/ProjectsDonut";
+import TeamLeaderboard from "./TeamLeaderboard";
+import TasksByAgingBar from "./Charts/BarChart";
+import { useTaskFilters } from "../../store/Context/TaskFilterContext";
+import { useGetTaskStatsQuery } from "../../redux/globalTaskSlice";
+import { useNavigate } from "react-router-dom";
 
 /** Small pill-style badge for right illustration slot */
 const IconBadge = ({ color = "#2563eb", bg = "#eff6ff", icon }) => (
@@ -26,107 +31,21 @@ const IconBadge = ({ color = "#2563eb", bg = "#eff6ff", icon }) => (
   </div>
 );
 
-const demo = [
-  {
-    id: 1,
-    title: "Brand Strategy",
-    status: "feedback",
-    time: "00:25:15",
-    assignee: { name: "Alex", avatar: "https://i.pravatar.cc/40?img=3" },
-  },
-  {
-    id: 2,
-    title: "Logo Design",
-    status: "feedback",
-    time: "00:08:15",
-    assignee: { name: "Mira", avatar: "https://i.pravatar.cc/40?img=5" },
-  },
-  {
-    id: 3,
-    title: "Filllo Design System",
-    status: "paused",
-    time: "02:23:45",
-    assignee: { name: "Ken", avatar: "https://i.pravatar.cc/40?img=8" },
-  },
-  {
-    id: 3,
-    title: "Filllo Design System",
-    status: "paused",
-    time: "02:23:45",
-    assignee: { name: "Ken", avatar: "https://i.pravatar.cc/40?img=8" },
-  },
-  {
-    id: 3,
-    title: "Filllo Design System",
-    status: "paused",
-    time: "02:23:45",
-    assignee: { name: "Ken", avatar: "https://i.pravatar.cc/40?img=8" },
-  },
-  {
-    id: 3,
-    title: "Filllo Design System",
-    status: "paused",
-    time: "02:23:45",
-    assignee: { name: "Ken", avatar: "https://i.pravatar.cc/40?img=8" },
-  },
-  {
-    id: 3,
-    title: "Filllo Design System",
-    status: "paused",
-    time: "02:23:45",
-    assignee: { name: "Ken", avatar: "https://i.pravatar.cc/40?img=8" },
-  },
-  {
-    id: 3,
-    title: "Filllo Design System",
-    status: "paused",
-    time: "02:23:45",
-    assignee: { name: "Ken", avatar: "https://i.pravatar.cc/40?img=8" },
-  },
-];
+const demo = [];
+const feed = [];
 
-const feed = [
-  {
-    id: 1,
-    name: "Marvel Park",
-    avatar: "https://i.pravatar.cc/40?img=12",
-    action: "update progress on",
-    project: "Baros Teams",
-    ago: "10 mins ago",
-  },
-  {
-    id: 2,
-    name: "Christina",
-    avatar: "https://i.pravatar.cc/40?img=16",
-    action: "update progress on",
-    project: "Rexxo Teams",
-    ago: "11 mins ago",
-  },
-  {
-    id: 3,
-    name: "Regina Lee",
-    avatar: "https://i.pravatar.cc/40?img=5",
-    action: "update progress on",
-    project: "Arrow Teams",
-    ago: "12 mins ago",
-  },
-  {
-    id: 4,
-    name: "Jhonny",
-    avatar: "https://i.pravatar.cc/40?img=22",
-    action: "update progress on",
-    project: "Baros Teams",
-    ago: "16 mins ago",
-  },
-];
 export default function AllTaskDashboard() {
-  // In real app you’ll fetch these counts from API
-  const counts = {
-    active: 72,
-    review: 21,
-    completed: 51,
-    cancelled: 3,
+  const { apiParams } = useTaskFilters();
+  const navigate = useNavigate();
+  const { data, isLoading, isFetching } = useGetTaskStatsQuery(apiParams);
+  const stats = data?.data || {
+    active: 0,
+    pending: 0,
+    completed: 0,
+    cancelled: 0,
   };
+
+  console.log({ apiParams });
 
   return (
     <Box
@@ -140,7 +59,8 @@ export default function AllTaskDashboard() {
       <Grid container spacing={2}>
         <Grid xs={12} md={3}>
           <CloudStatCard
-            value={counts.active}
+            loading={isLoading || isFetching}
+            value={stats.active ?? 0}
             title="Active Task"
             subtitle="Task that is still ongoing"
             accent="#6aa3ff"
@@ -151,15 +71,44 @@ export default function AllTaskDashboard() {
                 bg="#e0f2fe"
               />
             }
-            onAction={() => console.log("Active tasks clicked")}
+            onAction={() => {
+              const params = new URLSearchParams(apiParams);
+              params.set("page", "1");
+              params.set("tab", "In Progress");
+              navigate(`/all_task?${params.toString()}`);
+            }}
           />
         </Grid>
 
         <Grid xs={12} md={3}>
           <CloudStatCard
-            value={counts.completed}
+            loading={isLoading || isFetching}
+            value={stats.pending ?? 0}
+            title="Pending Task"
+            subtitle="Tasks waiting to start"
+            accent="#9aa7ff"
+            illustration={
+              <IconBadge
+                icon={<HourglassTopRoundedIcon fontSize="small" />}
+                color="#0369a1"
+                bg="#e0f2fe"
+              />
+            }
+            onAction={() => {
+              const params = new URLSearchParams(apiParams);
+              params.set("page", "1");
+              params.set("tab", "Pending");
+              navigate(`/all_task?${params.toString()}`);
+            }}
+          />
+        </Grid>
+
+        <Grid xs={12} md={3}>
+          <CloudStatCard
+            loading={isLoading || isFetching}
+            value={stats.completed ?? 0}
             title="Completed Task"
-            subtitle="Task that is completed"
+            subtitle="Tasks finished"
             accent="#9aa7ff"
             illustration={
               <IconBadge
@@ -168,32 +117,21 @@ export default function AllTaskDashboard() {
                 bg="#ecfdf5"
               />
             }
-            onAction={() => console.log("Completed tasks clicked")}
+            onAction={() => {
+              const params = new URLSearchParams(apiParams);
+              params.set("page", "1");
+              params.set("tab", "Completed");
+              navigate(`/all_task?${params.toString()}`);
+            }}
           />
         </Grid>
 
         <Grid xs={12} md={3}>
           <CloudStatCard
-            value={counts.completed}
-            title="Completed Task"
-            subtitle="Task that is completed"
-            accent="#9aa7ff"
-            illustration={
-              <IconBadge
-                icon={<CheckCircleRoundedIcon fontSize="small" />}
-                color="#16a34a"
-                bg="#ecfdf5"
-              />
-            }
-            onAction={() => console.log("Completed tasks clicked")}
-          />
-        </Grid>
-
-        <Grid xs={12} md={3}>
-          <CloudStatCard
-            value={counts.cancelled}
-            title="Cancelled"
-            subtitle="Task that is cancelled"
+            loading={isLoading || isFetching}
+            value={stats.cancelled ?? 0}
+            title="Cancelled Task"
+            subtitle="Tasks cancelled"
             accent="#fca5a5"
             illustration={
               <IconBadge
@@ -202,11 +140,17 @@ export default function AllTaskDashboard() {
                 bg="#fee2e2"
               />
             }
-            onAction={() => console.log("Cancelled tasks clicked")}
+            onAction={() => {
+              const params = new URLSearchParams(apiParams);
+              params.set("page", "1");
+              params.set("tab", "Cancelled");
+              navigate(`/all_task?${params.toString()}`);
+            }}
           />
         </Grid>
       </Grid>
 
+      {/* Rest of your dashboard (unchanged) */}
       <Grid container spacing={2} sx={{ mt: 1 }}>
         <Grid xs={12} md={8}>
           <TaskStatusList
@@ -217,12 +161,38 @@ export default function AllTaskDashboard() {
             onSelect={(row) => console.log("select:", row)}
           />
         </Grid>
-
         <Grid xs={12} md={4}>
           <ActivityFeedCard
             items={feed}
             height={320}
-            onSeeAll={() => console.log("See all clicked")}
+            onSeeAll={() => console.log("See all")}
+          />
+        </Grid>
+      </Grid>
+
+      <Grid container spacing={2} sx={{ mt: 1 }}>
+        <Grid xs={12} md={8}>
+          <TeamLeaderboard />
+        </Grid>
+        <Grid xs={12} md={4}>
+          <ProjectsWorkedCard />
+        </Grid>
+      </Grid>
+
+      <Grid container spacing={2} sx={{ mt: 1 }}>
+        <Grid xs={12} md={12}>
+          <TasksByAgingBar
+            title="Tasks by Resolution Time"
+            statsByBucket={{
+              0: { completed: 12, pending: 3, cancelled: 1 },
+              1: { completed: 9, pending: 2, cancelled: 0 },
+              2: { completed: 6, pending: 4, cancelled: 1 },
+              3: { completed: 5, pending: 3, cancelled: 0 },
+              7: { completed: 3, pending: 7, cancelled: 1 },
+              14: { completed: 1, pending: 3, cancelled: 0 },
+              30: { completed: 0, pending: 2, cancelled: 0 },
+            }}
+            defaultMaxDays={7}
           />
         </Grid>
       </Grid>

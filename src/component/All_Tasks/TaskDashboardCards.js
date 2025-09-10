@@ -3,47 +3,46 @@ import { Box, Card, Typography, Button } from "@mui/joy";
 export default function CloudStatCard({
   value = 0,
   title = "Title",
-  subtitle = "Subtitle",
-  actionLabel = "View details →",
   onAction,
   illustration,
   tone = "light",
   accent = "#4f83cc",
-  size = "sm",                 // "sm" | "md"
+  size = "sm", // "sm" | "md"
   sx = {},
 }) {
   const isLight = tone === "light";
 
   // compact vs regular
-  const S = size === "sm"
-    ? {
-        radius: 20,
-        pad: { xs: 1.5, sm: 2, md: 2 },
-        gridRightCol: { xs: "1fr", md: "1fr 140px" },
-        valueFs: { xs: 26, sm: 32 },
-        titleFs: 18,
-        subtitleMt: 0.25,
-        subtitleMb: 1.25,
-        illoWrapH: 96,
-        halo: 120,
-        illoW: 100,
-        illoH: 76,
-        illoRadius: 14,
-      }
-    : {
-        radius: 28,
-        pad: { xs: 2, sm: 2.5, md: 3 },
-        gridRightCol: { xs: "1fr", md: "1fr 170px" },
-        valueFs: { xs: 34, sm: 40 },
-        titleFs: 20,
-        subtitleMt: 0.5,
-        subtitleMb: 1.75,
-        illoWrapH: 120,
-        halo: 160,
-        illoW: 128,
-        illoH: 96,
-        illoRadius: 16,
-      };
+  const S =
+    size === "sm"
+      ? {
+          radius: 20,
+          pad: { xs: 1.5, sm: 2, md: 2 },
+          gridRightCol: { xs: "1fr", md: "1fr 140px" },
+          valueFs: { xs: 26, sm: 32 },
+          titleFs: 18,
+          subtitleMt: 0.25,
+          subtitleMb: 1.25,
+          illoWrapH: 96,
+          halo: 120,
+          illoW: 100,
+          illoH: 76,
+          illoRadius: 14,
+        }
+      : {
+          radius: 28,
+          pad: { xs: 2, sm: 2.5, md: 3 },
+          gridRightCol: { xs: "1fr", md: "1fr 170px" },
+          valueFs: { xs: 34, sm: 40 },
+          titleFs: 20,
+          subtitleMt: 0.5,
+          subtitleMb: 1.75,
+          illoWrapH: 120,
+          halo: 160,
+          illoW: 128,
+          illoH: 96,
+          illoRadius: 16,
+        };
 
   return (
     <Card
@@ -94,40 +93,15 @@ export default function CloudStatCard({
           </Typography>
 
           <Typography
-            level="h4"
-            sx={{ color: "#111827", fontWeight: 700, fontSize: S.titleFs }}
+            level="h5"
+            sx={{
+              color: "#111827",
+              fontWeight: 700,
+              fontSize: { xs: "1rem", xl: "1.2rem" },
+            }}
           >
             {title}
           </Typography>
-
-          <Typography
-            level="body-md"
-            sx={{ color: "rgba(15,23,42,0.64)", mt: S.subtitleMt, mb: S.subtitleMb }}
-          >
-            {subtitle}
-          </Typography>
-
-          <Button
-            size="sm"
-            variant="soft"
-            onClick={(e) => {
-              e.stopPropagation();
-              onAction?.();
-            }}
-            sx={{
-              px: 1.1,
-              borderRadius: 10,
-              bgcolor: "#fff",
-              color: "#0f172a",
-              border: "1px solid rgba(15,23,42,0.12)",
-              "&:hover": {
-                bgcolor: "rgba(15,23,42,0.04)",
-                borderColor: "rgba(15,23,42,0.22)",
-              },
-            }}
-          >
-            {actionLabel}
-          </Button>
         </Box>
 
         {/* right column – illustration */}

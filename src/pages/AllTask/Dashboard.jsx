@@ -9,6 +9,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   useExportTasksToCsvMutation,
   useGetAllDeptQuery,
+  useGetAllUserQuery,
 } from "../../redux/globalTaskSlice";
 import MainHeader from "../../component/Partials/MainHeader";
 import SubHeader from "../../component/Partials/SubHeader";
@@ -18,7 +19,7 @@ import { IconButton, Modal, ModalDialog } from "@mui/joy";
 import AddTask from "../../component/All_Tasks/Add_Task";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import AllTaskDashboard from "../../component/All_Tasks/Dashboard";
-
+import { TaskFilterProvider } from "../../store/Context/TaskFilterContext";
 
 function TaskDashboard() {
   const navigate = useNavigate();
@@ -31,6 +32,20 @@ function TaskDashboard() {
 
   const { data: deptApiData, isLoading: isDeptLoading } = useGetAllDeptQuery();
   const deptList = (deptApiData?.data || []).filter(Boolean);
+
+  const { data: usersResp, isFetching: isUsersLoading } = useGetAllUserQuery({
+      department: "",
+    });
+    const userOptions = (
+      Array.isArray(usersResp?.data)
+        ? usersResp.data
+        : Array.isArray(usersResp)
+        ? usersResp
+        : []
+    )
+      .filter(Boolean)
+      .map((u) => ({ label: u?.name || "User", value: u?._id || "" }))
+      .filter((o) => o.value);
 
   useEffect(() => {
     const userData = localStorage.getItem("userDetails");
@@ -63,44 +78,32 @@ function TaskDashboard() {
 
   const fields = [
     {
-      key: "priorityFilter",
-      label: "Filter By Priority",
-      type: "select",
-      options: [
-        { label: "High", value: "1" },
-        { label: "Medium", value: "2" },
-        { label: "Low", value: "3" },
-      ],
-    },
-    {
       key: "createdAt",
       label: "Filter by Date",
-      type: "date",
+      type: "daterange",
     },
     {
       key: "deadline",
       label: "Filter by Deadline",
-      type: "date",
+      type: "daterange",
     },
     {
       key: "department",
       label: "Department",
       type: "select",
-      options: isDeptLoading
-        ? []
-        : deptList.map((d) => ({ label: d, value: d })),
+      options: isDeptLoading ? [] : deptList.map((d) => ({ label: d, value: d })),
+    },
+      {
+      key: "assigned_to",
+      label: "Assigned To",
+      type: "select",
+      options: isUsersLoading ? [] : userOptions,
     },
     {
-      key: "assignedToName",
-      label: "Assigned To (Name)",
-      type: "text",
-      placeholder: "e.g. Ram",
-    },
-    {
-      key: "createdByName",
-      label: "Created By (Name)",
-      type: "text",
-      placeholder: "e.g. Ramesh",
+      key: "createdBy",
+      label: "Created By",
+      type: "select",
+      options: isUsersLoading ? [] : userOptions,
     },
   ];
 
@@ -175,37 +178,46 @@ function TaskDashboard() {
               onApply={(values) => {
                 setSearchParams((prev) => {
                   const merged = Object.fromEntries(prev.entries());
+
+                  // clear old keys
                   delete merged.priorityFilter;
                   delete merged.status;
-                  delete merged.createdAt;
-                  delete merged.deadline;
                   delete merged.department;
-                  delete merged.assignedToName;
-                  delete merged.createdByName;
+                  delete merged.assigned_to;
+                  delete merged.createdBy;
+                  delete merged.from;
+                  delete merged.to;
+                  delete merged.deadlineFrom;
+                  delete merged.deadlineTo;
 
-                  return {
+                  const next = {
                     ...merged,
                     page: "1",
                     ...(values.priorityFilter && {
                       priorityFilter: String(values.priorityFilter),
                     }),
                     ...(values.status && { status: String(values.status) }),
-                    ...(values.createdAt && {
-                      createdAt: String(values.createdAt),
-                    }),
-                    ...(values.deadline && {
-                      deadline: String(values.deadline),
-                    }),
                     ...(values.department && {
                       department: String(values.department),
                     }),
-                    ...(values.assignedToName && {
-                      assignedToName: String(values.assignedToName),
-                    }),
-                    ...(values.createdByName && {
-                      createdByName: String(values.createdByName),
-                    }),
                   };
+
+                  if (values.createdAt?.from)
+                    next.from = String(values.createdAt.from);
+                  if (values.createdAt?.to)
+                    next.to = String(values.createdAt.to);
+
+                  if (values.deadline?.from)
+                    next.deadlineFrom = String(values.deadline.from);
+                  if (values.deadline?.to)
+                    next.deadlineTo = String(values.deadline.to);
+
+                  if (values.assigned_to)
+                    next.assigned_to = String(values.assigned_to);
+                  if (values.createdBy)
+                    next.createdBy = String(values.createdBy);
+
+                  return next;
                 });
                 setOpen(false);
               }}
@@ -219,6 +231,12 @@ function TaskDashboard() {
                   delete merged.department;
                   delete merged.assignedToName;
                   delete merged.createdByName;
+
+                  delete merged.from;
+                  delete merged.to;
+                  delete merged.deadlineFrom;
+                  delete merged.deadlineTo;
+
                   return { ...merged, page: "1" };
                 });
               }}
@@ -239,7 +257,9 @@ function TaskDashboard() {
             px: "24px",
           }}
         >
-          <AllTaskDashboard /> 
+          <TaskFilterProvider>
+            <AllTaskDashboard />
+          </TaskFilterProvider>
         </Box>
 
         <Modal

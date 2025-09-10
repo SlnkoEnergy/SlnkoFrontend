@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, Suspense, lazy } from "react";
 import PropTypes from "prop-types";
 import {
   Box,
@@ -12,17 +12,22 @@ import {
   Input,
   Modal,
   ModalClose,
-  Option,
   Radio,
   RadioGroup,
-  Select,
   Sheet,
   Typography,
-  Tooltip,
 } from "@mui/joy";
 import FilterAltRoundedIcon from "@mui/icons-material/FilterAltRounded";
 import KeyboardArrowDownRounded from "@mui/icons-material/KeyboardArrowDownRounded";
 import KeyboardArrowRightRounded from "@mui/icons-material/KeyboardArrowRightRounded";
+import { addDays, startOfMonth, endOfMonth } from "date-fns";
+import enIN from "date-fns/locale/en-IN";
+import Select from "react-select";
+import { useTheme } from "@mui/joy/styles";
+
+const DateRange = lazy(() =>
+  import("react-date-range").then((m) => ({ default: m.DateRange }))
+);
 
 const rowSx = {
   px: 1,
@@ -31,18 +36,14 @@ const rowSx = {
   borderColor: "divider",
 };
 
+/* ------------------ Collapsible section row ------------------ */
 function SectionRow({ title, children, defaultOpen = false }) {
   const [open, setOpen] = useState(!!defaultOpen);
   return (
     <Box sx={rowSx}>
       <Box
         onClick={() => setOpen((v) => !v)}
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 1,
-          cursor: "pointer",
-        }}
+        sx={{ display: "flex", alignItems: "center", gap: 1, cursor: "pointer" }}
       >
         {open ? <KeyboardArrowDownRounded /> : <KeyboardArrowRightRounded />}
         <Typography level="body-md" sx={{ fontWeight: 600 }}>
@@ -54,13 +55,7 @@ function SectionRow({ title, children, defaultOpen = false }) {
   );
 }
 
-SectionRow.propTypes = {
-  title: PropTypes.node.isRequired,
-  children: PropTypes.node,
-  defaultOpen: PropTypes.bool,
-};
-
-// Normalize any options input into stable [{label, value}] without throwing
+/* ------------------ Normalize options ------------------ */
 function normalizeOptions(list) {
   const arr = Array.isArray(list) ? list : [];
   return arr
@@ -71,45 +66,120 @@ function normalizeOptions(list) {
       if (typeof x === "object") {
         const label = x.label ?? x.name ?? x.title ?? x.value ?? x.id;
         const value = x.value ?? x.id ?? x.code ?? label;
-        return {
-          label: String(label ?? "Unknown"),
-          value: String(value ?? "Unknown"),
-        };
+        return { label: String(label ?? "Unknown"), value: String(value ?? "Unknown") };
       }
       return { label: String(x), value: String(x) };
     });
 }
 
-function FieldRenderer({ field, value, onChange }) {
-  const [options, setOptions] = useState(normalizeOptions(field.options));
-  const loadingRef = useRef(false);
-  const [tagInput, setTagInput] = useState("");
+/* ------------------ Inline SearchableSelect ------------------ */
+function SearchableSelect({
+  options = [],
+  value,
+  onChange,
+  placeholder = "Select…",
+  multiple = false,
+  styles = {},          // <-- accept styles prop
+}) {
+  const theme = useTheme();
 
-  // Keep options in sync if parent updates field.options
-  useEffect(() => {
-    setOptions(normalizeOptions(field.options));
-  }, [field.options]);
+  const byValue = new Map(options.map((o) => [String(o.value), o]));
+  const selectedValue = multiple
+    ? (Array.isArray(value) ? value : [])
+        .map((v) => byValue.get(String(v)))
+        .filter(Boolean)
+    : byValue.get(String(value)) || null;
 
-  // Fetch async options; depend on a stable identifier to avoid loops
-  useEffect(() => {
-    let active = true;
-    async function load() {
-      if (typeof field.getOptions === "function" && !loadingRef.current) {
-        loadingRef.current = true;
-        try {
-          const res = await field.getOptions(); // strings or {label,value}
-          if (active) setOptions(normalizeOptions(res));
-        } finally {
-          loadingRef.current = false;
-        }
-      }
+  const handleChange = (next) => {
+    if (multiple) {
+      onChange?.((next || []).map((o) => o.value));
+    } else {
+      onChange?.(next ? next.value : undefined);
     }
-    load();
-    return () => {
-      active = false;
-    };
-    // Depend on a stable key only; if parent recreates functions, this won't loop
-  }, [field.key]);
+  };
+
+  return (
+    <Select
+      isMulti={multiple}
+      options={options}
+      value={selectedValue}
+      onChange={handleChange}
+      placeholder={placeholder}
+      isClearable
+      menuPortalTarget={document.body}
+      styles={{
+        container: (base) => ({ ...base, width: "100%" }),
+        control: (base, state) => ({
+          ...base,
+          minHeight: 32,
+          borderRadius: 8,
+          background: theme.vars.palette.background.body,
+          borderColor: state.isFocused
+            ? theme.vars.palette.primary.outlinedBorder
+            : theme.vars.palette.neutral.outlinedBorder,
+          boxShadow: state.isFocused
+            ? `0 0 0 3px ${theme.vars.palette.primary.softActiveBg}`
+            : "none",
+          ":hover": {
+            borderColor: theme.vars.palette.neutral.outlinedHoverBorder,
+          },
+          fontSize: 14,
+        }),
+        valueContainer: (base) => ({ ...base, padding: "2px 8px" }),
+        placeholder: (base) => ({
+          ...base,
+          color: theme.vars.palette.text.tertiary,
+        }),
+        singleValue: (base) => ({
+          ...base,
+          color: theme.vars.palette.text.primary,
+        }),
+        multiValue: (base) => ({
+          ...base,
+          background: theme.vars.palette.neutral.softBg,
+          borderRadius: 6,
+        }),
+        multiValueLabel: (base) => ({
+          ...base,
+          color: theme.vars.palette.text.primary,
+        }),
+        menu: (base) => ({
+          ...base,
+          zIndex: 2000,
+          background: "#fff",
+          borderRadius: 10,
+          boxShadow:
+            "0 6px 16px rgba(15,23,42,0.10), 0 20px 36px rgba(15,23,42,0.08)",
+        }),
+        menuPortal: (base) => ({ ...base, zIndex: 2000 }),
+        ...styles, // <-- allow override from caller
+      }}
+    />
+  );
+}
+
+
+/* ------------------ Date helpers ------------------ */
+const fmt = (d) => (d instanceof Date && !isNaN(d) ? d.toISOString().slice(0, 10) : "");
+const parseLocal = (s) => {
+  if (!s) return undefined;
+  const d = new Date(s);
+  return isNaN(d) ? undefined : d;
+};
+
+/* ------------------ FieldRenderer ------------------ */
+function FieldRenderer({ field, value, onChange }) {
+  const [tagInput, setTagInput] = useState("");
+  const [opts, setOpts] = useState(normalizeOptions(field.options));
+useEffect(() => {
+  const next = normalizeOptions(field.options);
+  console.log("🔄 Options for", field.key, next);
+  setOpts(next);
+}, [field.options, field.key]);
+
+  useEffect(() => {
+    setOpts(normalizeOptions(field.options));
+  }, [field.options]);
 
   const common = { sx: { mt: 1 }, size: "sm" };
 
@@ -123,94 +193,81 @@ function FieldRenderer({ field, value, onChange }) {
           onChange={(e) => onChange(e.target.value)}
         />
       );
-    case "number":
+
+    case "select":
       return (
-        <Input
-          {...common}
-          type="number"
-          placeholder={field.placeholder || "0"}
-          value={value ?? ""}
-          onChange={(e) =>
-            onChange(e.target.value === "" ? undefined : Number(e.target.value))
-          }
+        <SearchableSelect
+          options={opts}
+          value={value ?? undefined}
+          onChange={(v) => onChange(v)}
+          placeholder="Select…"
         />
       );
-    case "checkbox":
+
+    case "multiselect": {
+      const arr = Array.isArray(value) ? value : [];
       return (
-        <Checkbox
-          {...common}
-          checked={!!value}
-          onChange={(e) => onChange(e.target.checked)}
-          label={field.checkboxLabel || "Enabled"}
+        <SearchableSelect
+          options={opts}
+          value={arr}
+          onChange={(v) => onChange(v)}
+          placeholder="Select…"
+          multiple
         />
       );
-    case "date":
-      return (
-        <Input
-          {...common}
-          type="date"
-          value={value || ""}
-          onChange={(e) => onChange(e.target.value || undefined)}
-        />
-      );
+    }
+
     case "daterange": {
-      const from = value?.from || "";
-      const to = value?.to || "";
+      const from = value?.from ? parseLocal(value.from) : undefined;
+      const to = value?.to ? parseLocal(value.to) : undefined;
+      const selection = { startDate: from || new Date(), endDate: to || new Date(), key: "selection" };
+
       return (
-        <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
-          <Input
-            size="sm"
-            type="date"
-            value={from}
-            onChange={(e) =>
-              onChange({ ...(value || {}), from: e.target.value })
-            }
-          />
-          <Input
-            size="sm"
-            type="date"
-            value={to}
-            onChange={(e) => onChange({ ...(value || {}), to: e.target.value })}
-          />
+        <Box sx={{ mt: 1 }}>
+          {/* Quick presets */}
+          <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap", mb: 1 }}>
+            <Button size="sm" variant="outlined" onClick={() => onChange({ from: fmt(new Date()), to: fmt(new Date()) })}>
+              Today
+            </Button>
+            <Button
+              size="sm"
+              variant="outlined"
+              onClick={() => onChange({ from: fmt(addDays(new Date(), -6)), to: fmt(new Date()) })}
+            >
+              Last 7 days
+            </Button>
+            <Button
+              size="sm"
+              variant="outlined"
+              onClick={() => onChange({ from: fmt(startOfMonth(new Date())), to: fmt(endOfMonth(new Date())) })}
+            >
+              This month
+            </Button>
+            <Button size="sm" variant="plain" color="danger" onClick={() => onChange(undefined)}>
+              Clear
+            </Button>
+          </Box>
+
+          {/* Calendar */}
+          <Suspense fallback={<Box sx={{ p: 2 }}>Loading calendar…</Box>}>
+            <DateRange
+              locale={enIN}
+              ranges={[selection]}
+              onChange={(r) => {
+                const sel = r.selection || r?.ranges?.selection;
+                if (!sel) return;
+                onChange({ from: fmt(sel.startDate), to: fmt(sel.endDate) });
+              }}
+              moveRangeOnFirstSelection={false}
+              months={1}
+              direction="horizontal"
+              rangeColors={["#3366a3"]}
+            />
+          </Suspense>
         </Box>
       );
     }
-    case "select": {
-      const opts = normalizeOptions(options);
-      return (
-        <Select
-          {...common}
-          value={value ?? null}
-          onChange={(_, v) => onChange(v)}
-          placeholder="Select…"
-        >
-          {opts.map((o) => (
-            <Option key={o.value} value={o.value}>
-              {o.label}
-            </Option>
-          ))}
-        </Select>
-      );
-    }
-    case "multiselect": {
-      const opts = normalizeOptions(options);
-      const arr = Array.isArray(value) ? value : [];
-      return (
-        <Select
-          {...common}
-          multiple
-          value={arr}
-          onChange={(_, v) => onChange(v)}
-          placeholder="Select…"
-        >
-          {opts.map((o) => (
-            <Option key={o.value} value={o.value}>
-              {o.label}
-            </Option>
-          ))}
-        </Select>
-      );
-    }
+
     case "tags": {
       const arr = Array.isArray(value) ? value : [];
       return (
@@ -242,12 +299,7 @@ function FieldRenderer({ field, value, onChange }) {
           </Box>
           <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap", mt: 1 }}>
             {arr.map((t, i) => (
-              <Chip
-                key={`${t}-${i}`}
-                size="sm"
-                variant="soft"
-                onDelete={() => onChange(arr.filter((_, idx) => idx !== i))}
-              >
+              <Chip key={`${t}-${i}`} size="sm" variant="soft" onDelete={() => onChange(arr.filter((_, idx) => idx !== i))}>
                 {t}
               </Chip>
             ))}
@@ -255,55 +307,24 @@ function FieldRenderer({ field, value, onChange }) {
         </Box>
       );
     }
+
     default:
       return null;
   }
 }
 
-FieldRenderer.propTypes = {
-  field: PropTypes.object.isRequired,
-  value: PropTypes.any,
-  onChange: PropTypes.func.isRequired,
-};
-
-export default function Filter({
-  open,
-  onOpenChange,
-  fields,
-  initialValues = {},
-  onApply,
-  onReset,
-  title = "Filters",
-}) {
-  const [values, setValues] = useState(() => ({
-    matcher: "AND",
-    ...initialValues,
-  }));
+/* ------------------ Main Filter ------------------ */
+export default function Filter({ open, onOpenChange, fields, initialValues = {}, onApply, onReset, title = "Filters" }) {
+  const [values, setValues] = useState({ matcher: "AND", ...initialValues });
   const [exiting, setExiting] = useState(false);
-  const initAppliedRef = useRef(false);
 
-  useEffect(() => {
-    if (!initAppliedRef.current) {
-      setValues((v) => ({
-        matcher: v.matcher || "AND",
-        ...initialValues,
-        ...v,
-      }));
-      initAppliedRef.current = true;
-    }
-  }, []);
-
-  const setFieldValue = (key, next) =>
-    setValues((prev) => ({ ...prev, [key]: next }));
+  const setFieldValue = (key, next) => setValues((prev) => ({ ...prev, [key]: next }));
 
   const resetAll = () => {
-    const resetVals = { matcher: values.matcher || "AND" };
-    (fields || []).forEach((f) => {
-      resetVals[f.key] = undefined;
-      // we no longer keep or reset any `${key}__op` since operator UI is removed
-    });
+    const resetVals = { matcher: "AND" };
+    (fields || []).forEach((f) => (resetVals[f.key] = undefined));
     setValues(resetVals);
-    onReset && onReset();
+    onReset?.();
   };
 
   const appliedCount = useMemo(
@@ -314,28 +335,18 @@ export default function Filter({
           v !== undefined &&
           v !== null &&
           !(Array.isArray(v) && v.length === 0) &&
-          !(
-            typeof v === "object" &&
-            !Array.isArray(v) &&
-            Object.keys(v || {}).length === 0
-          )
+          !(typeof v === "object" && !Array.isArray(v) && Object.keys(v || {}).length === 0)
       ).length,
     [values]
   );
 
   return (
     <>
-      {/* Filter trigger with red +N badge */}
+      {/* Trigger button */}
       <Box sx={{ position: "relative", display: "inline-block" }}>
-        <IconButton
-          variant="soft"
-          size="sm"
-          sx={{ "--Icon-color": "#3366a3" }}
-          onClick={() => onOpenChange(true)}
-        >
+        <IconButton variant="soft" size="sm" sx={{ "--Icon-color": "#3366a3" }} onClick={() => onOpenChange(true)}>
           <FilterAltRoundedIcon />
         </IconButton>
-
         {appliedCount > 0 && (
           <Box
             sx={{
@@ -346,7 +357,6 @@ export default function Filter({
               color: "#fff",
               fontSize: 10,
               fontWeight: 700,
-              lineHeight: 1,
               px: 0.5,
               minWidth: 20,
               height: 20,
@@ -355,8 +365,6 @@ export default function Filter({
               justifyContent: "center",
               borderRadius: "999px",
               border: "2px solid var(--joy-palette-background-body)",
-              pointerEvents: "none",
-              zIndex: 1,
             }}
           >
             {`+${appliedCount}`}
@@ -374,7 +382,6 @@ export default function Filter({
           }, 280);
         }}
         keepMounted
-        slotProps={{ backdrop: { sx: { transition: "opacity 0.28s ease" } } }}
       >
         <Sheet
           variant="soft"
@@ -391,66 +398,27 @@ export default function Filter({
             bgcolor: "background.level1",
             zIndex: 1300,
             transition: "transform 0.28s ease",
-            transform: open
-              ? "translateX(0)"
-              : exiting
-              ? "translateX(-100%)"
-              : "translateX(100%)",
+            transform: open ? "translateX(0)" : exiting ? "translateX(-100%)" : "translateX(100%)",
           }}
         >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              p: 1.5,
-              borderBottom: "1px solid",
-              borderColor: "divider",
-            }}
-          >
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.5, borderBottom: "1px solid", borderColor: "divider" }}>
             <Typography level="title-md">{title}</Typography>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              {appliedCount > 0 && (
-                <Chip size="sm" variant="soft">
-                  {appliedCount}
-                </Chip>
-              )}
-              <ModalClose onClick={() => onOpenChange(false)} />
-            </Box>
+            {appliedCount > 0 && <Chip size="sm" variant="soft">{appliedCount}</Chip>}
+            <ModalClose onClick={() => onOpenChange(false)} />
           </Box>
 
+          {/* Fields */}
           <Box sx={{ flex: 1, overflow: "auto" }}>
-            {(fields || []).map((f) => {
-              const fieldVal = values[f.key];
-
-              return (
-                <SectionRow
-                  key={f.key}
-                  title={f.label}
-                  defaultOpen={!!f.startOpen}
-                >
-                  <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                    {/* Operator UI removed */}
-                    <Box sx={{ flex: 1, minWidth: 220 }}>
-                      <FieldRenderer
-                        field={f}
-                        value={fieldVal}
-                        onChange={(v) => setFieldValue(f.key, v)}
-                      />
-                    </Box>
-                  </Box>
-                </SectionRow>
-              );
-            })}
+            {(fields || []).map((f) => (
+              <SectionRow key={f.key} title={f.label}>
+                <FieldRenderer field={f} value={values[f.key]} onChange={(v) => setFieldValue(f.key, v)} />
+              </SectionRow>
+            ))}
 
             <Box sx={{ p: 1.5 }}>
               <FormControl size="sm">
                 <FormLabel>Match</FormLabel>
-                <RadioGroup
-                  orientation="horizontal"
-                  value={values.matcher || "AND"}
-                  onChange={(e) => setFieldValue("matcher", e.target.value)}
-                >
+                <RadioGroup orientation="horizontal" value={values.matcher} onChange={(e) => setFieldValue("matcher", e.target.value)}>
                   <Radio value="OR" label="Any of these" />
                   <Radio value="AND" label="All of these" />
                 </RadioGroup>
@@ -459,37 +427,11 @@ export default function Filter({
           </Box>
 
           <Divider />
-
-          <Box
-            sx={{ display: "flex", gap: 1, p: 1.5, justifyContent: "flex-end" }}
-          >
-            <Button
-              variant="outlined"
-              size="sm"
-              sx={{
-                color: "#3366a3",
-                borderColor: "#3366a3",
-                backgroundColor: "transparent",
-                "--Button-hoverBg": "#e0e0e0",
-                "--Button-hoverBorderColor": "#3366a3",
-                "&:hover": { color: "#3366a3" },
-                height: "8px",
-              }}
-              onClick={resetAll}
-            >
+          <Box sx={{ display: "flex", gap: 1, p: 1.5, justifyContent: "flex-end" }}>
+            <Button variant="outlined" size="sm" onClick={resetAll}>
               Reset
             </Button>
-            <Button
-              variant="solid"
-              size="sm"
-              sx={{
-                backgroundColor: "#3366a3",
-                color: "#fff",
-                "&:hover": { backgroundColor: "#285680" },
-                height: "8px",
-              }}
-              onClick={() => onApply && onApply(values, { appliedCount })}
-            >
+            <Button variant="solid" size="sm" onClick={() => onApply?.(values, { appliedCount })}>
               Find
             </Button>
           </Box>
@@ -497,76 +439,4 @@ export default function Filter({
       </Modal>
     </>
   );
-}
-
-Filter.propTypes = {
-  open: PropTypes.bool.isRequired,
-  onOpenChange: PropTypes.func.isRequired,
-  fields: PropTypes.arrayOf(
-    PropTypes.shape({
-      key: PropTypes.string.isRequired,
-      label: PropTypes.string.isRequired,
-      type: PropTypes.oneOf([
-        "text",
-        "number",
-        "select",
-        "multiselect",
-        "checkbox",
-        "date",
-        "daterange",
-        "tags",
-      ]).isRequired,
-      operator: PropTypes.string,
-      operators: PropTypes.array,
-      options: PropTypes.array,
-      getOptions: PropTypes.func,
-      startOpen: PropTypes.bool,
-      placeholder: PropTypes.string,
-      checkboxLabel: PropTypes.string,
-    })
-  ).isRequired,
-  initialValues: PropTypes.object,
-  onApply: PropTypes.func,
-  onReset: PropTypes.func,
-  title: PropTypes.string,
-};
-
-export function buildQueryParams(
-  values = {},
-  { dateKeys = [], arrayKeys = [] } = {}
-) {
-  const params = new URLSearchParams();
-  const matcher = values?.matcher === "OR" ? "OR" : "AND";
-  params.set("matcher", matcher);
-
-  Object.entries(values || {}).forEach(([key, val]) => {
-    if (key === "matcher") return;
-    if (val === undefined || val === null) return;
-    if (Array.isArray(val) && val.length === 0) return;
-
-    // We still *support* op params if set programmatically,
-    // but the UI no longer sets them.
-    const op = values[`${key}__op`];
-
-    if (dateKeys.includes(key) && typeof val === "object" && val) {
-      if (val.from) params.set(`${key}[from]`, val.from);
-      if (val.to) params.set(`${key}[to]`, val.to);
-      if (op) params.set(`${key}[op]`, op);
-      return;
-    }
-
-    if (arrayKeys.includes(key) && Array.isArray(val)) {
-      val.forEach((v) => params.append(`${key}[]`, v));
-      if (op) params.set(`${key}[op]`, op);
-      return;
-    }
-
-    params.set(
-      key,
-      typeof val === "object" ? JSON.stringify(val) : String(val)
-    );
-    if (op) params.set(`${key}[op]`, op);
-  });
-
-  return params.toString();
 }

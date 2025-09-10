@@ -9,6 +9,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   useExportTasksToCsvMutation,
   useGetAllDeptQuery,
+  useGetAllUserQuery,
 } from "../../redux/globalTaskSlice";
 import MainHeader from "../../component/Partials/MainHeader";
 import SubHeader from "../../component/Partials/SubHeader";
@@ -28,6 +29,20 @@ function AllTask() {
 
   const { data: deptApiData, isLoading: isDeptLoading } = useGetAllDeptQuery();
   const deptList = (deptApiData?.data || []).filter(Boolean);
+
+  const { data: usersResp, isFetching: isUsersLoading } = useGetAllUserQuery({
+    department: "",
+  });
+  const userOptions = (
+    Array.isArray(usersResp?.data)
+      ? usersResp.data
+      : Array.isArray(usersResp)
+      ? usersResp
+      : []
+  )
+    .filter(Boolean)
+    .map((u) => ({ label: u?.name || "User", value: u?._id || "" }))
+    .filter((o) => o.value);
 
   useEffect(() => {
     const userData = localStorage.getItem("userDetails");
@@ -72,12 +87,12 @@ function AllTask() {
     {
       key: "createdAt",
       label: "Filter by Date",
-      type: "date",
+      type: "daterange",
     },
     {
       key: "deadline",
       label: "Filter by Deadline",
-      type: "date",
+      type: "daterange",
     },
     {
       key: "department",
@@ -88,16 +103,16 @@ function AllTask() {
         : deptList.map((d) => ({ label: d, value: d })),
     },
     {
-      key: "assignedToName",
-      label: "Assigned To (Name)",
-      type: "text",
-      placeholder: "e.g. Ram",
+      key: "assigned_to",
+      label: "Assigned To",
+      type: "select",
+      options: isUsersLoading ? [] : userOptions,
     },
     {
-      key: "createdByName",
-      label: "Created By (Name)",
-      type: "text",
-      placeholder: "e.g. Ramesh",
+      key: "createdBy",
+      label: "Created By",
+      type: "select",
+      options: isUsersLoading ? [] : userOptions,
     },
   ];
 
@@ -191,39 +206,53 @@ function AllTask() {
               onApply={(values) => {
                 setSearchParams((prev) => {
                   const merged = Object.fromEntries(prev.entries());
-
-                  // cleanup old params
                   delete merged.priorityFilter;
                   delete merged.status;
-                  delete merged.createdAt;
-                  delete merged.deadline;
                   delete merged.department;
-                  delete merged.assignedToName;
-                  delete merged.createdByName;
+                  delete merged.assigned_to;
+                  delete merged.createdBy;
+                  delete merged.from;
+                  delete merged.to;
+                  delete merged.deadlineFrom;
+                  delete merged.deadlineTo;
+                  delete merged.matchMode;
 
-                  return {
+                  const next = {
                     ...merged,
                     page: "1",
                     ...(values.priorityFilter && {
                       priorityFilter: String(values.priorityFilter),
                     }),
                     ...(values.status && { status: String(values.status) }),
-                    ...(values.createdAt && {
-                      createdAt: String(values.createdAt),
-                    }),
-                    ...(values.deadline && {
-                      deadline: String(values.deadline),
-                    }),
                     ...(values.department && {
                       department: String(values.department),
                     }),
-                    ...(values.assignedToName && {
-                      assignedToName: String(values.assignedToName),
-                    }),
-                    ...(values.createdByName && {
-                      createdByName: String(values.createdByName),
-                    }),
                   };
+
+                  // matcher -> matchMode
+                  if (values.matcher) {
+                    next.matchMode = values.matcher === "OR" ? "any" : "all";
+                  }
+
+                  // createdAt range
+                  if (values.createdAt?.from)
+                    next.from = String(values.createdAt.from);
+                  if (values.createdAt?.to)
+                    next.to = String(values.createdAt.to);
+
+                  // deadline range
+                  if (values.deadline?.from)
+                    next.deadlineFrom = String(values.deadline.from);
+                  if (values.deadline?.to)
+                    next.deadlineTo = String(values.deadline.to);
+
+                  // NEW: user ids
+                  if (values.assigned_to)
+                    next.assigned_to = String(values.assigned_to);
+                  if (values.createdBy)
+                    next.createdBy = String(values.createdBy);
+
+                  return next;
                 });
                 setOpen(false);
               }}
@@ -232,11 +261,14 @@ function AllTask() {
                   const merged = Object.fromEntries(prev.entries());
                   delete merged.priorityFilter;
                   delete merged.status;
-                  delete merged.createdAt;
-                  delete merged.deadline;
                   delete merged.department;
-                  delete merged.assignedToName;
-                  delete merged.createdByName;
+                  delete merged.assigned_to;
+                  delete merged.createdBy;
+                  delete merged.from;
+                  delete merged.to;
+                  delete merged.deadlineFrom;
+                  delete merged.deadlineTo;
+                  delete merged.matchMode;
                   return { ...merged, page: "1" };
                 });
               }}

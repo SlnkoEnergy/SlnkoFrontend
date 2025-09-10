@@ -94,7 +94,7 @@ function Row({ item, onSelect, showDivider }) {
       </Box>
 
       {showDivider && (
-        <Divider sx={{ mx: 2, borderColor: "rgba(2,6,23,0.06)" }} />
+        <Divider sx={{ borderColor: "rgba(2,6,23,0.06)" }} />
       )}
     </Box>
   );
@@ -116,7 +116,7 @@ export default function TaskStatusList({
     position: "relative",
     overflow: "hidden",
     borderRadius: 28, 
-    p: { xs: 2, sm: 2.5, md: 3 },
+    p: { xs: 2, sm: 2.5, md: 1.5 },
     bgcolor: "#fff", 
     border: "1px solid",
     borderColor: "rgba(15,23,42,0.08)",
@@ -129,7 +129,8 @@ export default function TaskStatusList({
         "0 6px 16px rgba(15,23,42,0.10), 0 20px 36px rgba(15,23,42,0.08)",
     },
     maxHeight: "500px",  
-    overflowY: "auto",   
+    overflowY: "auto", 
+    gap:0  
   }}
 >
 
@@ -142,7 +143,7 @@ export default function TaskStatusList({
           alignItems: "center",
           px: 1,
           py: 0.5,
-          bgcolor: "#fff", // header also white
+          bgcolor: "#fff", 
         }}
       >
         <Typography level="title-lg" sx={{ ml: 0.5, color: "#0f172a" }}>
@@ -194,10 +195,10 @@ export default function TaskStatusList({
         </Box>
       </Box>
 
-      <Divider sx={{ borderColor: "rgba(2,6,23,0.08)", mx: 1, mb: 0.5 }} />
+      <Divider sx={{ borderColor: "rgba(2,6,23,0.08)", }} />
 
       {/* rows */}
-      <Box sx={{ px: 0.5, pb: 0.5, bgcolor: "#FFF" }}>
+      <Box sx={{ bgcolor: "#FFF" }}>
         {items.length === 0 ? (
           <Typography
             level="body-sm"

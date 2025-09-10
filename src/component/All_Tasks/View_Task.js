@@ -1001,6 +1001,36 @@ export default function ViewTaskPage() {
     }
   };
 
+  const protectedIds = useMemo(() => {
+    const set = new Set();
+
+    const addId = (u) => {
+      const id =
+        u?._id ||
+        u?.id ||
+        u?.user_id ||
+        u?.email ||
+        u?.name ||
+        (typeof u === "string" ? u : "");
+      if (id) set.add(String(id));
+    };
+
+    if (task?.createdBy) addId(task.createdBy);
+
+    (task?.assigned_to || []).forEach(addId);
+
+    (task?.sub_tasks || []).forEach((st) => {
+      const arr = Array.isArray(st?.assigned_to)
+        ? st.assigned_to
+        : st?.assigned_to
+        ? [st.assigned_to]
+        : [];
+      arr.forEach(addId);
+    });
+
+    return set;
+  }, [task]);
+
   return (
     <Box
       sx={{
@@ -1859,49 +1889,64 @@ export default function ViewTaskPage() {
                   No followers yet.
                 </Typography>
               ) : (
-                selectedFollowers.map((u, i) => (
-                  <Chip
-                    key={u._id || i}
-                    variant="soft"
-                    size="sm"
-                    clickable={false}
-                    startDecorator={
-                      <Avatar
-                        size="sm"
-                        src={u.avatar || undefined}
-                        variant={u.avatar ? "soft" : "solid"}
-                        color={u.avatar ? "neutral" : colorFromName(u.name)}
-                      >
-                        {!u.avatar && initialsOf(u.name)}
-                      </Avatar>
-                    }
-                    endDecorator={
-                      <IconButton
-                        size="sm"
-                        variant="plain"
-                        className="chip-close"
-                        onMouseDown={(e) => e.stopPropagation()}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedFollowers((prev) =>
-                            prev.filter(
-                              (x) => (x._id || x.name) !== (u._id || u.name)
-                            )
-                          );
-                        }}
-                        aria-label={`Remove ${u.name}`}
-                      >
-                        <CloseRoundedIcon fontSize="small" />
-                      </IconButton>
-                    }
-                    sx={{
-                      "--Chip-gap": "6px",
-                      "& .chip-close": { pointerEvents: "auto" },
-                    }}
-                  >
-                    {u.name}
-                  </Chip>
-                ))
+                selectedFollowers.map((u, i) => {
+                  const uid =
+                    u?._id ||
+                    u?.id ||
+                    u?.email ||
+                    u?.name ||
+                    (typeof u === "string" ? u : "");
+                  const isProtected = protectedIds.has(String(uid));
+
+                  return (
+                    <Chip
+                      key={uid || i}
+                      variant="soft"
+                      size="sm"
+                      clickable={false}
+                      startDecorator={
+                        <Avatar
+                          size="sm"
+                          src={u.avatar || undefined}
+                          variant={u.avatar ? "soft" : "solid"}
+                          color={u.avatar ? "neutral" : colorFromName(u.name)}
+                        >
+                          {!u.avatar && initialsOf(u.name)}
+                        </Avatar>
+                      }
+                      // Only show the "cut" (remove) button if NOT protected
+                      endDecorator={
+                        !isProtected ? (
+                          <IconButton
+                            size="sm"
+                            variant="plain"
+                            className="chip-close"
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedFollowers((prev) =>
+                                prev.filter(
+                                  (x) =>
+                                    (x._id || x.id || x.email || x.name) !==
+                                    (u._id || u.id || u.email || u.name)
+                                )
+                              );
+                            }}
+                            aria-label={`Remove ${u.name}`}
+                          >
+                            <CloseRoundedIcon fontSize="small" />
+                          </IconButton>
+                        ) : null
+                      }
+                      sx={{
+                        "--Chip-gap": "6px",
+                        "& .chip-close": { pointerEvents: "auto" },
+                      }}
+                    >
+                      {u.name}
+                    </Chip>
+                  );
+                })
               )}
             </Stack>
 

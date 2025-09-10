@@ -37,11 +37,13 @@ function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
   const itemsPerPage = Number(searchParams.get("limit")) || 100;
 
   const searchQuery = searchParams.get("search") || "";
-  const createdAt = searchParams.get("createdAt") || "";
-  const deadline = searchParams.get("deadline") || "";
+  const createdFrom = searchParams.get("from") || "";
+  const createdTo = searchParams.get("to") || "";
+  const deadlineFrom = searchParams.get("deadlineFrom") || "";
+  const deadlineTo = searchParams.get("deadlineTo") || "";
   const department = searchParams.get("department") || "";
-  const assignedToName = searchParams.get("assignedToName") || "";
-  const createdByName = searchParams.get("createdByName") || "";
+  const assignedTo = searchParams.get("assigned_to") || "";
+  const createdBy = searchParams.get("createdBy") || "";
   const priorityFilter = searchParams.get("priorityFilter") || "";
   const statusFromTab =
     {
@@ -67,15 +69,17 @@ function Dash_task({ selected, setSelected, searchParams, setSearchParams }) {
     page: currentPage,
     search: searchQuery,
     status: statusFromTab,
-    createdAt,
-    deadline,
+    from:createdFrom,
+    to:createdTo,
+    deadlineFrom:deadlineFrom,
+    deadlineTo:deadlineTo,
     department,
     limit: itemsPerPage,
     hide_completed: hideCompleted,
     hide_pending: hidePending,
     hide_inprogress: hideProgress,
-    assignedToName,
-    createdByName,
+    assignedToId:assignedTo,
+    createdById:createdBy,
     priorityFilter,
   });
 

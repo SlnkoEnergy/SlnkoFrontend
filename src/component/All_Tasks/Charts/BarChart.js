@@ -1,165 +1,190 @@
-// import * as React from "react";
-// import { Box, Card, Typography, IconButton, Divider } from "@mui/joy";
-// import WaterDropRoundedIcon from "@mui/icons-material/WaterDropRounded";
-// import { BarChart } from "@mui/x-charts/BarChart";
+import * as React from "react";
+import { Card, Box, Typography, Slider } from "@mui/joy";
+import {
+  ResponsiveContainer,
+  BarChart,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  Bar,
+} from "recharts";
 
-// /** Demo dataset (monthly rainfall in mm) */
-// const defaultDataset = [
-//   { month: "Jan", london: 49,  paris: 53,  newYork: 86,  seoul: 21 },
-//   { month: "Feb", london: 38,  paris: 46,  newYork: 74,  seoul: 24 },
-//   { month: "Mar", london: 41,  paris: 53,  newYork: 96,  seoul: 45 },
-//   { month: "Apr", london: 45,  paris: 51,  newYork: 96,  seoul: 74 },
-//   { month: "May", london: 49,  paris: 57,  newYork: 101, seoul: 103 },
-//   { month: "Jun", london: 53,  paris: 60,  newYork: 90,  seoul: 133 },
-//   { month: "Jul", london: 41,  paris: 43,  newYork: 114, seoul: 369 },
-//   { month: "Aug", london: 59,  paris: 56,  newYork: 114, seoul: 348 },
-//   { month: "Sep", london: 54,  paris: 55,  newYork: 104, seoul: 169 },
-//   { month: "Oct", london: 71,  paris: 62,  newYork: 89,  seoul: 52 },
-//   { month: "Nov", london: 64,  paris: 59,  newYork: 97,  seoul: 53 },
-//   { month: "Dec", london: 59,  paris: 55,  newYork: 94,  seoul: 25 },
-// ];
+// Joy-white-card colors you’ve been using
+const COLORS = {
+  completed: "#22c55e", // green
+  pending: "#3b82f6", // blue
+  cancelled: "#ef4444", // red
+};
 
-// const valueFormatter = (v) => `${v} mm`;
+// Buckets in order with their label and max days threshold
+const BUCKET_DEFS = [
+  { key: "0", label: "Same day", max: 0 },
+  { key: "1", label: "1 day", max: 1 },
+  { key: "2", label: "2 days", max: 2 },
+  { key: "3", label: "3 days", max: 3 },
+  { key: "7", label: "7 days", max: 7 },
+  { key: "14", label: "14 days", max: 14 },
+  { key: "30", label: "30 days", max: 30 },
+];
 
-// /** Base theme colors (same family as your other cards) */
-// const COLOR_A = "#1f487c";
-// const COLOR_B = "#3366a3";
+/**
+ * Props:
+ *  - statsByBucket: {
+ *      "0": { completed: n, pending: n, cancelled: n },
+ *      "1": { ... },
+ *      ...
+ *    }
+ *    (keys should be the same as BUCKET_DEFS keys above; missing keys default to 0s)
+ *  - title?: string
+ *  - defaultMaxDays?: number (one of 0,1,2,3,7,14,30)
+ */
+export default function TasksByAgingBar({
+  title = "Conversion Rate",
+  statsByBucket = {
+    0: { completed: 10, pending: 4, cancelled: 1 },
+    1: { completed: 7, pending: 3, cancelled: 0 },
+    2: { completed: 5, pending: 2, cancelled: 1 },
+    3: { completed: 3, pending: 4, cancelled: 0 },
+    7: { completed: 2, pending: 6, cancelled: 1 },
+    14: { completed: 1, pending: 2, cancelled: 0 },
+    30: { completed: 0, pending: 1, cancelled: 0 },
+  },
+  defaultMaxDays = 7,
+  sx = {},
+}) {
+  // internal: which max bucket is selected
+  const [maxDays, setMaxDays] = React.useState(defaultMaxDays);
 
-// /** Build container styles based on tone ("light" | "dark") */
-// const getContainerStyles = (tone = "light") => {
-//   const isLight = tone === "light";
-//   const gradA = isLight ? "#2b5ea0" : COLOR_A;  // lighter start
-//   const gradB = isLight ? "#4a79b5" : COLOR_B;  // lighter end
-//   return {
-//     position: "relative",
-//     overflow: "hidden",
-//     borderRadius: "xl",
-//     p: 1.5,
-//     bgcolor: "transparent",
-//     backgroundImage: `linear-gradient(145deg, ${gradA} 10%, ${gradB} 100%)`,
-//     color: "#fff",
-//     border: "1px solid",
-//     borderColor: isLight ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.12)",
-//     boxShadow: isLight
-//       ? "0 2px 10px rgba(20,40,80,0.25), 0 12px 30px rgba(40,90,150,0.28)"
-//       : "0 1px 1px rgba(0,0,0,0.2), 0 6px 20px rgba(31,72,124,0.35)",
-//     "&::before": {
-//       content: '""',
-//       position: "absolute",
-//       inset: 0,
-//       borderRadius: "inherit",
-//       pointerEvents: "none",
-//       background:
-//         "linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.08) 35%, rgba(255,255,255,0.06) 100%)",
-//       mixBlendMode: "screen",
-//     },
-//   };
-// };
+  // slider marks
+  const marks = React.useMemo(
+    () =>
+      BUCKET_DEFS.map((b) => ({
+        value: b.max,
+        label: b.max === 0 ? "0" : String(b.max),
+      })),
+    []
+  );
 
-// /** Decorative dotted overlay */
-// function Background({ tone = "light" }) {
-//   const isLight = tone === "light";
-//   return (
-//     <Box
-//       aria-hidden
-//       sx={{
-//         position: "absolute",
-//         inset: 0,
-//         borderRadius: "inherit",
-//         pointerEvents: "none",
-//         opacity: isLight ? 0.35 : 0.25,
-//       }}
-//     >
-//       <svg width="100%" height="100%" viewBox="0 0 160 48" preserveAspectRatio="none">
-//         <defs>
-//           <pattern id="dots-chart" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">
-//             <circle cx="1.5" cy="1.5" r="1.1" fill={isLight ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.08)"} />
-//           </pattern>
-//         </defs>
-//         <rect width="100%" height="100%" fill="url(#dots-chart)" />
-//       </svg>
-//     </Box>
-//   );
-// }
+  // build recharts data up to the selected maxDays
+  const chartData = React.useMemo(() => {
+    return BUCKET_DEFS.filter((b) => b.max <= maxDays).map((b) => {
+      const s = statsByBucket[b.key] || {};
+      return {
+        bucket: b.label,
+        Completed: Number(s.completed || 0),
+        Pending: Number(s.pending || 0),
+        Cancelled: Number(s.cancelled || 0),
+      };
+    });
+  }, [maxDays, statsByBucket]);
 
-// /**
-//  * BarsDatasetCard
-//  * Props:
-//  * - title: string (header text)
-//  * - height: number (card height in px)
-//  * - chartHeight: number (inner chart height; defaults to 300)
-//  * - tone: "light" | "dark"
-//  * - data: array (optional dataset override; falls back to defaultDataset)
-//  */
-// export default function BarsDatasetCard({
-//   title = "Monthly Rainfall",
-//   height = 380,
-//   chartHeight = 300,
-//   tone = "light",
-//   data, // optional: pass your own dataset
-// }) {
-//   const dataset = data?.length ? data : defaultDataset;
+  return (
+    <Card
+      variant="soft"
+      sx={{
+        position: "relative",
+        overflow: "hidden",
+        borderRadius: 28,
+        p: { xs: 1, sm: 0.5, md: 3 },
+        bgcolor: "#fff",
+        border: "1px solid",
+        borderColor: "rgba(15,23,42,0.08)",
+        boxShadow:
+          "0 2px 6px rgba(15,23,42,0.06), 0 18px 32px rgba(15,23,42,0.06)",
+        transition: "transform .16s ease, box-shadow .16s ease",
+        "&:hover": {
+          transform: "translateY(-2px)",
+          boxShadow:
+            "0 6px 16px rgba(15,23,42,0.10), 0 20px 36px rgba(15,23,42,0.08)",
+        },
+      }}
+    >
+      {/* Header */}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          mb: 1,
+        }}
+      >
+        <Typography level="title-md" sx={{ color: "#0f172a" }}>
+          {title}
+        </Typography>
 
-//   return (
-//     <Card sx={{ ...getContainerStyles(tone), height, display: "flex", flexDirection: "column" }}>
-//       <Background tone={tone} />
+        {/* Range selector: choose how many buckets to include (by max days) */}
+        <Box sx={{ width: 280, display: "flex", alignItems: "center", gap: 1 }}>
+          <Typography level="body-sm" sx={{ color: "#334155", minWidth: 90 }}>
+            Up to (days)
+          </Typography>
+          <Slider
+            size="sm"
+            value={maxDays}
+            step={null}
+            marks={marks}
+            min={0}
+            max={30}
+            onChange={(_, v) => setMaxDays(v)}
+            sx={{
+              flex: 1,
+              "--Slider-trackSize": "3px",
+              "--Slider-thumbSize": "12px",
+            }}
+          />
+        </Box>
+      </Box>
 
-//       {/* Header */}
-//       <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-//         <IconButton
-//           size="sm"
-//           variant="outlined"
-//           sx={{
-//             mr: 1,
-//             color: "#fff !important",
-//             "& svg": { color: "#fff" },
-//             borderColor: "rgba(255,255,255,0.35)",
-//             bgcolor: "rgba(255,255,255,0.05)",
-//             "&:hover": {
-//               bgcolor: "rgba(255,255,255,0.12)",
-//               borderColor: "rgba(255,255,255,0.6)",
-//             },
-//           }}
-//         >
-//           <WaterDropRoundedIcon />
-//         </IconButton>
-//         <Typography level="h5" sx={{ color: "#fff" }}>
-//           {title}
-//         </Typography>
-//       </Box>
+      {/* Chart */}
+      <Box sx={{ height: 340, mt: 1 }}>
+        <ResponsiveContainer>
+          <BarChart
+            data={chartData}
+            margin={{ top: 8, right: 16, bottom: 24, left: 0 }}
+          >
+            <CartesianGrid stroke="rgba(15,23,42,0.08)" vertical={false} />
+            <XAxis
+              dataKey="bucket"
+              tick={{ fill: "#334155", fontSize: 12 }}
+              axisLine={{ stroke: "rgba(15,23,42,0.12)" }}
+              tickLine={{ stroke: "rgba(15,23,42,0.12)" }}
+            />
+            <YAxis
+              tick={{ fill: "#334155", fontSize: 12 }}
+              axisLine={{ stroke: "rgba(15,23,42,0.12)" }}
+              tickLine={{ stroke: "rgba(15,23,42,0.12)" }}
+              allowDecimals={false}
+            />
+            <Tooltip
+              cursor={{ fill: "rgba(15,23,42,0.04)" }}
+              contentStyle={{
+                background: "#fff",
+                border: "1px solid rgba(15,23,42,0.12)",
+                borderRadius: 10,
+                boxShadow: "0 8px 20px rgba(15,23,42,0.08)",
+              }}
+            />
+            <Legend wrapperStyle={{ paddingTop: 8 }} iconType="circle" />
 
-//       <Divider sx={{ borderColor: "rgba(255,255,255,0.18)", mb: 0.5 }} />
-
-//       {/* Chart */}
-//       <Box
-//         sx={{
-//           flex: 1,
-//           minHeight: 0,
-//           bgcolor: "rgba(255,255,255,0.06)",
-//           borderRadius: "lg",
-//           p: 1,
-//         }}
-//       >
-//         <BarChart
-//           dataset={dataset}
-//           xAxis={[{ dataKey: "month", scaleType: "band" }]}
-//           series={[
-//             { dataKey: "london", label: "London", valueFormatter },
-//             { dataKey: "paris", label: "Paris", valueFormatter },
-//             { dataKey: "newYork", label: "New York", valueFormatter },
-//             { dataKey: "seoul", label: "Seoul", valueFormatter },
-//           ]}
-//           yAxis={[{ label: "rainfall (mm)", width: 60 }]}
-//           height={chartHeight}
-//           colors={["#b9d4ff", "#8fb6ef", "#6f9bdc", "#4b83c4"]}
-//           sx={{
-//             "& .MuiChartsAxis-tickLabel": { fill: "#fff" },
-//             "& .MuiChartsAxis-line": { stroke: "rgba(255,255,255,0.6)" },
-//             "& .MuiChartsGrid-line": { stroke: "rgba(255,255,255,0.12)" },
-//             "& .MuiLegend-root .MuiTypography-root": { color: "#fff" },
-//           }}
-//         />
-//       </Box>
-//     </Card>
-//   );
-// }
+            <Bar
+              dataKey="Completed"
+              fill={COLORS.completed}
+              radius={[6, 6, 0, 0]}
+            />
+            <Bar
+              dataKey="Pending"
+              fill={COLORS.pending}
+              radius={[6, 6, 0, 0]}
+            />
+            <Bar
+              dataKey="Cancelled"
+              fill={COLORS.cancelled}
+              radius={[6, 6, 0, 0]}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      </Box>
+    </Card>
+  );
+}

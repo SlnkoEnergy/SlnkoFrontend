@@ -21,7 +21,7 @@ const PaymentRequest = forwardRef(() => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialPage = parseInt(searchParams.get("page")) || 1;
-  const initialPageSize = parseInt(searchParams.get("pageSize")) || 10; 
+  const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
   const [perPage, setPerPage] = useState(initialPageSize);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [searchQuery, setSearchQuery] = useState("");
@@ -336,9 +336,9 @@ const PaymentRequest = forwardRef(() => {
           sx={{
             display: "flex",
             alignItems: "center",
-            justifyContent:"flex-end",
+            justifyContent: "flex-end",
             flexWrap: "wrap",
-            padding:"5px"
+            padding: "5px",
           }}
         >
           {/* Rows per page */}
