@@ -38,10 +38,7 @@ import UploadFileOutlined from "@mui/icons-material/UploadFileOutlined";
 import DeleteOutline from "@mui/icons-material/DeleteOutline";
 
 // RTK Query hooks
-import {
-  useGetUserByIdQuery,
-  useEditUserMutation,
-} from "../redux/loginSlice";
+import { useGetUserByIdQuery, useEditUserMutation } from "../redux/loginSlice";
 
 // --- constants / helpers ---
 const ALL_KEYS = ["name", "email", "phone", "department", "location", "about"];
@@ -204,12 +201,11 @@ export default function UserProfilePanel() {
   // ---------- Permissions / editability ----------
   // Requirement: users can edit ONLY their own profile. Even if you have admin flags,
   // other people's profiles are read-only.
-  const iAmAdmin =
-    !!(
-      ls?.permissions?.profile_full_edit ||
-      ls?.profile_full_edit ||
-      (typeof ls?.role === "string" && ls.role.toLowerCase() === "admin")
-    );
+  const iAmAdmin = !!(
+    ls?.permissions?.profile_full_edit ||
+    ls?.profile_full_edit ||
+    (typeof ls?.role === "string" && ls.role.toLowerCase() === "admin")
+  );
 
   const canEditAll = isOwnProfile && iAmAdmin; // ALL fields for own profile if admin
   const editableKeys = useMemo(
@@ -411,8 +407,14 @@ export default function UserProfilePanel() {
 
       {!isOwnProfile && (
         <Alert color="neutral" variant="soft" sx={{ mb: 2 }}>
-          You’re viewing <b>{form.name || "this user"}</b>’s profile. Editing is
-          disabled.
+          You’re viewing{" "}
+          <Typography
+            component="span"
+            sx={{ color: "primary.700", fontWeight: 700 }}
+          >
+            {form.name || "this user"}
+          </Typography>
+          ’s profile. Editing is disabled.
         </Alert>
       )}
 
@@ -508,7 +510,10 @@ export default function UserProfilePanel() {
                   <EditRounded />
                 </MenuButton>
                 <Menu placement="bottom-end">
-                  <MenuItem onClick={handleAvatarClick} disabled={!isOwnProfile}>
+                  <MenuItem
+                    onClick={handleAvatarClick}
+                    disabled={!isOwnProfile}
+                  >
                     <UploadFileOutlined
                       fontSize="small"
                       style={{ marginRight: 8 }}
@@ -517,7 +522,9 @@ export default function UserProfilePanel() {
                   </MenuItem>
                   <MenuItem
                     onClick={markRemoveAvatar}
-                    disabled={!isOwnProfile || (!form.avatar_url && !avatarPreview)}
+                    disabled={
+                      !isOwnProfile || (!form.avatar_url && !avatarPreview)
+                    }
                   >
                     <DeleteOutline
                       fontSize="small"
@@ -641,7 +648,9 @@ export default function UserProfilePanel() {
                   startDecorator={<SaveRounded />}
                   onClick={saveProfile}
                   disabled={
-                    saving || !isOwnProfile || (!hasEditableChanges && !hasAvatarChange)
+                    saving ||
+                    !isOwnProfile ||
+                    (!hasEditableChanges && !hasAvatarChange)
                   }
                 >
                   Save changes
