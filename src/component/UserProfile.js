@@ -1,3 +1,4 @@
+// UserProfilePanel.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -40,7 +41,7 @@ import DeleteOutline from "@mui/icons-material/DeleteOutline";
 // RTK Query hooks
 import { useGetUserByIdQuery, useEditUserMutation } from "../redux/loginSlice";
 
-// --- constants / helpers ---
+/* ---------------- helpers / constants ---------------- */
 const ALL_KEYS = ["name", "email", "phone", "department", "location", "about"];
 const BASIC_EDIT_KEYS = ["phone", "location", "about"];
 const DEPT_OPTIONS = ["SCM", "Engineering", "BD", "Accounts", "Operations"];
@@ -70,7 +71,6 @@ const readUserFromLS = () => {
 const writeUserToLS = (next) =>
   localStorage.setItem(LS_KEY, JSON.stringify(next));
 
-// preview helper
 const fileToDataURL = (file) =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -100,19 +100,15 @@ export default function UserProfilePanel() {
     department: "",
     location: "",
     about: "",
-    avatar_url: "", // current saved avatar URL (backed by DB attachment_url)
+    avatar_url: "",
   });
   const [baselineForm, setBaselineForm] = useState(null);
 
-  // NEW: staged avatar changes (preview + delayed upload)
   const [pendingAvatarFile, setPendingAvatarFile] = useState(null);
   const [pendingAvatarRemove, setPendingAvatarRemove] = useState(false);
-  const [avatarPreview, setAvatarPreview] = useState(""); // data URL for preview
-
-  // NEW: preview modal state
+  const [avatarPreview, setAvatarPreview] = useState("");
   const [previewOpen, setPreviewOpen] = useState(false);
 
-  // Who am I? And who am I viewing?
   const ls = readUserFromLS();
   const myId =
     ls?.userID || ls?.userId || ls?._id || ls?.id || ls?.emp_id || "";
@@ -121,7 +117,6 @@ export default function UserProfilePanel() {
     !viewingIdParam || String(viewingIdParam) === String(myId);
   const effectiveUserId = isOwnProfile ? myId : viewingIdParam;
 
-  // RTK Query: load the profile for the effective id
   const {
     data,
     isLoading: isUserLoading,
@@ -131,7 +126,6 @@ export default function UserProfilePanel() {
 
   const [editUser] = useEditUserMutation();
 
-  // Prefill quickly from localStorage only when viewing self
   useEffect(() => {
     setApiError("");
     if (isOwnProfile) {
@@ -152,10 +146,8 @@ export default function UserProfilePanel() {
       }
     }
     setLoading(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOwnProfile]);
 
-  // Hydrate with fresh API data (for self or others)
   useEffect(() => {
     if (data?.user) {
       const u = data.user;
@@ -172,7 +164,6 @@ export default function UserProfilePanel() {
       setBaselineForm(initial);
       setUser(u);
 
-      // Only update localStorage cache when it's my own profile
       if (isOwnProfile) {
         writeUserToLS({
           name: initial.name,
@@ -198,16 +189,12 @@ export default function UserProfilePanel() {
     }
   }, [data, fetchError, isOwnProfile, myId]);
 
-  // ---------- Permissions / editability ----------
-  // Requirement: users can edit ONLY their own profile. Even if you have admin flags,
-  // other people's profiles are read-only.
   const iAmAdmin = !!(
     ls?.permissions?.profile_full_edit ||
     ls?.profile_full_edit ||
     (typeof ls?.role === "string" && ls.role.toLowerCase() === "admin")
   );
-
-  const canEditAll = isOwnProfile && iAmAdmin; // ALL fields for own profile if admin
+  const canEditAll = isOwnProfile && iAmAdmin;
   const editableKeys = useMemo(
     () => (isOwnProfile ? (canEditAll ? ALL_KEYS : BASIC_EDIT_KEYS) : []),
     [isOwnProfile, canEditAll]
@@ -232,7 +219,6 @@ export default function UserProfilePanel() {
     setForm((f) => ({ ...f, [key]: value }));
   };
 
-  // --- Avatar handlers (no immediate upload) ---
   const handleAvatarClick = () => {
     if (!isOwnProfile) return;
     fileRef.current?.click();
@@ -264,7 +250,6 @@ export default function UserProfilePanel() {
       });
       return;
     }
-    // stage for upload on Save, and show preview
     const dataUrl = await fileToDataURL(file);
     setPendingAvatarFile(file);
     setPendingAvatarRemove(false);
@@ -273,14 +258,12 @@ export default function UserProfilePanel() {
 
   const markRemoveAvatar = () => {
     if (!isOwnProfile) return;
-    // mark for removal on Save; also reflect visually
     setPendingAvatarFile(null);
     setPendingAvatarRemove(true);
     setAvatarPreview("");
     setForm((f) => ({ ...f, avatar_url: "" }));
   };
 
-  // --- Save handler: JSON only OR JSON + avatar OR avatar only OR remove avatar ---
   const saveProfile = async () => {
     if (!isOwnProfile) {
       setToast({
@@ -300,29 +283,24 @@ export default function UserProfilePanel() {
     try {
       if (!userId) throw new Error("No user id to update.");
 
-      // send only changed fields
       const changed = diffEditable(baselineForm, form, editableKeys);
-
       let resp;
+
       if (pendingAvatarFile) {
-        // send file (and optionally changed fields)
         const fd = new FormData();
-        fd.append("data", JSON.stringify(changed)); // can be {}
+        fd.append("data", JSON.stringify(changed));
         fd.append("avatar", pendingAvatarFile);
         resp = await editUser({ userId, body: fd }).unwrap();
       } else if (pendingAvatarRemove) {
-        // remove photo (and optionally changed fields)
         const body = { ...changed, attachment_url: "" };
         resp = await editUser({ userId, body }).unwrap();
       } else if (Object.keys(changed).length > 0) {
-        // just fields
         resp = await editUser({ userId, body: changed }).unwrap();
       }
 
       const updatedUser = resp?.user || {};
       const serverAvatar = updatedUser.attachment_url ?? form.avatar_url;
 
-      // update baselines/state/LS
       const nextBaseline = {
         ...baselineForm,
         ...changed,
@@ -331,7 +309,6 @@ export default function UserProfilePanel() {
       setBaselineForm(nextBaseline);
       setForm((f) => ({ ...nextBaseline }));
 
-      // update LS only for self
       if (isOwnProfile) {
         writeUserToLS({
           ...(readUserFromLS() || {}),
@@ -342,7 +319,6 @@ export default function UserProfilePanel() {
         });
       }
 
-      // clear staged avatar changes
       setPendingAvatarFile(null);
       setPendingAvatarRemove(false);
       setAvatarPreview("");
@@ -361,11 +337,8 @@ export default function UserProfilePanel() {
     }
   };
 
-  // ---- Preview modal helpers
   const displayedAvatar = avatarPreview || form.avatar_url || "";
-  const openPreview = () => {
-    if (displayedAvatar) setPreviewOpen(true);
-  };
+  const openPreview = () => displayedAvatar && setPreviewOpen(true);
 
   const showSkeleton = loading || isUserLoading || isUserFetching;
   if (showSkeleton) {
@@ -405,36 +378,51 @@ export default function UserProfilePanel() {
         </Alert>
       )}
 
+      {/* View-only banner with tight possessive spacing */}
       {!isOwnProfile && (
         <Alert color="neutral" variant="soft" sx={{ mb: 2 }}>
-          You’re viewing{" "}
-          <Typography
-            component="span"
-            sx={{ color: "primary.700", fontWeight: 700 }}
-          >
-            {form.name || "this user"}
+          <Typography component="span" sx={{ display: "inline" }}>
+            You’re viewing{" "}
+            <Typography
+              component="span"
+              sx={{ color: "primary.700", fontWeight: 700, display: "inline" }}
+            >
+              {(form.name || "this user") + "’s"}
+            </Typography>
+            {" profile. Editing is disabled."}
           </Typography>
-          ’s profile. Editing is disabled.
         </Alert>
       )}
 
       <Grid container spacing={2} sx={{ alignItems: "stretch" }}>
-        {/* LEFT: Profile Card */}
+        {/* LEFT */}
         <Grid xs={12} md={5} sx={{ display: "flex" }}>
           <Sheet
-            variant="soft"
+            variant="outlined"
             sx={{
               flex: 1,
               height: "100%",
               minHeight: { md: 520, lg: 600 },
-              p: 3,
-              borderRadius: "lg",
-              display: "flex",
-              flexDirection: "column",
-              gap: 2.5,
+              p: 0,
+              borderRadius: "xl",
+              overflow: "hidden",
+              boxShadow: "sm",
+              bgcolor: "background.surface",
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            {/* Header row (no cover) */}
+            <Box
+              sx={{
+                px: 3,
+                pt: 2, // add some top padding
+                pb: 2,
+                mt: 0, // no negative margin
+                display: "flex",
+                alignItems: "center",
+                gap: 2,
+              }}
+            >
+              {/* Avatar */}
               <Box sx={{ position: "relative" }}>
                 <Avatar
                   variant="soft"
@@ -446,6 +434,9 @@ export default function UserProfilePanel() {
                     height: 104,
                     fontSize: 36,
                     cursor: displayedAvatar ? "zoom-in" : "default",
+                    boxShadow: "md",
+                    // optional: a subtle ring; remove if you don't want it
+                    border: "2px solid var(--joy-palette-neutral-200)",
                   }}
                 >
                   {form.name?.[0]?.toUpperCase() || "U"}
@@ -456,7 +447,12 @@ export default function UserProfilePanel() {
                     size="sm"
                     variant="soft"
                     color="warning"
-                    sx={{ position: "absolute", left: 0, bottom: -10 }}
+                    sx={{
+                      position: "absolute",
+                      left: 0,
+                      bottom: -10,
+                      boxShadow: "sm",
+                    }}
                   >
                     Unsaved photo
                   </Chip>
@@ -466,7 +462,8 @@ export default function UserProfilePanel() {
                   <span>
                     <IconButton
                       size="sm"
-                      variant="soft"
+                      variant="solid"
+                      color="neutral"
                       onClick={handleAvatarClick}
                       disabled={!isOwnProfile}
                       sx={{
@@ -474,6 +471,7 @@ export default function UserProfilePanel() {
                         right: -6,
                         bottom: -6,
                         borderRadius: "50%",
+                        boxShadow: "md",
                       }}
                     >
                       <CameraAltOutlined />
@@ -490,22 +488,71 @@ export default function UserProfilePanel() {
                 />
               </Box>
 
-              <Box sx={{ minWidth: 0 }}>
-                <Typography level="title-lg" noWrap>
+              {/* Name + Email + Chips */}
+              <Box
+                sx={{
+                  minWidth: 0,
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  gap: 0.25,
+                }}
+              >
+                <Typography level="title-lg" sx={{ lineHeight: 1.15 }} noWrap>
                   {form.name || "Unnamed User"}
                 </Typography>
-                <Typography level="body-sm" color="neutral" noWrap>
+
+                {/* ⬇️ Replace the old email Typography with this */}
+                <Typography
+                  level="body-sm"
+                  color="neutral"
+                  sx={{
+                    lineHeight: 1.1,
+                    whiteSpace: "normal", // allow wrapping
+                    overflowWrap: "anywhere", // break long strings like emails
+                    wordBreak: "break-word",
+                    maxWidth: "100%",
+                  }}
+                  title={form.email} // optional: shows full email on hover
+                >
                   {form.email}
                 </Typography>
+
+                <Stack direction="row" gap={1} sx={{ mt: 1 }}>
+                  {!!form.department && (
+                    <Chip
+                      size="sm"
+                      variant="soft"
+                      color="primary"
+                      sx={{ textTransform: "capitalize" }}
+                    >
+                      {form.department}
+                    </Chip>
+                  )}
+                  {!!form.location && (
+                    <Chip size="sm" variant="soft" color="neutral">
+                      {form.location}
+                    </Chip>
+                  )}
+                </Stack>
               </Box>
 
+              {/* Smaller pencil */}
               <Dropdown>
                 <MenuButton
                   disabled={!isOwnProfile}
                   slots={{ root: IconButton }}
                   slotProps={{
-                    root: { variant: "plain", color: "neutral" },
+                    root: {
+                      variant: "plain",
+                      color: "neutral",
+                      size: "sm",
+                      sx: { p: 0.25, "& svg": { fontSize: 18 } },
+                    },
                   }}
+                  aria-label="Edit photo"
+                  title="Edit photo"
                 >
                   <EditRounded />
                 </MenuButton>
@@ -538,125 +585,227 @@ export default function UserProfilePanel() {
 
             <Divider />
 
-            <Stack spacing={1}>
-              <InfoRow label="Phone" value={form.phone || "—"} />
-              <InfoRow label="Department" value={form.department || "—"} />
-              <InfoRow label="Location" value={form.location || "—"} />
-            </Stack>
+            {/* Basic Information */}
+            <Box sx={{ p: 3 }}>
+              <Typography
+                level="title-sm"
+                sx={{ mb: 1.25, color: "text.tertiary" }}
+              >
+                Basic Information
+              </Typography>
 
-            {isOwnProfile && !canEditAll && (
-              <>
+              <Sheet
+                variant="soft"
+                sx={{
+                  p: 1.25,
+                  borderRadius: "lg",
+                  bgcolor: "background.level1",
+                  display: "grid",
+                  rowGap: 0.75,
+                }}
+              >
+                <InfoRow label="Phone" value={form.phone || "—"} />
                 <Divider />
-                <Typography level="body-xs" color="neutral">
+                <InfoRow label="Department" value={form.department || "—"} />
+                <Divider />
+                <InfoRow label="Location" value={form.location || "—"} />
+              </Sheet>
+
+              {isOwnProfile && !canEditAll && (
+                <Typography
+                  level="body-xs"
+                  sx={{ mt: 1.5, color: "text.tertiary" }}
+                >
                   You can edit: <b>Phone</b>, <b>Location</b>, <b>About</b>, and
                   change your photo.
                 </Typography>
-              </>
-            )}
+              )}
+            </Box>
           </Sheet>
         </Grid>
 
-        {/* RIGHT: Details */}
+        {/* RIGHT */}
         <Grid xs={12} md={7} sx={{ display: "flex" }}>
-          <Sheet variant="outlined" sx={{ borderRadius: "lg", p: 2, flex: 1 }}>
-            <Grid container spacing={1.5}>
-              <Grid xs={12}>
-                <FormControl>
-                  <FormLabel>Name</FormLabel>
-                  <Input
-                    value={form.name}
-                    onChange={handleField("name")}
-                    placeholder="Enter full name"
-                    disabled={!isFieldEditable("name")}
-                  />
-                </FormControl>
-              </Grid>
+          <Sheet
+            variant="outlined"
+            sx={{
+              borderRadius: "xl",
+              p: 2,
+              flex: 1,
+              boxShadow: "sm",
+              bgcolor: "background.surface",
+            }}
+          >
+            {/* Keep only Personal Information chip (removed others) */}
+            <Stack direction="row" gap={1} sx={{ mb: 1 }}>
+              <Chip size="sm" variant="solid" color="primary">
+                Personal Information
+              </Chip>
+            </Stack>
 
-              <Grid xs={12} sm={6}>
-                <FormControl>
-                  <FormLabel>Email</FormLabel>
-                  <Input
-                    value={form.email}
-                    onChange={handleField("email")}
-                    type="email"
-                    placeholder="name@company.com"
-                    disabled={!isFieldEditable("email")}
-                  />
-                </FormControl>
-              </Grid>
-              <Grid xs={12} sm={6}>
-                <FormControl>
-                  <FormLabel>Phone</FormLabel>
-                  <Input
-                    value={form.phone}
-                    onChange={handleField("phone")}
-                    placeholder="+91 98765 43210"
-                    disabled={!isFieldEditable("phone")}
-                  />
-                </FormControl>
-              </Grid>
+            {/* Identity */}
+            <Sheet
+              variant="soft"
+              sx={{
+                p: 2,
+                borderRadius: "lg",
+                bgcolor: "background.level1",
+                mb: 1.5,
+              }}
+            >
+              <Typography
+                level="title-sm"
+                sx={{ mb: 1, color: "text.tertiary" }}
+              >
+                Identity
+              </Typography>
 
-              <Grid xs={12} sm={6}>
-                <FormControl>
-                  <FormLabel>Department</FormLabel>
-                  <Select
-                    value={form.department || null}
-                    onChange={handleField("department")}
-                    placeholder="Select department"
-                    disabled={!isFieldEditable("department")}
-                  >
-                    {!deptInList && form.department && (
-                      <Option value={form.department}>{form.department}</Option>
-                    )}
-                    {DEPT_OPTIONS.map((d) => (
-                      <Option key={d} value={d}>
-                        {d}
-                      </Option>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
+              <Grid container spacing={1.25}>
+                <Grid xs={12}>
+                  <FormControl>
+                    <FormLabel>Name</FormLabel>
+                    <Input
+                      value={form.name}
+                      onChange={handleField("name")}
+                      placeholder="Enter full name"
+                      disabled={!isFieldEditable("name")}
+                    />
+                  </FormControl>
+                </Grid>
 
-              <Grid xs={12} sm={6}>
-                <FormControl>
-                  <FormLabel>Location</FormLabel>
-                  <Input
-                    value={form.location}
-                    onChange={handleField("location")}
-                    placeholder="City, State"
-                    disabled={!isFieldEditable("location")}
-                  />
-                </FormControl>
-              </Grid>
+                <Grid xs={12} md={6}>
+                  <FormControl>
+                    <FormLabel>Email</FormLabel>
+                    <Input
+                      value={form.email}
+                      onChange={handleField("email")}
+                      type="email"
+                      placeholder="name@company.com"
+                      disabled={!isFieldEditable("email")}
+                    />
+                  </FormControl>
+                </Grid>
 
-              <Grid xs={12}>
-                <FormControl>
-                  <FormLabel>About</FormLabel>
-                  <Textarea
-                    minRows={3}
-                    value={form.about}
-                    onChange={handleField("about")}
-                    placeholder="Short bio / responsibilities…"
-                    disabled={!isFieldEditable("about")}
-                  />
-                </FormControl>
+                <Grid xs={12} md={6}>
+                  <FormControl>
+                    <FormLabel>Phone</FormLabel>
+                    <Input
+                      value={form.phone}
+                      onChange={handleField("phone")}
+                      placeholder="+91 98765 43210"
+                      disabled={!isFieldEditable("phone")}
+                    />
+                  </FormControl>
+                </Grid>
               </Grid>
+            </Sheet>
 
-              <Grid xs={12} sx={{ display: "flex", gap: 1, mt: 1 }}>
-                <Button
-                  loading={saving}
-                  startDecorator={<SaveRounded />}
-                  onClick={saveProfile}
-                  disabled={
-                    saving ||
-                    !isOwnProfile ||
-                    (!hasEditableChanges && !hasAvatarChange)
-                  }
-                >
-                  Save changes
-                </Button>
+            {/* Work & Location */}
+            <Sheet
+              variant="soft"
+              sx={{
+                p: 2,
+                borderRadius: "lg",
+                bgcolor: "background.level1",
+                mb: 1.5,
+              }}
+            >
+              <Typography
+                level="title-sm"
+                sx={{ mb: 1, color: "text.tertiary" }}
+              >
+                Work & Location
+              </Typography>
+
+              <Grid container spacing={1.25}>
+                <Grid xs={12} md={6}>
+                  <FormControl>
+                    <FormLabel>Department</FormLabel>
+                    <Select
+                      value={form.department || null}
+                      onChange={handleField("department")}
+                      placeholder="Select department"
+                      disabled={!isFieldEditable("department")}
+                      slotProps={{
+                        button: { sx: { textTransform: "capitalize" } },
+                      }}
+                    >
+                      {!deptInList && form.department && (
+                        <Option
+                          value={form.department}
+                          sx={{ textTransform: "capitalize" }}
+                        >
+                          {form.department}
+                        </Option>
+                      )}
+                      {DEPT_OPTIONS.map((d) => (
+                        <Option
+                          key={d}
+                          value={d}
+                          sx={{ textTransform: "capitalize" }}
+                        >
+                          {d}
+                        </Option>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid xs={12} md={6}>
+                  <FormControl>
+                    <FormLabel>Location</FormLabel>
+                    <Input
+                      value={form.location}
+                      onChange={handleField("location")}
+                      placeholder="City, State"
+                      disabled={!isFieldEditable("location")}
+                    />
+                  </FormControl>
+                </Grid>
               </Grid>
-            </Grid>
+            </Sheet>
+
+            {/* About */}
+            <Sheet
+              variant="soft"
+              sx={{
+                p: 2,
+                borderRadius: "lg",
+                bgcolor: "background.level1",
+              }}
+            >
+              <Typography
+                level="title-sm"
+                sx={{ mb: 1, color: "text.tertiary" }}
+              >
+                About
+              </Typography>
+              <FormControl>
+                <Textarea
+                  minRows={3}
+                  value={form.about}
+                  onChange={handleField("about")}
+                  placeholder="Short bio / responsibilities…"
+                  disabled={!isFieldEditable("about")}
+                />
+              </FormControl>
+            </Sheet>
+
+            <Stack direction="row" gap={1} sx={{ mt: 1.5 }}>
+              <Button
+                loading={saving}
+                startDecorator={<SaveRounded />}
+                onClick={saveProfile}
+                disabled={
+                  saving ||
+                  !isOwnProfile ||
+                  (!hasEditableChanges && !hasAvatarChange)
+                }
+                sx={{ minWidth: 140 }}
+              >
+                Save changes
+              </Button>
+            </Stack>
           </Sheet>
         </Grid>
       </Grid>
@@ -718,12 +867,28 @@ export default function UserProfilePanel() {
 }
 
 function InfoRow({ label, value }) {
+  const isDept = String(label).toLowerCase() === "department";
   return (
-    <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: "1fr auto",
+        alignItems: "center",
+        gap: 1,
+        py: 0.25,
+      }}
+    >
       <Typography level="body-sm" color="neutral">
         {label}
       </Typography>
-      <Typography level="body-sm" sx={{ fontWeight: 600, textAlign: "right" }}>
+      <Typography
+        level="body-sm"
+        sx={{
+          fontWeight: 600,
+          textAlign: "right",
+          ...(isDept && { textTransform: "capitalize" }), // capitalize department on view
+        }}
+      >
         {value}
       </Typography>
     </Box>
