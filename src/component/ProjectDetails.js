@@ -298,16 +298,14 @@ const Project_Detail = () => {
           <Box flex={1}>
             <Tabs value={tabValue} onChange={handleTabChange}>
               <TabList>
-                <Tab>Handover Sheet</Tab>
-                <Tab>Scope</Tab>
-                {getUserData()?.department !== 'Engineering' && (
-                <Tab>Purchase Order</Tab>
-              )}
-                <Tab>Engineering</Tab>
-                <Tab>Notes</Tab>
+                <Tab value="handover">Handover Sheet</Tab>
+            <Tab value="scope">Scope</Tab>
+            {getUserData()?.department !== "Engineering" && <Tab value="po">Purchase Order</Tab>}
+            <Tab value="eng">Engineering</Tab>
+            <Tab value="notes">Notes</Tab>
               </TabList>
-
-              <TabPanel value={0}>
+              
+          <TabPanel value="handover">
                 <Box
                   sx={{
                     height: "60vh",
@@ -321,7 +319,7 @@ const Project_Detail = () => {
                 </Box>
               </TabPanel>
 
-              <TabPanel value={1}>
+              <TabPanel value="scope">
                 <Box maxHeight="70vh" overflow-y="auto">
                   <ScopeDetail
                     project_id={project_id}
@@ -329,14 +327,14 @@ const Project_Detail = () => {
                   />
                 </Box>
               </TabPanel>
-
-              <TabPanel value={2}>
+              {getUserData()?.department !== 'Engineering' && (
+              <TabPanel value="po">
                 <Box overflow-y="auto">
                   <PurchaseRequestCard project_code={projectDetails?.code} />
                 </Box>
               </TabPanel>
-
-              <TabPanel value={3}>
+ )}
+              <TabPanel value="eng">
                 <Box
                   display="flex"
                   alignItems="flex-start"
@@ -347,7 +345,7 @@ const Project_Detail = () => {
                 </Box>
               </TabPanel>
 
-              <TabPanel value={4}>
+              <TabPanel value="notes">
                 <Box
                   display="flex"
                   alignItems="flex-start"
