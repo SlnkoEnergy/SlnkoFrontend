@@ -69,7 +69,7 @@ export default function AllTaskDashboard() {
   };
 
   /* ---- my tasks ---- */
- 
+
   const {
     data: myTasksRes,
     isLoading: myLoading,
@@ -174,7 +174,7 @@ export default function AllTaskDashboard() {
     uptoDays: agingMax,
   });
 
-  console.log({apiParams})
+  console.log({ apiParams });
 
   const agingStats = agingRes?.statsByBucket ?? {
     0: { completed: 0, pending: 0, cancelled: 0 },

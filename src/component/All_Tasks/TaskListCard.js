@@ -12,7 +12,13 @@ import {
 } from "@mui/joy";
 import { useNavigate } from "react-router-dom";
 
-/* ---------- helpers ---------- */
+/* ---------- utils ---------- */
+const safeSrc = (s) => (typeof s === "string" && s.trim() ? s : undefined);
+
+const firstInitial = (s) =>
+  typeof s === "string" && s.trim() ? s.trim().charAt(0).toUpperCase() : "";
+
+/* ---------- status chip ---------- */
 const statusChip = (status) => {
   if (!status || status === "none") return null;
   const key = String(status).toLowerCase();
@@ -42,142 +48,81 @@ const statusChip = (status) => {
   );
 };
 
-const firstInitial = (s) =>
-  typeof s === "string" && s.trim() ? s.trim().charAt(0).toUpperCase() : "";
+/* ---------- tooltip content ---------- */
+const AssigneeTooltipContent = ({ createdBy, assignees = [] }) => {
+  const createdByName =
+    typeof createdBy === "object"
+      ? createdBy?.name || createdBy?.fullName || createdBy?.email || "—"
+      : createdBy || "—";
 
-/* Vertical tooltip content: Created by + list of assignees (with avatars) */
-const AssigneeTooltipContent = ({ createdBy, assignees = [] }) => (
-  <Box sx={{ p: 0.5, maxHeight: 240, overflow: "auto" }}>
-    {createdBy && (
-      <Box sx={{ mb: 1 }}>
-        <Typography level="body-sm" sx={{ fontWeight: 600, mb: 0.5 }}>
-          Created by
-        </Typography>
-
-        <Box
-          sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}
-        >
-          <Avatar
-            size="sm"
-            src={
-              typeof createdBy === "object" && createdBy?.avatar
-                ? createdBy.avatar
-                : undefined
-            }
-            variant={
-              typeof createdBy === "object" && createdBy?.avatar
-                ? "soft"
-                : "solid"
-            }
-          >
-            {firstInitial(
-              typeof createdBy === "object"
-                ? createdBy?.name ||
-                    createdBy?.fullName ||
-                    createdBy?.email ||
-                    ""
-                : createdBy
-            )}
-          </Avatar>
-
-          <Typography
-            level="body-sm"
-            sx={{
-              minWidth: 0,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              maxWidth: { xs: "100%", sm: 260 },
-            }}
-            title={
-              typeof createdBy === "object"
-                ? createdBy?.name ||
-                  createdBy?.fullName ||
-                  createdBy?.email ||
-                  "—"
-                : createdBy
-            }
-          >
-            {typeof createdBy === "object"
-              ? createdBy?.name ||
-                createdBy?.fullName ||
-                createdBy?.email ||
-                "—"
-              : createdBy}
+  return (
+    <Box sx={{ p: 0.5, maxHeight: 240, overflow: "auto" }}>
+      {createdBy && (
+        <Box sx={{ mb: 1 }}>
+          <Typography level="body-sm" sx={{ fontWeight: 600, mb: 0.5 }}>
+            Created by
           </Typography>
-        </Box>
-      </Box>
-    )}
-
-    {Array.isArray(assignees) && assignees.length > 0 && (
-      <Box>
-        <Typography level="body-sm" sx={{ fontWeight: 600, mb: 0.5 }}>
-          Assigned to
-        </Typography>
-
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-          {assignees.map((u, i) => (
-            <Box
-              key={u?._id || u?.id || u?.name || i}
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                minWidth: 0,
-              }}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Avatar
+              size="sm"
+              src={
+                typeof createdBy === "object"
+                  ? safeSrc(createdBy?.attachment_url)
+                  : undefined
+              }
             >
-              <Avatar
-                src={u?.avatar || undefined}
-                size="sm"
-                variant={u?.avatar ? "soft" : "solid"}
-              >
-                {firstInitial(u?.name)}
-              </Avatar>
-
-              <Typography
-                level="body-sm"
-                sx={{
-                  minWidth: 0,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  maxWidth: { xs: "100%", sm: 260 },
-                }}
-                title={u?.name || "—"}
-              >
-                {u?.name || "—"}
-              </Typography>
-            </Box>
-          ))}
+              {firstInitial(createdByName)}
+            </Avatar>
+            <Typography level="body-sm">{createdByName}</Typography>
+          </Box>
         </Box>
-      </Box>
-    )}
-  </Box>
-);
+      )}
 
-/* ---------- row ---------- */
+      {Array.isArray(assignees) && assignees.length > 0 && (
+        <Box>
+          <Typography level="body-sm" sx={{ fontWeight: 600, mb: 0.5 }}>
+            Assigned to
+          </Typography>
+          {assignees.map((u, i) => {
+            const nm = u?.name || "—";
+            return (
+              <Box
+                key={u?._id || u?.id || `${nm}-${i}`}
+                sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}
+              >
+                <Avatar src={safeSrc(u?.attachment_url)} size="sm">
+                  {firstInitial(nm)}
+                </Avatar>
+                <Typography level="body-sm">{nm}</Typography>
+              </Box>
+            );
+          })}
+        </Box>
+      )}
+    </Box>
+  );
+};
+
+/* ---------- single row ---------- */
 function Row({ item, showDivider }) {
   const chip = useMemo(() => statusChip(item.status), [item.status]);
   const navigate = useNavigate();
 
-  const createdBy =
-    item.created_by || item.createdBy?.name || item.createdBy || "—";
-  const createdAvatarProps = {};
-  if (item.creator?.avatar) createdAvatarProps.src = item.creator.avatar;
+  const createdByObj = item.createdBy || null;
+  const createdByName =
+    createdByObj?.name ||
+    item.createdBy?.name ||
+    (typeof item.createdBy === "string" ? item.createdBy : "") ||
+    "—";
 
-  const assignees = Array.isArray(item.assigned_to) ? item.assigned_to : [];
-
+    
+    const assignees = Array.isArray(item.assigned_to) ? item.assigned_to : [];
+   
+  
   const goToTask = () => {
     if (item?.id || item?._id) {
       const id = item.id ?? item._id;
       navigate(`/view_task?task=${encodeURIComponent(id)}`);
-    }
-  };
-
-  const onKey = (e) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      goToTask();
     }
   };
 
@@ -187,22 +132,14 @@ function Row({ item, showDivider }) {
         role="button"
         tabIndex={0}
         onClick={goToTask}
-        onKeyDown={onKey}
         sx={{
           display: "grid",
-          gridTemplateColumns: "1fr 100px 50px 150px", // title | time | creator | assignees
+          gridTemplateColumns: "1fr 100px 50px 150px",
           alignItems: "center",
           px: 2,
           py: 1.25,
-          bgcolor: "#FFF",
           cursor: "pointer",
           "&:hover": { backgroundColor: "#FAFAFA" },
-          "&:focus-visible": {
-            outline: "2px solid rgba(59,130,246,0.6)",
-            outlineOffset: "2px",
-            borderRadius: 10,
-          },
-          columnGap: 8,
         }}
       >
         {/* Title + status chip */}
@@ -214,7 +151,6 @@ function Row({ item, showDivider }) {
               overflow: "hidden",
               textOverflow: "ellipsis",
             }}
-            title={item.title}
           >
             {item.title}
           </Typography>
@@ -224,35 +160,34 @@ function Row({ item, showDivider }) {
         {/* Time */}
         <Typography
           level="title-sm"
-          sx={{
-            textAlign: "center",
-            letterSpacing: 0.3,
-            fontVariantNumeric: "tabular-nums",
-          }}
+          sx={{ textAlign: "center", fontVariantNumeric: "tabular-nums" }}
         >
           {item.time || "—"}
         </Typography>
 
-        {/* Created-by avatar (tooltip shows vertical lists) */}
+        {/* Created-by avatar */}
         <Tooltip
           variant="soft"
           placement="top"
-          title={<AssigneeTooltipContent createdBy={createdBy} />}
+          title={<AssigneeTooltipContent createdBy={createdByName} />}
         >
-          <Avatar size="sm" {...createdAvatarProps}>
-            {firstInitial(createdBy)}
+          <Avatar src={safeSrc(createdByName?.attachment_url)} size="sm">
+            {firstInitial(createdByName)}
           </Avatar>
         </Tooltip>
 
-        {/* Assigned-to avatars (up to 3 + "+N"), same vertical tooltip */}
+        {/* Assigned-to avatars */}
         <Tooltip
           variant="soft"
           placement="top"
           title={<AssigneeTooltipContent assignees={assignees} />}
         >
           <AvatarGroup size="sm" sx={{ "--Avatar-size": "28px" }}>
-            {assignees.slice(0, 3).map((u) => (
-              <Avatar key={u?._id || u?.id || u?.name} src={u?.avatar}>
+            {assignees.slice(0, 3).map((u, idx) => (
+              <Avatar
+                key={u?._id || u?.id || idx}
+                src={safeSrc(u?.attachment_url)}   
+              >
                 {firstInitial(u?.name)}
               </Avatar>
             ))}
@@ -267,33 +202,19 @@ function Row({ item, showDivider }) {
 }
 
 /* ---------- main card ---------- */
-export default function TaskStatusList({ title = "Task Status", items = [] }) {
+export default function TaskStatusList({ title = "Today Task Creation", items = [] }) {
   return (
     <Card
       variant="soft"
       sx={{
-        position: "relative",
-        overflow: "hidden",
         borderRadius: 28,
-        p: { xs: 2, sm: 2.5, md: 1.5 },
         bgcolor: "#fff",
-        border: "1px solid",
-        borderColor: "rgba(15,23,42,0.08)",
-        boxShadow:
-          "0 2px 6px rgba(15,23,42,0.06), 0 18px 32px rgba(15,23,42,0.06)",
-        transition: "transform .16s ease, box-shadow .16s ease",
-        "&:hover": {
-          transform: "translateY(-2px)",
-          boxShadow:
-            "0 6px 16px rgba(15,23,42,0.10), 0 20px 36px rgba(15,23,42,0.08)",
-        },
+        border: "1px solid rgba(15,23,42,0.08)",
         maxHeight: "500px",
         height: "500px",
         overflowY: "auto",
-        gap: 0,
       }}
     >
-      {/* Header */}
       <Box
         sx={{
           display: "grid",
@@ -301,7 +222,6 @@ export default function TaskStatusList({ title = "Task Status", items = [] }) {
           alignItems: "center",
           px: 1,
           py: 0.5,
-          bgcolor: "#fff",
         }}
       >
         <Typography level="title-lg" sx={{ ml: 0.5, color: "#0f172a" }}>
@@ -311,13 +231,9 @@ export default function TaskStatusList({ title = "Task Status", items = [] }) {
 
       <Divider sx={{ borderColor: "rgba(2,6,23,0.08)" }} />
 
-      {/* Rows */}
-      <Box sx={{ bgcolor: "#FFF" }}>
+      <Box>
         {items.length === 0 ? (
-          <Typography
-            level="body-sm"
-            sx={{ px: 2, py: 3, color: "text.secondary" }}
-          >
+          <Typography level="body-sm" sx={{ px: 2, py: 3, color: "text.secondary" }}>
             No tasks.
           </Typography>
         ) : (
