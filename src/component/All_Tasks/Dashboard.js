@@ -2,9 +2,6 @@
 import * as React from "react";
 import { Box, Grid } from "@mui/joy";
 import CloudStatCard from "./TaskDashboardCards";
-import HourglassTopRoundedIcon from "@mui/icons-material/HourglassTopRounded";
-import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
-import CancelRoundedIcon from "@mui/icons-material/CancelRounded";
 import TaskStatusList from "./TaskListCard";
 import ActivityFeedCard from "./ActivityCard";
 import ProjectsWorkedCard from "./Charts/ProjectsDonut";
@@ -72,22 +69,12 @@ export default function AllTaskDashboard() {
   };
 
   /* ---- my tasks ---- */
-  const myTasksParams = {
-    window: "25m",
-    q: apiParams?.search ?? "",
-    from: apiParams?.from ?? "",
-    to: apiParams?.to ?? "",
-    deadlineFrom: apiParams?.deadlineFrom ?? "",
-    deadlineTo: apiParams?.deadlineTo ?? "",
-    departments: apiParams?.department ?? "",
-    createdById: apiParams?.createdById ?? "",
-    assignedToId: apiParams?.assignedToId ?? "",
-  };
+ 
   const {
     data: myTasksRes,
     isLoading: myLoading,
     isFetching: myFetching,
-  } = useGetMyTasksQuery(myTasksParams);
+  } = useGetMyTasksQuery(apiParams);
 
   const myTaskItems = (myTasksRes?.data || []).map((t) => ({
     id: t.id ?? t._id,
@@ -123,6 +110,7 @@ export default function AllTaskDashboard() {
     q: debouncedQ,
     from: apiParams?.from ?? "",
     to: apiParams?.to ?? "",
+    departments: apiParams?.departments ?? "",
     deadlineFrom: apiParams?.deadlineFrom ?? "",
     deadlineTo: apiParams?.deadlineTo ?? "",
     includeSubtasks: true,
@@ -164,6 +152,7 @@ export default function AllTaskDashboard() {
     to: apiParams?.to ?? "",
     deadlineFrom: apiParams?.deadlineFrom ?? "",
     deadlineTo: apiParams?.deadlineTo ?? "",
+    departments: apiParams?.departments ?? "",
   });
 
   const donutData = React.useMemo(() => {
@@ -181,8 +170,11 @@ export default function AllTaskDashboard() {
     to: apiParams?.to ?? "",
     deadlineFrom: apiParams?.deadlineFrom ?? "",
     deadlineTo: apiParams?.deadlineTo ?? "",
+    departments: apiParams?.departments ?? "",
     uptoDays: agingMax,
   });
+
+  console.log({apiParams})
 
   const agingStats = agingRes?.statsByBucket ?? {
     0: { completed: 0, pending: 0, cancelled: 0 },
@@ -350,7 +342,7 @@ export default function AllTaskDashboard() {
       <Grid container spacing={2} sx={{ mt: 1 }}>
         <Grid xs={12} md={12}>
           <TasksByAgingBar
-            title="Tasks by Resolution Time"
+            title="Tasks by Resolution Time (Team)"
             statsByBucket={agingStats}
             defaultMaxDays={agingMax}
             onMaxDaysChange={setAgingMax}

@@ -46,6 +46,7 @@ import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
 import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
+import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import { toast } from "react-toastify";
 import DOMPurify from "dompurify";
 import {
@@ -91,7 +92,7 @@ const statusColor = (s) => {
 
 const Field = ({ label, value, decorator, muted }) => (
   <Stack direction="row" alignItems="center" gap={1.5}>
-    <Typography level="body-sm" sx={{ minWidth: 160, color: "text.tertiary" }}>
+    <Typography level="body-sm" sx={{ minWidth: 140, color: "text.tertiary" }}>
       {label}
     </Typography>
     <Typography
@@ -808,6 +809,8 @@ export default function ViewTaskPage() {
   }, [subtasks, meId]);
   const viewIsSubtask = !!mySubtask;
 
+  const createdUser = task?.createdBy?._id === meId;
+
   const effectiveStatusHistory = task?.status_history || [];
 
   const hasReassign = subtasks.length > 0;
@@ -1066,6 +1069,43 @@ export default function ViewTaskPage() {
 
     return set;
   }, [task]);
+  const [isEditingDueDate, setIsEditingDueDate] = useState(false);
+  const [dueDateEdit, setDueDateEdit] = useState(""); // yyyy-MM-ddTHH:mm
+  const [savingDueDate, setSavingDueDate] = useState(false);
+
+  // Convert ISO -> value for <input type="datetime-local">
+  const toLocalInputValue = (iso) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
+      d.getDate()
+    )}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+  useEffect(() => {
+    setDueDateEdit(toLocalInputValue(task?.deadline));
+  }, [task?.deadline]);
+
+  const saveDueDate = async () => {
+    if (!id) return toast.error("Task id missing");
+    try {
+      setSavingDueDate(true);
+      // API still expects `deadline`. We just label it "Due Date" in UI.
+      const body =
+        dueDateEdit && !Number.isNaN(new Date(dueDateEdit).getTime())
+          ? { deadline: new Date(dueDateEdit).toISOString() }
+          : { deadline: null }; // clears due date
+
+      const updated = await updateTask({ id, body }).unwrap();
+      setTask(updated);
+      toast.success(body.deadline ? "Due date updated" : "Due date cleared");
+      setIsEditingDueDate(false);
+    } catch (e) {
+      toast.error(e?.data?.message || "Failed to update due date");
+    } finally {
+      setSavingDueDate(false);
+    }
+  };
 
   return (
     <Box
@@ -1087,7 +1127,7 @@ export default function ViewTaskPage() {
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+          gridTemplateColumns: { xs: "1fr", xl: "1fr 1fr" },
           gap: 2,
           alignItems: "stretch",
           gridAutoRows: "1fr",
@@ -1349,9 +1389,70 @@ export default function ViewTaskPage() {
                 <Field
                   label="Due Date"
                   value={
-                    task?.deadline
-                      ? new Date(task.deadline).toLocaleDateString("en-GB")
-                      : "—"
+                    isEditingDueDate ? (
+                      <Stack
+                        direction="row"
+                        gap={1}
+                        alignItems="center"
+                        sx={{ flexWrap: "wrap" }}
+                      >
+                        <Input
+                          type="datetime-local"
+                          value={dueDateEdit}
+                          onChange={(e) => setDueDateEdit(e.target.value)}
+                          sx={{ minWidth: 160 }}
+                          slotProps={{
+                            input: { placeholder: "dd-mm-yyyy  --:--" },
+                          }}
+                        />
+                        <Button
+                          size="sm"
+                          onClick={saveDueDate}
+                          loading={savingDueDate}
+                          sx={{
+                            backgroundColor: "#3366a3",
+                            color: "#fff",
+                            "&:hover": { backgroundColor: "#285680" },
+                          }}
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outlined"
+                          color="neutral"
+                          onClick={() => {
+                            setIsEditingDueDate(false);
+                            setDueDateEdit(toLocalInputValue(task?.deadline));
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </Stack>
+                    ) : (
+                      <Stack
+                        direction="row"
+                        gap={1}
+                        alignItems="center"
+                        sx={{ flexWrap: "wrap" }}
+                      >
+                        <Typography level="body-sm">
+                          {task?.deadline
+                            ? new Date(task.deadline).toLocaleString("en-GB")
+                            : "—"}
+                        </Typography>
+                        <Tooltip title="Change due date">
+                          <IconButton
+                            size="sm"
+                            variant="outlined"
+                            onClick={() => setIsEditingDueDate(true)}
+                            aria-label="Change due date"
+                          >
+                            <EditRoundedIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
+                    )
                   }
                 />
               )}

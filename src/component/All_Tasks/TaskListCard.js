@@ -48,34 +48,109 @@ const firstInitial = (s) =>
 /* Vertical tooltip content: Created by + list of assignees (with avatars) */
 const AssigneeTooltipContent = ({ createdBy, assignees = [] }) => (
   <Box sx={{ p: 0.5, maxHeight: 240, overflow: "auto" }}>
-    {createdBy ? (
+    {createdBy && (
       <Box sx={{ mb: 1 }}>
         <Typography level="body-sm" sx={{ fontWeight: 600, mb: 0.5 }}>
           Created by
         </Typography>
-        <Typography level="body-sm">{createdBy}</Typography>
-      </Box>
-    ) : null}
 
-    <Typography level="body-sm" sx={{ fontWeight: 600, mb: 0.5 }}>
-      Assigned to
-    </Typography>
-    {assignees.length ? (
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-        {assignees.map((u) => (
-          <Box
-            key={u?._id || u?.id || u?.name}
-            sx={{ display: "flex", alignItems: "center", gap: 1 }}
+        <Box
+          sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}
+        >
+          <Avatar
+            size="sm"
+            src={
+              typeof createdBy === "object" && createdBy?.avatar
+                ? createdBy.avatar
+                : undefined
+            }
+            variant={
+              typeof createdBy === "object" && createdBy?.avatar
+                ? "soft"
+                : "solid"
+            }
           >
-            <Avatar src={u?.avatar} size="sm">
-              {firstInitial(u?.name)}
-            </Avatar>
-            <Typography level="body-sm">{u?.name || "—"}</Typography>
-          </Box>
-        ))}
+            {firstInitial(
+              typeof createdBy === "object"
+                ? createdBy?.name ||
+                    createdBy?.fullName ||
+                    createdBy?.email ||
+                    ""
+                : createdBy
+            )}
+          </Avatar>
+
+          <Typography
+            level="body-sm"
+            sx={{
+              minWidth: 0,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              maxWidth: { xs: "100%", sm: 260 },
+            }}
+            title={
+              typeof createdBy === "object"
+                ? createdBy?.name ||
+                  createdBy?.fullName ||
+                  createdBy?.email ||
+                  "—"
+                : createdBy
+            }
+          >
+            {typeof createdBy === "object"
+              ? createdBy?.name ||
+                createdBy?.fullName ||
+                createdBy?.email ||
+                "—"
+              : createdBy}
+          </Typography>
+        </Box>
       </Box>
-    ) : (
-      <Typography level="body-sm">—</Typography>
+    )}
+
+    {Array.isArray(assignees) && assignees.length > 0 && (
+      <Box>
+        <Typography level="body-sm" sx={{ fontWeight: 600, mb: 0.5 }}>
+          Assigned to
+        </Typography>
+
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+          {assignees.map((u, i) => (
+            <Box
+              key={u?._id || u?.id || u?.name || i}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                minWidth: 0,
+              }}
+            >
+              <Avatar
+                src={u?.avatar || undefined}
+                size="sm"
+                variant={u?.avatar ? "soft" : "solid"}
+              >
+                {firstInitial(u?.name)}
+              </Avatar>
+
+              <Typography
+                level="body-sm"
+                sx={{
+                  minWidth: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  maxWidth: { xs: "100%", sm: 260 },
+                }}
+                title={u?.name || "—"}
+              >
+                {u?.name || "—"}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+      </Box>
     )}
   </Box>
 );
@@ -159,7 +234,11 @@ function Row({ item, showDivider }) {
         </Typography>
 
         {/* Created-by avatar (tooltip shows vertical lists) */}
-        <Tooltip variant="soft" placement="top">
+        <Tooltip
+          variant="soft"
+          placement="top"
+          title={<AssigneeTooltipContent createdBy={createdBy} />}
+        >
           <Avatar size="sm" {...createdAvatarProps}>
             {firstInitial(createdBy)}
           </Avatar>

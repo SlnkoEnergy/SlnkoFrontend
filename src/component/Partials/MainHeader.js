@@ -16,6 +16,8 @@ import {
   // ListDivider,
 } from "@mui/joy";
 
+// import Notification from "./Notification";
+import AppNotification from "./Notification"
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
@@ -211,6 +213,7 @@ export default function MainHeader({ title, children }) {
             overflowX: { xs: "auto", sm: "visible" },
           }}
         >
+          <AppNotification />
           <Dropdown>
             <MenuButton
               variant="plain"
