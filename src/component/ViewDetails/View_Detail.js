@@ -177,8 +177,38 @@ const Customer_Payment_Summary = () => {
     return delayedSearch.cancel;
   }, [searchClient, searchDebit, searchAdjustment, startDate, endDate]);
 
-  const handlePrint = () => {
-    window.print();
+  const [isPrinting, setIsPrinting] = useState(false);
+
+  const handlePrint = async () => {
+    try {
+      setIsPrinting(true);
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        toast.error("Authentication token not found.");
+        setIsPrinting(false);
+        return;
+      }
+      const response = await Axios.post(
+        "/accounting/customer-payment-summary-pdf",
+        { p_id },
+        {
+          headers: { "x-auth-token": token },
+          responseType: "blob",
+        }
+      );
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `customer_payment_summary_${p_id}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Error downloading PDF:", err);
+    } finally {
+      setIsPrinting(false);
+    }
   };
 
   const today = new Date();
@@ -189,159 +219,62 @@ const Customer_Payment_Summary = () => {
   const currentDay = today.toLocaleDateString("en-US", dayOptions);
   const currentDate = today.toLocaleDateString("en-US", dateOptions);
 
-  const handleExportAll = () => {
-    try {
-      // Credit Table
-      const creditHeader = [
-        "S.No.",
-        "Credit Date",
-        "Credit Mode",
-        "Credited Amount",
-      ];
-      const creditRows = CreditSummary.map((row, index) => [
-        index + 1,
-        new Date(row.cr_date || row.createdAt).toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        }),
-        row.cr_mode,
-        row.cr_amount,
-      ]);
+  const [isExporting, setIsExporting] = useState(false);
 
-      // Debit Table
-      const debitHeader = [
-        "S.No.",
-        "Debit Date",
-        "Debit Mode",
-        "Paid For",
-        "Paid To",
-        "Amount",
-        "UTR",
-      ];
-      const debitRows = DebitSummary.map((row, index) => [
-        index + 1,
-        new Date(row.dbt_date).toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        }),
-        row.pay_mode,
-        row.paid_for,
-        row.vendor,
-        row.amount_paid,
-        row.utr,
-      ]);
+const handleExportAll = async () => {
+  try {
+    setIsExporting(true);
 
-      const adjustHeader = [
-        "S.No.",
-        "Adjust Date",
-        "Adjust Type",
-        "PO Number",
-        "Paid For",
-        "Paid To",
-        "Credit Adjustment",
-        "Debit Adjustment",
-      ];
-      const adjustRows = AdjustmentSummary.map((row, index) => [
-        index + 1,
-        new Date(row.adj_date).toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        }),
-        row.pay_type,
-        row.po_number || "-",
-        row.paid_for || "-",
-        row.vendor || "-",
-        row.adj_type === "Add" ? parseFloat(row.adj_amount) : "-",
-        row.adj_type === "Subtract" ? parseFloat(row.adj_amount) : "-",
-      ]);
-
-      const clientHeader = [
-        "S.No.",
-        "PO Number",
-        "Vendor",
-        "Item Name",
-        "PO Value",
-        "Advance Paid",
-        "Remaining Amount",
-        "Total Billed Value",
-      ];
-      const clientRows = ClientSummary.map((client, index) => [
-        index + 1,
-        client.po_number || "-",
-        client.vendor || "-",
-        client.item || "-",
-        client.po_value || "0",
-        client.advance_paid || "0",
-        client.remaining_amount || "0",
-        client.total_billed_value || "0",
-      ]);
-
-      const summaryData = [
-        ["S.No.", "Balance Summary", "Value"],
-        ["1", "Total Received", total_received],
-        ["2", "Total Return", total_return],
-        ["3", "Net Balance [(1)-(2)]", netBalance],
-        ["4", "Total Advance Paid to Vendors", total_advance_paid],
-        ["4A", "Total Adjustment (Debit-Credit)", total_adjustment],
-        [
-          "5",
-          "Balance with Slnko [(3)-(4)-(4A)]",
-          Math.round(balance_with_slnko),
-        ],
-        ["6", "Total PO Basic Value", total_po_basic],
-        ["7", "GST Value as per PO", gst_as_po_basic],
-        ["8", "Total PO with GST", total_po_with_gst],
-        [
-          "9",
-          billing_type === "Composite"
-            ? "GST (13.8%)"
-            : billing_type === "Individual"
-              ? "GST (18%)"
-              : "GST(Type - N/A)",
-          gst_with_type_percentage,
-        ],
-        ["10", "Total Billed Value", total_billed_value],
-        ["11", "Net Advance Paid [(4)-(10)]", net_advanced_paid],
-        [
-          "12",
-          "Balance Payable to Vendors [(8)-(10)-(11)]",
-          Math.round(balance_payable_to_vendors),
-        ],
-        ["13", "TCS as Applicable", Math.round(tcs_as_applicable)],
-        ["14", "Extra GST Recoverable from Client [(8)-(6)]", extraGST],
-        [
-          "15",
-          "Balance Required [(5)-(12)-(13)]",
-          Math.round(balance_required),
-        ],
-      ];
-
-      const csvContent = [
-        creditHeader.join(","),
-        ...creditRows.map((row) => row.join(",")),
-        "",
-        debitHeader.join(","),
-        ...debitRows.map((row) => row.join(",")),
-        "",
-        clientHeader.join(","),
-        ...clientRows.map((row) => row.join(",")),
-        "",
-        adjustHeader.join(","),
-        ...adjustRows.map((row) => row.join(",")),
-        "",
-        ...summaryData.map((row) => row.join(",")),
-        "",
-      ].join("\n");
-
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
-      saveAs(blob, "CustomerPaymentSummary.csv");
-    } catch (err) {
-      console.error("failed to download csv", err);
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      toast.error("Authentication token not found.");
+      setIsExporting(false);
+      return;
     }
-  };
+
+
+    const params = new URLSearchParams();
+    if (p_id) params.set("p_id", p_id);
+    if (startDate) params.set("start", startDate);
+    if (endDate) params.set("end", endDate);
+    if (searchClient) params.set("searchClient", searchClient);
+    if (searchDebit) params.set("searchDebit", searchDebit);
+    if (searchAdjustment) params.set("searchAdjustment", searchAdjustment);
+    params.set("export", "csv");
+
+    const resp = await Axios.get(
+      `/accounting/customer-payment-summary?${params.toString()}`,
+      {
+        headers: { "x-auth-token": token },
+        responseType: "blob",
+      }
+    );
+
+    // Try to read filename from header; fallback to something sensible
+    const cd = resp.headers["content-disposition"] || "";
+    const match = cd.match(/filename\*=UTF-8''([^;]+)|filename="?([^"]+)"?/i);
+    const headerFileName =
+      decodeURIComponent(match?.[1] || match?.[2] || "").trim();
+
+    const fileName =
+      headerFileName ||
+      `customer_payment_summary_${p_id || "export"}.csv`;
+
+    const url = window.URL.createObjectURL(new Blob([resp.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", fileName);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error("CSV export failed:", err);
+    toast.error("Failed to download CSV.");
+  } finally {
+    setIsExporting(false);
+  }
+};
 
   const handleDeleteDebit = async () => {
     if (selectedDebits.length === 0) {
@@ -883,6 +816,51 @@ const Customer_Payment_Summary = () => {
     setSaleDetailOpen(false);
     setActiveSale(null);
   };
+
+  function ItemNameCell({ text }) {
+    if (!text) return "N/A";
+
+    return (
+      <Tooltip
+        title={
+          <Box
+            sx={{
+              p: 1,
+              borderRadius: "8px",
+              border: "1px solid #ccc",
+              backgroundColor: "#fafafa",
+              boxShadow: "sm",
+              maxWidth: 300,
+            }}
+          >
+            <Typography level="body-sm" sx={{ whiteSpace: "pre-wrap" }}>
+              {text}
+            </Typography>
+          </Box>
+        }
+        arrow
+        placement="top"
+      >
+        <Box
+          sx={{
+            maxWidth: 180,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            cursor: "pointer",
+            "@media print": {
+              maxWidth: "unset",
+              whiteSpace: "normal",
+              overflow: "visible",
+              textOverflow: "clip",
+            },
+          }}
+        >
+          {text}
+        </Box>
+      </Tooltip>
+    );
+  }
 
   return (
     <Sheet
@@ -1539,9 +1517,9 @@ const Customer_Payment_Summary = () => {
                 borderRadius: "999px",
                 letterSpacing: 0.2,
                 fontSize: "1.1rem",
-                 fontWeight: 600, 
-                 px: 2, 
-                 py: 1,
+                fontWeight: 600,
+                px: 2,
+                py: 1,
                 "&:hover": { bgcolor: "neutral.softHoverBg" },
                 '&[aria-selected="false"]': {
                   bgcolor: "neutral.softBg",
@@ -1556,15 +1534,16 @@ const Customer_Payment_Summary = () => {
               }}
             >
               Purchase History
-            </Tab>&nbsp;&nbsp;
+            </Tab>
+            &nbsp;&nbsp;
             <Tab
               variant="plain"
               sx={{
                 borderRadius: "999px",
                 fontSize: "1.1rem",
-                 fontWeight: 600, 
-                 px: 2, 
-                 py: 1,
+                fontWeight: 600,
+                px: 2,
+                py: 1,
                 letterSpacing: 0.2,
                 "&:hover": { bgcolor: "neutral.softHoverBg" },
                 '&[aria-selected="false"]': {
@@ -1618,6 +1597,7 @@ const Customer_Payment_Summary = () => {
                   "Guddu Rani Dubey",
                   "Prachi Singh",
                   "admin",
+                  "Chandan Singh",
                 ].includes(user?.name) && (
                   <>
                     <Button
@@ -1628,16 +1608,20 @@ const Customer_Payment_Summary = () => {
                     >
                       Sales Conversion
                     </Button>
-                    {/* Divider between actions */}
-                    <Divider orientation="vertical" flexItem />
 
-                    <IconButton
-                      color="danger"
-                      disabled={selectedClients.length === 0}
-                      onClick={handleDeleteClient}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
+                    {user?.name !== "Chandan Singh" && (
+                      <Divider orientation="vertical" flexItem />
+                    )}
+
+                    {user?.name !== "Chandan Singh" && (
+                      <IconButton
+                        color="danger"
+                        disabled={selectedClients.length === 0}
+                        onClick={handleDeleteClient}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    )}
                   </>
                 )}
               </Box>
@@ -1731,7 +1715,10 @@ const Customer_Payment_Summary = () => {
                       <tr key={client._id}>
                         <td>{client.po_number || "N/A"}</td>
                         <td>{client.vendor || "N/A"}</td>
-                        <td>{client.item_name || "N/A"}</td>
+                        <td>
+                          <ItemNameCell text={client.item_name} />
+                        </td>
+
                         <td>
                           ₹ {(client?.po_value || 0).toLocaleString("en-IN")}
                         </td>
@@ -2035,20 +2022,27 @@ const Customer_Payment_Summary = () => {
 
                           <td>{sale.vendor || "N/A"}</td>
 
-                          {/* Item with ellipsis + tooltip */}
-                          <td title={getItemLabel(sale)}>
-                            <span
-                              style={{
-                                maxWidth: 280,
-                                display: "inline-block",
-                                overflow: "hidden",
-                                whiteSpace: "nowrap",
-                                textOverflow: "ellipsis",
-                                verticalAlign: "bottom",
-                              }}
+                          <td>
+                            <Tooltip
+                              title={getItemLabel(sale) || "N/A"}
+                              variant="soft"
+                              arrow
+                              placement="top"
+                              sx={{ maxWidth: 300, whiteSpace: "normal" }}
                             >
-                              {getItemLabel(sale)}
-                            </span>
+                              <span
+                                style={{
+                                  maxWidth: 150,
+                                  display: "inline-block",
+                                  overflow: "hidden",
+                                  whiteSpace: "nowrap",
+                                  textOverflow: "ellipsis",
+                                  verticalAlign: "bottom",
+                                }}
+                              >
+                                {getItemLabel(sale) || "N/A"}
+                              </span>
+                            </Tooltip>
                           </td>
 
                           <td>
@@ -2074,14 +2068,14 @@ const Customer_Payment_Summary = () => {
                       <td colSpan={4} style={{ textAlign: "right" }}>
                         Total:
                       </td>
-                      <td>₹ {Math.round(saleTotalsFiltered.total_sale)}</td>
+                      <td>₹ {Math.round(saleTotalsFiltered?.total_sale)?.toLocaleString(
+                          "en-IN")}</td>
                     </tr>
                   )}
                 </tfoot>
               </Table>
             </Sheet>
 
-            {/* --- Conversion Details Modal --- */}
             <Modal open={saleDetailOpen} onClose={closeSaleDetail}>
               <ModalDialog sx={{ width: 520 }}>
                 <DialogTitle>Sales Conversion</DialogTitle>
@@ -2433,6 +2427,7 @@ const Customer_Payment_Summary = () => {
           color="danger"
           onClick={handlePrint}
           startDecorator={<PrintIcon />}
+          loading={isPrinting}
         >
           Print
         </Button>
@@ -2442,6 +2437,7 @@ const Customer_Payment_Summary = () => {
           color="success"
           onClick={handleExportAll}
           startDecorator={<FileDownloadIcon />}
+          loading={isExporting}
         >
           CSV
         </Button>
