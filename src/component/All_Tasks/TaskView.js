@@ -35,9 +35,19 @@ import BuildIcon from "@mui/icons-material/Build";
 import NoData from "../../assets/alert-bell.svg";
 import {
   useGetAllTasksQuery,
-  useUpdateTaskStatusMutation, // <-- NEW
+  useUpdateTaskStatusMutation,
 } from "../../redux/globalTaskSlice";
 import { Avatar } from "@mui/joy";
+
+/* ---------- small helper to keep bad URLs from crashing ---------- */
+const safeUrl = (u = "") => {
+  if (!u) return "";
+  try {
+    return new URL(u, window.location.origin).href;
+  } catch {
+    return "";
+  }
+};
 
 /* ---------- helpers: title + time/diff ---------- */
 function toMidnight(d) {
@@ -310,7 +320,6 @@ export default function Dash_task({
     setStatusTaskId(task._id);
     const curr = task?.current_status?.status || "pending";
     setStatusValue(curr);
-    // (optional) prefill remarks with last status remark
     setStatusRemarks("");
     setStatusError("");
     setStatusOpen(true);
@@ -327,7 +336,6 @@ export default function Dash_task({
         remarks: statusRemarks?.trim() || undefined,
       }).unwrap();
       setStatusOpen(false);
-      // reset
       setStatusTaskId(null);
       setStatusRemarks("");
     } catch (e) {
@@ -802,7 +810,6 @@ export default function Dash_task({
                         // Normalize to an array of { id, code, name }
                         let projects = [];
 
-                        // case 1: array from API
                         if (
                           Array.isArray(task.project_details) &&
                           task.project_details.length > 0
@@ -816,9 +823,7 @@ export default function Dash_task({
                             code: p?.code ?? p?.projectCode ?? "-",
                             name: p?.name ?? p?.projectName ?? "-",
                           }));
-                        }
-                        // case 2: single embedded object
-                        else if (
+                        } else if (
                           task.project &&
                           typeof task.project === "object"
                         ) {
@@ -839,9 +844,7 @@ export default function Dash_task({
                                 "-",
                             },
                           ];
-                        }
-                        // case 3: flat fields
-                        else if (
+                        } else if (
                           task.project_code ||
                           task.project_name ||
                           task.project_id
@@ -859,7 +862,6 @@ export default function Dash_task({
                           return <Typography fontWeight="lg">N/A</Typography>;
                         }
 
-                        // Single project → clickable row
                         if (projects.length === 1) {
                           const p = projects[0];
                           const canGo = !!p.id;
@@ -891,7 +893,6 @@ export default function Dash_task({
                           );
                         }
 
-                        // > 1 projects → tooltip list + main clickable
                         const main = projects[0];
                         const canGoMain = !!main.id;
 
@@ -1090,6 +1091,11 @@ export default function Dash_task({
                             {two.map((c, idx) => {
                               const name = c.user?.name || c.name || "Unknown";
                               const remarkPlain = stripHtml(c.remarks || "");
+                              // NEW: avatar image from backend-enriched attachment_url
+                              const avatarUrl = safeUrl(
+                                c?.user?.attachment_url || ""
+                              );
+
                               return (
                                 <Box
                                   key={c._id || idx}
@@ -1107,8 +1113,10 @@ export default function Dash_task({
                                   <Avatar
                                     sx={{ width: 24, height: 24 }}
                                     size="sm"
+                                    src={avatarUrl || undefined}
+                                    variant={avatarUrl ? "soft" : "solid"}
                                   >
-                                    {getInitial(name)}
+                                    {!avatarUrl && getInitial(name)}
                                   </Avatar>
 
                                   <Box sx={{ minWidth: 0 }}>
@@ -1340,7 +1348,12 @@ export default function Dash_task({
                 indicator={null}
                 sx={{ borderRadius: 10 }}
               >
-                {STATUS_OPTIONS.map((o) => (
+                {[
+                  { val: "pending", label: "Pending" },
+                  { val: "in progress", label: "In Progress" },
+                  { val: "completed", label: "Completed" },
+                  { val: "cancelled", label: "Cancelled" },
+                ].map((o) => (
                   <Option key={o.val} value={o.val}>
                     {o.label}
                   </Option>

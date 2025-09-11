@@ -1,5 +1,7 @@
 // src/components/Header.js
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import Sheet from "@mui/joy/Sheet";
 import Box from "@mui/joy/Box";
 import Typography from "@mui/joy/Typography";
@@ -11,18 +13,138 @@ import {
   MenuItem,
   MenuList,
   ListItemDecorator,
-  ListDivider,
+  // ListDivider,
 } from "@mui/joy";
+
 // import Notification from "./Notification";
 import AppNotification from "./Notification"
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
-import { useState } from "react";
 
+// use the RTKQ query that returns a single user
+import { useGetUserByIdQuery } from "../../redux/loginSlice";
+
+/* ---------------- helpers ---------------- */
+const LS_KEY = "userDetails";
+
+const readUser = () => {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+const writeUser = (obj) => {
+  localStorage.setItem(LS_KEY, JSON.stringify(obj));
+  // notify same-tab listeners
+  window.dispatchEvent(new CustomEvent("userDetails:update", { detail: obj }));
+};
+
+// Build absolute URL if backend returns a relative path
+const buildAvatarUrl = (src) => {
+  if (!src) return "";
+  if (/^https?:\/\//i.test(src)) return src;
+  const base =
+    (typeof import.meta !== "undefined" && import.meta.env?.VITE_FILES_BASE) ||
+    process.env.REACT_APP_FILES_BASE ||
+    "";
+  return base
+    ? `${base.replace(/\/+$/, "")}/${String(src).replace(/^\/+/, "")}`
+    : src;
+};
+
+/* ---------------- component ---------------- */
 export default function MainHeader({ title, children }) {
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
+
+  const [user, setUser] = useState(() => readUser());
+  const [avatarErr, setAvatarErr] = useState(false);
+
+  // keep in sync with other parts of app updating LS
+  useEffect(() => {
+    const onAny = (e) => {
+      if (e.type === "storage" && e.key !== LS_KEY) return;
+      if (e.type === "userDetails:update" || e.key === LS_KEY) {
+        setUser(readUser());
+        setAvatarErr(false);
+      }
+    };
+    window.addEventListener("storage", onAny);
+    window.addEventListener("userDetails:update", onAny);
+    return () => {
+      window.removeEventListener("storage", onAny);
+      window.removeEventListener("userDetails:update", onAny);
+    };
+  }, []);
+
+  const storedUserId = useMemo(
+    () => user?.userID || user?._id || null,
+    [user]
+  );
+
+
+  const {
+    data,
+    isSuccess,
+    refetch,
+  } = useGetUserByIdQuery(storedUserId, {
+    skip: !storedUserId,
+    refetchOnMountOrArgChange: true, 
+    refetchOnFocus: true,            
+  });
+
+  
+  useEffect(() => {
+    const h = () => refetch();
+    window.addEventListener("profile:updated", h);
+    return () => window.removeEventListener("profile:updated", h);
+  }, [refetch]);
+
+  // Update LS + cache-bust when fresh user data arrives
+  useEffect(() => {
+    if (!isSuccess || !data?.user) return;
+
+    const u = data.user;
+
+    // detect if avatar/attachment changed to bump cache version
+    const prevSrc = user?.attachment_url || user?.avatar_url || "";
+    const nextSrc = u.attachment_url || "";
+
+    const next = {
+      ...(user || {}),
+      name: u.name ?? user?.name ?? "",
+      email: u.email ?? user?.email ?? "",
+      phone: String(u.phone ?? user?.phone ?? ""),
+      department: u.department ?? user?.department ?? "",
+      location: u.location ?? user?.location ?? "",
+      about: u.about ?? user?.about ?? "",
+      userID: u._id || storedUserId,
+      attachment_url: nextSrc,
+      avatar_url: nextSrc, // keep a single source of truth
+      avatar_version:
+        nextSrc && nextSrc !== prevSrc
+          ? Date.now() // bump to bust browser cache when image changed
+          : user?.avatar_version ?? Date.now(),
+    };
+
+    writeUser(next);
+    setUser(next);
+    setAvatarErr(false);
+  }, [isSuccess, data]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // compute avatar src (+version for cache busting)
+  const rawSrc = user?.avatar_url || user?.attachment_url || "";
+  const baseSrc = avatarErr ? "" : buildAvatarUrl(rawSrc);
+  const avatarSrc =
+    baseSrc && user?.avatar_version
+      ? `${baseSrc}${baseSrc.includes("?") ? "&" : "?"}v=${user.avatar_version}`
+      : baseSrc;
+
+  const avatarInitial = (user?.name?.[0] || "U").toUpperCase();
+
   return (
     <Sheet
       variant="primary"
@@ -36,13 +158,9 @@ export default function MainHeader({ title, children }) {
         boxShadow: "sm",
         width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
         height: "60px",
-        ml: {
-          md: "0px",
-          lg: "var(--Sidebar-width)",
-        },
+        ml: { md: "0px", lg: "var(--Sidebar-width)" },
       })}
     >
-      {/* Main row */}
       <Box
         sx={{
           display: "flex",
@@ -53,7 +171,7 @@ export default function MainHeader({ title, children }) {
           py: { xs: 1, md: 1 },
         }}
       >
-        {/* Center: Title */}
+        {/* Title */}
         <Box sx={{ display: "flex", alignItems: "center" }}>
           <Typography
             level="h5"
@@ -70,6 +188,7 @@ export default function MainHeader({ title, children }) {
           </Typography>
         </Box>
 
+        {/* Middle: children */}
         <Box
           sx={{
             display: "flex",
@@ -83,7 +202,7 @@ export default function MainHeader({ title, children }) {
           {children}
         </Box>
 
-        {/* Right: Actions */}
+        {/* Right: actions */}
         <Box
           sx={{
             display: "flex",
@@ -99,13 +218,17 @@ export default function MainHeader({ title, children }) {
             <MenuButton
               variant="plain"
               color="neutral"
-              sx={{
-                p: 0,
-                borderRadius: "50%",
-                "&:hover": { backgroundColor: "transparent" },
-              }}
+              sx={{ p: 0, borderRadius: "50%", "&:hover": { backgroundColor: "transparent" } }}
             >
-              <Avatar src="https://i.pravatar.cc/40?img=3" size="md" />
+              <Avatar
+                size="md"
+                src={avatarSrc || undefined}
+                alt={user?.name || "User"}
+                onError={() => setAvatarErr(true)}
+                sx={{ border: "2px solid rgba(255,255,255,0.6)" }}
+              >
+                {avatarInitial}
+              </Avatar>
             </MenuButton>
 
             <Menu
@@ -122,38 +245,30 @@ export default function MainHeader({ title, children }) {
                 },
               }}
             >
-              <MenuList
-                variant="plain"
-                sx={{
-                  outline: "none",
-                  border: "none",
-                  p: 0.5,
-                  "& .MuiMenuItem-root": {
-                    borderRadius: "sm",
-                    "&:hover": { bgcolor: "neutral.softBg" },
-                  },
-                }}
-              >
-                <MenuItem>
+              <MenuList variant="plain" sx={{ outline: "none", border: "none", p: 0.5 }}>
+                <MenuItem onClick={() => navigate("/user_profile")}>
                   <ListItemDecorator>
                     <PersonOutlineIcon fontSize="small" />
                   </ListItemDecorator>
                   My Profile
                 </MenuItem>
-                {/* <ListDivider /> */}
-                {/* <MenuItem>
+
+                {/* Example extra items if you re-enable later
+                <ListDivider />
+                <MenuItem>
                   <ListItemDecorator>
                     <GroupOutlinedIcon fontSize="small" />
                   </ListItemDecorator>
                   Users
                 </MenuItem>
                 <ListDivider />
-                <MenuItem color="danger">
+                <MenuItem color="danger" onClick={() => navigate("/logout")}>
                   <ListItemDecorator>
                     <LogoutRoundedIcon fontSize="small" />
                   </ListItemDecorator>
                   Logout
-                </MenuItem> */}
+                </MenuItem>
+                */}
               </MenuList>
             </Menu>
           </Dropdown>
