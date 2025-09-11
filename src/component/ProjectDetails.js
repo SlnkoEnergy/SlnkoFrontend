@@ -1,4 +1,4 @@
-// LeadProfile.tsx
+// LeadProfile.jsx
 import {
   Box,
   Avatar,
@@ -17,7 +17,7 @@ import {
 } from "@mui/joy";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
-import LocationOnRoundedIcon from "@mui/icons-material/LocationOnOutlined";
+import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import { useGetProjectByIdQuery } from "../redux/projectsSlice";
@@ -34,48 +34,92 @@ import PurchaseRequestCard from "./PurchaseRequestCard";
 import ScopeDetail from "./Scope";
 import Posts from "./Posts";
 
-const Project_Detail = () => {
+/* ---------------- helpers ---------------- */
+const getUserData = () => {
+  try {
+    const raw = localStorage.getItem("userDetails");
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+const VALID_TABS = new Set(["handover", "scope", "po", "eng", "notes"]);
+const NUM_TO_KEY = {
+  "0": "handover",
+  "1": "scope",
+  "2": "po",
+  "3": "eng",
+  "4": "notes",
+};
+
+// Sanitize ?tab=... (supports legacy numbers and new string keys)
+const sanitizeTabFromQuery = (raw) => {
+  if (!raw) return "handover";
+  if (NUM_TO_KEY[raw]) return NUM_TO_KEY[raw];
+  if (VALID_TABS.has(raw)) return raw;
+  return "handover";
+};
+
+const canUserSeePO = (user) => {
+  if (!user) return false;
+  const role = String(user.role || "").toLowerCase();
+  const dept = user.department || "";
+  const special = user.emp_id === "SE-013";
+  const privileged =
+    special || role === "admin" || role === "superadmin";
+  // PO hidden for Engineering, unless privileged
+  return privileged || dept !== "Engineering";
+};
+
+export default function Project_Detail() {
   const [searchParams, setSearchParams] = useSearchParams();
   const project_id = searchParams.get("project_id") || "";
 
-  // Base project details
-  const {
-    data: getProject,
-    isLoading,
-    error,
-  } = useGetProjectByIdQuery(project_id);
+  const { data: getProject } = useGetProjectByIdQuery(project_id);
   const projectDetails = getProject?.data || {};
 
-  // Pull the Posts doc to read followers array
   const { data: postsResp } = useGetPostsQuery({ project_id });
 
-  // Logged-in user from localStorage
-  const currentUserId = useMemo(() => {
-    try {
-      const raw = localStorage.getItem("userDetails");
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      return parsed?.userID || null;
-    } catch {
-      return null;
-    }
-  }, []);
+  const currentUser = useMemo(() => getUserData(), []);
+  const currentUserId = useMemo(
+    () => (currentUser ? currentUser.userID || null : null),
+    [currentUser]
+  );
 
-  // tabs
-  const initialTab = parseInt(searchParams.get("tab") || "0");
+  // ---- tabs (string keys) ----
+  const initialTab = sanitizeTabFromQuery(searchParams.get("tab"));
   const [tabValue, setTabValue] = useState(initialTab);
-  useEffect(() => setTabValue(initialTab), [initialTab]);
+  const allowedPO = canUserSeePO(currentUser);
+
+
+
+  // keep state in sync with URL, and guard `po` if not allowed
+  useEffect(() => {
+    const requested = sanitizeTabFromQuery(searchParams.get("tab"));
+    const isPORequested = requested === "po";
+    if (isPORequested && !allowedPO) {
+      // redirect to a safe tab
+      setTabValue("handover");
+      const params = new URLSearchParams(searchParams);
+      params.set("tab", "handover");
+      setSearchParams(params);
+    } else {
+      setTabValue(requested);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, allowedPO]);
 
   const handleTabChange = (_e, newValue) => {
-    setTabValue(newValue);
-    setSearchParams((prev) => {
-      const params = new URLSearchParams(prev);
-      params.set("tab", newValue.toString());
-      return params;
-    });
+    const next = String(newValue);
+    const final = next === "po" && !allowedPO ? "handover" : next;
+    setTabValue(final);
+    const params = new URLSearchParams(searchParams);
+    params.set("tab", final);
+    setSearchParams(params);
   };
 
-  // follow/unfollow state
+  // ---- follow/unfollow state ----
   const [isFollowing, setIsFollowing] = useState(false);
   const [follow, { isLoading: isFollowingCall }] = useFollowMutation();
   const [unfollow, { isLoading: isUnfollowingCall }] = useUnfollowMutation();
@@ -138,14 +182,6 @@ const Project_Detail = () => {
     }
   };
 
-  const getUserData = () => {
-    const userData = localStorage.getItem("userDetails");
-    if (userData) {
-      return JSON.parse(userData);
-    }
-    return null;
-  };
-
   return (
     <Box
       sx={{
@@ -201,7 +237,7 @@ const Project_Detail = () => {
                   <Typography level="body-sm">
                     {projectDetails?.number}
                     {projectDetails?.alt_number
-                      ? `, ${getProject?.data?.alt_number}`
+                      ? `, ${projectDetails?.alt_number}`
                       : ""}
                   </Typography>
                 </Stack>
@@ -243,7 +279,7 @@ const Project_Detail = () => {
             </Stack>
 
             <Stack direction="row" spacing={1} alignItems="center">
-              <LocationOnRoundedIcon fontSize="small" />
+              <LocationOnOutlinedIcon fontSize="small" />
               <Typography level="body-sm" sx={{ ml: 0.5 }}>
                 {typeof projectDetails?.site_address === "object" &&
                 projectDetails?.site_address !== null
@@ -292,16 +328,14 @@ const Project_Detail = () => {
           </Stack>
         </Card>
 
-        {/* Right Section - Notes & Tasks */}
+        {/* Right Section - Tabs */}
         <Card width="100%" sx={{ flex: 1, borderRadius: "lg", p: 1 }}>
           <Box flex={1}>
             <Tabs value={tabValue} onChange={handleTabChange}>
               <TabList>
                 <Tab value="handover">Handover Sheet</Tab>
                 <Tab value="scope">Scope</Tab>
-                {getUserData()?.department !== "Engineering" && (
-                  <Tab value="po">Purchase Order</Tab>
-                )}
+                {allowedPO && <Tab value="po">Purchase Order</Tab>}
                 <Tab value="eng">Engineering</Tab>
                 <Tab value="notes">Notes</Tab>
               </TabList>
@@ -321,26 +355,30 @@ const Project_Detail = () => {
               </TabPanel>
 
               <TabPanel value="scope">
-                <Box maxHeight="70vh" overflow-y="auto">
+                <Box sx={{ maxHeight: "70vh", overflowY: "auto" }}>
                   <ScopeDetail
                     project_id={project_id}
                     project_code={projectDetails?.code}
                   />
                 </Box>
               </TabPanel>
-              {getUserData()?.department !== "Engineering" && (
+
+              {allowedPO && (
                 <TabPanel value="po">
-                  <Box overflow-y="auto">
+                  <Box sx={{ overflowY: "auto" }}>
                     <PurchaseRequestCard project_code={projectDetails?.code} />
                   </Box>
                 </TabPanel>
               )}
+
               <TabPanel value="eng">
                 <Box
-                  display="flex"
-                  alignItems="flex-start"
-                  height="70vh"
-                  overflow-y="auto"
+                  sx={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    height: "70vh",
+                    overflowY: "auto",
+                  }}
                 >
                   <Overview />
                 </Box>
@@ -348,10 +386,12 @@ const Project_Detail = () => {
 
               <TabPanel value="notes">
                 <Box
-                  display="flex"
-                  alignItems="flex-start"
-                  height="70vh"
-                  overflow-y="auto"
+                  sx={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    height: "70vh",
+                    overflowY: "auto",
+                  }}
                 >
                   <Posts projectId={project_id} />
                 </Box>
@@ -374,6 +414,4 @@ const Project_Detail = () => {
       </Snackbar>
     </Box>
   );
-};
-
-export default Project_Detail;
+}
