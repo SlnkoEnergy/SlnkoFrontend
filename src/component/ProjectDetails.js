@@ -138,14 +138,13 @@ const Project_Detail = () => {
     }
   };
 
-    const getUserData = () => {
+  const getUserData = () => {
     const userData = localStorage.getItem("userDetails");
     if (userData) {
       return JSON.parse(userData);
     }
     return null;
   };
-
 
   return (
     <Box
@@ -221,7 +220,7 @@ const Project_Detail = () => {
                   disabled={isFollowingCall || isUnfollowingCall}
                   sx={{
                     "--Icon-color": "#3366a3",
-                    color: "#3366a3", 
+                    color: "#3366a3",
                     "&:hover": {
                       backgroundColor: "rgba(51, 102, 163, 0.08)",
                     },
@@ -299,13 +298,15 @@ const Project_Detail = () => {
             <Tabs value={tabValue} onChange={handleTabChange}>
               <TabList>
                 <Tab value="handover">Handover Sheet</Tab>
-            <Tab value="scope">Scope</Tab>
-            {getUserData()?.department !== "Engineering" && <Tab value="po">Purchase Order</Tab>}
-            <Tab value="eng">Engineering</Tab>
-            <Tab value="notes">Notes</Tab>
+                <Tab value="scope">Scope</Tab>
+                {getUserData()?.department !== "Engineering" && (
+                  <Tab value="po">Purchase Order</Tab>
+                )}
+                <Tab value="eng">Engineering</Tab>
+                <Tab value="notes">Notes</Tab>
               </TabList>
-              
-          <TabPanel value="handover">
+
+              <TabPanel value="handover">
                 <Box
                   sx={{
                     height: "60vh",
@@ -327,13 +328,13 @@ const Project_Detail = () => {
                   />
                 </Box>
               </TabPanel>
-              {getUserData()?.department !== 'Engineering' && (
-              <TabPanel value="po">
-                <Box overflow-y="auto">
-                  <PurchaseRequestCard project_code={projectDetails?.code} />
-                </Box>
-              </TabPanel>
- )}
+              {getUserData()?.department !== "Engineering" && (
+                <TabPanel value="po">
+                  <Box overflow-y="auto">
+                    <PurchaseRequestCard project_code={projectDetails?.code} />
+                  </Box>
+                </TabPanel>
+              )}
               <TabPanel value="eng">
                 <Box
                   display="flex"
