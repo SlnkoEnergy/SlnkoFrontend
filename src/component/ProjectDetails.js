@@ -138,6 +138,15 @@ const Project_Detail = () => {
     }
   };
 
+    const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
+
+
   return (
     <Box
       sx={{
@@ -211,8 +220,8 @@ const Project_Detail = () => {
                   onClick={handleFollowToggle}
                   disabled={isFollowingCall || isUnfollowingCall}
                   sx={{
-                    "--Icon-color": "#3366a3", // icon color
-                    color: "#3366a3", // text/icon fallback
+                    "--Icon-color": "#3366a3",
+                    color: "#3366a3", 
                     "&:hover": {
                       backgroundColor: "rgba(51, 102, 163, 0.08)",
                     },
@@ -291,9 +300,11 @@ const Project_Detail = () => {
               <TabList>
                 <Tab>Handover Sheet</Tab>
                 <Tab>Scope</Tab>
-                <Tab>Purchase Summary</Tab>
+                {getUserData()?.department !== 'Engineering' && (
+                <Tab>Purchase Order</Tab>
+              )}
                 <Tab>Engineering</Tab>
-                <Tab>Posts</Tab>
+                <Tab>Notes</Tab>
               </TabList>
 
               <TabPanel value={0}>

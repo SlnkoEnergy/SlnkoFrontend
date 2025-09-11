@@ -1,7 +1,5 @@
-// src/components/Header.js
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 import Sheet from "@mui/joy/Sheet";
 import Box from "@mui/joy/Box";
 import Typography from "@mui/joy/Typography";
@@ -13,19 +11,14 @@ import {
   MenuItem,
   MenuList,
   ListItemDecorator,
-  // ListDivider,
+  IconButton,
 } from "@mui/joy";
-
-// import Notification from "./Notification";
-import AppNotification from "./Notification"
-import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
+import MenuIcon from "@mui/icons-material/Menu";
+import AppNotification from "./Notification";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
-import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
-
-// use the RTKQ query that returns a single user
 import { useGetUserByIdQuery } from "../../redux/loginSlice";
+import { toggleSidebar } from "../../utils/utils";
 
-/* ---------------- helpers ---------------- */
 const LS_KEY = "userDetails";
 
 const readUser = () => {
@@ -39,11 +32,9 @@ const readUser = () => {
 
 const writeUser = (obj) => {
   localStorage.setItem(LS_KEY, JSON.stringify(obj));
-  // notify same-tab listeners
   window.dispatchEvent(new CustomEvent("userDetails:update", { detail: obj }));
 };
 
-// Build absolute URL if backend returns a relative path
 const buildAvatarUrl = (src) => {
   if (!src) return "";
   if (/^https?:\/\//i.test(src)) return src;
@@ -56,14 +47,12 @@ const buildAvatarUrl = (src) => {
     : src;
 };
 
-/* ---------------- component ---------------- */
 export default function MainHeader({ title, children }) {
   const navigate = useNavigate();
 
   const [user, setUser] = useState(() => readUser());
   const [avatarErr, setAvatarErr] = useState(false);
 
-  // keep in sync with other parts of app updating LS
   useEffect(() => {
     const onAny = (e) => {
       if (e.type === "storage" && e.key !== LS_KEY) return;
@@ -80,36 +69,24 @@ export default function MainHeader({ title, children }) {
     };
   }, []);
 
-  const storedUserId = useMemo(
-    () => user?.userID || user?._id || null,
-    [user]
-  );
+  const storedUserId = useMemo(() => user?.userID || user?._id || null, [user]);
 
-
-  const {
-    data,
-    isSuccess,
-    refetch,
-  } = useGetUserByIdQuery(storedUserId, {
+  const { data, isSuccess, refetch } = useGetUserByIdQuery(storedUserId, {
     skip: !storedUserId,
-    refetchOnMountOrArgChange: true, 
-    refetchOnFocus: true,            
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
   });
 
-  
   useEffect(() => {
     const h = () => refetch();
     window.addEventListener("profile:updated", h);
     return () => window.removeEventListener("profile:updated", h);
   }, [refetch]);
 
-  // Update LS + cache-bust when fresh user data arrives
   useEffect(() => {
     if (!isSuccess || !data?.user) return;
 
     const u = data.user;
-
-    // detect if avatar/attachment changed to bump cache version
     const prevSrc = user?.attachment_url || user?.avatar_url || "";
     const nextSrc = u.attachment_url || "";
 
@@ -123,19 +100,18 @@ export default function MainHeader({ title, children }) {
       about: u.about ?? user?.about ?? "",
       userID: u._id || storedUserId,
       attachment_url: nextSrc,
-      avatar_url: nextSrc, // keep a single source of truth
+      avatar_url: nextSrc,
       avatar_version:
         nextSrc && nextSrc !== prevSrc
-          ? Date.now() // bump to bust browser cache when image changed
+          ? Date.now()
           : user?.avatar_version ?? Date.now(),
     };
 
     writeUser(next);
     setUser(next);
     setAvatarErr(false);
-  }, [isSuccess, data]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isSuccess, data]);
 
-  // compute avatar src (+version for cache busting)
   const rawSrc = user?.avatar_url || user?.attachment_url || "";
   const baseSrc = avatarErr ? "" : buildAvatarUrl(rawSrc);
   const avatarSrc =
@@ -171,21 +147,40 @@ export default function MainHeader({ title, children }) {
           py: { xs: 1, md: 1 },
         }}
       >
-        {/* Title */}
-        <Box sx={{ display: "flex", alignItems: "center" }}>
-          <Typography
-            level="h5"
+        <Box display={"flex"} gap={2}>
+          <IconButton
+            onClick={toggleSidebar}
+            variant="outlined"
+            size="sm"
             sx={{
-              fontWeight: 600,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              color: "white",
-              letterSpacing: 0.5,
+              "@media print": { display: "none!important" },
+              display: { sm: "flex", lg: "none" },
+              borderColor: "#fff",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.12)",
+                borderColor: "#fff",
+              },
             }}
           >
-            {title}
-          </Typography>
+            <MenuIcon sx={{ color: "#fff" }} />
+          </IconButton>
+
+          {/* Title */}
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <Typography
+              level="h5"
+              sx={{
+                fontWeight: 600,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                color: "white",
+                letterSpacing: 0.5,
+              }}
+            >
+              {title}
+            </Typography>
+          </Box>
         </Box>
 
         {/* Middle: children */}
@@ -218,7 +213,11 @@ export default function MainHeader({ title, children }) {
             <MenuButton
               variant="plain"
               color="neutral"
-              sx={{ p: 0, borderRadius: "50%", "&:hover": { backgroundColor: "transparent" } }}
+              sx={{
+                p: 0,
+                borderRadius: "50%",
+                "&:hover": { backgroundColor: "transparent" },
+              }}
             >
               <Avatar
                 size="md"
@@ -245,7 +244,10 @@ export default function MainHeader({ title, children }) {
                 },
               }}
             >
-              <MenuList variant="plain" sx={{ outline: "none", border: "none", p: 0.5 }}>
+              <MenuList
+                variant="plain"
+                sx={{ outline: "none", border: "none", p: 0.5 }}
+              >
                 <MenuItem onClick={() => navigate("/user_profile")}>
                   <ListItemDecorator>
                     <PersonOutlineIcon fontSize="small" />

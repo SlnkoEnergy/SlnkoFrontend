@@ -37,7 +37,7 @@ export default function CommentComposer({
   onRemoveAttachment,
   attachments = [],
   submitting = false,
-  placeholder = "Write a comment…",
+  placeholder = "Write a note...",
   disabled = false,
   editorMinHeight = 120,
 }) {
@@ -279,7 +279,7 @@ export default function CommentComposer({
   const hasFiles = Array.isArray(attachments) && attachments.length > 0;
   const primaryBtnLabel = hasFiles
     ? `Upload ${attachments.length > 1 ? "Files" : "File"}`
-    : "Add Comment";
+    : "Add Notes";
 
   return (
     <Sheet

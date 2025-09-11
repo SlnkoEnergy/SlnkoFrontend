@@ -90,7 +90,7 @@ function Sidebar() {
       sx={{
         position: "fixed",
         transition: "transform 0.4s, width 0.4s",
-        zIndex: 200,
+        zIndex: {xs:201, lg:200},
         height: "100dvh",
         width: "var(--Sidebar-width)",
         top: 0,
@@ -2435,8 +2435,7 @@ function Sidebar() {
                     </ListItemButton>
                   </ListItem>
                   {((user?.department === "Projects" &&
-                    user?.name === "Mayank Kumar") ||
-                    user?.name === "Vivek Pandey" ||
+                    (user?.emp_id === "SE-203" || user?.emp_id === "SE-212" || user?.emp_id === "SE-205" || user?.emp_id === "SE-010")) ||
                     user?.name === "Disha Sharma") && (
                     <ListItem>
                       <ListItemButton

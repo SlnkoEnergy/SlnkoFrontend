@@ -408,7 +408,7 @@ export default function PostsCard({
       />
 
       <Section
-        title="Activity & Notes"
+        title="Notes"
         open={openActivity}
         onToggle={() => setOpenActivity((v) => !v)}
         right={
@@ -427,7 +427,7 @@ export default function PostsCard({
           sx={{ mb: 1 }}
         >
           <TabList>
-            <Tab value="comments">Comments</Tab>
+            <Tab value="comments">Notes</Tab>
             <Tab value="docs">Documents</Tab>
           </TabList>
 

@@ -113,7 +113,7 @@ const safeUrl = (u = "") => {
     return "";
   }
 };
-  
+
 const getAvatarUrl = (u = {}) =>
   safeUrl(u?.attachment_url || u?.user_id?.attachment_url || "");
 
@@ -155,7 +155,12 @@ const colorFromName = (name = "") => {
   return palette[sum % palette.length];
 };
 
-const PeopleAvatars = ({ people = [], max = 3, size = "sm", onPersonClick }) => {
+const PeopleAvatars = ({
+  people = [],
+  max = 3,
+  size = "sm",
+  onPersonClick,
+}) => {
   const shown = people.slice(0, max);
   const extra = people.slice(max);
   const ringSx = { boxShadow: "0 0 0 1px var(--joy-palette-background-body)" };
@@ -178,19 +183,23 @@ const PeopleAvatars = ({ people = [], max = 3, size = "sm", onPersonClick }) => 
           return (
             <Tooltip key={p.id || i} arrow placement="top" title={name}>
               <Avatar
-             role={onPersonClick ? "button" : undefined}
-             tabIndex={onPersonClick ? 0 : undefined}
-             onClick={onPersonClick ? () => onPersonClick(p) : undefined}
-             onKeyDown={
-               onPersonClick
-                 ? (e) => (e.key === "Enter" || e.key === " ") && onPersonClick(p)
-                 : undefined
-             }
+                role={onPersonClick ? "button" : undefined}
+                tabIndex={onPersonClick ? 0 : undefined}
+                onClick={onPersonClick ? () => onPersonClick(p) : undefined}
+                onKeyDown={
+                  onPersonClick
+                    ? (e) =>
+                        (e.key === "Enter" || e.key === " ") && onPersonClick(p)
+                    : undefined
+                }
                 size={size}
                 src={src || undefined}
                 variant={src ? "soft" : "solid"}
                 color={src ? "neutral" : color}
-                sx={{ ...ringSx, cursor: onPersonClick ? "pointer" : "default" }}
+                sx={{
+                  ...ringSx,
+                  cursor: onPersonClick ? "pointer" : "default",
+                }}
               >
                 {!src && initials}
               </Avatar>
@@ -198,71 +207,77 @@ const PeopleAvatars = ({ people = [], max = 3, size = "sm", onPersonClick }) => 
           );
         })}
         {extra.length > 0 && (
-  <Tooltip
-    arrow
-    placement="bottom"
-    variant="soft"
-    disableInteractive={false}
-    slotProps={{ tooltip: { sx: { pointerEvents: "auto" } } }}
-    title={
-      <Box
-        sx={{
-          maxHeight: 260,
-          overflowY: "auto",
-          px: 1,
-          py: 0.5,
-          maxWidth: 240,
-        }}
-      >
-        {extra.map((p, i) => (
-          <Box key={p.id || i} sx={{ mb: i !== extra.length - 1 ? 1 : 0 }}>
-            <Stack
-              direction="row"
-              alignItems="center"
-              gap={1}
-              role={onPersonClick ? "button" : undefined}
-              tabIndex={onPersonClick ? 0 : undefined}
-              onClick={onPersonClick ? () => onPersonClick(p) : undefined}
-              onKeyDown={
-                onPersonClick
-                  ? (e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        onPersonClick(p);
-                      }
-                    }
-                  : undefined
-              }
-              sx={{ cursor: onPersonClick ? "pointer" : "default" }}
-            >
-              <Avatar
-                size="sm"
-                src={p.avatar || undefined}
-                variant={p.avatar ? "soft" : "solid"}
-                color={p.avatar ? "neutral" : colorFromName(p.name)}
-                sx={ringSx}
+          <Tooltip
+            arrow
+            placement="bottom"
+            variant="soft"
+            disableInteractive={false}
+            slotProps={{ tooltip: { sx: { pointerEvents: "auto" } } }}
+            title={
+              <Box
+                sx={{
+                  maxHeight: 260,
+                  overflowY: "auto",
+                  px: 1,
+                  py: 0.5,
+                  maxWidth: 240,
+                }}
               >
-                {!p.avatar && initialsOf(p.name)}
-              </Avatar>
-              <Typography level="body-sm">{p.name || "User"}</Typography>
-            </Stack>
-            {i !== extra.length - 1 && <Divider sx={{ my: 0.75 }} />}
-          </Box>
-        ))}
-      </Box>
-    }
-  >
-    <Avatar
-      size={size}
-      variant="soft"
-      color="neutral"
-      sx={{ ...ringSx, ml: "-8px", fontSize: 12, cursor: "default" }}
-    >
-      +{extra.length}
-    </Avatar>
-  </Tooltip>
-)}
-
+                {extra.map((p, i) => (
+                  <Box
+                    key={p.id || i}
+                    sx={{ mb: i !== extra.length - 1 ? 1 : 0 }}
+                  >
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      gap={1}
+                      role={onPersonClick ? "button" : undefined}
+                      tabIndex={onPersonClick ? 0 : undefined}
+                      onClick={
+                        onPersonClick ? () => onPersonClick(p) : undefined
+                      }
+                      onKeyDown={
+                        onPersonClick
+                          ? (e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                onPersonClick(p);
+                              }
+                            }
+                          : undefined
+                      }
+                      sx={{ cursor: onPersonClick ? "pointer" : "default" }}
+                    >
+                      <Avatar
+                        size="sm"
+                        src={p.avatar || undefined}
+                        variant={p.avatar ? "soft" : "solid"}
+                        color={p.avatar ? "neutral" : colorFromName(p.name)}
+                        sx={ringSx}
+                      >
+                        {!p.avatar && initialsOf(p.name)}
+                      </Avatar>
+                      <Typography level="body-sm">
+                        {p.name || "User"}
+                      </Typography>
+                    </Stack>
+                    {i !== extra.length - 1 && <Divider sx={{ my: 0.75 }} />}
+                  </Box>
+                ))}
+              </Box>
+            }
+          >
+            <Avatar
+              size={size}
+              variant="soft"
+              color="neutral"
+              sx={{ ...ringSx, ml: "-8px", fontSize: 12, cursor: "default" }}
+            >
+              +{extra.length}
+            </Avatar>
+          </Tooltip>
+        )}
       </Box>
     </Stack>
   );
@@ -964,16 +979,16 @@ export default function ViewTaskPage() {
   }, [task]);
 
   const navigate = useNavigate();
- const goToProfile = (personOrUserObj) => {
-   const uid =
-     personOrUserObj?.id ||
-     personOrUserObj?._id ||
-     personOrUserObj?.user_id ||
-     personOrUserObj?.email ||
-     personOrUserObj?.name;
-   if (!uid) return;
-   navigate(`/user_profile?user_id=${encodeURIComponent(String(uid))}`);
- };
+  const goToProfile = (personOrUserObj) => {
+    const uid =
+      personOrUserObj?.id ||
+      personOrUserObj?._id ||
+      personOrUserObj?.user_id ||
+      personOrUserObj?.email ||
+      personOrUserObj?.name;
+    if (!uid) return;
+    navigate(`/user_profile?user_id=${encodeURIComponent(String(uid))}`);
+  };
   // Reassign assignee options (exclude already assigned_to, and no user_id field)
   const allAssigneeOptions = useMemo(() => {
     const apiUsers = Array.isArray(allUsersResp)
@@ -1106,6 +1121,8 @@ export default function ViewTaskPage() {
       setSavingDueDate(false);
     }
   };
+
+   const currentUser = JSON.parse(localStorage.getItem("userDetails"))?.name;
 
   return (
     <Box
@@ -1290,11 +1307,14 @@ export default function ViewTaskPage() {
                 value={
                   <Stack direction="row" alignItems="center" gap={1}>
                     {task?.assigned_to?.length ? (
-                      <PeopleAvatars people={toPeople(task.assigned_to)} onPersonClick={goToProfile} />
+                      <PeopleAvatars
+                        people={toPeople(task.assigned_to)}
+                        onPersonClick={goToProfile}
+                      />
                     ) : (
                       <Typography level="body-sm">None</Typography>
                     )}
-                    {!hasReassign && (
+                    {(!hasReassign) && (currentUser === task?.createdBy?.name) && (
                       <Tooltip title="Reassign">
                         <IconButton
                           size="sm"
@@ -1374,7 +1394,11 @@ export default function ViewTaskPage() {
               <Field
                 label="Created By"
                 value={
-                  <PeopleAvatars people={toPeople(task?.createdBy)} max={1} onPersonClick={goToProfile} />
+                  <PeopleAvatars
+                    people={toPeople(task?.createdBy)}
+                    max={1}
+                    onPersonClick={goToProfile}
+                  />
                 }
               />
               <Field
@@ -1568,7 +1592,7 @@ export default function ViewTaskPage() {
 
       {/* Activity & Notes */}
       <Section
-        title="Activity & Notes"
+        title="Notes"
         open={openActivity}
         onToggle={() => setOpenActivity((v) => !v)}
         right={
@@ -1587,7 +1611,7 @@ export default function ViewTaskPage() {
           sx={{ mb: 1 }}
         >
           <TabList>
-            <Tab value="comments">Comments</Tab>
+            <Tab value="comments">Notes</Tab>
             <Tab value="docs">Documents</Tab>
           </TabList>
 
@@ -1636,16 +1660,24 @@ export default function ViewTaskPage() {
                     <Box key={`act-${idx}`} sx={{ mb: 1.5 }}>
                       <Stack direction="row" alignItems="flex-start" gap={1.25}>
                         <Avatar
-                        role="button" 
-                        tabIndex={0}
-                        onClick={() => goToProfile(user)}
-                        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && goToProfile(user)}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => goToProfile(user)}
+                          onKeyDown={(e) =>
+                            (e.key === "Enter" || e.key === " ") &&
+                            goToProfile(user)
+                          }
                           src={user.avatar || undefined}
                           variant={user.avatar ? "soft" : "solid"}
                           color={
                             user.avatar ? "neutral" : colorFromName(user.name)
                           }
-                          sx={{ width: 36, height: 36, fontWeight: 700, cursor: "pointer" }}
+                          sx={{
+                            width: 36,
+                            height: 36,
+                            fontWeight: 700,
+                            cursor: "pointer",
+                          }}
                         >
                           {!user.avatar && initialsOf(user.name)}
                         </Avatar>

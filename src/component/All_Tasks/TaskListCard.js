@@ -115,10 +115,8 @@ function Row({ item, showDivider }) {
     (typeof item.createdBy === "string" ? item.createdBy : "") ||
     "—";
 
-    
-    const assignees = Array.isArray(item.assigned_to) ? item.assigned_to : [];
-   
-  
+  const assignees = Array.isArray(item.assigned_to) ? item.assigned_to : [];
+
   const goToTask = () => {
     if (item?.id || item?._id) {
       const id = item.id ?? item._id;
@@ -186,7 +184,7 @@ function Row({ item, showDivider }) {
             {assignees.slice(0, 3).map((u, idx) => (
               <Avatar
                 key={u?._id || u?.id || idx}
-                src={safeSrc(u?.attachment_url)}   
+                src={safeSrc(u?.attachment_url)}
               >
                 {firstInitial(u?.name)}
               </Avatar>
@@ -202,7 +200,10 @@ function Row({ item, showDivider }) {
 }
 
 /* ---------- main card ---------- */
-export default function TaskStatusList({ title = "Today Task Creation", items = [] }) {
+export default function TaskStatusList({
+  title = "Today Task Creation",
+  items = [],
+}) {
   return (
     <Card
       variant="soft"
@@ -233,7 +234,10 @@ export default function TaskStatusList({ title = "Today Task Creation", items = 
 
       <Box>
         {items.length === 0 ? (
-          <Typography level="body-sm" sx={{ px: 2, py: 3, color: "text.secondary" }}>
+          <Typography
+            level="body-sm"
+            sx={{ px: 2, py: 3, color: "text.secondary" }}
+          >
             No tasks.
           </Typography>
         ) : (

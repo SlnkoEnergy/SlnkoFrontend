@@ -7,7 +7,6 @@ import ColorSchemeToggle from "./ColorSchemeToggle";
 import { toggleSidebar } from '../../utils/utils';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { NotificationCenter, NovuProvider, PopoverNotificationCenter, useNotifications } from '@novu/notification-center';
-import { IconButtonRoot } from '@mui/joy/IconButton/IconButton';
 import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 import { useEffect, useRef, useState } from 'react';
 
