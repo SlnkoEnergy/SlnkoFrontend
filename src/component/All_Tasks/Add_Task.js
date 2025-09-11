@@ -21,7 +21,6 @@ import {
   useGetAllUserQuery,
 } from "../../redux/globalTaskSlice";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
 import Select, { components } from "react-select";
 
 /* ---------------------------------------------------
@@ -57,7 +56,7 @@ const AddTask = () => {
   const [searchText, setSearchText] = useState("");
   const [selectedProject, setSelectedProject] = useState([]);
   const [title, setTitle] = useState("");
-  const [dueDate, setDueDate] = useState("");
+  const [deadlineDT, setDeadlineDT] = useState(null);
   const [note, setNote] = useState("");
   const [assignedTo, setAssignedTo] = useState([]);
   const [subtype, setSubType] = useState("");
@@ -67,6 +66,7 @@ const AddTask = () => {
   const { data: getAllUser } = useGetAllUserQuery({ department: "" });
   const { data: getAllDept } = useGetAllDeptQuery();
 
+  const buildISO = (d) => (d && d.isValid() ? d.toDate().toISOString() : null);
   /* ---------------- Submit ---------------- */
   const handleSubmit = async () => {
     const isProjectTab = tab === "project";
@@ -83,7 +83,7 @@ const AddTask = () => {
     const payload = {
       title,
       description: note,
-      deadline: dueDate || null,
+      deadline: deadlineDT ? new Date(deadlineDT).toISOString() : null,
       project_id: projectIds,
       assigned_to: isHelpdeskTab
         ? []
@@ -92,7 +92,7 @@ const AddTask = () => {
         : Array.isArray(assignedTo)
         ? assignedTo
         : [],
-      priority: priority.toString(),
+      priority: String(priority),
       type: tab,
       sub_type: isHelpdeskTab ? subtype : null,
     };
@@ -108,14 +108,14 @@ const AddTask = () => {
       }).unwrap();
 
       toast.success("Task created successfully");
-      setPriority("");
-      setAssignToTeam("");
+      setPriority(0);
+      setAssignToTeam(false);
       setSearchText("");
-      setSelectedProject("");
-      setDueDate("");
+      setSelectedProject([]);
+      setDeadlineDT(null);
       setTitle("");
       setNote("");
-      setAssignedTo("");
+      setAssignedTo([]);
     } catch (error) {
       toast.error("Error creating task");
     }
@@ -313,11 +313,12 @@ const AddTask = () => {
 
         <Grid xs={6}>
           <FormControl fullWidth>
-            <FormLabel>Due Date</FormLabel>
+            <FormLabel>Deadline</FormLabel>
             <Input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
+              type="datetime-local"
+              value={deadlineDT}
+              onChange={(e) => setDeadlineDT(e.target.value)}
+              placeholder="dd-mm-yyyy hh:mm"
             />
           </FormControl>
         </Grid>
@@ -424,7 +425,7 @@ const AddTask = () => {
                 setSearchText("");
                 setSelectedProject([]);
                 setTitle("");
-                setDueDate("");
+                setDeadlineDT("");
                 setNote("");
                 setAssignedTo([]);
               }
