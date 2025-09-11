@@ -37,6 +37,7 @@ import {
   useUpdateRequestExtensionMutation,
 } from "../../redux/Accounts";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 dayjs.extend(duration);
 
@@ -127,6 +128,7 @@ const CreditRequest = forwardRef(
     const paginatedData = responseData?.data || [];
 
     const [user, setUser] = useState(null);
+    const navigate = useNavigate();
     useEffect(() => {
       try {
         const str = localStorage.getItem("userDetails");
@@ -160,8 +162,7 @@ const CreditRequest = forwardRef(
       borderColor: "divider",
     };
 
-    /* left column: Credit Id + Created Date */
-    const PaymentID = ({ cr_id, dbt_date, approved }) => {
+    const PaymentID = ({ cr_id, dbt_date, approved, p_id }) => {
       const maskCrId = (id) => {
         if (!id) return "N/A";
         if (approved === "Approved") return id;
@@ -186,6 +187,9 @@ const CreditRequest = forwardRef(
                 color: "#fff",
                 letterSpacing: 0.2,
               }}
+              onClick={() =>
+                navigate(`/view_detail?page=${currentPage}&p_id=${p_id}`)
+              }
             >
               {maskCrId(cr_id)}
             </Chip>
@@ -762,7 +766,8 @@ const CreditRequest = forwardRef(
 
       return (
         <Box>
-          {((department === "SCM" || department === "Accounts") && role === "manager") ||
+          {((department === "SCM" || department === "Accounts") &&
+            role === "manager") ||
           department === "admin" ||
           department === "superadmin" ? (
             <Tooltip title={historyContent} arrow placement="top">
@@ -774,7 +779,6 @@ const CreditRequest = forwardRef(
         </Box>
       );
     };
-
 
     /* ---------- render ---------- */
     return (
@@ -864,15 +868,14 @@ const CreditRequest = forwardRef(
                   }}
                 >
                   <Box component="td" sx={{ ...cellStyle, minWidth: 280 }}>
-                   
-                      <span>
-                        <PaymentID
-                          cr_id={payment.cr_id}
-                          dbt_date={payment.dbt_date}
-                          approved={payment?.approved}
-                        />
-                      </span>
-          
+                    <span>
+                      <PaymentID
+                        cr_id={payment.cr_id}
+                        dbt_date={payment.dbt_date}
+                        approved={payment?.approved}
+                        p_id={payment.p_id}
+                      />
+                    </span>
                   </Box>
 
                   <Box component="td" sx={{ ...cellStyle, minWidth: 320 }}>

@@ -23,10 +23,11 @@ export const AccountsApi = createApi({
       transformResponse: (response) => ({
         data: response.data || [],
         total: response.meta?.total || 0,
-        count: response.meta?.count || 0,
+        count: response.meta?.count || (response.data?.length ?? 0),
         totals: response.totals || {},
       }),
-      providesTags: ["Accounts"],
+      providesTags: () => [{ type: "Accounts", id: "ProjectBalance" }],
+      keepUnusedDataFor: 5,
     }),
     getPaymentRecord: builder.query({
       query: ({
@@ -139,7 +140,33 @@ export const AccountsApi = createApi({
       providesTags: ["Accounts"],
     }),
 
-     getExportPaymentHistory: builder.query({
+    updateSalesPO: builder.mutation({
+      query: ({ id, remarks, files }) => {
+        const form = new FormData();
+        form.append("remarks", remarks ?? "");
+
+        if (Array.isArray(files)) {
+          files.forEach((f) => {
+            if (f?.file) {
+              form.append("file", f.file);
+              form.append("attachment_name", f.attachment_name ?? f.file.name);
+            } else if (f instanceof File) {
+              form.append("file", f);
+              form.append("attachment_name", f.name);
+            }
+          });
+        }
+
+        return {
+          url: `sales-update/${id}`,
+          method: "PUT",
+          body: form,
+        };
+      },
+      invalidatesTags: ["Accounts"],
+    }),
+
+    getExportPaymentHistory: builder.query({
       async queryFn({ po_number }, _queryApi, _extraOptions, fetchWithBQ) {
         const result = await fetchWithBQ({
           url: `accounting/debithistorycsv?po_number=${po_number}`,
@@ -237,4 +264,5 @@ export const {
   useUpdateCreditExtensionMutation,
   useUpdateRequestExtensionMutation,
   useUpdateRestoreTrashMutation,
+  useUpdateSalesPOMutation,
 } = AccountsApi;
