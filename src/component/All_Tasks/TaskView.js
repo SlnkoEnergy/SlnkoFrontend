@@ -582,7 +582,23 @@ export default function Dash_task({
                     ? task?.current_status?.updatedAt
                     : undefined);
 
+                // 🔸 NEW: locate cancellation timestamp
+                const cancelledFromHistory = Array.isArray(task?.status_history)
+                  ? task.status_history
+                      .slice()
+                      .reverse()
+                      .find((s) => s?.status === "cancelled")
+                  : null;
+
+                const currentIsCancelled =
+                  task?.current_status?.status === "cancelled";
+                const cancellationDate =
+                  cancelledFromHistory?.updatedAt ??
+                  (currentIsCancelled
+                    ? task?.current_status?.updatedAt
+                    : undefined);
                 let timingEl = null;
+
                 if (completionDate) {
                   const elapsedDays = daysBetween(completionDate, startDate);
                   if (hasDeadline) {
@@ -610,6 +626,16 @@ export default function Dash_task({
                       </Typography>
                     );
                   }
+                }
+                // 🔸 NEW: cancelled branch — compute vs createdAt (startDate), not vs deadline
+                else if (cancellationDate) {
+                  const elapsedDays = daysBetween(cancellationDate, startDate);
+                  timingEl = (
+                    <Typography level="body-sm" sx={{ color: "#6b7280" }}>
+                      Cancelled after {elapsedDays}{" "}
+                      {elapsedDays === 1 ? "day" : "days"}
+                    </Typography>
+                  );
                 } else if (hasDeadline) {
                   if (
                     dln < today &&
@@ -754,7 +780,17 @@ export default function Dash_task({
                       )}
 
                       <Typography level="body-sm" sx={{ mt: 0.25 }}>
-                        Deadline: {task.deadline?.split?.("T")?.[0] || "-"}
+                        Deadline:{" "}
+                        {task.deadline
+                          ? new Date(task.deadline).toLocaleString("en-GB", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: true,
+                            })
+                          : "-"}
                       </Typography>
 
                       <Box sx={{ mt: 0.25 }}>{timingEl}</Box>
