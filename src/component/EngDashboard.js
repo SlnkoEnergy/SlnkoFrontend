@@ -104,7 +104,7 @@ function Dash_eng() {
           }}
           onClick={() => {
             const page = currentPage;
-            navigate(`/overview?page=${page}&project_id=${project_id}`);
+            navigate(`/project_detail?page=${page}&project_id=${project_id}`);
           }}
         >
           {code || "-"}
@@ -287,14 +287,12 @@ function Dash_eng() {
                 />
               </th>
               {[
-                "",
                 "Project Id",
                 "Project Name",
                 "Customer",
                 "Mobile",
                 "State",
                 "Capacity(AC/DC)",
-                "Status",
               ].map((header, index) => (
                 <th
                   key={index}
@@ -362,19 +360,7 @@ function Dash_eng() {
                       textAlign: "left",
                     }}
                   >
-                    <ViewHandOver
-                      currentPage={currentPage}
-                      p_id={project.p_id}
-                    />
-                  </td>
-                  <td
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    <Tooltip title="View Engineering Overview" arrow>
+                    <Tooltip title="View Project Detail" arrow>
                       <span>
                         <ProjectOverView
                           currentPage={currentPage}
@@ -430,15 +416,6 @@ function Dash_eng() {
                     {project.project_kwp && project.proposed_dc_capacity
                       ? `${project.project_kwp} AC / ${project.proposed_dc_capacity} DC`
                       : "-"}
-                  </td>
-                  <td
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    Not defined
                   </td>
                 </tr>
               ))

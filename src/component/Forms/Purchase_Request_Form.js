@@ -20,6 +20,8 @@ import {
 } from "@mui/joy";
 import DeleteOutline from "@mui/icons-material/DeleteOutline";
 import Add from "@mui/icons-material/Add";
+import { ClickAwayListener } from "@mui/base";
+
 import RestartAlt from "@mui/icons-material/RestartAlt";
 import Send from "@mui/icons-material/Send";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -232,6 +234,12 @@ export default function Purchase_Request_Form() {
   const [prodCreateOpen, setProdCreateOpen] = useState(false);
   const [prodCreateInitial, setProdCreateInitial] = useState(null);
   const [prodCreateLineId, setProdCreateLineId] = useState(null);
+
+  const [productOpenByLine, setProductOpenByLine] = useState({});
+  const setProdOpen = (id, v) =>
+    setProductOpenByLine((prev) => ({ ...prev, [id]: v }));
+
+
 
   useEffect(() => {
     if (isCreate && projectId && !projectCode) {
@@ -726,6 +734,7 @@ export default function Purchase_Request_Form() {
 
     setPoSeed({
       pr_id: prId || null,
+      pr_no:prno || null,
       project_id: projectId || null,
       project_code: projectCode || "",
       p_id: pId || "",
@@ -805,7 +814,6 @@ export default function Purchase_Request_Form() {
 
       let mapped = rows.map((r, i) => mapBoqRowToLine(r, i));
 
-      // force-map to this category id/name, tag as BOM
       const batchId = Date.now();
       mapped = mapped.map((m, idx) => ({
         id: m.id ?? crypto?.randomUUID?.() ?? `row-${batchId}-${idx + 1}`,
@@ -817,7 +825,6 @@ export default function Purchase_Request_Form() {
         bomCategoryId: catId,
       }));
 
-      // remove prior BOM rows for this category, then merge:
       setLines((prev) => {
         const keep = prev.filter(
           (l) => !(l.fromBOM && l.bomCategoryId === catId)
@@ -853,7 +860,6 @@ export default function Purchase_Request_Form() {
     }
   };
 
-  // Helper to fetch products for ONE category and stash for ONE line
   const fetchProductsForLineCategory = async (lineId, categoryId) => {
     try {
       const res = await triggerGetProducts(
@@ -1296,8 +1302,7 @@ export default function Purchase_Request_Form() {
                         <Chip key={String(opt.value)} size="sm">
                           {typeof opt.label === "string"
                             ? opt.label
-                            : (categoryIdToName[opt.value] ??
-                              String(opt.value))}
+                            : categoryIdToName[opt.value] ?? String(opt.value)}
                         </Chip>
                       ))}
                     </Box>
@@ -1523,13 +1528,15 @@ export default function Purchase_Request_Form() {
                     </Select>
                   </td>
                   <td>
-                    <Box sx={{ maxWidth: "100%" }}>
+                    <Box sx={{ display: "inline-block" }}>
                       <Select
                         variant="plain"
                         size="sm"
                         value={l.productId || ""}
                         sx={{
-                          width: "100%",
+                          width: "fit-content",
+                          minWidth: 120,
+                          maxWidth: 220,
                           border: "none",
                           boxShadow: "none",
                           bgcolor: "transparent",
@@ -1557,6 +1564,9 @@ export default function Purchase_Request_Form() {
                                 whiteSpace: "normal",
                                 overflowWrap: "anywhere",
                                 wordBreak: "break-word",
+                                width: "fit-content",
+                                minWidth: 120,
+                                maxWidth: 220,
                               },
                             },
                           },
@@ -1607,7 +1617,7 @@ export default function Purchase_Request_Form() {
                             updateLine(l.id, "make", make);
                             updateLine(l.id, "uom", uom);
                           } else {
-                            // clear if user cleared selection
+                            // cleared
                             updateLine(l.id, "productId", v || "");
                             updateLine(l.id, "productName", "");
                             updateLine(l.id, "briefDescription", "");
@@ -1622,6 +1632,7 @@ export default function Purchase_Request_Form() {
                               l.productCategoryName
                             );
                           }
+                          // no need to manually close; Joy Select closes itself on outside click
                         }}
                         placeholder={
                           !l.productCategoryId
@@ -1989,6 +2000,7 @@ export default function Purchase_Request_Form() {
               onSuccess={handlePoSubmitted}
               onClose={() => setPoModalOpen(false)}
               pr_id={poSeed.pr_id}
+              pr_no={poSeed.pr_no}
               p_id={poSeed.p_id}
               project_id={poSeed.project_id}
               project_code={poSeed.project_code}

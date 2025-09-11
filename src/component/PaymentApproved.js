@@ -87,162 +87,181 @@ function PaymentRequest() {
   };
 
   /**Account Match Logic ***/
-const AccountMatchAndUTR = ({ paymentId, crId, initialAccMatch, onAccountMatchSuccess }) => {
-  const { enqueueSnackbar } = useSnackbar();
+  const AccountMatchAndUTR = ({
+    paymentId,
+    crId,
+    initialAccMatch,
+    onAccountMatchSuccess,
+  }) => {
+    const { enqueueSnackbar } = useSnackbar();
 
-  const [isMatched, setIsMatched] = useState(
-    initialAccMatch?.toLowerCase() === "matched"
-  );
-  const [accountMatch, setAccountMatch] = useState("");
-  const [ifsc, setIfsc] = useState("");
-  const [error, setError] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isMatched, setIsMatched] = useState(
+      initialAccMatch?.toLowerCase() === "matched"
+    );
+    const [accountMatch, setAccountMatch] = useState("");
+    const [ifsc, setIfsc] = useState("");
+    const [error, setError] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleAccountMatch = async () => {
-    if (!accountMatch.trim()) {
-      setError("Account Number required.");
-      return;
-    }
-    if (!paymentId && !crId) {
-      setError("Missing identifier: provide pay_id or cr_id.");
-      return;
-    }
-
-    setError(null);
-    setIsSubmitting(true);
-
-    try {
-      const token = localStorage.getItem("authToken");
-
-      const payload = {
-        acc_number: accountMatch.trim(),
-        ifsc: ifsc.trim(), // no validation, send as-is
-      };
-      if (paymentId) payload.pay_id = String(paymentId).trim();
-      if (crId) payload.cr_id = String(crId).trim();
-
-      const response = await Axios.put("/acc-matched", payload, {
-        headers: { "x-auth-token": token },
-      });
-
-      const doc = response?.data?.data;
-      const accMatchValue =
-        doc?.acc_match || response?.data?.acc_match || "";
-
-      if (response.status === 200 && String(accMatchValue).toLowerCase() === "matched") {
-        setIsMatched(true);
-        enqueueSnackbar("Account matched successfully!", { variant: "success" });
-        onAccountMatchSuccess?.({ paymentId, crId, doc });
-      } else {
-        enqueueSnackbar("Could not confirm match from server response.", {
-          variant: "warning",
-        });
+    const handleAccountMatch = async () => {
+      if (!accountMatch.trim()) {
+        setError("Account Number required.");
+        return;
       }
-    } catch (err) {
-      console.error("Error during account match:", err);
-
-      if (!window.navigator.onLine) {
-        enqueueSnackbar("No internet connection. Check your network.", {
-          variant: "error",
-        });
-      } else if (err?.response?.status === 404) {
-        enqueueSnackbar("No matching record found. Verify pay_id/cr_id and bank details.", {
-          variant: "error",
-        });
-      } else if (err?.response?.status === 400) {
-        enqueueSnackbar(err?.response?.data?.message || "Invalid request.", {
-          variant: "error",
-        });
-      } else if (err?.response?.status === 409) {
-        enqueueSnackbar(err?.response?.data?.message || "Already matched/Conflict.", {
-          variant: "warning",
-        });
-      } else {
-        enqueueSnackbar("Account match failed. Please recheck details.", {
-          variant: "error",
-        });
+      if (!paymentId && !crId) {
+        setError("Missing identifier: provide pay_id or cr_id.");
+        return;
       }
-    } finally {
-      setIsSubmitting(false);
-    }
+
+      setError(null);
+      setIsSubmitting(true);
+
+      try {
+        const token = localStorage.getItem("authToken");
+
+        const payload = {
+          acc_number: accountMatch.trim(),
+          ifsc: ifsc.trim(), // no validation, send as-is
+        };
+        if (paymentId) payload.pay_id = String(paymentId).trim();
+        if (crId) payload.cr_id = String(crId).trim();
+
+        const response = await Axios.put("/acc-matched", payload, {
+          headers: { "x-auth-token": token },
+        });
+
+        const doc = response?.data?.data;
+        const accMatchValue = doc?.acc_match || response?.data?.acc_match || "";
+
+        if (
+          response.status === 200 &&
+          String(accMatchValue).toLowerCase() === "matched"
+        ) {
+          setIsMatched(true);
+          enqueueSnackbar("Account matched successfully!", {
+            variant: "success",
+          });
+          onAccountMatchSuccess?.({ paymentId, crId, doc });
+        } else {
+          enqueueSnackbar("Could not confirm match from server response.", {
+            variant: "warning",
+          });
+        }
+      } catch (err) {
+        console.error("Error during account match:", err);
+
+        if (!window.navigator.onLine) {
+          enqueueSnackbar("No internet connection. Check your network.", {
+            variant: "error",
+          });
+        } else if (err?.response?.status === 404) {
+          enqueueSnackbar(
+            "No matching record found. Verify pay_id/cr_id and bank details.",
+            {
+              variant: "error",
+            }
+          );
+        } else if (err?.response?.status === 400) {
+          enqueueSnackbar(err?.response?.data?.message || "Invalid request.", {
+            variant: "error",
+          });
+        } else if (err?.response?.status === 409) {
+          enqueueSnackbar(
+            err?.response?.data?.message || "Already matched/Conflict.",
+            {
+              variant: "warning",
+            }
+          );
+        } else {
+          enqueueSnackbar("Account match failed. Please recheck details.", {
+            variant: "error",
+          });
+        }
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
+    return (
+      <Box
+        sx={{
+          p: 2,
+          borderRadius: "md",
+          border: "1px solid var(--joy-palette-neutral-outlinedBorder)",
+          bgcolor: "background.body",
+        }}
+      >
+        {!isMatched ? (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!isSubmitting) handleAccountMatch();
+            }}
+          >
+            <Typography level="title-md" mb={1}>
+              🔒 Account Verification
+            </Typography>
+
+            <Tooltip title="Enter the beneficiary's account number">
+              <Input
+                placeholder="Account Number"
+                value={accountMatch}
+                onChange={(e) => setAccountMatch(e.target.value)}
+                size="sm"
+                variant="outlined"
+                fullWidth
+                sx={{ mb: 1 }}
+              />
+            </Tooltip>
+
+            <Tooltip title="Enter the IFSC code of the bank">
+              <Input
+                placeholder="IFSC Code"
+                value={ifsc}
+                onChange={(e) => setIfsc(e.target.value)} // no uppercase enforcement
+                size="sm"
+                variant="outlined"
+                fullWidth
+                sx={{ mb: 1 }}
+              />
+            </Tooltip>
+
+            {error && (
+              <Typography level="body-sm" color="danger" mb={1}>
+                ⚠️ {error}
+              </Typography>
+            )}
+
+            <Button
+              type="submit"
+              fullWidth
+              variant="solid"
+              color="primary"
+              loading={isSubmitting}
+              disabled={isSubmitting || !accountMatch || (!paymentId && !crId)}
+            >
+              Match Account
+            </Button>
+          </form>
+        ) : (
+          <Box mt={1} display="flex" gap={1} alignItems="center">
+            <Chip variant="soft" color="success" startDecorator={<CheckIcon />}>
+              Account Matched
+            </Chip>
+          </Box>
+        )}
+      </Box>
+    );
   };
 
-  return (
-    <Box
-      sx={{
-        p: 2,
-        borderRadius: "md",
-        border: "1px solid var(--joy-palette-neutral-outlinedBorder)",
-        bgcolor: "background.body",
-      }}
-    >
-      {!isMatched ? (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!isSubmitting) handleAccountMatch();
-          }}
-        >
-          <Typography level="title-md" mb={1}>
-            🔒 Account Verification
-          </Typography>
-
-          <Tooltip title="Enter the beneficiary's account number">
-            <Input
-              placeholder="Account Number"
-              value={accountMatch}
-              onChange={(e) => setAccountMatch(e.target.value)}
-              size="sm"
-              variant="outlined"
-              fullWidth
-              sx={{ mb: 1 }}
-            />
-          </Tooltip>
-
-          <Tooltip title="Enter the IFSC code of the bank">
-            <Input
-              placeholder="IFSC Code"
-              value={ifsc}
-              onChange={(e) => setIfsc(e.target.value)} // no uppercase enforcement
-              size="sm"
-              variant="outlined"
-              fullWidth
-              sx={{ mb: 1 }}
-            />
-          </Tooltip>
-
-          {error && (
-            <Typography level="body-sm" color="danger" mb={1}>
-              ⚠️ {error}
-            </Typography>
-          )}
-
-          <Button
-            type="submit"
-            fullWidth
-            variant="solid"
-            color="primary"
-            loading={isSubmitting}
-            disabled={isSubmitting || !accountMatch || (!paymentId && !crId)}
-          >
-            Match Account
-          </Button>
-        </form>
-      ) : (
-        <Box mt={1} display="flex" gap={1} alignItems="center">
-          <Chip variant="soft" color="success" startDecorator={<CheckIcon />}>
-            Account Matched
-          </Chip>
-        </Box>
-      )}
-    </Box>
-  );
-};
-
   const handleAccountMatchSuccess = ({ paymentId, crId, doc }) => {
-  console.log("Account No and Ifsc submission was successful:", paymentId, crId, doc);
-};
-
+    console.log(
+      "Account No and Ifsc submission was successful:",
+      paymentId,
+      crId,
+      doc
+    );
+  };
 
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
@@ -406,6 +425,26 @@ const AccountMatchAndUTR = ({ paymentId, crId, initialAccMatch, onAccountMatchSu
       </Box>
     </>
   );
+  const OneLineEllipsis = ({ text, sx = {}, placement = "top" }) => {
+    if (!text) return <Typography level="body-sm">—</Typography>;
+    return (
+      <Tooltip title={text} placement={placement} variant="soft">
+        <Typography
+          level="body-sm"
+          sx={{
+            maxWidth: { xs: 220, sm: 320, md: 420 },
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            color: "text.primary",
+            ...sx,
+          }}
+        >
+          {text}
+        </Typography>
+      </Tooltip>
+    );
+  };
 
   const PaymentDetail = ({ requestedFor, paymentDesc, vendor }) => (
     <Box>
@@ -414,20 +453,19 @@ const AccountMatchAndUTR = ({ paymentId, crId, initialAccMatch, onAccountMatchSu
           <Typography sx={{ ...labelStyle, minWidth: 100 }}>
             📦 Requested For:
           </Typography>
-          <Typography sx={{ ...valueStyle, wordBreak: "break-word" }}>
-            {requestedFor}
-          </Typography>
+
+          <OneLineEllipsis text={requestedFor} />
         </Box>
       )}
 
-     <Box display="flex" alignItems="center" gap={1} mt={0.5}>
-          <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
-            🏢 Vendor:
-          </Typography>
-          <Chip color="danger" size="sm" variant="solid" sx={{ fontSize: 12 }}>
-            {vendor}
-          </Chip>
-        </Box>
+      <Box display="flex" alignItems="center" gap={1} mt={0.5}>
+        <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
+          🏢 Vendor:
+        </Typography>
+        <Chip color="danger" size="sm" variant="solid" sx={{ fontSize: 12 }}>
+          {vendor}
+        </Chip>
+      </Box>
 
       <Box display="flex" alignItems="flex-start" gap={1} mt={0.5}>
         <Typography sx={{ ...labelStyle, minWidth: 100 }}>
@@ -597,7 +635,14 @@ const AccountMatchAndUTR = ({ paymentId, crId, initialAccMatch, onAccountMatchSu
                     />
                   </Box>
 
-                  <Box component="td" sx={{ ...cellStyle, minWidth: 300 }}>
+                  <Box
+                    component="td"
+                    sx={{
+                      ...cellStyle,
+                      minWidth: 300,
+                      "& > div": { minWidth: 0 },
+                    }}
+                  >
                     <PaymentDetail
                       requestedFor={payment.requestedFor}
                       vendor={payment.vendor}

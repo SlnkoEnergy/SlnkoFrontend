@@ -8,7 +8,7 @@ import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import Sidebar from "../../component/Partials/Sidebar";
 import Header from "../../component/Partials/Header";
 import { useNavigate } from "react-router-dom";
-import AddTask from "../../component/Forms/Add_Task";
+import AddTask from "../../component/All_Tasks/Add_Task";
 import { ChevronLeftIcon } from "lucide-react";
 
 const Add_Task = () => {

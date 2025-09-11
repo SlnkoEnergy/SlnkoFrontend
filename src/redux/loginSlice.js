@@ -60,7 +60,17 @@ export const loginsApi = createApi({
     getUserById: builder.query({
       query: (userId) => `get-single-useR-IT/${userId}`,
       providesTags:("Login"),
-    })
+    }),
+    
+     editUser: builder.mutation({
+      // call like: editUser({ userId, location, about, phone, ... })
+      query: ({ userId, ...update }) => ({
+        url: `edit-user/${userId}`,
+        method: "PUT",
+        body: update,
+      }),
+      invalidatesTags: ["Login"],
+    }),
   }),
 });
 export const {
@@ -71,5 +81,6 @@ export const {
   useVerifyOtpMutation,
   useResetPasswordMutation,
   useFinalizeBDloginMutation,
-  useGetUserByIdQuery
+  useGetUserByIdQuery,
+   useEditUserMutation, 
 } = loginsApi;

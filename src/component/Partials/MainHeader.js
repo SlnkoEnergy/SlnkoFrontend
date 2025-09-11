@@ -13,7 +13,8 @@ import {
   ListItemDecorator,
   ListDivider,
 } from "@mui/joy";
-import Notification from "./Notification";
+// import Notification from "./Notification";
+import AppNotification from "./Notification"
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
@@ -28,7 +29,7 @@ export default function MainHeader({ title, children }) {
       sx={(theme) => ({
         position: "fixed",
         top: 0,
-        zIndex: 9999,
+        zIndex: 200,
         backdropFilter: "saturate(180%) blur(8px)",
         backgroundColor: "#1f487c",
         borderBottom: `1px solid ${theme.vars.palette.neutral.outlinedBorder}`,
@@ -93,7 +94,7 @@ export default function MainHeader({ title, children }) {
             overflowX: { xs: "auto", sm: "visible" },
           }}
         >
-          <Notification />
+          <AppNotification />
           <Dropdown>
             <MenuButton
               variant="plain"
@@ -139,8 +140,8 @@ export default function MainHeader({ title, children }) {
                   </ListItemDecorator>
                   My Profile
                 </MenuItem>
-                <ListDivider />
-                <MenuItem>
+                {/* <ListDivider /> */}
+                {/* <MenuItem>
                   <ListItemDecorator>
                     <GroupOutlinedIcon fontSize="small" />
                   </ListItemDecorator>
@@ -152,7 +153,7 @@ export default function MainHeader({ title, children }) {
                     <LogoutRoundedIcon fontSize="small" />
                   </ListItemDecorator>
                   Logout
-                </MenuItem>
+                </MenuItem> */}
               </MenuList>
             </Menu>
           </Dropdown>
