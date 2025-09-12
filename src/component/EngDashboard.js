@@ -4,9 +4,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
-import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
-import FormLabel from "@mui/joy/FormLabel";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
@@ -59,8 +57,6 @@ function Dash_eng() {
 
   const HandOverSheet = Array.isArray(getHandOverSheet?.data)
     ? getHandOverSheet.data.map((entry) => {
-        console.log("Entry :", entry);
-
         return {
           ...entry,
           p_id: entry.p_id,
@@ -108,7 +104,7 @@ function Dash_eng() {
           }}
           onClick={() => {
             const page = currentPage;
-            navigate(`/overview?page=${page}&project_id=${project_id}`);
+            navigate(`/project_detail?page=${page}&project_id=${project_id}`);
           }}
         >
           {code || "-"}
@@ -169,40 +165,22 @@ function Dash_eng() {
   };
 
   return (
-    <>
-      <Box
-        className="SearchAndFilters-tabletUp"
-        sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          borderRadius: "sm",
-          py: 1,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1.5,
-          "& > *": {
-            minWidth: { xs: "120px", md: "160px" },
-          },
-        }}
-      >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search here</FormLabel>
-          <Input
-            size="sm"
-            placeholder="Search by ProjectId, Customer, Type, or State"
-            startDecorator={<SearchIcon />}
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-        </FormControl>
-      </Box>
-      <Box
-        display={"flex"}
-        sx={{ marginLeft: { xl: "15%", lg: "18%" } }}
-        justifyContent={"space-between"}
-        width={"full"}
-        alignItems={"center"}
-      >
-        <Box>
+    <Box
+      sx={{
+        ml: {
+          lg: "var(--Sidebar-width)",
+        },
+        px: "0px",
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+      }}
+    >
+      <Box display={"flex"} justifyContent={"space-between"} pb={0.5}>
+        <Box
+          display={"flex"}
+          justifyContent={"space-between"}
+          width={"100%"}
+          alignItems={"center"}
+        >
           <Tabs
             value={selectedTab}
             onChange={(event, newValue) => {
@@ -214,12 +192,9 @@ function Dash_eng() {
                 return newParams;
               });
             }}
-            indicatorPlacement="none"
             sx={{
               bgcolor: "background.level1",
-              borderRadius: "md",
-              boxShadow: "sm",
-              width: "fit-content",
+              borderRadius: "xl",
             }}
           >
             <TabList sx={{ gap: 1 }}>
@@ -243,40 +218,26 @@ function Dash_eng() {
             </TabList>
           </Tabs>
         </Box>
-
         <Box
-          display="flex"
-          alignItems="center"
-          gap={1}
-          sx={{ padding: "8px 16px" }}
+          className="SearchAndFilters-tabletUp"
+          sx={{
+            borderRadius: "sm",
+            py: 1,
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 1.5,
+            width: { lg: "100%" },
+          }}
         >
-          <Typography level="body-sm">Rows Per Page:</Typography>
-          <Select
-            value={rowsPerPage}
-            onChange={(e, newValue) => {
-              if (newValue !== null) {
-                setRowsPerPage(newValue);
-                setSearchParams((prev) => {
-                  const params = new URLSearchParams(prev);
-                  params.set("pageSize", newValue);
-                  return params;
-                });
-              }
-            }}
-            size="sm"
-            variant="outlined"
-            sx={{
-              minWidth: 80,
-              borderRadius: "md",
-              boxShadow: "sm",
-            }}
-          >
-            {options.map((value) => (
-              <Option key={value} value={value}>
-                {value}
-              </Option>
-            ))}
-          </Select>
+          <FormControl sx={{ flex: 1 }} size="sm">
+            <Input
+              size="sm"
+              placeholder="Search by ProjectId, Customer, Type, or State"
+              startDecorator={<SearchIcon />}
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+          </FormControl>
         </Box>
       </Box>
 
@@ -285,19 +246,21 @@ function Dash_eng() {
         className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: { xs: "none", sm: "initial" },
+          display: { xs: "none", sm: "block" },
           width: "100%",
           borderRadius: "sm",
-          flexShrink: 1,
-          overflow: "auto",
-          minHeight: 0,
-          marginLeft: { lg: "18%", xl: "15%" },
-          maxWidth: { lg: "85%", sm: "100%" },
+          maxHeight: "66vh",
+          overflowY: "auto",
         }}
       >
         <Box
           component="table"
-          sx={{ width: "100%", borderCollapse: "collapse" }}
+          sx={{
+            width: "100%",
+            borderCollapse: "collapse",
+            maxHeight: "40vh",
+            overflowY: "auto",
+          }}
         >
           <thead>
             <tr style={{ backgroundColor: "neutral.softBg" }}>
@@ -324,14 +287,12 @@ function Dash_eng() {
                 />
               </th>
               {[
-                "",
                 "Project Id",
                 "Project Name",
                 "Customer",
                 "Mobile",
                 "State",
                 "Capacity(AC/DC)",
-                "Status",
               ].map((header, index) => (
                 <th
                   key={index}
@@ -399,19 +360,7 @@ function Dash_eng() {
                       textAlign: "left",
                     }}
                   >
-                    <ViewHandOver
-                      currentPage={currentPage}
-                      p_id={project.p_id}
-                    />
-                  </td>
-                  <td
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    <Tooltip title="View Engineering Overview" arrow>
+                    <Tooltip title="View Project Detail" arrow>
                       <span>
                         <ProjectOverView
                           currentPage={currentPage}
@@ -468,15 +417,6 @@ function Dash_eng() {
                       ? `${project.project_kwp} AC / ${project.proposed_dc_capacity} DC`
                       : "-"}
                   </td>
-                  <td
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    Not defined
-                  </td>
                 </tr>
               ))
             ) : (
@@ -514,13 +454,12 @@ function Dash_eng() {
       <Box
         className="Pagination-laptopUp"
         sx={{
-          pt: 2,
+          pt: 0.5,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: "flex",
           flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
-          marginLeft: { lg: "18%", xl: "15%" },
         }}
       >
         <Button
@@ -565,6 +504,40 @@ function Dash_eng() {
           )}
         </Box>
 
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={1}
+          sx={{ padding: "8px 16px" }}
+        >
+          <Select
+            value={rowsPerPage}
+            onChange={(e, newValue) => {
+              if (newValue !== null) {
+                setRowsPerPage(newValue);
+                setSearchParams((prev) => {
+                  const params = new URLSearchParams(prev);
+                  params.set("pageSize", newValue);
+                  return params;
+                });
+              }
+            }}
+            size="sm"
+            variant="outlined"
+            sx={{
+              minWidth: 80,
+              borderRadius: "md",
+              boxShadow: "sm",
+            }}
+          >
+            {options.map((value) => (
+              <Option key={value} value={value}>
+                {value}
+              </Option>
+            ))}
+          </Select>
+        </Box>
+
         {/* Next Button */}
         <Button
           size="sm"
@@ -577,7 +550,7 @@ function Dash_eng() {
           Next
         </Button>
       </Box>
-    </>
+    </Box>
   );
 }
 export default Dash_eng;

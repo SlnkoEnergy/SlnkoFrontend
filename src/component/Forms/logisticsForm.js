@@ -250,34 +250,48 @@ const AddLogisticForm = () => {
     setTransportationIdToName(idToName);
     setTransportationPos((prev) => ({ ...prev, ...pos }));
 
+    const getPoObj = (it) => {
+  if (it && typeof it.material_po === "object" && it.material_po) {
+    return it.material_po;
+  }
+  const id = it?.material_po || it?.po_id || "";
+  // use local `pos` map (built from doc.po_id) first, then fall back to cached page
+  return pos[id] || (poData?.data || []).find((p) => p._id === id) || null;
+};
+
     // Items table
-    const mappedItems = Array.isArray(doc.items)
-      ? doc.items.map((it) => ({
-          po_id:
-            typeof it.material_po === "object"
-              ? it.material_po?._id || ""
-              : it.material_po || "",
-          po_item_id: it.po_item_id || null,
-          po_number:
-            typeof it.material_po === "object"
-              ? it.material_po?.po_number || ""
-              : "",
-          project_id: "",
-          vendor: "",
-          product_name: it.product_name || "",
-          category_id:
-            typeof it.category_id === "object"
-              ? it.category_id?._id || null
-              : (it.category_id ?? null),
-          category_name: it?.category_name || it?.category_id?.name || "",
-          product_make: it.product_make || "",
-          uom: it.uom || "",
-          quantity_requested: it.quantity_requested || "",
-          quantity_po: it.quantity_po || "",
-          received_qty: it.received_qty || "",
-          ton: it.weight || "",
-        }))
-      : [];
+const mappedItems = Array.isArray(doc.items)
+  ? doc.items.map((it) => {
+      const poObj = getPoObj(it);
+      const catObj =
+        typeof it.category_id === "object" && it.category_id
+          ? it.category_id
+          : null;
+
+      return {
+        po_id: poObj?._id || it.material_po || "",
+        po_item_id: it.po_item_id || null,
+
+        // fill from PO
+        po_number: poObj?.po_number || "",
+        project_id: poObj?.p_id || doc.p_id || "",
+        vendor: poObj?.vendor || doc.vendor || "",
+
+        // product/category fields
+        product_name: it.product_name || "",
+        category_id: catObj?._id ?? it.category_id ?? null,
+        category_name: it?.category_name || catObj?.name || "",
+        product_make: it.product_make || "",
+        uom: it.uom || "",
+
+        // quantities/weight
+        quantity_requested: it.quantity_requested || "",
+        quantity_po: it.quantity_po || "",
+        received_qty: it.received_qty || "",
+        ton: it.weight || "",
+      };
+    })
+  : [];
 
     setItems(
       mappedItems.length
