@@ -50,6 +50,8 @@ const SalesIframe = () => {
       }
     };
 
+    
+
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
   }, []);

@@ -165,7 +165,8 @@ const PaymentRequest = forwardRef(() => {
               user?.department === "admin" ||
               user?.name === "Shubham Gupta" ||
               user?.name === "Gagan Tayal" ||
-              user?.name === "Ajay Singh") && (
+              user?.name === "Ajay Singh" ||
+              user?.name === "Pawan Singh") && (
               <Button
                 color="primary"
                 size="sm"
@@ -188,7 +189,8 @@ const PaymentRequest = forwardRef(() => {
               user?.name === "Sandeep Yadav" ||
               user?.name === "Som Narayan Jha" ||
               user?.name === "Gagan Tayal" ||
-              user?.name === "Saresh") && (
+              user?.name === "Saresh" ||
+              user?.name === "Pawan Singh") && (
               <Button
                 color="danger"
                 size="sm"
