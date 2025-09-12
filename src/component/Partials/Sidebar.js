@@ -2430,6 +2430,14 @@ function Sidebar() {
                 </List>
               </Toggler>
             </ListItem>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/task_dashboard")}>
+                <TaskIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Task</Typography>
+                </ListItemContent>
+              </ListItemButton>
+            </ListItem>
           </List>
         ) : user?.department === "Projects" ||
           user?.department === "Infra" ||
