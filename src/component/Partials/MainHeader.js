@@ -208,7 +208,7 @@ export default function MainHeader({ title, children }) {
             overflowX: { xs: "auto", sm: "visible" },
           }}
         >
-          <AppNotification />
+      
           <Dropdown>
             <MenuButton
               variant="plain"
