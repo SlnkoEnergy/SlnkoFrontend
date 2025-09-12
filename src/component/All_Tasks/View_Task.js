@@ -1122,7 +1122,7 @@ export default function ViewTaskPage() {
     }
   };
 
-   const currentUser = JSON.parse(localStorage.getItem("userDetails"))?.name;
+  const currentUser = JSON.parse(localStorage.getItem("userDetails"))?.name;
 
   return (
     <Box
@@ -1314,7 +1314,7 @@ export default function ViewTaskPage() {
                     ) : (
                       <Typography level="body-sm">None</Typography>
                     )}
-                    {(!hasReassign) && (currentUser === task?.createdBy?.name) && (
+                    {!hasReassign && currentUser === task?.createdBy?.name && (
                       <Tooltip title="Reassign">
                         <IconButton
                           size="sm"
@@ -1409,7 +1409,7 @@ export default function ViewTaskPage() {
                     : "—"
                 }
               />
-              {!viewIsSubtask && (
+              {(!viewIsSubtask) && (currentUser === task?.createdBy?.name) && (
                 <Field
                   label="Due Date"
                   value={
