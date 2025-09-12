@@ -6,6 +6,8 @@ import { BrowserRouter } from "react-router-dom";
 import { Provider } from "react-redux";
 import { store } from "./store/store";
 import * as Sentry from "@sentry/react";
+import 'react-date-range/dist/styles.css';
+import 'react-date-range/dist/theme/default.css';
 
 Sentry.init({
   dsn: "https://f174e0dee7b57070ee4f9b2d6e0baaca@o4509774671511552.ingest.us.sentry.io/4509774686584832",

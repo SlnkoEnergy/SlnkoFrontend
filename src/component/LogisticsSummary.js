@@ -144,7 +144,8 @@ function StatusCard({ row, onUpdated }) {
     if (userData) setUser(JSON.parse(userData));
   }, []);
 
-  const isLogistic = user?.department === "Logistic"||user?.department === "SCM";
+  const isLogistic =
+    user?.department === "Logistic" || user?.department === "SCM";
   const isSuperadmin = user?.role === "superadmin";
 
   const showChangeToOfd =
@@ -200,10 +201,16 @@ function StatusCard({ row, onUpdated }) {
     }
 
     try {
-      await updateStatus({ id: row._id, status: targetStatus, remarks: "" }).unwrap();
+      await updateStatus({
+        id: row._id,
+        status: targetStatus,
+        remarks: "",
+      }).unwrap();
       await onUpdated?.();
     } catch (e) {
-      setErrorText(e?.data?.message || e?.error || e?.message || "Failed to update status");
+      setErrorText(
+        e?.data?.message || e?.error || e?.message || "Failed to update status"
+      );
     }
   };
 
@@ -243,13 +250,17 @@ function StatusCard({ row, onUpdated }) {
           <Typography level="body-sm" sx={{ minWidth: 130 }}>
             Dispatch Date :
           </Typography>
-          <Typography level="body-sm">{ddmmyyyy(row?.dispatch_date)}</Typography>
+          <Typography level="body-sm">
+            {ddmmyyyy(row?.dispatch_date)}
+          </Typography>
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Typography level="body-sm" sx={{ minWidth: 130 }}>
             Delivery Date :
           </Typography>
-          <Typography level="body-sm">{ddmmyyyy(row?.delivery_date)}</Typography>
+          <Typography level="body-sm">
+            {ddmmyyyy(row?.delivery_date)}
+          </Typography>
         </Box>
       </Box>
 
@@ -286,7 +297,6 @@ function StatusCard({ row, onUpdated }) {
     </Box>
   );
 }
-
 
 /* ---------------- component ---------------- */
 export default function LogisticsDashboard() {
@@ -358,52 +368,36 @@ export default function LogisticsDashboard() {
     return [];
   }, [resp]);
 
-// API-aware meta + range with robust fallbacks
-const meta = resp?.meta || {};
-const total = Number(
-  meta?.total ??
-  meta?.totalCount ??
-  meta?.total_count ??
-  resp?.total ??
-  0
-);
-const count = Number(
-  meta?.count ??
-  meta?.pageCount ??
-  meta?.per_page_count ??
-  rows.length
-);
-const apiPage = Number(
-  meta?.page ??
-  meta?.currentPage ??
-  meta?.current_page ??
-  currentPage
-);
-const apiPageSize = Number(
-  meta?.pageSize ??
-  meta?.perPage ??
-  meta?.per_page ??
-  rowsPerPage
-);
+  // API-aware meta + range with robust fallbacks
+  const meta = resp?.meta || {};
+  const total = Number(
+    meta?.total ?? meta?.totalCount ?? meta?.total_count ?? resp?.total ?? 0
+  );
+  const count = Number(
+    meta?.count ?? meta?.pageCount ?? meta?.per_page_count ?? rows.length
+  );
+  const apiPage = Number(
+    meta?.page ?? meta?.currentPage ?? meta?.current_page ?? currentPage
+  );
+  const apiPageSize = Number(
+    meta?.pageSize ?? meta?.perPage ?? meta?.per_page ?? rowsPerPage
+  );
 
-const totalPages = Math.max(1, Math.ceil((total || 0) / apiPageSize));
+  const totalPages = Math.max(1, Math.ceil((total || 0) / apiPageSize));
 
-// For "Showing X–Y of Z"
-const startIndex = total ? (apiPage - 1) * apiPageSize + 1 : 0;
-const endIndex = total ? Math.min(startIndex + count - 1, total) : 0;
+  // For "Showing X–Y of Z"
+  const startIndex = total ? (apiPage - 1) * apiPageSize + 1 : 0;
+  const endIndex = total ? Math.min(startIndex + count - 1, total) : 0;
 
-
-
-const handlePageChange = (p) => {
-  if (p < 1 || p > totalPages) return;
-  const params = new URLSearchParams(searchParams);
-  params.set("page", String(p));
-  setSearchParams(params);
-  setCurrentPage(p);
-  setSelected([]);
-  window.scrollTo({ top: 0, behavior: "smooth" });
-};
-
+  const handlePageChange = (p) => {
+    if (p < 1 || p > totalPages) return;
+    const params = new URLSearchParams(searchParams);
+    params.set("page", String(p));
+    setSearchParams(params);
+    setCurrentPage(p);
+    setSelected([]);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const handleSelectAll = (e) => {
     if (e.target.checked) setSelected(rows.map((r) => r._id));
@@ -507,7 +501,12 @@ const handlePageChange = (p) => {
           </Tabs>
         </Box>
 
-        <Box display="flex" alignItems="center" gap={1} sx={{ padding: "8px 16px" }}>
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={1}
+          sx={{ padding: "8px 16px" }}
+        >
           <Typography level="body-sm">Rows Per Page:</Typography>
           <Select
             value={rowsPerPage}
@@ -655,7 +654,9 @@ const handlePageChange = (p) => {
                             underline="none"
                             sx={{ fontWeight: 600, cursor: "pointer" }}
                             onClick={() =>
-                              navigate(`/logistics-form?mode=edit&id=${row._id}`)
+                              navigate(
+                                `/logistics-form?mode=edit&id=${row._id}`
+                              )
                             }
                           >
                             {safe(row.logistic_code)}
@@ -732,7 +733,8 @@ const handlePageChange = (p) => {
                                       level="body-xs"
                                       sx={{ pl: 1 }}
                                     >
-                                      • {category} {count > 1 ? `(${count})` : ""}
+                                      • {category}{" "}
+                                      {count > 1 ? `(${count})` : ""}
                                     </Typography>
                                   ))}
                                 </Box>
@@ -802,19 +804,19 @@ const handlePageChange = (p) => {
           color="neutral"
           startDecorator={<KeyboardArrowLeftIcon />}
           onClick={() => handlePageChange(apiPage - 1)}
-disabled={apiPage <= 1 || isLoading}
-
-
+          disabled={apiPage <= 1 || isLoading}
         >
           Previous
         </Button>
-<Box>
-  {total
-    ? <>Showing {startIndex}–{endIndex} of {total} results</>
-    : <>Showing 0 of 0 results</>}
-</Box>
-
-
+        <Box>
+          {total ? (
+            <>
+              Showing {startIndex}–{endIndex} of {total} results
+            </>
+          ) : (
+            <>Showing 0 of 0 results</>
+          )}
+        </Box>
 
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
@@ -829,7 +831,6 @@ disabled={apiPage <= 1 || isLoading}
                 key={v}
                 size="sm"
                 variant={v === apiPage ? "solid" : "outlined"}
-
                 color="neutral"
                 onClick={() => handlePageChange(v)}
                 disabled={isLoading}
@@ -846,9 +847,7 @@ disabled={apiPage <= 1 || isLoading}
           color="neutral"
           endDecorator={<KeyboardArrowRightIcon />}
           onClick={() => handlePageChange(apiPage + 1)}
-disabled={apiPage >= totalPages || isLoading}
-
-
+          disabled={apiPage >= totalPages || isLoading}
         >
           Next
         </Button>
