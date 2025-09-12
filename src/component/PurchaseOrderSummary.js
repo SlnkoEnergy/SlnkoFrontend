@@ -265,7 +265,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     setSelecteditem(itemSearch);
   }, [searchParams]);
 
-  console.log({ selectedpo });
 
   const applyCategory = (value) => {
     setSelecteditem(value || "");

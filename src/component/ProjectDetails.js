@@ -1,4 +1,5 @@
-// LeadProfile.jsx
+// LeadProfile.jsx (responsive + sticky tabs/panel)
+
 import {
   Box,
   Avatar,
@@ -46,11 +47,11 @@ const getUserData = () => {
 
 const VALID_TABS = new Set(["handover", "scope", "po", "eng", "notes"]);
 const NUM_TO_KEY = {
-  "0": "handover",
-  "1": "scope",
-  "2": "po",
-  "3": "eng",
-  "4": "notes",
+  0: "handover",
+  1: "scope",
+  2: "po",
+  3: "eng",
+  4: "notes",
 };
 
 // Sanitize ?tab=... (supports legacy numbers and new string keys)
@@ -66,8 +67,7 @@ const canUserSeePO = (user) => {
   const role = String(user.role || "").toLowerCase();
   const dept = user.department || "";
   const special = user.emp_id === "SE-013";
-  const privileged =
-    special || role === "admin" || role === "superadmin";
+  const privileged = special || role === "admin" || role === "superadmin";
   // PO hidden for Engineering, unless privileged
   return privileged || dept !== "Engineering";
 };
@@ -91,8 +91,6 @@ export default function Project_Detail() {
   const initialTab = sanitizeTabFromQuery(searchParams.get("tab"));
   const [tabValue, setTabValue] = useState(initialTab);
   const allowedPO = canUserSeePO(currentUser);
-
-
 
   // keep state in sync with URL, and guard `po` if not allowed
   useEffect(() => {
@@ -182,156 +180,198 @@ export default function Project_Detail() {
     }
   };
 
+  /* ---------------- Layout constants ----------------
+     - headerOffset: space reserved for your app header (tweak as needed)
+     - tabsBar: approximate height of the TabList
+     - On md+ we compute a scroll area height so panels don't grow forever
+  --------------------------------------------------- */
+  const headerOffset = 72;
+  const tabsBar = 48;
+  const verticalGaps = 32;
+
   return (
     <Box
       sx={{
         ml: { lg: "var(--Sidebar-width)" },
-        px: "0px",
+        px: { xs: 1, md: 2 },
         width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
       }}
     >
+      {/* Centered container with max width for large screens */}
       <Box
         sx={{
-          borderRadius: "sm",
-          py: 1,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1.5,
+          maxWidth: { xs: "100%", lg: 1400, xl: 1600 },
+          mx: "auto",
+          width: "100%",
         }}
       >
-        {/* Left Card - Profile Info */}
-        <Card
-          variant="outlined"
+        {/* Responsive grid: stacked on mobile, two columns on md+ */}
+        <Box
           sx={{
-            width: { xs: "100%", md: 300 },
-            flexShrink: 0,
-            borderRadius: "lg",
+            display: "grid",
+            gridTemplateColumns: {
+              xs: "1fr",
+              md: "300px 1fr",
+            },
+            gap: { xs: 1.5, md: 2 },
+            alignItems: "start",
           }}
         >
-          <Box
+          {/* Left Column — sticky profile card */}
+          <Card
+            variant="outlined"
             sx={{
-              display: "flex",
-              alignItems: "flex-start",
-              justifyContent: "space-between",
+              position: { xs: "static", md: "sticky" },
+              top: { md: headerOffset + 16 }, // header + small gap
+              borderRadius: "lg",
+              width: "100%",
+              flexShrink: 0,
+              // make sure it doesn't overflow the viewport height
+              height: "100%",
+              overflow: { md: "auto" },
             }}
           >
-            {/* Left side → Profile details */}
-            <Box>
-              <Stack spacing={1} alignItems="flex-start">
-                <Avatar
-                  src="/path-to-profile-pic.jpg"
-                  alt={projectDetails?.customer || "Customer"}
-                  sx={{ width: 64, height: 64 }}
-                />
-                <Typography level="title-md">
-                  {projectDetails?.customer}
-                </Typography>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <EmailOutlinedIcon fontSize="small" />
-                  <Typography level="body-sm">
-                    {projectDetails?.email || "-"}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+              }}
+            >
+              {/* Left side → Profile details */}
+              <Box>
+                <Stack spacing={1} alignItems="flex-start">
+                  <Avatar
+                    src="/path-to-profile-pic.jpg"
+                    alt={projectDetails?.customer || "Customer"}
+                    sx={{ width: 64, height: 64 }}
+                  />
+                  <Typography level="title-md">
+                    {projectDetails?.customer}
                   </Typography>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <EmailOutlinedIcon fontSize="small" />
+                    <Typography level="body-sm">
+                      {projectDetails?.email || "-"}
+                    </Typography>
+                  </Stack>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <PhoneOutlinedIcon fontSize="small" />
+                    <Typography level="body-sm">
+                      {projectDetails?.number}
+                      {projectDetails?.alt_number
+                        ? `, ${projectDetails?.alt_number}`
+                        : ""}
+                    </Typography>
+                  </Stack>
                 </Stack>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <PhoneOutlinedIcon fontSize="small" />
-                  <Typography level="body-sm">
-                    {projectDetails?.number}
-                    {projectDetails?.alt_number
-                      ? `, ${projectDetails?.alt_number}`
-                      : ""}
-                  </Typography>
-                </Stack>
-              </Stack>
-            </Box>
+              </Box>
 
-            {/* Right side → Follow button */}
-            <Box>
-              <Tooltip
-                title={isFollowing ? "Unfollow Project" : "Follow Project"}
-              >
-                <IconButton
-                  variant="soft"
-                  size="sm"
-                  onClick={handleFollowToggle}
-                  disabled={isFollowingCall || isUnfollowingCall}
-                  sx={{
-                    "--Icon-color": "#3366a3",
-                    color: "#3366a3",
-                    "&:hover": {
-                      backgroundColor: "rgba(51, 102, 163, 0.08)",
-                    },
-                  }}
+              {/* Follow button */}
+              <Box>
+                <Tooltip
+                  title={isFollowing ? "Unfollow Project" : "Follow Project"}
                 >
-                  {isFollowing ? <FavoriteIcon /> : <FavoriteBorderIcon />}
-                </IconButton>
-              </Tooltip>
+                  <IconButton
+                    variant="soft"
+                    size="sm"
+                    onClick={handleFollowToggle}
+                    disabled={isFollowingCall || isUnfollowingCall}
+                    sx={{
+                      "--Icon-color": "#3366a3",
+                      color: "#3366a3",
+                      "&:hover": { backgroundColor: "rgba(51,102,163,0.08)" },
+                    }}
+                  >
+                    {isFollowing ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+                  </IconButton>
+                </Tooltip>
+              </Box>
             </Box>
-          </Box>
 
-          <Divider sx={{ my: 1 }} />
+            <Divider sx={{ my: 1 }} />
 
-          <Stack spacing={1}>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Typography level="body-sm">Project Id:</Typography>
-              <Chip size="sm" color="primary" variant="soft">
-                {projectDetails?.code}
-              </Chip>
-            </Stack>
+            <Stack spacing={1}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Typography level="body-sm">Project Id:</Typography>
+                <Chip size="sm" color="primary" variant="soft">
+                  {projectDetails?.code}
+                </Chip>
+              </Stack>
 
-            <Stack direction="row" spacing={1} alignItems="center">
-              <LocationOnOutlinedIcon fontSize="small" />
-              <Typography level="body-sm" sx={{ ml: 0.5 }}>
-                {typeof projectDetails?.site_address === "object" &&
-                projectDetails?.site_address !== null
-                  ? [
-                      projectDetails?.site_address?.village_name,
-                      projectDetails?.site_address?.district_name,
-                      projectDetails?.state,
-                    ]
-                      .filter(Boolean)
-                      .join(", ")
-                  : projectDetails?.site_address}
+              <Stack direction="row" spacing={1} alignItems="center">
+                <LocationOnOutlinedIcon fontSize="small" />
+                <Typography level="body-sm" sx={{ ml: 0.5 }}>
+                  {typeof projectDetails?.site_address === "object" &&
+                  projectDetails?.site_address !== null
+                    ? [
+                        projectDetails?.site_address?.village_name,
+                        projectDetails?.site_address?.district_name,
+                        projectDetails?.state,
+                      ]
+                        .filter(Boolean)
+                        .join(", ")
+                    : projectDetails?.site_address}
+                </Typography>
+              </Stack>
+
+              <Typography level="body-sm">
+                <b>Project Group:</b> {projectDetails?.p_group}
+              </Typography>
+              <Typography level="body-sm">
+                <b>Capacity:</b> {projectDetails?.project_kwp}
+              </Typography>
+              <Typography level="body-sm">
+                <b>Substation Distance:</b> {projectDetails?.distance}
+              </Typography>
+              <Typography level="body-sm">
+                <b>Land Available:</b>{" "}
+                {(() => {
+                  try {
+                    const parsed = JSON.parse(projectDetails?.land);
+                    const { acres, type } = parsed || {};
+                    if (acres || type)
+                      return `${acres || ""} ${type || ""}`.trim();
+                    return null;
+                  } catch {
+                    return projectDetails?.land || "N/A";
+                  }
+                })()}
+              </Typography>
+
+              <Typography level="body-sm">
+                <b>Tariff:</b> {projectDetails?.tarrif}
+              </Typography>
+              <Divider sx={{ my: 1 }} />
+              <Typography level="body-sm">
+                <b>Slnko Service Charges:</b> ₹ {projectDetails?.service}
               </Typography>
             </Stack>
+          </Card>
 
-            <Typography level="body-sm">
-              <b>Project Group:</b> {projectDetails?.p_group}
-            </Typography>
-            <Typography level="body-sm">
-              <b>Capacity:</b> {projectDetails?.project_kwp}
-            </Typography>
-            <Typography level="body-sm">
-              <b>Substation Distance:</b> {projectDetails?.distance}
-            </Typography>
-            <Typography level="body-sm">
-              <b>Land Available:</b>{" "}
-              {(() => {
-                try {
-                  const parsed = JSON.parse(projectDetails?.land);
-                  const { acres, type } = parsed || {};
-                  if (acres || type)
-                    return `${acres || ""} ${type || ""}`.trim();
-                  return null;
-                } catch {
-                  return projectDetails?.land || "N/A";
-                }
-              })()}
-            </Typography>
-
-            <Typography level="body-sm">
-              <b>Tariff:</b> {projectDetails?.tarrif}
-            </Typography>
-            <Divider sx={{ my: 1 }} />
-            <Typography level="body-sm">
-              <b>Slnko Service Charges:</b> ₹ {projectDetails?.service}
-            </Typography>
-          </Stack>
-        </Card>
-
-        {/* Right Section - Tabs */}
-        <Card width="100%" sx={{ flex: 1, borderRadius: "lg", p: 1 }}>
-          <Box flex={1}>
-            <Tabs value={tabValue} onChange={handleTabChange}>
+          {/* Right Column — Tabs in a card; sticky TabList; scrollable panels */}
+          <Card
+            sx={{
+              borderRadius: "lg",
+              p: { xs: 1, md: 1.5 },
+              minWidth: 0, // prevent overflow from long contents
+            }}
+          >
+            <Tabs
+              value={tabValue}
+              onChange={handleTabChange}
+              sx={{
+                // make TabList sticky
+                "& .MuiTabs-list": {
+                  position: { md: "sticky" },
+                  top: { md: headerOffset },
+                  zIndex: 10,
+                  backgroundColor: "background.body",
+                  borderBottom: "1px solid",
+                  borderColor: "divider",
+                },
+              }}
+            >
               <TabList>
                 <Tab value="handover">Handover Sheet</Tab>
                 <Tab value="scope">Scope</Tab>
@@ -340,11 +380,20 @@ export default function Project_Detail() {
                 <Tab value="notes">Notes</Tab>
               </TabList>
 
-              <TabPanel value="handover">
+              <TabPanel
+                value="handover"
+                sx={{
+                  p: { xs: 1, md: 1.5 },
+                  height: {
+                    xs: "auto",
+                    md: `100%`,
+                  },
+                  overflowY: { md: "auto" },
+                }}
+              >
                 <Box
                   sx={{
-                    height: "60vh",
-                    overflowY: "auto",
+                    minHeight: { md: "100%" },
                     display: "flex",
                     justifyContent: "center",
                     alignItems: "center",
@@ -354,51 +403,74 @@ export default function Project_Detail() {
                 </Box>
               </TabPanel>
 
-              <TabPanel value="scope">
-                <Box sx={{ maxHeight: "70vh", overflowY: "auto" }}>
-                  <ScopeDetail
-                    project_id={project_id}
-                    project_code={projectDetails?.code}
-                  />
-                </Box>
+              <TabPanel
+                value="scope"
+                sx={{
+                  p: { xs: 1, md: 1.5 },
+                  height: {
+                    xs: "auto",
+                    md: `100%`,
+                  },
+                  overflowY: { md: "auto" },
+                }}
+              >
+                <ScopeDetail
+                  project_id={project_id}
+                  project_code={projectDetails?.code}
+                />
               </TabPanel>
 
               {allowedPO && (
-                <TabPanel value="po">
-                  <Box sx={{ overflowY: "auto" }}>
+                <TabPanel
+                  value="po"
+                  sx={{
+                    p: { xs: 1, md: 1.5 },
+                    height: {
+                      xs: "auto",
+                      md: `100%`,
+                    },
+                    overflowY: { md: "auto" },
+                  }}
+                >
+                  {/* Use full width; avoid fixed vw so it’s good on big screens */}
+                  <Box sx={{ width: "100%" }}>
                     <PurchaseRequestCard project_code={projectDetails?.code} />
                   </Box>
                 </TabPanel>
               )}
 
-              <TabPanel value="eng">
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    height: "70vh",
-                    overflowY: "auto",
-                  }}
-                >
+              <TabPanel
+                value="eng"
+                sx={{
+                  p: { xs: 1, md: 1.5 },
+                  height: {
+                    xs: "auto",
+                    md: `100%`,
+                  },
+                  overflowY: { md: "auto" },
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "flex-start" }}>
                   <Overview />
                 </Box>
               </TabPanel>
 
-              <TabPanel value="notes">
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    height: "70vh",
-                    overflowY: "auto",
-                  }}
-                >
-                  <Posts projectId={project_id} />
-                </Box>
+              <TabPanel
+                value="notes"
+                sx={{
+                  p: { xs: 1, md: 1.5 },
+                  height: {
+                    xs: "auto",
+                    md: `100%`,
+                  },
+                  overflowY: { md: "auto" },
+                }}
+              >
+                <Posts projectId={project_id} />
               </TabPanel>
             </Tabs>
-          </Box>
-        </Card>
+          </Card>
+        </Box>
       </Box>
 
       {/* Toast */}
