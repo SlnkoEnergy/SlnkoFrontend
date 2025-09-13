@@ -34,6 +34,7 @@ import DatabaseIcon from "@mui/icons-material/Storage";
 import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 import ColorSchemeToggle from "./ColorSchemeToggle";
 import { NovuProvider, PopoverNotificationCenter } from "@novu/notification-center";
+import AppNotification from "./Notification";
 
 function Toggler({ defaultExpanded = false, renderToggle, children }) {
   const [open, setOpen] = useState(defaultExpanded);
@@ -170,66 +171,8 @@ function Sidebar() {
             display: { xs: "none", sm: "none", md: "none", lg: "block" },
           }}
         >
-          <NovuProvider
-            subscriberId={subscribeId}
-            applicationIdentifier={process.env.REACT_APP_NOVU_IDENTIFIER}
-          >
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "end",
-                p: 1,
-                position: "relative",
-                zIndex: 20000000,
-              }}
-            >
-              <PopoverNotificationCenter
-                colorScheme="light"
-                position="bottom-end"
-                offset={20}
-                onNotificationClick={(notification) => {
-                  if (notification?.payload?.type === "sales" && notification?.payload?.link1) {
-                    navigate(notification?.payload?.link1);
-                  } else if (notification?.payload?.link) {
-                    navigate(notification?.payload?.link);
-                  }
-                }}
-              >
-                {({ unseenCount }) => (
-                  <IconButton
-                    sx={{
-                      position: "relative",
-                      bgcolor: "transparent", // ghost-like
-                      "&:hover": { bgcolor: "action.hover" },
-                    }}
-                  >
-                    <NotificationsNoneIcon
-                      sx={{ width: 20, height: 20, color: "text.primary" }} // Bell equivalent
-                    />
-
-                    {(unseenCount ?? 0) > 0 && (
-                      <Box
-                        component="span"
-                        sx={{
-                          position: "absolute",
-                          top: -4,
-                          right: -4,
-                          backgroundColor: "#ef4444", // red-500
-                          color: "white",
-                          borderRadius: "9999px",
-                          px: 0.5,
-                          fontSize: "0.75rem",
-                          lineHeight: "1rem",
-                        }}
-                      >
-                        {unseenCount ?? 0}
-                      </Box>
-                    )}
-                  </IconButton>
-                )}
-              </PopoverNotificationCenter>
-            </Box>
-          </NovuProvider>
+        
+          <AppNotification/>
         </Box>
       </Box>
 
