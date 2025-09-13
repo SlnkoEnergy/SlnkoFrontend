@@ -26,11 +26,10 @@ import {
   useUpdateStatusHandOverMutation,
 } from "../../../redux/camsSlice";
 import {
-  useGetMasterInverterQuery,
   useGetModuleMasterQuery,
 } from "../../../redux/leadsSlice";
 
-const CamHandoverSheetForm = ({ onBack }) => {
+const CamHandoverSheetForm = ({ onBack, p_id }) => {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(null);
   const [showVillage, setShowVillage] = useState(false);
@@ -188,16 +187,6 @@ const CamHandoverSheetForm = ({ onBack }) => {
     [getModuleMaster?.data]
   );
 
-  console.log(ModuleMaster);
-
-  const { data: getMasterInverter = [] } = useGetMasterInverterQuery();
-  const MasterInverter = useMemo(
-    () => getMasterInverter?.data ?? [],
-    [getMasterInverter?.data]
-  );
-
-  console.log(MasterInverter);
-
   useEffect(() => {
     if (ModuleMaster.length > 0) {
       setModuleMakeOptions([
@@ -214,29 +203,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
       ]);
     }
 
-    if (MasterInverter.length > 0) {
-      setInverterMakeOptions([
-        ...new Set(
-          MasterInverter.map((item) => item.inveter_make).filter(Boolean)
-        ),
-      ]);
-      setInverterSizeOptions([
-        ...new Set(
-          MasterInverter.map((item) => item.inveter_size).filter(Boolean)
-        ),
-      ]);
-      setInverterModelOptions([
-        ...new Set(
-          MasterInverter.map((item) => item.inveter_model).filter(Boolean)
-        ),
-      ]);
-      setInverterTypeOptions([
-        ...new Set(
-          MasterInverter.map((item) => item.inveter_type).filter(Boolean)
-        ),
-      ]);
-    }
-  }, [ModuleMaster, MasterInverter]);
+  }, [ModuleMaster]);
 
   const handleExpand = (panel) => {
     setExpanded(expanded === panel ? null : panel);
@@ -284,33 +251,24 @@ const CamHandoverSheetForm = ({ onBack }) => {
 
   const LeadId = sessionStorage.getItem("submitInfo");
 
-  // console.log("LeadId:", LeadId);
-
-  console.log("Fetching handover sheet with:", { id: LeadId });
-
   const {
     data: getHandOverSheet,
     isLoading,
     isError,
     error,
   } = useGetHandOverByIdQuery(
+    {p_id:p_id},
     { id: LeadId },
     {
       skip: !LeadId,
+      skip: !p_id
     }
   );
 
+  console.log({getHandOverSheet})
+  
   const handoverData = getHandOverSheet?.data ?? null;
 
-  console.log("Handover Data:", handoverData);
-
-  useEffect(() => {
-    if (!handoverData && !isLoading && !error) {
-      console.warn("No matching handover data found.");
-    } else if (handoverData) {
-      console.log("Fetched handover data:", handoverData);
-    }
-  }, [handoverData, isLoading, error]);
 
   useEffect(() => {
     if (handoverData) {
@@ -516,23 +474,6 @@ const CamHandoverSheetForm = ({ onBack }) => {
     }));
   }, [handoverData]);
 
-  // const calculateDcCapacity = (ac, overloadingPercent) => {
-  //   const acValue = parseFloat(ac);
-  //   const overloadingValue = parseFloat(overloadingPercent) / 100;
-  //   if (!isNaN(acValue) && !isNaN(overloadingValue)) {
-  //     return Math.round(acValue * (1 + overloadingValue));
-  //   }
-  //   return "";
-  // };
-
-  // const calculateSlnkoBasic = (kwp, slnko_basic) => {
-  //   const kwpValue = parseFloat(kwp);
-  //   const serviceValue = parseFloat(slnko_basic);
-  //   if (!isNaN(kwpValue) && !isNaN(serviceValue)) {
-  //     return (kwpValue * serviceValue * 1000).toFixed(0);
-  //   }
-  //   return "";
-  // };
 
   const calculateDcCapacity = (ac, overloadingPercent) => {
     const acValue = parseFloat(ac);
@@ -575,26 +516,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
         service: calculated,
       },
     }));
-    //    if (!isNaN(serviceAmount)) {
-    //   let gstPercentage = 0;
-    //   if (billingType === "Composite") {
-    //     gstPercentage = 13.8;
-    //   } else if (billingType === "Individual") {
-    //     gstPercentage = 18;
-    //   }
-
-    //   if (gstPercentage > 0) {
-    //     const totalGST = Math.round(serviceAmount * (1 + gstPercentage / 100));
-    //     setFormData((prev) => ({
-    //       ...prev,
-    //       other_details: {
-    //         ...prev.other_details,
-    //         total_gst: totalGST,
-    //       },
-    //     }));
-    //   }
-    // }
-
+  
     if (!isNaN(serviceAmount)) {
       let gstPercentage = 0;
       if (billingType === "Composite") {
@@ -1122,12 +1044,6 @@ const CamHandoverSheetForm = ({ onBack }) => {
                       }
                     }}
                   >
-                    {/* {moduleMakeOptions.length > 0 &&
-                      moduleMakeOptions.map((make, index) => (
-                        <Option key={index} value={make}>
-                          {make}
-                        </Option>
-                      ))} */}
                     <Option value="SUNGROW">SUNGROW</Option>
                     <Option value="WATTPOWER">WATTPOWER</Option>
                     <Option value="HITACHI">HITACHI</Option>
