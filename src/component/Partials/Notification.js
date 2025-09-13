@@ -10,40 +10,75 @@ import { Box, IconButton } from "@mui/joy";
 import { useNavigate } from "react-router-dom";
 import main_logo from "../../assets/protrac_logo.png"
 
+const isIOS =
+  typeof navigator !== "undefined" &&
+  /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+const isStandalone =
+  (typeof window !== "undefined" &&
+    (window.matchMedia?.("(display-mode: standalone)")?.matches ||
+      // iOS Safari legacy flag when launched from Home Screen
+      (navigator).standalone === true)) || false;
+
+const hasWindow = () => typeof window !== "undefined";
+const hasWebNotification =
+  hasWindow() && "Notification" in window && typeof window.Notification === "function";
+const hasSWShowNotification =
+  typeof navigator !== "undefined" &&
+  "serviceWorker" in navigator &&
+  typeof ServiceWorkerRegistration !== "undefined" &&
+  "showNotification" in ServiceWorkerRegistration.prototype;
+
+// tiny helper
+const permissionGranted = () =>
+  hasWebNotification && window.Notification.permission === "granted";
+
 function NotificationListener() {
+
   const ctx = useNotifications();
   const notifications = ctx?.notifications ?? [];
   const bootstrapped = useRef(false);
   const lastShownIdRef = useRef(null);
   const STORAGE_KEY = "novu:lastShownId";
 
-  // Load persisted last shown id (no auto permission request here)
   useEffect(() => {
     try {
       lastShownIdRef.current = localStorage.getItem(STORAGE_KEY);
     } catch { }
   }, []);
+  // console.log(STORAGE_KEY);
 
-  // SHOW POPUP + ONCLICK NAVIGATION
-  const showPopup = (n) => {
+  const showPopup = async (n) => {
     const message =
       typeof n?.payload?.message === "string"
-        ? n?.payload?.message
+        ? n.payload.message
         : n?.payload?.message || "You have a new message";
-    // Link priority: sales.link1 → link → url → /
+
     const link =
       (n?.payload?.type === "sales" && n?.payload?.link1)
         ? n.payload.link1
         : n?.payload?.link || "/dashboard";
 
-    const body = n?.payload?.sendBy_Name
-      ? `${n.payload.sendBy_Name}:${message}`
-      : message;
+    const title = n?.payload?.Module || "Notification";
+    const body = n?.payload?.sendBy_Name ? `${n.payload.sendBy_Name}: ${message}` : message;
 
-      console.log(body);
+    try {
+      if ((isIOS || isStandalone) && hasSWShowNotification && permissionGranted()) {
+        const reg = await navigator.serviceWorker.ready;
+        await reg.showNotification(
+          n?.payload?.Module || "",
+          {
+            body,
+            icon: main_logo,
+            data: { link },
+          },
+        );
+        return;
+      }
+    } catch { /* fall through to other paths */ }
 
-    if (typeof window !== "undefined" && "Notification" in window) {
-      if (window.Notification.permission === "granted") {
+    try {
+      if (hasWebNotification && permissionGranted()) {
         const notif = new window.Notification(
           n?.payload?.Module || "",
           {
@@ -52,20 +87,19 @@ function NotificationListener() {
             data: { link },
           },
         );
-
-        // ⬇️ Add on-click navigation here
         notif.onclick = () => {
           try { window.focus(); } catch { }
-          if (/^https?:\/\//i.test(link)) {
-            window.location.assign(link); // external / absolute
-          } else {
-            window.location.href = link;  // let router handle relative
-          }
+          if (/^https?:\/\//i.test(link)) window.location.assign(link);
+          else window.location.href = link;
           notif.close();
         };
+        return;
       }
-    }
+    } catch { /* fall through */ }
+
+    console.warn("Notifications not supported/granted; falling back to toast:", { title, body, link });
   };
+
 
   useEffect(() => {
     if (!notifications.length) return;
@@ -73,7 +107,6 @@ function NotificationListener() {
     const ids = notifications.map((n) => n?._id).filter(Boolean);
     if (!ids.length) return;
 
-    // First load: record the newest, don't pop
     if (!bootstrapped.current) {
       bootstrapped.current = true;
       if (ids[0] && lastShownIdRef.current !== ids[0]) {
@@ -83,25 +116,21 @@ function NotificationListener() {
       return;
     }
 
-    // After bootstrap: pop all newer than lastShownId
     const lastSeen = lastShownIdRef.current;
     const lastSeenIdx = lastSeen ? ids.indexOf(lastSeen) : -1;
     const newIds = lastSeenIdx === -1 ? ids : ids.slice(0, lastSeenIdx);
 
     if (newIds.length) {
-      // Oldest → newest
       [...newIds].reverse().forEach((id, i) => {
         const n = notifications.find((x) => x?._id === id);
         if (!n) return;
         setTimeout(() => showPopup(n), i * 250);
       });
 
-      // Update last shown to newest processed (ids are newest-first)
       const newestProcessed = newIds[0];
       lastShownIdRef.current = newestProcessed;
       try { localStorage.setItem(STORAGE_KEY, newestProcessed); } catch { }
     } else {
-      // Track current head even if nothing new
       if (ids[0] && lastShownIdRef.current !== ids[0]) {
         lastShownIdRef.current = ids[0];
         try { localStorage.setItem(STORAGE_KEY, ids[0]); } catch { }
@@ -139,62 +168,7 @@ const AppNotification = () => {
           display: "block",
         }}
       >
-        {/* <NovuProvider
-          subscriberId={subscribeId}
-          applicationIdentifier={process.env.REACT_APP_NOVU_IDENTIFIER}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "end",
-              //   p: 1,
-              position: "relative",
-            }}
-          >
-            <PopoverNotificationCenter
-              colorScheme="light"
-              position="bottom-end"
-              sx={{ zIndex: 200000 }}
-              offset={20}
-              onNotificationClick={(notification) => {
-                const link = notification?.payload?.link;
-                if (link) {
-                  navigate(notification.payload.link);
-                }
-              }}
-            >
-              {({ unseenCount }) => (
-                <IconButton
-                  sx={{
-                    "&:hover": {
-                      bgcolor: "rgba(255,255,255,0.1)",
-                    },
-                  }}
-                >
-                  <NotificationsNoneIcon
-                    sx={{ width: 28, height: 28, color: "white" }}
-                  />
 
-                  {(unseenCount ?? 0) > 0 && (
-                    <Box
-                      component="span"
-                      sx={{
-                        backgroundColor: "#ef4444",
-                        color: "white",
-                        borderRadius: "9999px",
-                        px: 0.5,
-                        fontSize: "0.75rem",
-                        lineHeight: "1rem",
-                      }}
-                    >
-                      {unseenCount ?? 0}
-                    </Box>
-                  )}
-                </IconButton>
-              )}
-            </PopoverNotificationCenter>
-          </Box>
-        </NovuProvider> */}
         <NovuProvider
           subscriberId={subscribeId}
           applicationIdentifier={process.env.REACT_APP_NOVU_IDENTIFIER}
@@ -235,7 +209,7 @@ const AppNotification = () => {
                   }}
                 >
                   <NotificationsNoneIcon
-                    sx={{ width: 20, height: 20, color: "white" }} // Bell equivalent
+                    sx={{ width: 20, height: 20, color: "black" }} // Bell equivalent
                   />
 
                   {(unseenCount ?? 0) > 0 && (
@@ -245,7 +219,7 @@ const AppNotification = () => {
                         position: "absolute",
                         top: -4,
                         right: -4,
-                        backgroundColor: "#ef4444", // red-500
+                        backgroundColor: "#ef4444",
                         color: "white",
                         borderRadius: "9999px",
                         px: 0.5,
