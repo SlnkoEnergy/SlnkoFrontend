@@ -1996,7 +1996,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
           </List>
-        ) : user?.department === "CAM" 
+        ) : user?.department === "CAM" && user?.name!== "Shantanu Sameer"
            ? (
           <List
             size="sm"

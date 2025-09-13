@@ -208,7 +208,7 @@ export const AccountsApi = createApi({
     }),
     getExportProjectBalance: builder.mutation({
       query: (body) => ({
-        url: "accounting/export-project-balance",
+        url: "/accounting/export-project-balance",
         method: "POST",
         body,
         responseHandler: async (response) => {
