@@ -180,14 +180,13 @@ export default function Project_Detail() {
     }
   };
 
-  /* ---------------- Layout constants ----------------
-     - headerOffset: space reserved for your app header (tweak as needed)
-     - tabsBar: approximate height of the TabList
-     - On md+ we compute a scroll area height so panels don't grow forever
-  --------------------------------------------------- */
   const headerOffset = 72;
   const tabsBar = 48;
   const verticalGaps = 32;
+ 
+  const p_id = projectDetails?.p_id;
+
+  console.log({p_id})
 
   return (
     <Box
@@ -399,7 +398,7 @@ export default function Project_Detail() {
                     alignItems: "center",
                   }}
                 >
-                  <CamHandoverSheetForm />
+                  <CamHandoverSheetForm p_id={p_id} />
                 </Box>
               </TabPanel>
 
