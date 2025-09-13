@@ -58,6 +58,7 @@ function POSummary() {
   const allowedUsers = [
     "IT Team",
     "Guddu Rani Dubey",
+    "Varun Mishra",
     "Prachi Singh",
     "Ajay Singh",
     "Aryan Maheshwari",
@@ -66,9 +67,6 @@ function POSummary() {
     "Shubham Gupta",
     "Gagan Tayal",
   ];
-
-  const isAllowed =
-    allowedUsers.includes(user?.name) || user?.department === "admin";
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -116,7 +114,10 @@ function POSummary() {
               >
                 SCM
               </Link>
-              <Typography color="primary" sx={{ fontWeight: 500, fontSize: 12 }}>
+              <Typography
+                color="primary"
+                sx={{ fontWeight: 500, fontSize: 12 }}
+              >
                 Purchase Order Summary
               </Typography>
             </Breadcrumbs>
@@ -138,28 +139,33 @@ function POSummary() {
               Purchase Order Summary
             </Typography>
 
-            {isAllowed && (
-              <Box
-                sx={{
-                  display: "flex",
-                  mb: 1,
-                  gap: 1,
-                  flexDirection: { xs: "column", sm: "row" },
-                  alignItems: { xs: "start", sm: "center" },
-                  flexWrap: "wrap",
-                  justifyContent: "center",
-                }}
+            <Box
+              sx={{
+                display: "flex",
+                mb: 1,
+                gap: 1,
+                flexDirection: { xs: "column", sm: "row" },
+                alignItems: { xs: "start", sm: "center" },
+                flexWrap: "wrap",
+                justifyContent: "center",
+              }}
+            >
+              <Button
+                color="primary"
+                size="sm"
+                onClick={handleOpenLogisticsWithSeed}
               >
-                <Button color="primary" size="sm" onClick={handleOpenLogisticsWithSeed}>
-                  Logistics Form
-                </Button>
-                {user?.name !== "Gagan Tayal" && (
-                  <Button color="primary" variant="outlined" size="sm" onClick={() => navigate("/add_vendor")}>
-                    Add Vendor
-                  </Button>
-                )}
-              </Box>
-            )}
+                Logistics Form
+              </Button>
+              <Button
+                color="primary"
+                variant="outlined"
+                size="sm"
+                onClick={() => navigate("/add_vendor")}
+              >
+                Add Vendor
+              </Button>
+            </Box>
           </Box>
 
           <PurchaseOrder ref={poSummaryRef} />

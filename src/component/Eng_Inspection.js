@@ -95,7 +95,7 @@ function Eng_Inspection() {
   const [startDate, setStartDate] = useState(initialStartDate);
   const [endDate, setEndDate] = useState(initialEndDate);
   const [dateError, setDateError] = useState("");
-  const po_number = searchParams.get("po_number")
+  const po_number = searchParams.get("po_number");
 
   // Modal state for status update
   const [openModal, setOpenModal] = useState(false);
@@ -217,7 +217,7 @@ function Eng_Inspection() {
       search: debouncedSearch,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
-      po_number: po_number
+      po_number: po_number,
     });
 
   // Match API shape
@@ -288,132 +288,64 @@ function Eng_Inspection() {
   };
 
   return (
-    <>
-      {/* Search + Date Filters + Rows Per Page */}
-      <Box
-        className="SearchAndFilters-tabletUp"
-        sx={{
-          ml: { xl: "15%", lg: "18%" },
-          borderRadius: "sm",
-          py: 1,
-          display: "flex",
-          alignItems: "flex-end",
-          justifyContent: "space-between",
-          gap: 1.5,
-          flexWrap: "wrap",
-        }}
-      >
-        {/* Search box */}
-        <FormControl sx={{ flex: 1, minWidth: 240 }} size="sm">
-          <FormLabel>Search here</FormLabel>
-          <Input
-            size="sm"
-            placeholder="Search by Inspection Code, Project Id, Vendor, Category, PO Number..."
-            startDecorator={<SearchIcon />}
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              if (currentPage !== 1) setCurrentPage(1);
-            }}
-          />
-        </FormControl>
-
-        {/* Start Date */}
-        <FormControl size="sm" sx={{ minWidth: 170 }}>
-          <FormLabel>Start date</FormLabel>
-          <Input
-            type="date"
-            value={startDate}
-            onChange={(e) => {
-              setStartDate(e.target.value);
-              if (currentPage !== 1) setCurrentPage(1);
-            }}
-          />
-        </FormControl>
-
-        {/* End Date */}
-        <FormControl size="sm" sx={{ minWidth: 170 }}>
-          <FormLabel>End date</FormLabel>
-          <Input
-            type="date"
-            value={endDate}
-            onChange={(e) => {
-              setEndDate(e.target.value);
-              if (currentPage !== 1) setCurrentPage(1);
-            }}
-          />
-        </FormControl>
-
-        {/* Clear dates */}
-        <Button
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          onClick={clearDates}
-          sx={{ alignSelf: "center", mt: { xs: 1.75, sm: 2.5 } }}
-        >
-          Clear Dates
-        </Button>
-
-        {/* Rows Per Page (to the right) */}
+    <Box
+      sx={{
+        ml: {
+          lg: "var(--Sidebar-width)",
+        },
+        px: "0px",
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+      }}
+    >
+      <Box display={"flex"} justifyContent={"flex-end"} alignItems={"center"} pb={0.5}>
+       
         <Box
+          className="SearchAndFilters-tabletUp"
           sx={{
+            borderRadius: "sm",
+            py: 1,
             display: "flex",
-            alignItems: "center",
-            gap: 1,
-            whiteSpace: "nowrap",
-            mt: 2.5,
+            flexWrap: "wrap",
+            gap: 1.5,
+            width: { lg: "50%" },
           }}
         >
-          <Typography level="body-sm">Rows Per Page:</Typography>
-          <Select
-            value={rowsPerPage}
-            onChange={(_, newValue) => {
-              if (newValue) {
-                setRowsPerPage(newValue);
+          {/* Search box */}
+          <FormControl sx={{ flex: 1, minWidth: 240 }} size="sm">
+            <Input
+              size="sm"
+              placeholder="Search by Inspection Code, Project Id, Vendor, Category, PO Number..."
+              startDecorator={<SearchIcon />}
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
                 if (currentPage !== 1) setCurrentPage(1);
-              }
-            }}
-            size="sm"
-            variant="outlined"
-            sx={{ minWidth: 80, borderRadius: "md", boxShadow: "sm" }}
-          >
-            {[10, 20, 50, 100].map((value) => (
-              <Option key={value} value={value}>
-                {value}
-              </Option>
-            ))}
-          </Select>
+              }}
+            />
+          </FormControl>
         </Box>
       </Box>
 
-      {/* Date validation message */}
-      {dateError && (
-        <Box sx={{ ml: { xl: "15%", lg: "18%" }, mt: -1.5, mb: 1 }}>
-          <Typography color="danger" level="body-sm">
-            {dateError}
-          </Typography>
-        </Box>
-      )}
 
-      {/* Table */}
       <Sheet
         className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: { xs: "none", sm: "initial" },
+          display: { xs: "none", sm: "block" },
           width: "100%",
           borderRadius: "sm",
-          flexShrink: 1,
-          overflow: "auto",
-          minHeight: 0,
-          ml: { lg: "18%", xl: "15%" },
-          maxWidth: { lg: "85%", sm: "100%" },
+          maxHeight: "66vh",
+          overflowY: "auto",
         }}
       >
         <Box
           component="table"
-          sx={{ width: "100%", borderCollapse: "collapse" }}
+          sx={{
+            width: "100%",
+            borderCollapse: "collapse",
+            maxHeight: "40vh",
+            overflowY: "auto",
+          }}
         >
           <thead>
             <tr>
@@ -678,10 +610,10 @@ function Eng_Inspection() {
                             status === "requested"
                               ? "primary"
                               : status === "failed"
-                                ? "danger"
-                                : status === "approved"
-                                  ? "success"
-                                  : "neutral"
+                              ? "danger"
+                              : status === "approved"
+                              ? "success"
+                              : "neutral"
                           }
                           onClick={() => handleChipClick(id, status)}
                           sx={{
@@ -727,18 +659,15 @@ function Eng_Inspection() {
         </Box>
       </Sheet>
 
-      {/* Pagination + Modal */}
       <Box
         className="Pagination-laptopUp"
         sx={{
-          pt: 2,
+          pt: 1,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: "flex",
           flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
-          ml: { lg: "18%", xl: "15%" },
-          mr: { lg: "5%" },
         }}
       >
         <Button
@@ -785,6 +714,34 @@ function Eng_Inspection() {
           )}
         </Box>
 
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            whiteSpace: "nowrap",
+          }}
+        >
+          <Select
+            value={rowsPerPage}
+            onChange={(_, newValue) => {
+              if (newValue) {
+                setRowsPerPage(newValue);
+                if (currentPage !== 1) setCurrentPage(1);
+              }
+            }}
+            size="sm"
+            variant="outlined"
+            sx={{ minWidth: 80, borderRadius: "md", boxShadow: "sm" }}
+          >
+            {[10, 20, 50, 100].map((value) => (
+              <Option key={value} value={value}>
+                {value}
+              </Option>
+            ))}
+          </Select>
+        </Box>
+
         <Button
           size="sm"
           variant="outlined"
@@ -798,6 +755,7 @@ function Eng_Inspection() {
 
         {/* Status Update Modal */}
       </Box>
+      
       <Modal open={openModal} onClose={() => setOpenModal(false)}>
         <ModalDialog sx={{ width: 520, maxWidth: "92vw" }}>
           <ModalClose />
@@ -946,7 +904,7 @@ function Eng_Inspection() {
           </Button>
         </ModalDialog>
       </Modal>
-    </>
+    </Box>
   );
 }
 

@@ -141,6 +141,7 @@ const AllProjects = forwardRef((props, ref) => {
             <Divider sx={{ backgroundColor: "lightblue" }} />
             {(user?.name === "IT Team" ||
               user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
               user?.name === "Prachi Singh" ||
               user?.name === "admin") && (
               <MenuItem
@@ -606,7 +607,7 @@ const AllProjects = forwardRef((props, ref) => {
                       >
                         <VisibilityIcon sx={{ color: "white" }} />
                       </Box>
-                    ) : ["IT Team","Guddu Rani Dubey", "Prachi Singh"].includes(
+                    ) : ["IT Team","Guddu Rani Dubey", "Varun Mishra","Prachi Singh"].includes(
                         user?.name
                       ) ? (
                       <Box

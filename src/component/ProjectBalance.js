@@ -121,7 +121,7 @@ const ProjectBalances = forwardRef(() => {
       const token = localStorage.getItem("authToken");
 
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}accounting/export-project-balance`,
+        `${process.env.REACT_APP_API_URL}/accounting/export-project-balance`,
         { selectedIds, selectAll },
         {
           responseType: "blob",
@@ -203,6 +203,7 @@ const ProjectBalances = forwardRef(() => {
         <Box mt={3} sx={{ display: "flex", gap: 1 }}>
           {(user?.name === "IT Team" ||
             user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Varun Mishra" ||
             user?.name === "Prachi Singh" ||
             user?.department === "admin" ||
             user?.name === "Naresh Kumar" ||
@@ -257,6 +258,7 @@ const ProjectBalances = forwardRef(() => {
           <Menu size="sm" sx={{ minWidth: 100 }}>
             {(user?.name === "IT Team" ||
               user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
               user?.name === "Prachi Singh" ||
               user?.department === "admin" ||
               user?.department === "Accounts") && (

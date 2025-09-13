@@ -905,6 +905,7 @@ export default function VendorBillForm({
                         type="number"
                         placeholder="Quantity"
                         value={l.qty}
+                        slotProps={{ input: { min: 0, step: "0.00001" } }}
                         onChange={(e) =>
                           updateLine(l.id, "qty", toNum(e.target.value))
                         }
@@ -918,6 +919,7 @@ export default function VendorBillForm({
                         type="number"
                         placeholder="Unit Price"
                         value={l.price}
+                        slotProps={{ input: { min: 0, step: "0.00001" } }}
                         onChange={(e) =>
                           updateLine(l.id, "price", toNum(e.target.value))
                         }
@@ -931,6 +933,7 @@ export default function VendorBillForm({
                         type="number"
                         placeholder="Tax %"
                         value={l.tax}
+                        slotProps={{ input: { min: 0, step: "0.00001" } }}
                         onChange={(e) =>
                           updateLine(l.id, "tax", toNum(e.target.value))
                         }

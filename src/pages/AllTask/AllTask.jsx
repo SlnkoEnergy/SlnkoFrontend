@@ -3,56 +3,69 @@ import CssBaseline from "@mui/joy/CssBaseline";
 import { CssVarsProvider } from "@mui/joy/styles";
 import { useEffect, useState } from "react";
 import Button from "@mui/joy/Button";
-import Breadcrumbs from "@mui/joy/Breadcrumbs";
-import Link from "@mui/joy/Link";
-import Typography from "@mui/joy/Typography";
-import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import ViewModuleRoundedIcon from "@mui/icons-material/ViewModuleRounded";
 import Sidebar from "../../component/Partials/Sidebar";
-import Dash_task from "../../component/TaskDashboard";
-import Header from "../../component/Partials/Header";
-import { useNavigate } from "react-router-dom";
-import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
-import { useExportTasksToCsvMutation } from "../../redux/globalTaskSlice";
-
+import Dash_task from "../../component/All_Tasks/TaskView";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import {
+  useExportTasksToCsvMutation,
+  useGetAllDeptQuery,
+  useGetAllUserQuery,
+} from "../../redux/globalTaskSlice";
+import MainHeader from "../../component/Partials/MainHeader";
+import SubHeader from "../../component/Partials/SubHeader";
+import { Add } from "@mui/icons-material";
+import Filter from "../../component/Partials/Filter";
+import { IconButton, Modal, ModalDialog } from "@mui/joy";
+import AddTask from "../../component/All_Tasks/Add_Task";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 function AllTask() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [openAddTaskModal, setOpenAddTaskModal] = useState(false);
+
   const [user, setUser] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [open, setOpen] = useState(false);
+
+  const { data: deptApiData, isLoading: isDeptLoading } = useGetAllDeptQuery();
+  const deptList = (deptApiData?.data || []).filter(Boolean);
+
+  const { data: usersResp, isFetching: isUsersLoading } = useGetAllUserQuery({
+    department: "",
+  });
+  const userOptions = (
+    Array.isArray(usersResp?.data)
+      ? usersResp.data
+      : Array.isArray(usersResp)
+      ? usersResp
+      : []
+  )
+    .filter(Boolean)
+    .map((u) => ({ label: u?.name || "User", value: u?._id || "" }))
+    .filter((o) => o.value);
 
   useEffect(() => {
-    const userData = getUserData();
-    setUser(userData);
-  }, []);
-
-  const getUserData = () => {
     const userData = localStorage.getItem("userDetails");
-    if (userData) {
-      return JSON.parse(userData);
-    }
-    return null;
-  };
+    if (userData) setUser(JSON.parse(userData));
+  }, []);
 
   const [exportTasksToCsv] = useExportTasksToCsvMutation();
 
   const handleExport = async (selectedIds) => {
     try {
-      if (!selectedIds || selectedIds.length === 0) {
+      if (!selectedIds?.length) {
         alert("No tasks selected for export.");
         return;
       }
       const response = await exportTasksToCsv(selectedIds).unwrap();
-
       const blob = new Blob([response], { type: "text/csv" });
       const url = window.URL.createObjectURL(blob);
-
       const a = document.createElement("a");
       a.href = url;
       a.download = "tasks_export.csv";
       document.body.appendChild(a);
       a.click();
       a.remove();
-
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Export failed:", error);
@@ -60,117 +73,282 @@ function AllTask() {
     }
   };
 
+  const fields = [
+    {
+      key: "priorityFilter",
+      label: "Filter By Priority",
+      type: "select",
+      options: [
+        { label: "High", value: "1" },
+        { label: "Medium", value: "2" },
+        { label: "Low", value: "3" },
+      ],
+    },
+    {
+      key: "createdAt",
+      label: "Filter by Date",
+      type: "daterange",
+    },
+    {
+      key: "deadline",
+      label: "Filter by Deadline",
+      type: "daterange",
+    },
+    {
+      key: "department",
+      label: "Department",
+      type: "select",
+      options: isDeptLoading
+        ? []
+        : deptList.map((d) => ({ label: d, value: d })),
+    },
+    {
+      key: "assigned_to",
+      label: "Assigned To",
+      type: "select",
+      options: isUsersLoading ? [] : userOptions,
+    },
+    {
+      key: "createdBy",
+      label: "Created By",
+      type: "select",
+      options: isUsersLoading ? [] : userOptions,
+    },
+  ];
+
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
       <Box sx={{ display: "flex", minHeight: "100dvh" }}>
-        <Header />
         <Sidebar />
+
+        <MainHeader title="Tasks" sticky>
+          <Box display="flex" gap={1}>
+            <Button
+              size="sm"
+              onClick={() => navigate(`/task_dashboard`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              Dashboard
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => navigate(`/all_task`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              All Tasks
+            </Button>
+          </Box>
+        </MainHeader>
+
+        <SubHeader title="All Tasks" isBackEnabled={false} sticky>
+          <Box display="flex" gap={1} alignItems="center">
+            {selectedIds?.length > 0 && (
+              <Button
+                variant="outlined"
+                size="sm"
+                onClick={() => handleExport(selectedIds)}
+                sx={{
+                  color: "#3366a3",
+                  borderColor: "#3366a3",
+                  backgroundColor: "transparent",
+                  "--Button-hoverBg": "#e0e0e0",
+                  "--Button-hoverBorderColor": "#3366a3",
+                  "&:hover": { color: "#3366a3" },
+                  height: "8px",
+                }}
+              >
+                Export
+              </Button>
+            )}
+
+            <Button
+              variant="solid"
+              size="sm"
+              startDecorator={<Add />}
+              onClick={() => setOpenAddTaskModal(true)}
+              sx={{
+                backgroundColor: "#3366a3",
+                color: "#fff",
+                "&:hover": { backgroundColor: "#285680" },
+                height: "8px",
+              }}
+            >
+              Add Task
+            </Button>
+
+            <Filter
+              open={open}
+              onOpenChange={setOpen}
+              fields={fields}
+              title="Filters"
+              onApply={(values) => {
+                setSearchParams((prev) => {
+                  const merged = Object.fromEntries(prev.entries());
+                  delete merged.priorityFilter;
+                  delete merged.status;
+                  delete merged.department;
+                  delete merged.assigned_to;
+                  delete merged.createdBy;
+                  delete merged.from;
+                  delete merged.to;
+                  delete merged.deadlineFrom;
+                  delete merged.deadlineTo;
+                  delete merged.matchMode;
+
+                  const next = {
+                    ...merged,
+                    page: "1",
+                    ...(values.priorityFilter && {
+                      priorityFilter: String(values.priorityFilter),
+                    }),
+                    ...(values.status && { status: String(values.status) }),
+                    ...(values.department && {
+                      department: String(values.department),
+                    }),
+                  };
+
+                  // matcher -> matchMode
+                  if (values.matcher) {
+                    next.matchMode = values.matcher === "OR" ? "any" : "all";
+                  }
+
+                  // createdAt range
+                  if (values.createdAt?.from)
+                    next.from = String(values.createdAt.from);
+                  if (values.createdAt?.to)
+                    next.to = String(values.createdAt.to);
+
+                  // deadline range
+                  if (values.deadline?.from)
+                    next.deadlineFrom = String(values.deadline.from);
+                  if (values.deadline?.to)
+                    next.deadlineTo = String(values.deadline.to);
+
+                  // NEW: user ids
+                  if (values.assigned_to)
+                    next.assigned_to = String(values.assigned_to);
+                  if (values.createdBy)
+                    next.createdBy = String(values.createdBy);
+
+                  return next;
+                });
+                setOpen(false);
+              }}
+              onReset={() => {
+                setSearchParams((prev) => {
+                  const merged = Object.fromEntries(prev.entries());
+                  delete merged.priorityFilter;
+                  delete merged.status;
+                  delete merged.department;
+                  delete merged.assigned_to;
+                  delete merged.createdBy;
+                  delete merged.from;
+                  delete merged.to;
+                  delete merged.deadlineFrom;
+                  delete merged.deadlineTo;
+                  delete merged.matchMode;
+                  return { ...merged, page: "1" };
+                });
+              }}
+            />
+          </Box>
+        </SubHeader>
+
         <Box
           component="main"
           className="MainContent"
           sx={{
-            px: { xs: 2, md: 6 },
-            pt: {
-              xs: "calc(12px + var(--Header-height))",
-              sm: "calc(12px + var(--Header-height))",
-              md: 3,
-            },
-            pb: { xs: 2, sm: 2, md: 3 },
             flex: 1,
             display: "flex",
             flexDirection: "column",
-            minWidth: 0,
-            height: "100dvh",
             gap: 1,
+            mt: "108px",
+            p: "16px",
+            px: "24px",
           }}
         >
-          <Box
+          <Dash_task
+            selected={selectedIds}
+            setSelected={setSelectedIds}
+            searchParams={searchParams}
+            setSearchParams={setSearchParams}
+          />
+        </Box>
+
+        <Modal
+          open={openAddTaskModal}
+          onClose={() => setOpenAddTaskModal(false)}
+          slotProps={{
+            backdrop: {
+              sx: {},
+            },
+          }}
+        >
+          <ModalDialog
+            variant="outlined"
             sx={{
-              display: "flex",
-              alignItems: "center",
-              marginLeft: { xl: "15%", lg: "18%" },
+              p: 0,
+              borderRadius: "md",
+              boxShadow: "lg",
+              overflow: "hidden",
+              width: "auto",
+              height: "auto",
+              maxWidth: "unset",
+              maxHeight: "unset",
+              backgroundColor: "background.surface",
+              backdropFilter: "none",
             }}
           >
-            <Breadcrumbs
-              size="sm"
-              aria-label="breadcrumbs"
-              separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
-            >
-              <Link
-                underline="none"
-                color="neutral"
-                sx={{ fontSize: 12, fontWeight: 500 }}
-              >
-                Tasks
-              </Link>
-
-              <Typography
-                color="primary"
-                sx={{ fontWeight: 500, fontSize: 12 }}
-              >
-                All Task
-              </Typography>
-            </Breadcrumbs>
-          </Box>
-
-          <Box
-            sx={{
-              display: "flex",
-              mb: 1,
-              gap: 1,
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: { xs: "start", sm: "center" },
-              flexWrap: "wrap",
-              justifyContent: "space-between",
-              marginLeft: { xl: "15%", lg: "18%" },
-            }}
-          >
-            <Typography level="h2" component="h1">
-              All Task
-            </Typography>
-
             <Box
               sx={{
-                display: "flex",
-                flexDirection: { xs: "column", sm: "row" },
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 1.5,
-                p: 2,
-                flexWrap: "wrap",
-
-                borderRadius: "lg",
-
-                mb: 2,
+                width: { xs: "95vw", sm: 720 },
+                maxHeight: "85vh",
+                overflow: "auto",
+                position: "relative",
               }}
             >
-              <Button
-                variant="solid"
-                color="primary"
-                startDecorator={<DownloadRoundedIcon />}
-                size="md"
-                onClick={() => handleExport(selectedIds)}
+              <IconButton
+                variant="plain"
+                color="neutral"
+                onClick={() => setOpenAddTaskModal(false)}
+                sx={{
+                  position: "sticky",
+                  top: 8,
+                  left: "calc(100% - 40px)",
+                  zIndex: 2,
+                }}
               >
-                Export to CSV
-              </Button>
-
-              <Button
-                variant="solid"
-                color="primary"
-                startDecorator={<ViewModuleRoundedIcon />}
-                size="md"
-                onClick={() => navigate("/add_task")}
-              >
-                Add Task
-              </Button>
+                <CloseRoundedIcon />
+              </IconButton>
+              <AddTask />
             </Box>
-          </Box>
-          <Dash_task selected={selectedIds} setSelected={setSelectedIds} />
-        </Box>
+          </ModalDialog>
+        </Modal>
       </Box>
     </CssVarsProvider>
   );
 }
+
 export default AllTask;

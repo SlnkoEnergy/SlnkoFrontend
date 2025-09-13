@@ -1099,6 +1099,7 @@ const handleExportAll = async () => {
 
           {(user?.name === "IT Team" ||
             user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Varun Mishra" ||
             user?.name === "Prachi Singh" ||
             user?.name === "admin") && (
             <Box>
@@ -1313,6 +1314,7 @@ const handleExportAll = async () => {
 
           {(user?.name === "IT Team" ||
             user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Varun Mishra" ||
             user?.name === "Prachi Singh" ||
             user?.name === "admin") && (
             <Box>
@@ -1826,13 +1828,6 @@ const handleExportAll = async () => {
                 sx={{ width: { xs: "100%", md: 300 } }}
               />
 
-              {/* {["IT Team", "Guddu Rani Dubey", "Prachi Singh", "admin"].includes(
-      user?.name
-    ) && (
-      <IconButton color="danger" disabled={selectedSales.length === 0}>
-        <DeleteIcon />
-      </IconButton>
-    )} */}
             </Box>
 
             <Sheet
@@ -2221,6 +2216,7 @@ const handleExportAll = async () => {
           </Box>
           {(user?.name === "IT Team" ||
             user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Varun Mishra" ||
             user?.name === "Prachi Singh" ||
             user?.name === "admin") && (
             <Box>

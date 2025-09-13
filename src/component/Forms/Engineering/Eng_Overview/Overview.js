@@ -25,6 +25,9 @@ import {
 import { toast } from "react-toastify";
 import { ChevronLeftIcon } from "lucide-react";
 import CloudUpload from "@mui/icons-material/CloudUpload";
+import HistoryRoundedIcon from "@mui/icons-material/HistoryRounded";
+import EditNoteRoundedIcon from "@mui/icons-material/EditNoteRounded";
+import PlaylistAddRoundedIcon from "@mui/icons-material/PlaylistAddRounded";
 
 const Overview = () => {
   const navigate = useNavigate();
@@ -523,15 +526,17 @@ const Overview = () => {
       sx={{
         display: "flex",
         flexDirection: "column",
-        height: "100vh",
-        maxHeight: isFromCamDash ? "70vh" : "90vh",
-        width: { xs: "96vw", lg: "75vw", xl: "80vw" },
+        maxHeight: isFromCamDash ? "70vh" : "85vh",
+        width: {
+          xs: "100%",
+          lg: isFromCamDash ? "100%" : "calc(100% - var(--Sidebar-width))",
+        },
         bgcolor: "background.body",
         overflowY: isFromCamDash ? "auto" : "auto",
         overflowX: "auto",
-        marginLeft: isFromCamDash
-          ? "0%"
-          : { xs: "2%", lg: "19.6%", xl: "16.7%" },
+        ml: {
+          lg: isFromCamDash ? 0 : "var(--Sidebar-width)",
+        },
       }}
     >
       <Box
@@ -611,9 +616,17 @@ const Overview = () => {
               </Select>
             </Box>
           </Box>
-          <Divider sx={{ mb: 3, mt: 3 }} />
-
-          <Box sx={{ display: "grid", gap: 3 }}>
+          <Divider sx={{ mb: 2, mt: 2 }} />
+          <Box
+            sx={{
+              display: "grid",
+              gap: 3,
+              gridTemplateColumns: {
+                xs: "1fr",
+                xl: "1fr 1fr",
+              },
+            }}
+          >
             {selected === "summary" ? (
               boqSummaryData && boqSummaryData.length > 0 ? (
                 boqSummaryData.map((summary, i) => (
@@ -675,8 +688,6 @@ const Overview = () => {
                       borderRadius: "lg",
                       boxShadow: "sm",
                       bgcolor: "background.surface",
-                      position: "relative",
-                      maxHeight: "70vh",
                     }}
                   >
                     <Typography level="title-md" sx={{ mb: 1 }}>
@@ -846,7 +857,7 @@ const Overview = () => {
                     >
                       {item.attachmentUrls?.length > 0 && (
                         <>
-                          <Button
+                          <IconButton
                             variant="outlined"
                             size="sm"
                             onClick={() => handleLogsOpen(item.attachmentUrls)}
@@ -860,22 +871,25 @@ const Overview = () => {
                                   : "auto",
                             }}
                           >
-                            📂 Attachment Logs
-                          </Button>
-                          <Button
-                            size="sm"
+                            <HistoryRoundedIcon />
+                          </IconButton>
+
+                          <IconButton
+                            aria-label="Add remarks"
                             variant="outlined"
+                            size="sm"
                             color="neutral"
                             onClick={() => {
                               setRemarksTemplateId(item.templateId);
                               setShowAddRemarksModal(true);
                             }}
                           >
-                            📝 Add Remarks
-                          </Button>
+                            <EditNoteRoundedIcon />
+                          </IconButton>
 
                           {!isCAM && item?.boqEnabled && (
-                            <Button
+                            <IconButton
+                              aria-label="Add BOQ"
                               variant="soft"
                               size="sm"
                               onClick={() =>
@@ -884,8 +898,8 @@ const Overview = () => {
                                 )
                               }
                             >
-                              Add Boq
-                            </Button>
+                              <PlaylistAddRoundedIcon />
+                            </IconButton>
                           )}
                         </>
                       )}
@@ -1406,7 +1420,9 @@ const Overview = () => {
                   </Typography>
                 )}
                 <iframe
-                  src={`https://docs.google.com/gview?url=${encodeURIComponent(previewFileUrl)}&embedded=true`}
+                  src={`https://docs.google.com/gview?url=${encodeURIComponent(
+                    previewFileUrl
+                  )}&embedded=true`}
                   title="PDF Preview"
                   style={{
                     width: "100%",
@@ -1473,7 +1489,9 @@ const Overview = () => {
                       </Typography>
                     )}
                     <iframe
-                      src={`https://docs.google.com/gview?url=${encodeURIComponent(previewFileUrl)}&embedded=true`}
+                      src={`https://docs.google.com/gview?url=${encodeURIComponent(
+                        previewFileUrl
+                      )}&embedded=true`}
                       title="PDF Preview"
                       style={{
                         width: "100%",

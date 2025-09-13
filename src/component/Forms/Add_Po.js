@@ -182,6 +182,7 @@ const AddPurchaseOrder = ({
   onClose,
   pr_id,
   p_id,
+  pr_no,
   project_code,
   initialLines = [],
   categoryNames = [],
@@ -1056,6 +1057,7 @@ const AddPurchaseOrder = ({
             submitted_By: user.name,
             delivery_type: formData.delivery_type,
             pr_id,
+            pr_no,
             po_basic: String(amounts.untaxed ?? 0),
             gst: String(amounts.tax ?? 0),
             po_value: Number(amounts.total ?? 0),
@@ -1130,6 +1132,7 @@ const AddPurchaseOrder = ({
           partial_billing: formData.partial_billing || "",
           delivery_type: formData.delivery_type,
           pr_id,
+          pr_no,
           po_basic: String(amounts.untaxed ?? 0),
           gst: String(amounts.tax ?? 0),
           po_value: Number(amounts.total ?? 0),
@@ -1563,6 +1566,8 @@ const AddPurchaseOrder = ({
               {(user?.department === "CAM" ||
                 user?.name === "Sushant Ranjan Dubey" ||
                 user?.name === "Sanjiv Kumar" ||
+                user?.name === "Guddu Rani Dubey" ||
+                user?.name === "Varun Mishra" ||
                 user?.name === "IT Team") &&
                 isApprovalPending && (
                   <Box display="flex" gap={2}>
@@ -1595,6 +1600,7 @@ const AddPurchaseOrder = ({
                   <Box display="flex" gap={2}>
                     {(user?.department === "SCM" ||
                       user?.name === "Guddu Rani Dubey" ||
+                      user?.name === "Varun Mishra" ||
                       user?.name === "IT Team") && (
                       <Box>
                         <Button
@@ -2256,7 +2262,7 @@ const AddPurchaseOrder = ({
                             onChange={(e) =>
                               updateLine(l.id, "quantity", e.target.value)
                             }
-                            slotProps={{ input: { min: 0, step: "1" } }}
+                            slotProps={{ input: { min: 0, step: "0.00001" } }}
                             {...(inputsDisabled ? disabledInputProps : {})}
                           />
                         </td>
@@ -2269,7 +2275,7 @@ const AddPurchaseOrder = ({
                             onChange={(e) =>
                               updateLine(l.id, "unitPrice", e.target.value)
                             }
-                            slotProps={{ input: { min: 0, step: "0.01" } }}
+                            slotProps={{ input: { min: 0, step: "0.00001" } }}
                             {...(inputsDisabled ? disabledInputProps : {})}
                           />
                         </td>
@@ -2282,7 +2288,7 @@ const AddPurchaseOrder = ({
                             onChange={(e) =>
                               updateLine(l.id, "taxPercent", e.target.value)
                             }
-                            slotProps={{ input: { min: 0, step: "0.01" } }}
+                            slotProps={{ input: { min: 0, step: "0.00001" } }}
                             {...(inputsDisabled ? disabledInputProps : {})}
                           />
                         </td>

@@ -432,7 +432,7 @@ const ViewHandoverSheetForm = ({ onBack, projectId }) => {
       variant="outlined"
       sx={{
         maxWidth: 850,
-        margin: "auto",
+        marginLeft: {lg:"28%"},
         padding: 4,
         borderRadius: "md",
         boxShadow: "lg",
