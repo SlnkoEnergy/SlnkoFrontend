@@ -1124,6 +1124,30 @@ export default function ViewTaskPage() {
 
   const currentUser = JSON.parse(localStorage.getItem("userDetails"))?.name;
 
+  const same = (a, b) =>
+    String(a ?? "")
+      .trim()
+      .toLowerCase() ===
+    String(b ?? "")
+      .trim()
+      .toLowerCase();
+
+  const isAssigned = (task?.assigned_to || []).some((a) =>
+    same(a?.name, currentUser)
+  );
+
+  const curName = String(currentUser).trim();
+
+  // robust checks: prefer _id, fall back to name if needed
+  const isCreator = String(task?.createdBy?.name || "").trim() === curName;
+
+  const isAssignee = Array.isArray(task?.assigned_to)
+    ? task.assigned_to.some((u) => String(u?.name || "").trim() === curName)
+    : false;
+
+  const canSeeDeadline = isCreator || isAssignee;
+  const canEditDeadline = isCreator;
+
   return (
     <Box
       sx={{
@@ -1314,7 +1338,7 @@ export default function ViewTaskPage() {
                     ) : (
                       <Typography level="body-sm">None</Typography>
                     )}
-                    {!hasReassign && currentUser === task?.createdBy?.name && (
+                    {!hasReassign && isAssigned && (
                       <Tooltip title="Reassign">
                         <IconButton
                           size="sm"
@@ -1409,11 +1433,11 @@ export default function ViewTaskPage() {
                     : "—"
                 }
               />
-              {(!viewIsSubtask) && (currentUser === task?.createdBy?.name) && (
+              {canSeeDeadline && (
                 <Field
                   label="Due Date"
                   value={
-                    isEditingDueDate ? (
+                    canEditDeadline && isEditingDueDate ? (
                       <Stack
                         direction="row"
                         gap={1}
@@ -1465,16 +1489,19 @@ export default function ViewTaskPage() {
                             ? new Date(task.deadline).toLocaleString("en-GB")
                             : "—"}
                         </Typography>
-                        <Tooltip title="Change due date">
-                          <IconButton
-                            size="sm"
-                            variant="outlined"
-                            onClick={() => setIsEditingDueDate(true)}
-                            aria-label="Change due date"
-                          >
-                            <EditRoundedIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
+
+                        {canEditDeadline && (
+                          <Tooltip title="Change due date">
+                            <IconButton
+                              size="sm"
+                              variant="outlined"
+                              aria-label="Change due date"
+                              onClick={() => setIsEditingDueDate(true)}
+                            >
+                              <EditRoundedIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                       </Stack>
                     )
                   }
