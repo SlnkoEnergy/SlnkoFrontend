@@ -1124,6 +1124,12 @@ export default function ViewTaskPage() {
 
   const currentUser = JSON.parse(localStorage.getItem("userDetails"))?.name;
 
+  const same = (a, b) => String(a ?? '').trim().toLowerCase() === String(b ?? '').trim().toLowerCase();
+
+const isAssigned = (task?.assigned_to || []).some(a =>
+  same(a?.name, currentUser)
+);
+
   return (
     <Box
       sx={{
@@ -1314,7 +1320,7 @@ export default function ViewTaskPage() {
                     ) : (
                       <Typography level="body-sm">None</Typography>
                     )}
-                    {!hasReassign && currentUser === task?.createdBy?.name && (
+                    {(!hasReassign) && (isAssigned) && (
                       <Tooltip title="Reassign">
                         <IconButton
                           size="sm"

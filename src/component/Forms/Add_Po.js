@@ -2093,7 +2093,7 @@ const AddPurchaseOrder = ({
                             sx={{
                               whiteSpace: "normal",
                               wordBreak: "break-word",
-                              ...DISABLED_SX,
+                              ...(inputsDisabled ? disabledInputProps : {})
                             }}
                           />
                         </td>
@@ -2112,7 +2112,7 @@ const AddPurchaseOrder = ({
                             sx={{
                               whiteSpace: "normal",
                               wordBreak: "break-word",
-                              ...DISABLED_SX,
+                              ...(inputsDisabled ? disabledInputProps : {})
                             }}
                           />
                         </td>
@@ -2124,6 +2124,7 @@ const AddPurchaseOrder = ({
                             variant="plain"
                             placeholder="Brief Description"
                             value={l.briefDescription}
+                            
                             onChange={(e) =>
                               updateLine(
                                 l.id,
@@ -2135,7 +2136,7 @@ const AddPurchaseOrder = ({
                             sx={{
                               whiteSpace: "normal",
                               wordBreak: "break-word",
-                              ...DISABLED_SX,
+                              ...(inputsDisabled ? disabledInputProps : {})
                             }}
                           />
                         </td>
@@ -2165,7 +2166,7 @@ const AddPurchaseOrder = ({
                                   boxShadow: "none",
                                   bgcolor: "transparent",
                                   p: 0,
-                                  ...(makeDisabled ? DISABLED_SX : {}),
+                                ...(inputsDisabled ? disabledInputProps : {})
                                 }}
                                 slotProps={{
                                   button: {
@@ -2309,7 +2310,7 @@ const AddPurchaseOrder = ({
                           </Typography>
                         </td>
                         <td>
-                          {isApprovalPending && manualEdit && (
+                          {manualEdit && (
                             <IconButton
                               variant="plain"
                               color="danger"
@@ -2325,7 +2326,7 @@ const AddPurchaseOrder = ({
                 </tbody>
               </Box>
 
-              {isApprovalPending && manualEdit && (
+              { manualEdit && (
                 <Box
                   sx={{ display: "flex", gap: 3, color: "primary.600", mt: 1 }}
                 >
