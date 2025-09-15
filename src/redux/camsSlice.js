@@ -19,7 +19,7 @@ export const camsApi = createApi({
   endpoints: (builder) => ({
     getHandOver: builder.query({
       query: ({ page = 1, search = "", status, limit }) =>
-        `get-all-handover-sheet?page=${page}&search=${search}&status=${status}&limit=${limit}`,
+        `handover/get-all-handover-sheet?page=${page}&search=${search}&status=${status}&limit=${limit}`,
       transformResponse: (response) => ({
         data: response.data || [],
         total: response.meta?.total || 0,
