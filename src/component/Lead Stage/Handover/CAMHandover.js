@@ -264,9 +264,6 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
     skip: !id && !p_id
   }
   );
-
-  console.log("getHandOverSheet", getHandOverSheet);
-
   const handoverData = getHandOverSheet?.data ?? null;
 
   useEffect(() => {
