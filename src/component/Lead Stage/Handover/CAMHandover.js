@@ -16,7 +16,7 @@ import {
   Typography,
 } from "@mui/joy";
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import * as Yup from "yup";
 import Img1 from "../../../assets/HandOverSheet_Icon.jpeg";
@@ -249,7 +249,9 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
     return userData ? JSON.parse(userData) : null;
   };
 
+  const [searchParams] = useSearchParams();
   const LeadId = sessionStorage.getItem("submitInfo");
+  const id = searchParams.get("id");
 
   const {
     data: getHandOverSheet,
@@ -257,18 +259,12 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
     isError,
     error,
   } = useGetHandOverByIdQuery(
-    {p_id:p_id},
-    { id: LeadId },
+    { id: id, p_id: p_id },
     {
-      skip: !LeadId,
-      skip: !p_id
-    }
+    skip: !id && !p_id
+  }
   );
-
-  console.log({getHandOverSheet})
-  
   const handoverData = getHandOverSheet?.data ?? null;
-
 
   useEffect(() => {
     if (handoverData) {

@@ -22,13 +22,6 @@ function EditCamHandSheet() {
           component="main"
           className="MainContent"
           sx={{
-            // px: { xs: 2, md: 6 },
-            // pt: {
-            //   xs: 'calc(12px + var(--Header-height))',
-            //   sm: 'calc(12px + var(--Header-height))',
-            //   md: 3,
-            // },
-            // pb: { xs: 2, sm: 2, md: 3 },
             flex: 1,
             display: "flex",
             flexDirection: "column",
@@ -50,14 +43,6 @@ function EditCamHandSheet() {
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
               sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
             >
-              {/* <Link
-                underline="none"
-                color="neutral"
-                href="#some-link"
-                aria-label="Home"
-              >
-                <HomeRoundedIcon />
-              </Link> */}
               <Link
                 underline="hover"
                 color="neutral"
@@ -87,9 +72,6 @@ function EditCamHandSheet() {
           >
             <CamHandoverSheetForm />
           </Box>
-
-          {/* <OrderTable /> */}
-          {/* <OrderList /> */}
         </Box>
       </Box>
     </CssVarsProvider>
