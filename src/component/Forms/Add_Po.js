@@ -41,9 +41,13 @@ import {
   useLazyGetVendorsNameSearchQuery,
 } from "../../redux/vendorSlice";
 import { useGetLogisticsQuery } from "../../redux/purchasesSlice";
-import { Check } from "lucide-react";
+import { Check, DeleteIcon, Plus } from "lucide-react";
 import {
+  useGetAllMaterialsPOQuery,
   useGetProductsQuery,
+  useLazyGetAllMaterialsPOQuery,
+  useLazyGetAllProdcutPOQuery,
+  useLazyGetCategoriesNameSearchQuery,
   useLazyGetProductsQuery,
 } from "../../redux/productsSlice";
 import ProductForm from "./Product_Form";
@@ -54,11 +58,14 @@ import {
 } from "../../redux/poHistory";
 import InspectionForm from "../../component/Forms/Inspection_Form";
 import { useAddInspectionMutation } from "../../redux/inspectionSlice";
+import { Select } from "@mui/material";
 
 const VENDOR_LIMIT = 7;
 const SEARCH_MORE_VENDOR = "__SEARCH_MORE_VENDOR__";
 const SEARCH_MORE_MAKE = "__SEARCH_MORE_MAKE__";
+const SEARCH_MORE_PRODUCT = "__SEARCH_MORE_PRODUCT__";
 const CREATE_PRODUCT_INLINE = "__CREATE_PRODUCT_INLINE__";
+const SEARCH_MORE_CATEGORY = "__SEARCH_MORE_CATEGORY__";
 
 /* ---------- DARK DISABLED HELPERS ---------- */
 const DISABLED_SX = {
@@ -207,6 +214,116 @@ const AddPurchaseOrder = ({
   const [vendorModalOpen, setVendorModalOpen] = useState(false);
   const [billModalOpen, setBillModalOpen] = useState(false);
 
+  const [triggerCategorySearch] = useLazyGetAllMaterialsPOQuery();
+  const fetchCategoriesPageCat = async ({
+    search = "",
+    page = 1,
+    pageSize = 7,
+  }) => {
+    const res = await triggerCategorySearch(
+      { search, page, limit: pageSize, pr: "true" },
+      true
+    );
+    const d = res?.data;
+    return {
+      rows: d?.data || [],
+      total: d?.pagination?.total || 0,
+      page: d?.pagination?.page || page,
+      pageSize: d?.pagination?.pageSize || pageSize,
+    };
+  };
+
+
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [categoryCode, setCategoryCode] = useState("");
+  const [categoryName, setCategoryName] = useState("");
+  const categories = [
+    { code: "c1", name: "Option A", make: "Make 1" },
+    { code: "c2", name: "Product A - Brief 1", make: "Make 1" },
+    { code: "c3", name: "Product A - Brief 1", make: "Make 1" },
+  ];
+
+  const categoryColumns = [{ key: "name", width: 240 }, { key: "description", label: "Description", width: 420 }];
+
+  const onPickCategory = (row) => {
+    if (!row || !activeLineId) return;
+    updateLine(activeLineId, "categoryCode", row.description || "");
+    updateLine(activeLineId, "categoryName", row.name || "");
+    setCategoryModalOpen(false);
+  };
+
+
+  const [triggerProductSearch] = useLazyGetAllProdcutPOQuery();
+
+  const fetchProductPageCat = async ({
+    search = "",
+    page = 1,
+    pageSize = 7,
+    categoryId = ""
+  }) => {
+    const res = await triggerProductSearch(
+      { search, page, limit: pageSize, pr: "true" },
+      true
+    );
+    const d = res?.data;
+    return {
+      rows: d?.data || [],
+      total: d?.pagination?.total || 0,
+      page: d?.pagination?.page || page,
+      pageSize: d?.pagination?.pageSize || pageSize,
+    };
+  };
+
+  const [productModalOpen, setProductModalOpen] = useState(false);
+  const [productcode, setProductCode] = useState("");
+  const [productName, setProductName] = useState("");
+
+  const productColumns = [
+    { key: "name", label: "Name" },
+    { key: "code", label: "Code" }
+  ]
+
+  const onPickProduct = (row) => {
+    if (!row || !activeLineId) return;
+    updateLine(activeLineId, "productCode", row.description || "");
+    updateLine(activeLineId, "productName", row.name || "");
+    setProductModalOpen(false);
+  };
+
+
+  const [triggerMakeSearch] = useLazyGetAllMaterialsPOQuery();
+  const fetchMakePageCat = async ({
+    search = "",
+    page = 1,
+    pageSize = 7,
+  }) => {
+    const res = await triggerMakeSearch(
+      { search, page, limit: pageSize, pr: "true" },
+      true
+    );
+    const d = res?.data;
+    return {
+      rows: d?.data || [],
+      total: d?.pagination?.total || 0,
+      page: d?.pagination?.page || page,
+      pageSize: d?.pagination?.pageSize || pageSize,
+    };
+  };
+
+  const [makeModalOpen, setMakeModalOpen] = useState("");
+  const [makeCode, setMakeCode] = useState("");
+  const makeColumns = [
+    { key: "name", label: "Name" },
+
+  ]
+
+  const onPickMake = (row) => {
+    if (!row || !activeLineId) return;
+    updateLine(activeLineId, "MakeName", row.name || "");
+    setMakeModalOpen(false);
+  };
+
+
   const { data: vendorsResp, isFetching: vendorsLoading } =
     useGetVendorsNameSearchQuery({
       search: vendorSearch,
@@ -286,10 +403,10 @@ const AddPurchaseOrder = ({
   const [lines, setLines] = useState(() =>
     Array.isArray(initialLines) && initialLines.length
       ? initialLines.map((l) => ({
-          ...makeEmptyLine(),
-          ...l,
-          id: crypto.randomUUID(),
-        }))
+        ...makeEmptyLine(),
+        ...l,
+        id: crypto.randomUUID(),
+      }))
       : [makeEmptyLine()]
   );
 
@@ -302,6 +419,12 @@ const AddPurchaseOrder = ({
     setLines((prev) =>
       prev.map((l) => (l.id === id ? { ...l, [field]: value } : l))
     );
+
+  const AddProductRow = () => {
+
+
+
+  }
 
   /* -------- totals -------- */
   const amounts = useMemo(() => {
@@ -354,22 +477,22 @@ const AddPurchaseOrder = ({
         : [];
     return arr.length
       ? arr.map((it) => ({
-          ...makeEmptyLine(),
-          productCategoryId:
-            typeof it?.category === "object"
-              ? (it?.category?._id ?? "")
-              : (it?.category ?? ""),
-          productCategoryName:
-            typeof it?.category === "object" ? (it?.category?.name ?? "") : "",
-          productName: it?.product_name ?? "",
-          make: isValidMake(it?.product_make) ? it.product_make : "",
-          makeQ: isValidMake(it?.product_make) ? it.product_make : "",
-          briefDescription: it?.description ?? "",
-          uom: it?.uom ?? "",
-          quantity: Number(it?.quantity ?? 0),
-          unitPrice: Number(it?.cost ?? 0),
-          taxPercent: Number(it?.gst_percent ?? it?.gst ?? 0),
-        }))
+        ...makeEmptyLine(),
+        productCategoryId:
+          typeof it?.category === "object"
+            ? (it?.category?._id ?? "")
+            : (it?.category ?? ""),
+        productCategoryName:
+          typeof it?.category === "object" ? (it?.category?.name ?? "") : "",
+        productName: it?.product_name ?? "",
+        make: isValidMake(it?.product_make) ? it.product_make : "",
+        makeQ: isValidMake(it?.product_make) ? it.product_make : "",
+        briefDescription: it?.description ?? "",
+        uom: it?.uom ?? "",
+        quantity: Number(it?.quantity ?? 0),
+        unitPrice: Number(it?.cost ?? 0),
+        taxPercent: Number(it?.gst_percent ?? it?.gst ?? 0),
+      }))
       : [makeEmptyLine()];
   };
 
@@ -465,36 +588,36 @@ const AddPurchaseOrder = ({
     { skip: true }
   );
   const [triggerGetProducts] = useLazyGetProductsQuery();
-  const [productModalOpen, setProductModalOpen] = useState(false);
+  // const [productModalOpen, setProductModalOpen] = useState(false);
 
-  const onPickProduct = (row) => {
-    if (!row || !activeLineId) {
-      setProductModalOpen(false);
-      return;
-    }
-    const pickedMake = getProdField(row, "Make") || "";
-    const pickedUom =
-      getProdField(row, "UoM") || getProdField(row, "UOM") || "";
-    const patch = {
-      productId: row?._id || "",
-      productName: getProdField(row, "Product Name") || "",
-      productCategoryId:
-        row?.category?._id ||
-        lines.find((l) => l.id === activeLineId)?.productCategoryId ||
-        "",
-      productCategoryName:
-        row?.category?.name ||
-        lines.find((l) => l.id === activeLineId)?.productCategoryName ||
-        "",
-      briefDescription: getProdField(row, "Description") || "",
-      make: isValidMake(pickedMake) ? pickedMake : "",
-      uom: pickedUom,
-      unitPrice: Number(getProdField(row, "Cost") || 0),
-      taxPercent: Number(getProdField(row, "GST") || 0),
-    };
-    Object.entries(patch).forEach(([k, v]) => updateLine(activeLineId, k, v));
-    setProductModalOpen(false);
-  };
+  // const onPickProduct = (row) => {
+  //   if (!row || !activeLineId) {
+  //     setProductModalOpen(false);
+  //     return;
+  //   }
+  //   const pickedMake = getProdField(row, "Make") || "";
+  //   const pickedUom =
+  //     getProdField(row, "UoM") || getProdField(row, "UOM") || "";
+  //   const patch = {
+  //     productId: row?._id || "",
+  //     productName: getProdField(row, "Product Name") || "",
+  //     productCategoryId:
+  //       row?.category?._id ||
+  //       lines.find((l) => l.id === activeLineId)?.productCategoryId ||
+  //       "",
+  //     productCategoryName:
+  //       row?.category?.name ||
+  //       lines.find((l) => l.id === activeLineId)?.productCategoryName ||
+  //       "",
+  //     briefDescription: getProdField(row, "Description") || "",
+  //     make: isValidMake(pickedMake) ? pickedMake : "",
+  //     uom: pickedUom,
+  //     unitPrice: Number(getProdField(row, "Cost") || 0),
+  //     taxPercent: Number(getProdField(row, "GST") || 0),
+  //   };
+  //   Object.entries(patch).forEach(([k, v]) => updateLine(activeLineId, k, v));
+  //   setProductModalOpen(false);
+  // };
 
   const [makesCache, setMakesCache] = useState({});
 
@@ -528,9 +651,10 @@ const AddPurchaseOrder = ({
   };
 
   useEffect(() => {
+    const safeLines = Array.isArray(lines) ? lines : [];
     const pairs = Array.from(
       new Set(
-        (lines || [])
+        safeLines
           .filter((l) => l.productCategoryId && l.productName)
           .map((l) => mkKey(l.productCategoryId, l.productName))
       )
@@ -541,51 +665,55 @@ const AddPurchaseOrder = ({
         await fetchUniqueMakes(cat, name);
       }
     });
-  }, [lines.map((l) => `${l.productCategoryId}::${l.productName}`).join("|")]); // eslint-disable-line
+  }, [
+    Array.isArray(lines)
+      ? lines.map((l) => `${l.productCategoryId}::${l.productName}`).join("|")
+      : ""
+  ]); // eslint-disable-line
 
   /* ---------- Make modal ---------- */
-  const [makeModalOpen, setMakeModalOpen] = useState(false);
-  const fetchMakesPage = async ({ search = "", page = 1, pageSize = 7 }) => {
-    const row = lines.find((r) => r.id === activeLineId);
-    const cat = row?.productCategoryId;
-    const pname = row?.productName;
-    if (!cat || !pname) return { rows: [], total: 0, page: 1, pageSize };
-    const res = await triggerGetProducts(
-      { search: pname, page: 1, limit: 300, category: String(cat) },
-      true
-    );
-    const rows = res?.data?.data || [];
-    const normalized = String(pname).trim().toLowerCase();
-    const makes = rows
-      .filter(
-        (r) =>
-          String(getProdField(r, "Product Name") || "")
-            .trim()
-            .toLowerCase() === normalized
-      )
-      .map((r) => String(getProdField(r, "Make") || "").trim())
-      .filter(isValidMake);
-    const unique = Array.from(new Set(makes));
-    const filtered = search
-      ? unique.filter((m) =>
-          m.toLowerCase().includes(String(search).toLowerCase())
-        )
-      : unique;
-    const total = filtered.length;
-    const start = (page - 1) * pageSize;
-    const pageRows = filtered
-      .slice(start, start + pageSize)
-      .map((m) => ({ make: m }));
-    return { rows: pageRows, total, page, pageSize };
-  };
-  const onPickMake = (row) => {
-    if (!row || !activeLineId) {
-      setMakeModalOpen(false);
-      return;
-    }
-    updateLine(activeLineId, "make", row.make || "");
-    setMakeModalOpen(false);
-  };
+  // const [makeModalOpen, setMakeModalOpen] = useState(false);
+  // const fetchMakesPage = async ({ search = "", page = 1, pageSize = 7 }) => {
+  //   const row = lines.find((r) => r.id === activeLineId);
+  //   const cat = row?.productCategoryId;
+  //   const pname = row?.productName;
+  //   if (!cat || !pname) return { rows: [], total: 0, page: 1, pageSize };
+  //   const res = await triggerGetProducts(
+  //     { search: pname, page: 1, limit: 300, category: String(cat) },
+  //     true
+  //   );
+  //   const rows = res?.data?.data || [];
+  //   const normalized = String(pname).trim().toLowerCase();
+  //   const makes = rows
+  //     .filter(
+  //       (r) =>
+  //         String(getProdField(r, "Product Name") || "")
+  //           .trim()
+  //           .toLowerCase() === normalized
+  //     )
+  //     .map((r) => String(getProdField(r, "Make") || "").trim())
+  //     .filter(isValidMake);
+  //   const unique = Array.from(new Set(makes));
+  //   const filtered = search
+  //     ? unique.filter((m) =>
+  //       m.toLowerCase().includes(String(search).toLowerCase())
+  //     )
+  //     : unique;
+  //   const total = filtered.length;
+  //   const start = (page - 1) * pageSize;
+  //   const pageRows = filtered
+  //     .slice(start, start + pageSize)
+  //     .map((m) => ({ make: m }));
+  //   return { rows: pageRows, total, page, pageSize };
+  // };
+  // const onPickMake = (row) => {
+  //   if (!row || !activeLineId) {
+  //     setMakeModalOpen(false);
+  //     return;
+  //   }
+  //   updateLine(activeLineId, "make", row.make || "");
+  //   setMakeModalOpen(false);
+  // };
 
   const [createProdOpen, setCreateProdOpen] = useState(false);
   const [createProdInitial, setCreateProdInitial] = useState(null);
@@ -733,9 +861,9 @@ const AddPurchaseOrder = ({
         note: doc.message || "",
         attachments: Array.isArray(doc?.attachments)
           ? doc.attachments.map((a) => ({
-              name: a?.name || a?.attachment_name,
-              url: a?.url || a?.attachment_url,
-            }))
+            name: a?.name || a?.attachment_name,
+            url: a?.url || a?.attachment_url,
+          }))
           : [],
       };
     }
@@ -805,19 +933,19 @@ const AddPurchaseOrder = ({
     } else if (itemShape.kind === "amount_change") {
       const changes = Array.isArray(itemShape.changes)
         ? itemShape.changes.map((c, idx) => ({
-            label: c.label || c.path || `field_${idx + 1}`,
-            path: c.path,
-            from: Number(c.from ?? 0),
-            to: Number(c.to ?? 0),
-          }))
+          label: c.label || c.path || `field_${idx + 1}`,
+          path: c.path,
+          from: Number(c.from ?? 0),
+          to: Number(c.to ?? 0),
+        }))
         : [
-            {
-              label: itemShape.label || itemShape.field || "amount",
-              path: itemShape.path,
-              from: Number(itemShape.from || 0),
-              to: Number(itemShape.to || 0),
-            },
-          ];
+          {
+            label: itemShape.label || itemShape.field || "amount",
+            path: itemShape.path,
+            from: Number(itemShape.from || 0),
+            to: Number(itemShape.to || 0),
+          },
+        ];
 
       normalized = {
         ...base,
@@ -1423,11 +1551,11 @@ const AddPurchaseOrder = ({
           },
           attachments: last
             ? [
-                {
-                  name: last.attachment_name,
-                  url: last.attachment_url,
-                },
-              ]
+              {
+                name: last.attachment_name,
+                url: last.attachment_url,
+              },
+            ]
             : [],
         }).unwrap();
       } catch (e) {
@@ -1512,7 +1640,7 @@ const AddPurchaseOrder = ({
                   {/* Send Approval Button */}
                   {(effectiveMode === "edit" &&
                     statusNow === "approval_rejected") ||
-                  fromModal ? (
+                    fromModal ? (
                     <Button
                       component="button"
                       type="submit"
@@ -1602,17 +1730,17 @@ const AddPurchaseOrder = ({
                       user?.name === "Guddu Rani Dubey" ||
                       user?.name === "Varun Mishra" ||
                       user?.name === "IT Team") && (
-                      <Box>
-                        <Button
-                          variant={manualEdit ? "outlined" : "solid"}
-                          color={manualEdit ? "neutral" : "primary"}
-                          onClick={() => setManualEdit((s) => !s)}
-                          sx={{ width: "fit-content" }}
-                        >
-                          {manualEdit ? "Cancel Edit" : "Edit"}
-                        </Button>
-                      </Box>
-                    )}
+                        <Box>
+                          <Button
+                            variant={manualEdit ? "outlined" : "solid"}
+                            color={manualEdit ? "neutral" : "primary"}
+                            onClick={() => setManualEdit((s) => !s)}
+                            sx={{ width: "fit-content" }}
+                          >
+                            {manualEdit ? "Cancel Edit" : "Edit"}
+                          </Button>
+                        </Box>
+                      )}
                   </Box>
                 )}
             </Box>
@@ -1964,14 +2092,14 @@ const AddPurchaseOrder = ({
                     value={
                       formData.delivery_type
                         ? {
-                            value: formData.delivery_type,
-                            label:
-                              formData.delivery_type === "for"
-                                ? "For"
-                                : formData.delivery_type === "slnko"
-                                  ? "Slnko"
-                                  : "",
-                          }
+                          value: formData.delivery_type,
+                          label:
+                            formData.delivery_type === "for"
+                              ? "For"
+                              : formData.delivery_type === "slnko"
+                                ? "Slnko"
+                                : "",
+                        }
                         : null
                     }
                     onChange={(selected) =>
@@ -2061,6 +2189,7 @@ const AddPurchaseOrder = ({
                     );
                     const selectValue = inList ? selectedMakeSafe : "";
 
+
                     const makeDisabled =
                       inputsDisabled || !l.productCategoryId || !l.productName;
 
@@ -2076,45 +2205,74 @@ const AddPurchaseOrder = ({
                           </td>
                         )}
                         <td>
-                          <Textarea
-                            minRows={1}
-                            size="sm"
+                          <JSelect
                             variant="plain"
-                            placeholder="Category"
-                            value={l.productCategoryName}
-                            onChange={(e) =>
-                              updateLine(
-                                l.id,
-                                "productCategoryName",
-                                e.target.value
-                              )
-                            }
-                            {...disabledTextareaProps}
-                            sx={{
-                              whiteSpace: "normal",
-                              wordBreak: "break-word",
-                              ...DISABLED_SX,
+                            size="sm"
+                            value={l.categoryCode || ""}
+                            onChange={(_, v) => {
+                              if (v === SEARCH_MORE_CATEGORY) {
+                                setActiveLineId(l.id);
+                                setCategoryModalOpen(true);
+                                return;
+                              }
+
+                              updateLine(l.id, "categoryCode", v || ""); // store in row
                             }}
-                          />
+                            placeholder="Select Category"
+                            renderValue={(selected) => {
+                              const selectedOption = categories.find(c => c.code === selected);
+                              return (
+                                <Typography level="body-sm">
+                                  {selectedOption ? selectedOption.name : "Select Category"}
+                                </Typography>
+                              );
+                            }}
+                          >
+                            {categories.slice(0, 7).map((c) => (
+                              <Option key={c.code} value={c.code}>
+                                {c.name}
+                              </Option>
+                            ))}
+                            <Option value={SEARCH_MORE_CATEGORY} color="neutral">
+                              Search more…
+                            </Option>
+                          </JSelect>
+
                         </td>
 
                         <td>
-                          <Textarea
-                            minRows={1}
-                            size="sm"
+                          <JSelect
                             variant="plain"
-                            placeholder="Product name"
-                            value={l.productName}
-                            onChange={(e) =>
-                              updateLine(l.id, "productName", e.target.value)
-                            }
-                            {...disabledTextareaProps}
-                            sx={{
-                              whiteSpace: "normal",
-                              wordBreak: "break-word",
-                              ...DISABLED_SX,
+                            size="sm"
+                            value={l.productcode || ""}
+                            onChange={(_, v) => {
+                              if (v === SEARCH_MORE_CATEGORY) {
+                                setActiveLineId(l.id);
+                                setProductModalOpen(true);
+                                return;
+                              }
+
+                              updateLine(l.id, "productcode", v || ""); // store in row
                             }}
-                          />
+                            placeholder="Select Product"
+                            renderValue={(selected) => {
+                              const selectedOption = categories.find(c => c.code === selected);
+                              return (
+                                <Typography level="body-sm">
+                                  {selectedOption ? selectedOption.name : "Select Product"}
+                                </Typography>
+                              );
+                            }}
+                          >
+                            {categories.slice(0, 7).map((c) => (
+                              <Option key={c.code} value={c.code}>
+                                {c.name}
+                              </Option>
+                            ))}
+                            <Option value={SEARCH_MORE_CATEGORY} color="neutral">
+                              Search more…
+                            </Option>
+                          </JSelect>
                         </td>
 
                         <td>
@@ -2158,96 +2316,33 @@ const AddPurchaseOrder = ({
                               <JSelect
                                 variant="plain"
                                 size="sm"
-                                value={selectValue}
-                                sx={{
-                                  width: "100%",
-                                  border: "none",
-                                  boxShadow: "none",
-                                  bgcolor: "transparent",
-                                  p: 0,
-                                  ...(makeDisabled ? DISABLED_SX : {}),
-                                }}
-                                slotProps={{
-                                  button: {
-                                    sx: {
-                                      whiteSpace: "normal",
-                                      textAlign: "left",
-                                      overflowWrap: "anywhere",
-                                      alignItems: "flex-start",
-                                      py: 0.25,
-                                      ...(makeDisabled
-                                        ? {
-                                            bgcolor: "neutral.softBg",
-                                            color: "text.primary",
-                                          }
-                                        : {}),
-                                    },
-                                  },
-                                  listbox: {
-                                    sx: {
-                                      "& li": {
-                                        whiteSpace: "normal",
-                                        overflowWrap: "anywhere",
-                                        wordBreak: "break-word",
-                                      },
-                                    },
-                                  },
-                                }}
+                                value={makeCode}
                                 onChange={(_, v) => {
                                   if (v === SEARCH_MORE_MAKE) {
-                                    setActiveLineId(l.id);
                                     setMakeModalOpen(true);
                                     return;
                                   }
-                                  if (v === CREATE_PRODUCT_INLINE) {
-                                    openCreateProductForLine(l);
-                                    return;
-                                  }
-                                  updateLine(l.id, "make", v || "");
+                                  updateLine(l.id, "Product", v || "");
+                                  setMakeCode(v || "");
                                 }}
-                                placeholder="Make"
-                                disabled={makeDisabled}
-                                renderValue={() => (
-                                  <Typography
-                                    level="body-sm"
-                                    sx={{
-                                      whiteSpace: "normal",
-                                      overflowWrap: "anywhere",
-                                      wordBreak: "break-word",
-                                    }}
-                                  >
-                                    {selectValue || "Select make"}
-                                  </Typography>
-                                )}
+                                placeholder="Select Make"
+                                renderValue={(selected) => {
+                                  const selectedOption = categories.find(c => c.code === selected);
+                                  return (
+                                    <Typography level="body-sm">
+                                      {selectedOption ? selectedOption.name : "Select Category"}
+                                    </Typography>
+                                  );
+                                }}
                               >
-                                {rowMakes.slice(0, 7).map((m) => (
-                                  <Option
-                                    key={m}
-                                    value={m}
-                                    sx={{
-                                      whiteSpace: "normal",
-                                      overflowWrap: "anywhere",
-                                    }}
-                                  >
-                                    {m}
+                                {categories.slice(0, 7).map((c) => (
+                                  <Option key={c.code} value={c.code}>
+                                    {c.name}
                                   </Option>
                                 ))}
-                                {l.productCategoryId && l.productName && (
-                                  <Option
-                                    value={SEARCH_MORE_MAKE}
-                                    color="neutral"
-                                  >
-                                    Search more…
-                                  </Option>
-                                )}
-                                {l.productCategoryId && l.productName && (
-                                  <Option
-                                    value={CREATE_PRODUCT_INLINE}
-                                    color="primary"
-                                  >
-                                    + Create Product…
-                                  </Option>
-                                )}
+                                <Option value={SEARCH_MORE_MAKE} color="neutral">
+                                  Search more…
+                                </Option>
                               </JSelect>
                             </Box>
                           )}
@@ -2297,7 +2392,7 @@ const AddPurchaseOrder = ({
                             ₹{" "}
                             {(
                               Number(l.quantity || 0) *
-                                Number(l.unitPrice || 0) +
+                              Number(l.unitPrice || 0) +
                               ((Number(l.quantity || 0) *
                                 Number(l.unitPrice || 0) *
                                 Number(l.taxPercent || 0)) /
@@ -2309,7 +2404,7 @@ const AddPurchaseOrder = ({
                           </Typography>
                         </td>
                         <td>
-                          {isApprovalPending && manualEdit && (
+                          {manualEdit && (
                             <IconButton
                               variant="plain"
                               color="danger"
@@ -2322,10 +2417,26 @@ const AddPurchaseOrder = ({
                       </tr>
                     );
                   })}
+
+                  {/* {manualEdit && (
+                    <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
+                      <Button
+                        size="sm"
+                        variant="plain"
+                        startDecorator={<Plus />}
+                        onClick={ConuntAddRow}
+                      >
+                        Add a line
+                      </Button>
+                    </Box>
+                  )} */}
+
+
+
                 </tbody>
               </Box>
 
-              {isApprovalPending && manualEdit && (
+              {manualEdit && (
                 <Box
                   sx={{ display: "flex", gap: 3, color: "primary.600", mt: 1 }}
                 >
@@ -2491,7 +2602,7 @@ const AddPurchaseOrder = ({
         />
 
         {/* Make Search Modal */}
-        <SearchPickerModal
+        {/* <SearchPickerModal
           open={makeModalOpen}
           onClose={() => {
             setMakeModalOpen(false);
@@ -2504,7 +2615,7 @@ const AddPurchaseOrder = ({
           searchKey="make"
           pageSize={7}
           backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
-        />
+        /> */}
 
         {/* Create Product (embedded ProductForm) */}
         <Modal open={createProdOpen} onClose={() => setCreateProdOpen(false)}>
@@ -2600,8 +2711,8 @@ const AddPurchaseOrder = ({
                   console.error(e);
                   toast.error(
                     e?.data?.message ||
-                      e?.error ||
-                      "Failed to submit inspection request"
+                    e?.error ||
+                    "Failed to submit inspection request"
                   );
                 }
               }}
@@ -2695,6 +2806,43 @@ const AddPurchaseOrder = ({
           </ModalDialog>
         </Modal>
       </Box>
+
+      <SearchPickerModal
+        open={categoryModalOpen}
+        onClose={() => setCategoryModalOpen(false)}
+        onPick={onPickCategory}
+        title="Search: Category"
+        columns={categoryColumns}
+        fetchPage={fetchCategoriesPageCat}
+        searchKey="name"
+        pageSize={7}
+        backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
+      />
+
+      <SearchPickerModal
+        open={productModalOpen}
+        onClose={() => setProductModalOpen(false)}
+        onPick={onPickProduct}
+        title="Search: Product"
+        columns={productColumns}
+        fetchPage={fetchProductPageCat}
+        searchKey="name"
+        pageSize={7}
+        backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
+      />
+
+      <SearchPickerModal
+        open={makeModalOpen}
+        onClose={() => setMakeModalOpen(false)}
+        onPick={onPickMake}
+        title="Search: Make"
+        columns={makeColumns}
+        fetchPage={fetchMakePageCat}
+        searchKey="name"
+        pageSize={7}
+        backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
+      />
+
 
       {!fromModal && (
         <Box ref={feedRef}>
