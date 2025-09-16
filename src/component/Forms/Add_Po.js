@@ -2639,68 +2639,7 @@ const AddPurchaseOrder = ({
           pageSize={VENDOR_LIMIT}
           backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
         />
-        {/* Product picker */}
-        {/* <SearchPickerModal
-          open={productModalOpen}
-          onClose={() => {
-            setProductModalOpen(false);
-            setActiveLineId(null);
-          }}
-          onPick={onPickProduct}
-          title="Search: Product"
-          columns={[
-            { key: "sku_code", label: "Code", width: 160 },
-            {
-              key: "name",
-              label: "Product Name",
-              width: 320,
-              render: (row) => getProdField(row, "Product Name") || "-",
-            },
-            {
-              key: "category",
-              label: "Category",
-              width: 220,
-              render: (row) => row?.category?.name || "-",
-            },
-          ]}
-          fetchPage={async ({ search = "", page = 1, pageSize = 7 }) => {
-            const res = await triggerGetProducts(
-              { search, page, limit: pageSize, category: "" },
-              true
-            );
-            const d = res?.data;
-            const total = d?.meta?.total ?? d?.pagination?.total ?? 0;
-            const curPage = d?.meta?.page ?? d?.pagination?.page ?? page;
-            const limit = d?.meta?.limit ?? d?.pagination?.limit ?? pageSize;
-            return {
-              rows: d?.data || [],
-              total,
-              page: curPage,
-              pageSize: limit,
-            };
-          }}
-          searchKey="name"
-          pageSize={7}
-          backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
-        /> */}
-
-        {/* Make Search Modal */}
-        {/* <SearchPickerModal
-          open={makeModalOpen}
-          onClose={() => {
-            setMakeModalOpen(false);
-            setActiveLineId(null);
-          }}
-          onPick={onPickMake}
-          title="Select Make"
-          columns={[{ key: "make", label: "Make", width: 320 }]}
-          fetchPage={fetchMakesPage}
-          searchKey="make"
-          pageSize={7}
-          backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
-        /> */}
-
-        {/* Create Product (embedded ProductForm) */}
+        
         <Modal open={createProdOpen} onClose={() => setCreateProdOpen(false)}>
           <ModalDialog
             sx={{ maxWidth: 1000, width: "95vw", p: 0, overflow: "hidden" }}
