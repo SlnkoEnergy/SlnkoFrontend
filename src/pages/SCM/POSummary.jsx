@@ -17,6 +17,9 @@ function POSummary() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
+  const [selectedPOIds, setSelectedPOIds] = useState([]);
+  const selectedCount = selectedPOIds.length;
+
   useEffect(() => {
     const userData = getUserData();
     setUser(userData);
@@ -150,16 +153,31 @@ function POSummary() {
                 justifyContent: "center",
               }}
             >
+              {selectedCount > 0 && (
+                <>
+                  <Button
+                    color="primary"
+                    variant="outlined"
+                    size="sm"
+                    onClick={() =>
+                      poSummaryRef.current?.openBulkDeliverModal?.()
+                    }
+                  >
+                    Change Status to Delivered
+                  </Button>
+                  <Button
+                    color="primary"
+                    variant="outlined"
+                    size="sm"
+                    onClick={handleOpenLogisticsWithSeed}
+                  >
+                    Logistics Form
+                  </Button>
+                </>
+              )}
               <Button
                 color="primary"
-                size="sm"
-                onClick={handleOpenLogisticsWithSeed}
-              >
-                Logistics Form
-              </Button>
-              <Button
-                color="primary"
-                variant="outlined"
+                variant="solid"
                 size="sm"
                 onClick={() => navigate("/add_vendor")}
               >
@@ -168,7 +186,11 @@ function POSummary() {
             </Box>
           </Box>
 
-          <PurchaseOrder ref={poSummaryRef} />
+          <PurchaseOrder
+            ref={poSummaryRef}
+            onSelectionChange={setSelectedPOIds}
+            hideInlineBulkBar 
+          />
         </Box>
       </Box>
     </CssVarsProvider>

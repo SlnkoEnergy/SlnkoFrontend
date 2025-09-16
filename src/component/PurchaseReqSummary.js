@@ -215,6 +215,8 @@ function PurchaseReqSummary() {
     }
   };
 
+  console.log(purchaseRequests);
+
   const onPickCategory = (row) => {
     const pickedName = row?.name ?? row?.category ?? row?.make ?? "";
     setSelecteditem(pickedName);
@@ -731,6 +733,7 @@ function PurchaseReqSummary() {
                 </td>
               </tr>
             ) : purchaseRequests.length > 0 ? (
+
               purchaseRequests.map((row) => {
                 const item = row.item;
                 return (
