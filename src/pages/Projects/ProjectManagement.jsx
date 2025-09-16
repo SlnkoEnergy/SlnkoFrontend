@@ -41,7 +41,7 @@ function ProjectManagement() {
 
             <Button
               size="sm"
-              onClick={()=> navigate(`/project_management`)}
+              onClick={() => navigate(`/project_management`)}
               sx={{
                 color: "white",
                 bgcolor: "transparent",
@@ -59,9 +59,9 @@ function ProjectManagement() {
               All Projects
             </Button>
 
-             <Button
+            <Button
               size="sm"
-              onClick={()=> navigate(`/project_management`)}
+              onClick={() => navigate(`/project_management`)}
               sx={{
                 color: "white",
                 bgcolor: "transparent",

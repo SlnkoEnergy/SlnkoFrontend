@@ -36,8 +36,6 @@ function parsePredecessors(input) {
     .map(s => s.trim())
     .filter(Boolean)
     .map(token => {
-      // matches:  <id>(<type>)?([+-]<lag>)?
-      // examples: 2, 2FS, 2FS+3, 5SS-1
       const m = token.match(/^(\d+)\s*([Ff][Ss]|[Ss][Ss]|[Ff][Ff]|[Ss][Ff])?\s*([+-]\s*\d+)?$/);
       if (!m) return null;
       const source = Number(m[1]);
@@ -49,7 +47,6 @@ function parsePredecessors(input) {
     .filter(Boolean);
 }
 
-// Render predecessors for a task -> "2FS+2, 5SS-1"
 function predecessorsToString(taskId) {
   const incoming = gantt.getLinks().filter(l => String(l.target) === String(taskId));
   if (!incoming.length) return "";
@@ -67,7 +64,6 @@ const View_Project_Management = () => {
   const ganttContainer = useRef(null);
   const [viewMode, setViewMode] = useState("week");
 
-  // computed due date
   const dueDateTemplate = (task) => {
     const start = task.start_date instanceof Date
       ? task.start_date
@@ -77,78 +73,32 @@ const View_Project_Management = () => {
     return gantt.date.date_to_str("%d-%m-%Y")(end);
   };
 
-  // predecessors cell renderer
   const predecessorTemplate = (task) => predecessorsToString(task.id);
+ useEffect(() => {
+  gantt.config.date_format = "%d-%m-%Y";
 
-  useEffect(() => {
-    gantt.config.date_format = "%d-%m-%Y";
+  // Override locale for one-letter day names
+  gantt.locale.date.day_short = ["S", "M", "T", "W", "T", "F", "S"];
+  
+  gantt.config.readonly = false;
 
-    // make grid editable
-    gantt.config.readonly = false;
+  gantt.config.scroll_on_click = true;
+  gantt.config.autoscroll = true;
+  gantt.config.preserve_scroll = true;
+  gantt.config.show_chart_scroll = true;
+  gantt.config.show_grid_scroll = true;
+  gantt.config.smart_rendering = true;
+  gantt.config.start_on_monday = false;
+  gantt.config.limit_view = false;
+  gantt.config.fit_tasks = false;
 
-    // behaviors (kept from yours)
-    gantt.config.scroll_on_click = true;
-    gantt.config.autoscroll = true;
-    gantt.config.preserve_scroll = true;
-    gantt.config.show_chart_scroll = true;
-    gantt.config.show_grid_scroll = true;
-    gantt.config.smart_rendering = true;
-    gantt.config.start_on_monday = false;
-    gantt.config.limit_view = false;
-    gantt.config.fit_tasks = false;
+  gantt.init(ganttContainer.current);
+  gantt.parse(tasks);
 
-    // columns: add Duration editable; Due date computed; Predecessors editable
-    gantt.config.columns = [
-      { name: "text",       label: "Name",       tree: true, width: 200, resize: true, editor: { type: "text", map_to: "text" } },
-      { name: "start_date", label: "Start date", width: 110, align: "left", resize: true,
-        template: t => gantt.date.date_to_str("%d-%m-%Y")(t.start_date),
-        editor: { type: "date", map_to: "start_date" } },
-      { name: "duration",   label: "Duration",   width: 90,  align: "left", resize: true,
-        editor: { type: "number", map_to: "duration" } },
-      { name: "due_date",   label: "Due date",   width: 110, align: "left", resize: true,
-        template: dueDateTemplate }, // read-only
-      { name: "pred",       label: "Predecessors", width: 160, align: "left", resize: true,
-        template: predecessorTemplate,
-        editor: { type: "text", map_to: "pred" } } // custom handling below
-    ];
-
-    gantt.init(ganttContainer.current);
-    gantt.parse(tasks);
-
-    // enable drag ops
-    gantt.config.drag_move = true;
-    gantt.config.drag_resize = true;
-    gantt.config.drag_links = true;
-
-    // when user edits "pred" cell, parse + rewrite links
-    gantt.attachEvent("onAfterEditStop", function (state, editor) {
-      if (editor && editor.columnName === "pred") {
-        const taskId = editor.task.id;
-
-        // remove existing incoming links
-        gantt.getLinks()
-          .filter(l => String(l.target) === String(taskId))
-          .forEach(l => gantt.deleteLink(l.id));
-
-        // add new ones from input
-        const parsed = parsePredecessors(state.value);
-        parsed.forEach(p => {
-          // basic guard: avoid self-links
-          if (Number(p.source) !== Number(taskId)) {
-            gantt.addLink({ source: p.source, target: taskId, type: p.type, lag: p.lag || 0 });
-          }
-        });
-
-        // re-render predecessors cell
-        gantt.refreshData();
-      }
-    });
-
-    return () => {
-      gantt.clearAll();
-    };
-    // eslint-disable-next-line
-  }, []);
+  return () => {
+    gantt.clearAll();
+  };
+}, []);
 
   useEffect(() => {
     setGanttScale(viewMode);
@@ -156,24 +106,29 @@ const View_Project_Management = () => {
   }, [viewMode]);
 
   const setGanttScale = (mode) => {
-    if (mode === "day") {
-      gantt.config.scale_unit = "day";
-      gantt.config.date_scale = "%d %M %Y";
-      gantt.config.subscales = [{ unit: "day", step: 1, date: "%l" }];
-    } else if (mode === "week") {
-      gantt.config.scale_unit = "week";
-      gantt.config.date_scale = "%d %M";
-      gantt.config.subscales = [{ unit: "day", step: 1, date: "%l" }];
-    } else if (mode === "month") {
-      gantt.config.scale_unit = "month";
-      gantt.config.date_scale = "%F, %Y";
-      gantt.config.subscales = [{ unit: "week", step: 1, date: "Week #%W" }];
-    } else if (mode === "year") {
-      gantt.config.scale_unit = "year";
-      gantt.config.date_scale = "%Y";
-      gantt.config.subscales = [{ unit: "month", step: 1, date: "%M" }];
-    }
-  };
+  if (mode === "day") {
+    gantt.config.scale_unit = "day";
+    gantt.config.date_scale = "%d %M %Y";
+    gantt.config.subscales = [
+      { unit: "day", step: 1, date: "%D" } // one-letter day names
+    ];
+  } else if (mode === "week") {
+    gantt.config.scale_unit = "week";
+    gantt.config.date_scale = "%d %M";
+    gantt.config.subscales = [
+      { unit: "day", step: 1, date: "%D" } // one-letter day names
+    ];
+  } else if (mode === "month") {
+    gantt.config.scale_unit = "month";
+    gantt.config.date_scale = "%F, %Y";
+    gantt.config.subscales = [{ unit: "week", step: 1, date: "Week #%W" }];
+  } else if (mode === "year") {
+    gantt.config.scale_unit = "year";
+    gantt.config.date_scale = "%Y";
+    gantt.config.subscales = [{ unit: "month", step: 1, date: "%M" }];
+  }
+};
+
 
   return (
     <Box sx={{ ml: { lg: "var(--Sidebar-width)" }, width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" } }}>
@@ -197,7 +152,7 @@ const View_Project_Management = () => {
         </Box>
       </Box>
 
-      <Box style={{ position: "relative", width: "100%", minWidth: 600, height: 500 }}>
+      <Box style={{ position: "relative", width: "100%", minWidth: 600, height:'80vh' }}>
         <Box
           ref={ganttContainer}
           style={{
