@@ -227,7 +227,7 @@ const AddPurchaseOrder = ({
     page: 1,
     limit: 7,
     search: "",
-    category: "", // pass categoryId if needed
+    category: "", 
   });
 
   const productData = productResponse?.data || [];
