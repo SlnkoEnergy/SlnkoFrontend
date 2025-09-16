@@ -2387,8 +2387,8 @@ function Sidebar() {
           user?.department === "Marketing" ||
           user?.department === "Internal" ||
           user?.department === "Loan"  ||
-          user?.name === "Manish Shah" ||
           (user?.department === "CAM" && user?.name !== "Shantanu Sameer") ? (
+          <>
           <List
             size="sm"
             sx={{
@@ -2485,7 +2485,18 @@ function Sidebar() {
                 </Toggler>
               </ListItem>
             )}
+            {(user?.emp_id === "SE-203" || user?.emp_id === "SE-212" || user?.emp_id === "SE-205" || user?.emp_id === "SE-010") && (
+               <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/eng_dash")}>
+                <BuildIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Engineering</Typography>
+                </ListItemContent>
+              </ListItemButton>
+            </ListItem>
+            )}
           </List>
+          </>
         ) : user?.department === "Engineering" ? (
           <List>
             <ListItem sx={{ mt: 0.5 }}>
