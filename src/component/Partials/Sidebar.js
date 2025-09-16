@@ -33,7 +33,10 @@ import { closeSidebar } from "../../utils/utils";
 import DatabaseIcon from "@mui/icons-material/Storage";
 import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 import ColorSchemeToggle from "./ColorSchemeToggle";
-import { NovuProvider, PopoverNotificationCenter } from "@novu/notification-center";
+import {
+  NovuProvider,
+  PopoverNotificationCenter,
+} from "@novu/notification-center";
 import AppNotification from "./Notification";
 
 function Toggler({ defaultExpanded = false, renderToggle, children }) {
@@ -92,7 +95,7 @@ function Sidebar() {
       sx={{
         position: "fixed",
         transition: "transform 0.4s, width 0.4s",
-        zIndex: {xs:201, lg:200},
+        zIndex: { xs: 201, lg: 200 },
         height: "100dvh",
         width: "var(--Sidebar-width)",
         top: 0,
@@ -171,8 +174,7 @@ function Sidebar() {
             display: { xs: "none", sm: "none", md: "none", lg: "block" },
           }}
         >
-        
-          <AppNotification/>
+          <AppNotification />
         </Box>
       </Box>
 
@@ -221,11 +223,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -258,11 +260,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -302,11 +304,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -357,11 +359,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -389,11 +391,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -437,11 +439,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -467,41 +469,13 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <SolarPowerIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Projects</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                            transform: "rotate(180deg)",
-                          }
-                          : {
-                            transform: "none",
-                          },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all-project")}>
-                      All Projects
-                    </ListItemButton>
-                  </ListItem>
-                  <ListItem>
-                    <ListItemButton onClick={() => navigate("#")}>
-                      Site Projects
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/project_management")}>
+                <BuildIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Projects</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
 
             <ListItem nested>
@@ -516,11 +490,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -577,11 +551,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -632,11 +606,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -713,11 +687,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -751,11 +725,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -804,11 +778,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -848,11 +822,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -910,11 +884,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -965,11 +939,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1010,11 +984,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1070,11 +1044,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1107,11 +1081,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1162,11 +1136,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1202,11 +1176,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1245,11 +1219,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1291,11 +1265,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1325,11 +1299,11 @@ function Sidebar() {
                         sx={[
                           open
                             ? {
-                              transform: "rotate(180deg)",
-                            }
+                                transform: "rotate(180deg)",
+                              }
                             : {
-                              transform: "none",
-                            },
+                                transform: "none",
+                              },
                         ]}
                       />
                     </ListItemButton>
@@ -1360,11 +1334,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1392,7 +1366,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
           </List>
-        ) : user?.role === "purchase"  ? (
+        ) : user?.role === "purchase" ? (
           <List
             size="sm"
             sx={{
@@ -1413,11 +1387,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1456,11 +1430,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1491,11 +1465,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1533,11 +1507,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1584,11 +1558,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1625,11 +1599,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1659,11 +1633,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1701,11 +1675,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1739,11 +1713,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1800,11 +1774,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1849,11 +1823,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1926,11 +1900,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1976,11 +1950,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1996,8 +1970,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
           </List>
-        ) : user?.department === "CAM" && user?.name!== "Shantanu Sameer"
-           ? (
+        ) : user?.department === "CAM" && user?.name !== "Shantanu Sameer" ? (
           <List
             size="sm"
             sx={{
@@ -2018,11 +1991,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2060,11 +2033,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2136,11 +2109,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2179,11 +2152,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2229,11 +2202,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2288,11 +2261,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2352,11 +2325,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2386,7 +2359,7 @@ function Sidebar() {
           user?.department === "Infra" ||
           user?.department === "Marketing" ||
           user?.department === "Internal" ||
-          user?.department === "Loan"  ||
+          user?.department === "Loan" ||
           user?.name === "Manish Shah" ||
           (user?.department === "CAM" && user?.name !== "Shantanu Sameer") ? (
           <List
@@ -2409,11 +2382,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2428,16 +2401,19 @@ function Sidebar() {
                     </ListItemButton>
                   </ListItem>
                   {((user?.department === "Projects" &&
-                    (user?.emp_id === "SE-203" || user?.emp_id === "SE-212" || user?.emp_id === "SE-205" || user?.emp_id === "SE-010")) ||
+                    (user?.emp_id === "SE-203" ||
+                      user?.emp_id === "SE-212" ||
+                      user?.emp_id === "SE-205" ||
+                      user?.emp_id === "SE-010")) ||
                     user?.name === "Disha Sharma") && (
-                      <ListItem>
-                        <ListItemButton
-                          onClick={() => navigate("/expense_approval")}
-                        >
-                          Expense Approval
-                        </ListItemButton>
-                      </ListItem>
-                    )}
+                    <ListItem>
+                      <ListItemButton
+                        onClick={() => navigate("/expense_approval")}
+                      >
+                        Expense Approval
+                      </ListItemButton>
+                    </ListItem>
+                  )}
                 </List>
               </Toggler>
             </ListItem>
@@ -2509,11 +2485,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2561,11 +2537,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2604,11 +2580,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2646,11 +2622,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2722,11 +2698,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2775,11 +2751,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2813,11 +2789,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2865,11 +2841,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2907,11 +2883,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>

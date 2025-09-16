@@ -113,6 +113,8 @@ import Inspection_Form from "../pages/Eng/Inspection_Form";
 import Category_Form from "../pages/Databases/Category_Form";
 import UserProfile from "../pages/Users/UserProfile";
 import TaskDashboard from "../pages/AllTask/Dashboard";
+import ProjectManagement from "../pages/Projects/ProjectManagement";
+import ViewProjectManagement from "../pages/Projects/ViewProjectManagement";
 
 function index() {
   return (
@@ -350,6 +352,22 @@ function index() {
         element={
           <PrivateRoute>
             <View_Project />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/project_management"
+        element={
+          <PrivateRoute>
+            <ProjectManagement />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/view_pm"
+        element={
+          <PrivateRoute>
+            <ViewProjectManagement />
           </PrivateRoute>
         }
       />

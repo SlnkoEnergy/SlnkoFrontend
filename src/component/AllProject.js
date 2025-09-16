@@ -112,7 +112,6 @@ const AllProjects = forwardRef((props, ref) => {
   };
 
   const RowMenu = ({ currentPage, p_id, _id }) => {
-    // console.log("CurrentPage: ", currentPage, "p_Id:", p_id);
     return (
       <>
         <Dropdown>
@@ -158,34 +157,6 @@ const AllProjects = forwardRef((props, ref) => {
       </>
     );
   };
-  // Delete Api
-
-  // const handleDelete = async () => {
-  //   if (selectedProjects.length === 0) {
-  //     toast.error("No projects selected for deletion.");
-  //     return;
-  //   }
-  //   // console.log("Deleting selected projects:", selectedProjects);
-  //   try {
-  //     await Promise.all(
-  //       selectedProjects.map((_id) => Axios.delete(`/delete-by-iD-IT/${_id}`))
-  //     );
-
-  //     toast.success("Deleted successfully.");
-
-  //     // Remove deleted projects from state
-  //     setProjects((prevProjects) =>
-  //       prevProjects.filter((project) => !selectedProjects.includes(project._id))
-  //     );
-
-  //     // Clear selection after deletion
-  //     setSelectedProjects([]);
-  //   } catch (error) {
-  //     console.error("Delete Error:", error);
-  //     toast.error("Failed to delete projects.");
-  //   }
-  // };
-
   const handleSelectAll = (event) => {
     if (event.target.checked) {
       setSelectedProjects(getProject.map((row) => row._id));
@@ -235,15 +206,7 @@ const AllProjects = forwardRef((props, ref) => {
       const matchesSearchQuery = ["code", "customer", "name"].some((key) =>
         project[key]?.toLowerCase().includes(searchQuery)
       );
-      // Apply the state filter
-      // const matchesStateFilter = !stateFilter || project.state === stateFilter;
-      // // console.log("MatchStates are: ", matchesStateFilter);
 
-      // // Apply the customer filter
-      // const matchesCustomerFilter =
-      //   !customerFilter || project.customer === customerFilter;
-
-      // Combine all filters
       return matchesSearchQuery;
     })
     .sort((a, b) => {

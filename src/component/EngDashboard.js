@@ -17,6 +17,7 @@ import { CircularProgress, Option, Select, Tab, TabList, Tabs } from "@mui/joy";
 import NoData from "../assets/alert-bell.svg";
 import { useGetHandOverQuery } from "../redux/camsSlice";
 import { useTheme } from "@emotion/react";
+import { Add } from "@mui/icons-material";
 
 function Dash_eng() {
   const navigate = useNavigate();
@@ -293,6 +294,7 @@ function Dash_eng() {
                 "Mobile",
                 "State",
                 "Capacity(AC/DC)",
+                "Schedule",
               ].map((header, index) => (
                 <th
                   key={index}
@@ -416,6 +418,26 @@ function Dash_eng() {
                     {project.project_kwp && project.proposed_dc_capacity
                       ? `${project.project_kwp} AC / ${project.proposed_dc_capacity} DC`
                       : "-"}
+                  </td>
+                  <td
+                    style={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "left",
+                    }}
+                  >
+                    <>
+                      <IconButton
+                        onClick={() =>
+                          navigate(`/view_pm?project_id=${project._id}`)
+                        }
+                        size="sm"
+                        variant="outlined"
+                        color="primary"
+                      >
+                        <Add />
+                      </IconButton>
+                    </>
                   </td>
                 </tr>
               ))
