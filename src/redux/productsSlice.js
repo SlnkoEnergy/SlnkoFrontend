@@ -126,6 +126,8 @@ export const productsApi = createApi({
         `/engineering/all-product-po?page=${page}$pageSize=${pageSize}$search=${encodeURIComponent(search)}$categoryId=${categoryId}`,
       providesTags: [{ type: "Products", id: "LIST"}]
     }),
+
+    
   }),
 });
 

@@ -49,6 +49,7 @@ import {
   useLazyGetAllProdcutPOQuery,
   useLazyGetCategoriesNameSearchQuery,
   useLazyGetProductsQuery,
+  useGetAllCategoriesQuery,
 } from "../../redux/productsSlice";
 import ProductForm from "./Product_Form";
 import POUpdateFeed from "../PoUpdateForm";
@@ -214,6 +215,23 @@ const AddPurchaseOrder = ({
   const [vendorModalOpen, setVendorModalOpen] = useState(false);
   const [billModalOpen, setBillModalOpen] = useState(false);
 
+  const { data: categoryResponse, isLoading } = useGetAllCategoriesQuery({
+    page: 1,
+    pageSize: 7,
+    status: "Active",
+  });
+
+  const categoryData = categoryResponse?.data || [];
+
+  const { data: productResponse } = useGetProductsQuery({
+    page: 1,
+    limit: 7,
+    search: "",
+    category: "", // pass categoryId if needed
+  });
+
+  const productData = productResponse?.data || [];
+
   const [triggerCategorySearch] = useLazyGetAllMaterialsPOQuery();
   const fetchCategoriesPageCat = async ({
     search = "",
@@ -233,25 +251,21 @@ const AddPurchaseOrder = ({
     };
   };
 
-
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [categoryCode, setCategoryCode] = useState("");
   const [categoryName, setCategoryName] = useState("");
-  const categories = [
-    { code: "c1", name: "Option A", make: "Make 1" },
-    { code: "c2", name: "Product A - Brief 1", make: "Make 1" },
-    { code: "c3", name: "Product A - Brief 1", make: "Make 1" },
-  ];
 
-  const categoryColumns = [{ key: "name", width: 240 }, { key: "description", label: "Description", width: 420 }];
+  const categoryColumns = [
+    { key: "name", label: "Name", width: 240 },
+    { key: "description", label: "Description", width: 420 },
+  ];
 
   const onPickCategory = (row) => {
     if (!row || !activeLineId) return;
-    updateLine(activeLineId, "categoryCode", row.description || "");
-    updateLine(activeLineId, "categoryName", row.name || "");
+    updateLine(activeLineId, "productCategoryId", row.id || "");
+    updateLine(activeLineId, "productCategoryName", row.name || "");
     setCategoryModalOpen(false);
   };
-
 
   const [triggerProductSearch] = useLazyGetAllProdcutPOQuery();
 
@@ -259,7 +273,7 @@ const AddPurchaseOrder = ({
     search = "",
     page = 1,
     pageSize = 7,
-    categoryId = ""
+    categoryId = "",
   }) => {
     const res = await triggerProductSearch(
       { search, page, limit: pageSize, pr: "true" },
@@ -275,54 +289,73 @@ const AddPurchaseOrder = ({
   };
 
   const [productModalOpen, setProductModalOpen] = useState(false);
-  const [productcode, setProductCode] = useState("");
-  const [productName, setProductName] = useState("");
+  const [briefDesc, setBriefDesc] = useState("");
+  const [cost, setCost] = useState(0);
+  const [gst, setGst] = useState(0);
+  const [make, setMake] = useState("");
 
   const productColumns = [
-    { key: "name", label: "Name" },
-    { key: "code", label: "Code" }
-  ]
+    { key: "sku_code", label: "Code" },
+    {
+      key: "name",
+      label: "Name",
+      render: (row) => row?.data?.[0]?.values?.[0]?.input_values || "",
+    },
+  ];
 
   const onPickProduct = (row) => {
+    const getInputValueByName = (row, fieldName, defaultValue = "") => {
+      // console.log(fieldName)
+      const field = row.data.find((d) => d.name === fieldName);
+      console.log(field);
+      return field?.values?.[0]?.input_values ?? defaultValue;
+    };
+
     if (!row || !activeLineId) return;
-    updateLine(activeLineId, "productCode", row.description || "");
-    updateLine(activeLineId, "productName", row.name || "");
+    updateLine(activeLineId, "productId", row.id || "");
+    updateLine(
+      activeLineId,
+      "productName",
+      row?.data?.[0]?.values?.[0]?.input_values || ""
+    );
+    updateLine(
+      activeLineId,
+      "briefDescription",
+      getInputValueByName(row, "Description", "N/A")
+    );
+    updateLine(activeLineId, "productCategoryId", row.category);
+    updateLine(activeLineId, "unitPrice", getInputValueByName(row, "Cost", 0));
+    updateLine(activeLineId, "taxPercent", getInputValueByName(row, "GST", 0));
+    updateLine(activeLineId, "make", getInputValueByName(row, "Make", "N/A"));
+    updateLine(activeLineId, "uom", getInputValueByName(row, "UoM", "N/A"));
+
     setProductModalOpen(false);
   };
 
+  // const [triggerMakeSearch] = useLazyGetAllMaterialsPOQuery();
+  // const fetchMakePageCat = async ({ search = "", page = 1, pageSize = 7 }) => {
+  //   const res = await triggerMakeSearch(
+  //     { search, page, limit: pageSize, pr: "true" },
+  //     true
+  //   );
+  //   const d = res?.data;
+  //   return {
+  //     rows: d?.data || [],
+  //     total: d?.pagination?.total || 0,
+  //     page: d?.pagination?.page || page,
+  //     pageSize: d?.pagination?.pageSize || pageSize,
+  //   };
+  // };
 
-  const [triggerMakeSearch] = useLazyGetAllMaterialsPOQuery();
-  const fetchMakePageCat = async ({
-    search = "",
-    page = 1,
-    pageSize = 7,
-  }) => {
-    const res = await triggerMakeSearch(
-      { search, page, limit: pageSize, pr: "true" },
-      true
-    );
-    const d = res?.data;
-    return {
-      rows: d?.data || [],
-      total: d?.pagination?.total || 0,
-      page: d?.pagination?.page || page,
-      pageSize: d?.pagination?.pageSize || pageSize,
-    };
-  };
+  // const [makeModalOpen, setMakeModalOpen] = useState("");
+  // const [makeCode, setMakeCode] = useState("");
+  // const makeColumns = [{ key: "name", label: "Name" }];
 
-  const [makeModalOpen, setMakeModalOpen] = useState("");
-  const [makeCode, setMakeCode] = useState("");
-  const makeColumns = [
-    { key: "name", label: "Name" },
-
-  ]
-
-  const onPickMake = (row) => {
-    if (!row || !activeLineId) return;
-    updateLine(activeLineId, "MakeName", row.name || "");
-    setMakeModalOpen(false);
-  };
-
+  // const onPickMake = (row) => {
+  //   if (!row || !activeLineId) return;
+  //   updateLine(activeLineId, "MakeName", row.name || "");
+  //   setMakeModalOpen(false);
+  // };
 
   const { data: vendorsResp, isFetching: vendorsLoading } =
     useGetVendorsNameSearchQuery({
@@ -403,10 +436,10 @@ const AddPurchaseOrder = ({
   const [lines, setLines] = useState(() =>
     Array.isArray(initialLines) && initialLines.length
       ? initialLines.map((l) => ({
-        ...makeEmptyLine(),
-        ...l,
-        id: crypto.randomUUID(),
-      }))
+          ...makeEmptyLine(),
+          ...l,
+          id: crypto.randomUUID(),
+        }))
       : [makeEmptyLine()]
   );
 
@@ -420,11 +453,7 @@ const AddPurchaseOrder = ({
       prev.map((l) => (l.id === id ? { ...l, [field]: value } : l))
     );
 
-  const AddProductRow = () => {
-
-
-
-  }
+  const AddProductRow = () => {};
 
   /* -------- totals -------- */
   const amounts = useMemo(() => {
@@ -473,26 +502,26 @@ const AddPurchaseOrder = ({
     const arr = Array.isArray(po?.items)
       ? po.items
       : Array.isArray(po?.item)
-        ? po.item
-        : [];
+      ? po.item
+      : [];
     return arr.length
       ? arr.map((it) => ({
-        ...makeEmptyLine(),
-        productCategoryId:
-          typeof it?.category === "object"
-            ? (it?.category?._id ?? "")
-            : (it?.category ?? ""),
-        productCategoryName:
-          typeof it?.category === "object" ? (it?.category?.name ?? "") : "",
-        productName: it?.product_name ?? "",
-        make: isValidMake(it?.product_make) ? it.product_make : "",
-        makeQ: isValidMake(it?.product_make) ? it.product_make : "",
-        briefDescription: it?.description ?? "",
-        uom: it?.uom ?? "",
-        quantity: Number(it?.quantity ?? 0),
-        unitPrice: Number(it?.cost ?? 0),
-        taxPercent: Number(it?.gst_percent ?? it?.gst ?? 0),
-      }))
+          ...makeEmptyLine(),
+          productCategoryId:
+            typeof it?.category === "object"
+              ? it?.category?._id ?? ""
+              : it?.category ?? "",
+          productCategoryName:
+            typeof it?.category === "object" ? it?.category?.name ?? "" : "",
+          productName: it?.product_name ?? "",
+          make: isValidMake(it?.product_make) ? it.product_make : "",
+          makeQ: isValidMake(it?.product_make) ? it.product_make : "",
+          briefDescription: it?.description ?? "",
+          uom: it?.uom ?? "",
+          quantity: Number(it?.quantity ?? 0),
+          unitPrice: Number(it?.cost ?? 0),
+          taxPercent: Number(it?.gst_percent ?? it?.gst ?? 0),
+        }))
       : [makeEmptyLine()];
   };
 
@@ -515,7 +544,7 @@ const AddPurchaseOrder = ({
         );
         const po = Array.isArray(resp?.data)
           ? resp.data[0]
-          : (resp?.data ?? resp);
+          : resp?.data ?? resp;
         if (!po) {
           toast.error("PO not found.");
           return;
@@ -668,7 +697,7 @@ const AddPurchaseOrder = ({
   }, [
     Array.isArray(lines)
       ? lines.map((l) => `${l.productCategoryId}::${l.productName}`).join("|")
-      : ""
+      : "",
   ]); // eslint-disable-line
 
   /* ---------- Make modal ---------- */
@@ -861,9 +890,9 @@ const AddPurchaseOrder = ({
         note: doc.message || "",
         attachments: Array.isArray(doc?.attachments)
           ? doc.attachments.map((a) => ({
-            name: a?.name || a?.attachment_name,
-            url: a?.url || a?.attachment_url,
-          }))
+              name: a?.name || a?.attachment_name,
+              url: a?.url || a?.attachment_url,
+            }))
           : [],
       };
     }
@@ -933,19 +962,19 @@ const AddPurchaseOrder = ({
     } else if (itemShape.kind === "amount_change") {
       const changes = Array.isArray(itemShape.changes)
         ? itemShape.changes.map((c, idx) => ({
-          label: c.label || c.path || `field_${idx + 1}`,
-          path: c.path,
-          from: Number(c.from ?? 0),
-          to: Number(c.to ?? 0),
-        }))
+            label: c.label || c.path || `field_${idx + 1}`,
+            path: c.path,
+            from: Number(c.from ?? 0),
+            to: Number(c.to ?? 0),
+          }))
         : [
-          {
-            label: itemShape.label || itemShape.field || "amount",
-            path: itemShape.path,
-            from: Number(itemShape.from || 0),
-            to: Number(itemShape.to || 0),
-          },
-        ];
+            {
+              label: itemShape.label || itemShape.field || "amount",
+              path: itemShape.path,
+              from: Number(itemShape.from || 0),
+              to: Number(itemShape.to || 0),
+            },
+          ];
 
       normalized = {
         ...base,
@@ -1005,8 +1034,8 @@ const AddPurchaseOrder = ({
           typeof l.productCategoryId === "object" && l.productCategoryId?._id
             ? String(l.productCategoryId._id)
             : l.productCategoryId != null
-              ? String(l.productCategoryId)
-              : "";
+            ? String(l.productCategoryId)
+            : "";
         return {
           category: String(categoryId),
           product_name: String(l.productName || ""),
@@ -1018,6 +1047,8 @@ const AddPurchaseOrder = ({
           gst_percent: String(l.taxPercent ?? 0),
         };
       });
+
+    console.log(item);
 
     const hasValidLine =
       item.length > 0 && item.some((it) => Number(it.quantity) > 0);
@@ -1551,11 +1582,11 @@ const AddPurchaseOrder = ({
           },
           attachments: last
             ? [
-              {
-                name: last.attachment_name,
-                url: last.attachment_url,
-              },
-            ]
+                {
+                  name: last.attachment_name,
+                  url: last.attachment_url,
+                },
+              ]
             : [],
         }).unwrap();
       } catch (e) {
@@ -1640,7 +1671,7 @@ const AddPurchaseOrder = ({
                   {/* Send Approval Button */}
                   {(effectiveMode === "edit" &&
                     statusNow === "approval_rejected") ||
-                    fromModal ? (
+                  fromModal ? (
                     <Button
                       component="button"
                       type="submit"
@@ -1730,17 +1761,17 @@ const AddPurchaseOrder = ({
                       user?.name === "Guddu Rani Dubey" ||
                       user?.name === "Varun Mishra" ||
                       user?.name === "IT Team") && (
-                        <Box>
-                          <Button
-                            variant={manualEdit ? "outlined" : "solid"}
-                            color={manualEdit ? "neutral" : "primary"}
-                            onClick={() => setManualEdit((s) => !s)}
-                            sx={{ width: "fit-content" }}
-                          >
-                            {manualEdit ? "Cancel Edit" : "Edit"}
-                          </Button>
-                        </Box>
-                      )}
+                      <Box>
+                        <Button
+                          variant={manualEdit ? "outlined" : "solid"}
+                          color={manualEdit ? "neutral" : "primary"}
+                          onClick={() => setManualEdit((s) => !s)}
+                          sx={{ width: "fit-content" }}
+                        >
+                          {manualEdit ? "Cancel Edit" : "Edit"}
+                        </Button>
+                      </Box>
+                    )}
                   </Box>
                 )}
             </Box>
@@ -2092,14 +2123,14 @@ const AddPurchaseOrder = ({
                     value={
                       formData.delivery_type
                         ? {
-                          value: formData.delivery_type,
-                          label:
-                            formData.delivery_type === "for"
-                              ? "For"
-                              : formData.delivery_type === "slnko"
+                            value: formData.delivery_type,
+                            label:
+                              formData.delivery_type === "for"
+                                ? "For"
+                                : formData.delivery_type === "slnko"
                                 ? "Slnko"
                                 : "",
-                        }
+                          }
                         : null
                     }
                     onChange={(selected) =>
@@ -2189,7 +2220,6 @@ const AddPurchaseOrder = ({
                     );
                     const selectValue = inList ? selectedMakeSafe : "";
 
-
                     const makeDisabled =
                       inputsDisabled || !l.productCategoryId || !l.productName;
 
@@ -2205,101 +2235,102 @@ const AddPurchaseOrder = ({
                           </td>
                         )}
                         <td>
-                          <JSelect
-                            variant="plain"
-                            size="sm"
-                            value={l.categoryCode || ""}
-                            onChange={(_, v) => {
-                              if (v === SEARCH_MORE_CATEGORY) {
-                                setActiveLineId(l.id);
-                                setCategoryModalOpen(true);
-                                return;
-                              }
-
-                              updateLine(l.id, "categoryCode", v || ""); // store in row
-                            }}
-                            placeholder="Select Category"
-                            renderValue={(selected) => {
-                              const selectedOption = categories.find(c => c.code === selected);
-                              return (
+                          {manualEdit && !fromModal ? (
+                            <JSelect
+                              variant="plain"
+                              size="sm"
+                              onChange={(_, v) => {
+                                if (v === SEARCH_MORE_CATEGORY) {
+                                  setActiveLineId(l.id);
+                                  setCategoryModalOpen(true);
+                                  return;
+                                }
+                              }}
+                              placeholder="Select Category"
+                              renderValue={() => (
                                 <Typography level="body-sm">
-                                  {selectedOption ? selectedOption.name : "Select Category"}
+                                  {l.productCategoryName || "Select Category"}
                                 </Typography>
-                              );
-                            }}
-                          >
-                            {categories.slice(0, 7).map((c) => (
-                              <Option key={c.code} value={c.code}>
-                                {c.name}
+                              )}
+                            >
+                              <Option
+                                value={SEARCH_MORE_CATEGORY}
+                                color="neutral"
+                              >
+                                Search more…
                               </Option>
-                            ))}
-                            <Option value={SEARCH_MORE_CATEGORY} color="neutral">
-                              Search more…
-                            </Option>
-                          </JSelect>
-
+                            </JSelect>
+                          ) : (
+                            <Typography level="body-sm">
+                              {l.productCategoryName}
+                            </Typography>
+                          )}
                         </td>
 
                         <td>
-                          <JSelect
-                            variant="plain"
-                            size="sm"
-                            value={l.productcode || ""}
-                            onChange={(_, v) => {
-                              if (v === SEARCH_MORE_CATEGORY) {
-                                setActiveLineId(l.id);
-                                setProductModalOpen(true);
-                                return;
-                              }
-
-                              updateLine(l.id, "productcode", v || ""); // store in row
-                            }}
-                            placeholder="Select Product"
-                            renderValue={(selected) => {
-                              const selectedOption = categories.find(c => c.code === selected);
-                              return (
+                          {manualEdit && !fromModal ? (
+                            <JSelect
+                              variant="plain"
+                              size="sm"
+                              onChange={(_, v) => {
+                                if (v === SEARCH_MORE_PRODUCT) {
+                                  setActiveLineId(l.id);
+                                  setProductModalOpen(true);
+                                  return;
+                                }
+                              }}
+                              placeholder="Select Product"
+                              renderValue={() => (
                                 <Typography level="body-sm">
-                                  {selectedOption ? selectedOption.name : "Select Product"}
+                                  {l.productName || "Select Product"}
                                 </Typography>
-                              );
-                            }}
-                          >
-                            {categories.slice(0, 7).map((c) => (
-                              <Option key={c.code} value={c.code}>
-                                {c.name}
+                              )}
+                            >
+                              <Option
+                                value={SEARCH_MORE_PRODUCT}
+                                color="neutral"
+                              >
+                                Search more…
                               </Option>
-                            ))}
-                            <Option value={SEARCH_MORE_CATEGORY} color="neutral">
-                              Search more…
-                            </Option>
-                          </JSelect>
+                            </JSelect>
+                          ) : (
+                            <Typography level="body-sm">
+                              {l.productName}
+                            </Typography>
+                          )}
                         </td>
 
                         <td>
-                          <Textarea
-                            minRows={1}
-                            size="sm"
-                            variant="plain"
-                            placeholder="Brief Description"
-                            value={l.briefDescription}
-                            onChange={(e) =>
-                              updateLine(
-                                l.id,
-                                "briefDescription",
-                                e.target.value
-                              )
-                            }
-                            {...disabledTextareaProps}
-                            sx={{
-                              whiteSpace: "normal",
-                              wordBreak: "break-word",
-                              ...DISABLED_SX,
-                            }}
-                          />
+                          {manualEdit && !fromModal ? (
+                            <Textarea
+                              minRows={1}
+                              size="sm"
+                              variant="plain"
+                              placeholder="Brief Description"
+                              value={l.briefDescription}
+                              onChange={(e) =>
+                                updateLine(
+                                  l.id,
+                                  "briefDescription",
+                                  e.target.value
+                                )
+                              }
+                              {...disabledTextareaProps}
+                              sx={{
+                                whiteSpace: "normal",
+                                wordBreak: "break-word",
+                                ...DISABLED_SX,
+                              }}
+                            />
+                          ) : (
+                            <Typography level="body-sm">
+                              {l.briefDescription}
+                            </Typography>
+                          )}
                         </td>
 
                         <td>
-                          {!manualEdit && !fromModal ? (
+                          {manualEdit && !fromModal ? (
                             <Typography
                               level="body-sm"
                               sx={{
@@ -2309,42 +2340,10 @@ const AddPurchaseOrder = ({
                                 fontWeight: 400,
                               }}
                             >
-                              {l.makeQ || "—"}
+                              {l.make || "—"}
                             </Typography>
                           ) : (
-                            <Box sx={{ maxWidth: "100%" }}>
-                              <JSelect
-                                variant="plain"
-                                size="sm"
-                                value={makeCode}
-                                onChange={(_, v) => {
-                                  if (v === SEARCH_MORE_MAKE) {
-                                    setMakeModalOpen(true);
-                                    return;
-                                  }
-                                  updateLine(l.id, "Product", v || "");
-                                  setMakeCode(v || "");
-                                }}
-                                placeholder="Select Make"
-                                renderValue={(selected) => {
-                                  const selectedOption = categories.find(c => c.code === selected);
-                                  return (
-                                    <Typography level="body-sm">
-                                      {selectedOption ? selectedOption.name : "Select Category"}
-                                    </Typography>
-                                  );
-                                }}
-                              >
-                                {categories.slice(0, 7).map((c) => (
-                                  <Option key={c.code} value={c.code}>
-                                    {c.name}
-                                  </Option>
-                                ))}
-                                <Option value={SEARCH_MORE_MAKE} color="neutral">
-                                  Search more…
-                                </Option>
-                              </JSelect>
-                            </Box>
+                            <Typography level="body-sm">{l.make}</Typography>
                           )}
                         </td>
 
@@ -2392,7 +2391,7 @@ const AddPurchaseOrder = ({
                             ₹{" "}
                             {(
                               Number(l.quantity || 0) *
-                              Number(l.unitPrice || 0) +
+                                Number(l.unitPrice || 0) +
                               ((Number(l.quantity || 0) *
                                 Number(l.unitPrice || 0) *
                                 Number(l.taxPercent || 0)) /
@@ -2417,22 +2416,6 @@ const AddPurchaseOrder = ({
                       </tr>
                     );
                   })}
-
-                  {/* {manualEdit && (
-                    <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
-                      <Button
-                        size="sm"
-                        variant="plain"
-                        startDecorator={<Plus />}
-                        onClick={ConuntAddRow}
-                      >
-                        Add a line
-                      </Button>
-                    </Box>
-                  )} */}
-
-
-
                 </tbody>
               </Box>
 
@@ -2557,7 +2540,7 @@ const AddPurchaseOrder = ({
           backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
         />
         {/* Product picker */}
-        <SearchPickerModal
+        {/* <SearchPickerModal
           open={productModalOpen}
           onClose={() => {
             setProductModalOpen(false);
@@ -2599,7 +2582,7 @@ const AddPurchaseOrder = ({
           searchKey="name"
           pageSize={7}
           backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
-        />
+        /> */}
 
         {/* Make Search Modal */}
         {/* <SearchPickerModal
@@ -2711,8 +2694,8 @@ const AddPurchaseOrder = ({
                   console.error(e);
                   toast.error(
                     e?.data?.message ||
-                    e?.error ||
-                    "Failed to submit inspection request"
+                      e?.error ||
+                      "Failed to submit inspection request"
                   );
                 }
               }}
@@ -2830,19 +2813,6 @@ const AddPurchaseOrder = ({
         pageSize={7}
         backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
       />
-
-      <SearchPickerModal
-        open={makeModalOpen}
-        onClose={() => setMakeModalOpen(false)}
-        onPick={onPickMake}
-        title="Search: Make"
-        columns={makeColumns}
-        fetchPage={fetchMakePageCat}
-        searchKey="name"
-        pageSize={7}
-        backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
-      />
-
 
       {!fromModal && (
         <Box ref={feedRef}>
