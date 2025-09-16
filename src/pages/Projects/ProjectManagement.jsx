@@ -61,7 +61,7 @@ function ProjectManagement() {
 
              <Button
               size="sm"
-              onClick={()=> navigate(`/project_management`)}
+              onClick={()=> navigate(`/project_template`)}
               sx={{
                 color: "white",
                 bgcolor: "transparent",
