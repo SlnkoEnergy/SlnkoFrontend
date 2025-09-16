@@ -266,6 +266,7 @@ export default function Purchase_Request_Form() {
       true
     );
     const d = res?.data;
+    console.log(d);
     return {
       rows: d?.data || [],
       total: d?.pagination?.total || 0,

@@ -56,6 +56,7 @@ export default function SearchPickerModal({
     fetchPageRef.current = fetchPage;
   }, [fetchPage]);
 
+
   // Reset pagination and search state on open
   useEffect(() => {
     if (!open) return;
