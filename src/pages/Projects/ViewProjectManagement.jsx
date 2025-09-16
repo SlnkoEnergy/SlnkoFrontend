@@ -5,12 +5,37 @@ import Button from "@mui/joy/Button";
 import Sidebar from "../../component/Partials/Sidebar";
 import SubHeader from "../../component/Partials/SubHeader";
 import MainHeader from "../../component/Partials/MainHeader";
-import { useNavigate } from "react-router-dom";
-import Dash_eng from "../../component/EngDashboard";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import View_Project_Management from "../../component/ViewProjectManagement";
+import Filter from "../../component/Partials/Filter";
+import { useEffect, useState } from "react";
 
 function ViewProjectManagement() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const [user, setUser] = useState(null);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) setUser(JSON.parse(userData));
+  }, []);
+
+  const fields = [
+    {
+      key: "view",
+      label: "View",
+      type: "select",
+      options: [
+        { label: "Day", value: "day" },
+        { label: "Week", value: "week" },
+        { label: "Month", value: "month" },
+        { label: "Year", value: "year" },
+      ],
+    },
+  ];
+
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -42,7 +67,7 @@ function ViewProjectManagement() {
 
             <Button
               size="sm"
-              onClick={()=> navigate(`/project_management`)}
+              onClick={() => navigate(`/project_management`)}
               sx={{
                 color: "white",
                 bgcolor: "transparent",
@@ -60,9 +85,9 @@ function ViewProjectManagement() {
               All Projects
             </Button>
 
-             <Button
+            <Button
               size="sm"
-              onClick={()=> navigate(`/project_management`)}
+              onClick={() => navigate(`/project_management`)}
               sx={{
                 color: "white",
                 bgcolor: "transparent",
@@ -82,11 +107,35 @@ function ViewProjectManagement() {
           </Box>
         </MainHeader>
 
-        <SubHeader
-          title="View Project Management"
-          isBackEnabled={false}
-          sticky
-        ></SubHeader>
+        <SubHeader title="View Project Management" isBackEnabled={true} sticky>
+          <Box display="flex" gap={1} alignItems="center">
+            <Filter
+              open={open}
+              onOpenChange={setOpen}
+              fields={fields}
+              title="Filters"
+              onApply={(values) => {
+                setSearchParams((prev) => {
+                  const merged = Object.fromEntries(prev.entries());
+                  const next = {
+                    ...merged,
+                    page: "1",
+                    ...(values.view && { view: String(values.view) }),
+                  };
+                  return next;
+                });
+                setOpen(false);
+              }}
+              onReset={() => {
+                setSearchParams((prev) => {
+                  const merged = Object.fromEntries(prev.entries());
+                  delete merged.view;
+                  return { ...merged, page: "1" };
+                });
+              }}
+            />
+          </Box>
+        </SubHeader>
         <Box
           component="main"
           className="MainContent"
