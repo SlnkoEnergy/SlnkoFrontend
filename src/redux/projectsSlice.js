@@ -61,6 +61,34 @@ export const projectsApi = createApi({
         `project-search?search=${search}&page=${page}&limit=${limit}`,
       providesTags: ["Project"],
     }),
+
+    //Activiy
+    createActivity: builder.mutation({
+      query: (newActivity) => ({
+        url: "activities/activity",
+        method: "POST",
+        body: newActivity,
+      }),
+      invalidatesTags: ["Project"],
+    }),
+    getAllActivity: builder.query({
+      query: () => `activities/activities`,
+      providesTags: ["Project"],
+    }),
+    
+    //Project Activity
+    createProjectActivity: builder.mutation({
+      query: (newProjectActivity) => ({
+        url: "projectactivity/projectactivity",
+        method: "POST",
+        body: newProjectActivity,
+      }),
+      invalidatesTags: ["Project"],
+    }),
+    getAllProjectActivity: builder.query({
+      query: (projectId) => `projectactivity/projectactivity?projectId=${projectId}`,
+      providesTags: ["Project"],
+    }),
   }),
 });
 
@@ -74,4 +102,11 @@ export const {
   useGetProjectDropdownQuery,
   useGetProjectSearchDropdownQuery,
   useLazyGetProjectSearchDropdownQuery,
+  //Activity
+  useCreateActivityMutation,
+  useGetAllActivityQuery,
+
+  //Project Activity
+  useCreateProjectActivityMutation,
+  useGetAllProjectActivityQuery
 } = projectsApi;

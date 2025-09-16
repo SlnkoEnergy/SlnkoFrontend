@@ -9,11 +9,11 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import View_Project_Management from "../../component/ViewProjectManagement";
 import Filter from "../../component/Partials/Filter";
 import { useEffect, useState } from "react";
+import { Save } from "@mui/icons-material";
 
 function ViewProjectManagement() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-
   const [user, setUser] = useState(null);
   const [open, setOpen] = useState(false);
 
@@ -21,6 +21,9 @@ function ViewProjectManagement() {
     const userData = localStorage.getItem("userDetails");
     if (userData) setUser(JSON.parse(userData));
   }, []);
+
+  // pick value from URL (default week)
+  const selectedView = searchParams.get("view") || "week";
 
   const fields = [
     {
@@ -39,76 +42,30 @@ function ViewProjectManagement() {
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
-      <Box
-        sx={{ display: "flex", minHeight: "100dvh", flexDirection: "column" }}
-      >
+      <Box sx={{ display: "flex", minHeight: "100dvh", flexDirection: "column" }}>
         <Sidebar />
         <MainHeader title="Projects" sticky>
-          <Box display="flex" gap={1}>
-            <Button
-              size="sm"
-              onClick={() => navigate(`/eng_dash`)}
-              sx={{
-                color: "white",
-                bgcolor: "transparent",
-                fontWeight: 500,
-                fontSize: "1rem",
-                letterSpacing: 0.5,
-                borderRadius: "6px",
-                px: 1.5,
-                py: 0.5,
-                "&:hover": {
-                  bgcolor: "rgba(255,255,255,0.15)",
-                },
-              }}
-            >
-              Dashboard
-            </Button>
-
-            <Button
-              size="sm"
-              onClick={() => navigate(`/project_management`)}
-              sx={{
-                color: "white",
-                bgcolor: "transparent",
-                fontWeight: 500,
-                fontSize: "1rem",
-                letterSpacing: 0.5,
-                borderRadius: "6px",
-                px: 1.5,
-                py: 0.5,
-                "&:hover": {
-                  bgcolor: "rgba(255,255,255,0.15)",
-                },
-              }}
-            >
-              All Projects
-            </Button>
-
-            <Button
-              size="sm"
-              onClick={() => navigate(`/project_management`)}
-              sx={{
-                color: "white",
-                bgcolor: "transparent",
-                fontWeight: 500,
-                fontSize: "1rem",
-                letterSpacing: 0.5,
-                borderRadius: "6px",
-                px: 1.5,
-                py: 0.5,
-                "&:hover": {
-                  bgcolor: "rgba(255,255,255,0.15)",
-                },
-              }}
-            >
-              Templates
-            </Button>
-          </Box>
+          {/* your header buttons */}
         </MainHeader>
 
-        <SubHeader title="View Project Management" isBackEnabled={true} sticky>
+        <SubHeader title="View Project Schedule" isBackEnabled sticky>
           <Box display="flex" gap={1} alignItems="center">
+            <Button
+              variant="outlined"
+              size="sm"
+              startDecorator={<Save />}
+              sx={{
+                  color: "#3366a3",
+                  borderColor: "#3366a3",
+                  backgroundColor: "transparent",
+                  "--Button-hoverBg": "#e0e0e0",
+                  "--Button-hoverBorderColor": "#3366a3",
+                  "&:hover": { color: "#3366a3" },
+                  height: "8px",
+                }}
+            >
+              Save as Template
+            </Button>
             <Filter
               open={open}
               onOpenChange={setOpen}
@@ -136,6 +93,7 @@ function ViewProjectManagement() {
             />
           </Box>
         </SubHeader>
+
         <Box
           component="main"
           className="MainContent"
@@ -146,10 +104,11 @@ function ViewProjectManagement() {
             gap: 1,
             mt: "108px",
             p: "16px",
-            px: "24px",
+            px: "16px",
           }}
         >
-          <View_Project_Management />
+          {/* pass viewModeParam to gantt */}
+          <View_Project_Management viewModeParam={selectedView} />
         </Box>
       </Box>
     </CssVarsProvider>

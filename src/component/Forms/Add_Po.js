@@ -1568,7 +1568,6 @@ const AddPurchaseOrder = ({
         note: `Attachment added: ${niceName}`,
       });
 
-      // Persist to history collection
       const u = getUserData();
       try {
         await addPoHistory({
