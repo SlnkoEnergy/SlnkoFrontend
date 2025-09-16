@@ -89,6 +89,10 @@ export const projectsApi = createApi({
       query: (projectId) => `projectactivity/projectactivity?projectId=${projectId}`,
       providesTags: ["Project"],
     }),
+    updateProjectActivity: builder.mutation({
+      query: (newActivity, id) => `projectactivity/projectactivity/${id}`,
+      providesTags: ["Project"] 
+    }),
   }),
 });
 
@@ -108,5 +112,6 @@ export const {
 
   //Project Activity
   useCreateProjectActivityMutation,
-  useGetAllProjectActivityQuery
+  useGetAllProjectActivityQuery,
+  useUpdateProjectActivityMutation
 } = projectsApi;

@@ -2,14 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import "dhtmlx-gantt/codebase/dhtmlxgantt.css";
 import gantt from "dhtmlx-gantt/codebase/dhtmlxgantt";
 
-import {
-  Box, Button, Chip, IconButton, Input, Sheet, Table, Typography
-} from "@mui/joy";
+import { Box, Chip, Sheet, Typography, Button } from "@mui/joy";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import EventOutlinedIcon from "@mui/icons-material/EventOutlined";
 import AddIcon from "@mui/icons-material/Add";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import Autocomplete from "@mui/joy/Autocomplete";
 
 // ===== RTK Query hooks (adjust import path to your project) ==================
 import {
@@ -17,6 +13,7 @@ import {
   useCreateActivityMutation,
   useCreateProjectActivityMutation,
   useGetAllProjectActivityQuery,
+  useUpdateProjectActivityMutation, // ensure this exists in your slice
 } from "../redux/projectsSlice";
 import { useSearchParams } from "react-router-dom";
 // ============================================================================
@@ -59,173 +56,106 @@ function predecessorsToString(taskId) {
 function toISO(d) {
   if (!d) return "";
   const date = d instanceof Date ? d : new Date(d);
+  if (isNaN(date)) return "";
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
-function addDays(startISO, days) {
-  if (!startISO) return "";
-  const d = new Date(startISO);
-  d.setDate(d.getDate() + Number(days || 0) - 1); // inclusive
-  return toISO(d);
-}
+
 function diffDaysInclusive(startISO, endISO) {
   if (!startISO || !endISO) return 0;
   const s = new Date(startISO);
   const e = new Date(endISO);
-  const ms = e - s;
+  const ms = e.getTime() - s.getTime();
   return ms < 0 ? 0 : Math.floor(ms / (24 * 3600 * 1000)) + 1;
 }
 
-let uid = 0;
-const newRow = () => ({
-  _id: `row-${uid++}`,
-  master_activity_id: "",
-  activity_name: "",
-  lag: 0,
-  duration: 1,
-  start: "",
-  end: "",
-});
+function endFromStartAndDuration(startISO, duration) {
+  if (!startISO || !duration) return "";
+  const d = new Date(startISO);
+  d.setDate(d.getDate() + Number(duration) - 1);
+  return toISO(d);
+}
+
+// New small helpers for duplicate-prevention & change detection
+const idIsTemp = (id) => String(id || "").startsWith("tmp-");
+const norm = (s) => String(s || "").trim().toLowerCase();
+const predsToComparable = (preds = []) =>
+  preds
+    .map((p) => `${p.activity_id}|${p.type}|${Number(p.lag || 0)}`)
+    .sort()
+    .join(",");
 
 // ============================================================================
 
-const View_Project_Management = ({
-  viewModeParam = "week",
-}) => {
+const View_Project_Management = ({ viewModeParam = "week" }) => {
   const ganttContainer = useRef(null);
   const [viewMode, setViewMode] = useState(viewModeParam);
-  const [searchParams] =  useSearchParams();
-  // ---- SHEET STATE ---------------------------------------------------------
-  const [rows, setRows] = useState([]);
-  const { data: actList = [], isLoading: actsLoading } = useGetAllActivityQuery();
-  const [createActivity, { isLoading: creatingAct }] = useCreateActivityMutation();
+  const [searchParams] = useSearchParams();
+
   const projectId = searchParams.get("project_id");
+
+  // master activities
+  const { data: actList = [] } = useGetAllActivityQuery();
+  const [createActivity] = useCreateActivityMutation();
+
+  // project activities
   const {
     data: projectActsResp,
-    isFetching: fetchingProjActs,
     refetch: refetchProjActs,
   } = useGetAllProjectActivityQuery(projectId, { skip: !projectId });
-  
 
-  const [createProjectActivity, { isLoading: creatingRows }] =
-    useCreateProjectActivityMutation();
+  const [createProjectActivity] = useCreateProjectActivityMutation();
+  const [updateProjectActivity] = useUpdateProjectActivityMutation();
 
- const activities = useMemo(() => {
-  const raw = Array.isArray(actList) ? actList : actList?.data || [];
-  return raw.map((a) => ({ id: a._id || a.id, name: a.name }));
-}, [actList]);
+  // map activities (robust against shapes)
+  const activities = useMemo(() => {
+    const raw = Array.isArray(actList) ? actList : actList?.data || [];
+    return raw.map((a) => ({ id: a._id || a.id, name: a.name || a.activity_name || "" }));
+  }, [actList]);
 
-  const addRow = () => setRows((r) => [...r, newRow()]);
-  const removeRow = (_id) => setRows((r) => r.filter((x) => x._id !== _id));
+  // fast lookup by name/id (case-insensitive by name)
+  const actByName = useMemo(() => {
+    const m = new Map();
+    activities.forEach((a) => m.set(norm(a.name), a));
+    return m;
+  }, [activities]);
 
-  const handleActivityChange = async (rowId, value) => {
-    // free-solo: if string, create activity
-    if (typeof value === "string") {
-      const name = value.trim();
-      if (!name) return;
-      try {
-        const res = await createActivity({
-          name,
-          description: name,
-        }).unwrap();
-        const newId = res?._id || res?.id;
-        setRows((prev) =>
-          prev?.map((r) =>
-            r._id === rowId
-              ? { ...r, master_activity_id: newId, activity_name: name }
-              : r
-          )
-        );
-      } catch (e) {
-        console.error("createActivity failed", e);
-      }
-      return;
-    }
-    if (value && value.id) {
-      setRows((prev) =>
-        prev?.map((r) =>
-          r._id === rowId
-            ? { ...r, master_activity_id: value.id, activity_name: value.name }
-            : r
-        )
-      );
-    } else {
-      setRows((prev) =>
-        prev?.map((r) =>
-          r._id === rowId ? { ...r, master_activity_id: "", activity_name: "" } : r
-        )
-      );
-    }
-  };
+  // ---- GANTT: build data from API -----------------------------------------
+  const projectActs = useMemo(() => {
+    const raw = projectActsResp?.data ?? projectActsResp ?? [];
+    return Array.isArray(raw) ? raw : [];
+  }, [projectActsResp]);
 
-  const handleChange = (rowId, field, val) => {
-    setRows((prev) =>
-      prev?.map((r) => {
-        if (r._id !== rowId) return r;
-        let next = { ...r, [field]: val };
-
-        if (field === "start" || field === "duration") {
-          if (next.start && Number(next.duration) > 0) {
-            next.end = addDays(next.start, next.duration);
-          } else next.end = "";
-        }
-        if (field === "end" && next.start && next.end) {
-          next.duration = diffDaysInclusive(next.start, next.end) || 1;
-        }
-        return next;
-      })
-    );
-  };
-
-  const canSubmit =
-    rows.length > 0 &&
-    rows.every(
-      (r) => r.master_activity_id && r.start && r.end && Number(r.duration) > 0
-    );
-
-  const submitAll = async () => {
-    const payloads = rows?.map((r) => ({
-      project_id: projectId,
-      master_activity_id: r.master_activity_id,
-      planned_start: r.start,
-      planned_finish: r.end,
-      duration: Number(r.duration) || 1,
-      predecessors: [], // extend later if you add predecessor editor
-      successors: [],
-    }));
-
-    try {
-      await Promise.all(payloads?.map((p) => createProjectActivity(p).unwrap()));
-      setRows([]);
-      await refetchProjActs();
-    } catch (e) {
-      console.error("createProjectActivity failed", e);
-    }
-  };
-
-  // ---- GANTT: data from API -----------------------------------------------
-const projectActs = useMemo(() => {
-  const raw = projectActsResp?.data ?? projectActsResp ?? [];
-  return Array.isArray(raw) ? raw : [];
-}, [projectActsResp]);
+  // quick lookup: project activity by PA id
+  const paById = useMemo(() => {
+    const m = new Map();
+    projectActs.forEach((pa) => m.set(String(pa._id), pa));
+    return m;
+  }, [projectActs]);
 
   const ganttData = useMemo(() => {
-    // build tasks
-    const tasksArr = projectActs?.map((pa) => ({
-      id: pa._id,
-      text:
+    const tasksArr = projectActs.map((pa) => {
+      const name =
         pa.master_activity_id?.name ||
         pa.master_activity_id?.activity_name ||
-        "Activity",
-      start_date: toISO(pa.planned_start),
-      duration: pa.duration || diffDaysInclusive(pa.planned_start, pa.planned_finish) || 1,
-      progress: (pa.percent_complete ?? 0) / 100,
-      open: true,
-    }));
+        pa.activity_name ||
+        "Activity";
+      const startISO = toISO(pa.planned_start);
+      const endISO = toISO(pa.planned_finish);
+      const duration = pa.duration || diffDaysInclusive(startISO, endISO) || 1;
 
-    // map master_activity_id -> project activity id (to build links)
+      return {
+        id: pa._id, // keep server id so updates are PUT/PATCH
+        text: name,
+        start_date: startISO,
+        duration,
+        progress: (pa.percent_complete ?? 0) / 100,
+        open: true,
+      };
+    });
+
     const byMaster = new Map(
       projectActs.map((pa) => [
         String(pa.master_activity_id?._id || pa.master_activity_id),
@@ -253,21 +183,166 @@ const projectActs = useMemo(() => {
     return { data: tasksArr, links: linksArr };
   }, [projectActs]);
 
-  // ---- GANTT: init/config --------------------------------------------------
-  const fmtISO = gantt.date.date_to_str("%Y-%m-%d");
-  const parseInternal = (d) =>
-    d instanceof Date ? d : gantt.date.parseDate(d, gantt.config.date_format);
+  // ========================= AUTO-SAVE ENGINE ===============================
+  const saveTimers = useRef({});
+  const pending = useRef({}); // latest payload per task
 
-  const startDateTemplate = (task) => fmtISO(parseInternal(task.start_date));
-  const endDateTemplate = (task) => {
-    const s = parseInternal(task.start_date);
-    if (!s || !task.duration) return "";
-    const e = gantt.calculateEndDate({ start_date: s, duration: task.duration, task });
-    return fmtISO(e);
+  // Resolve/ensure master activity (create only when necessary)
+  const ensureMasterActivity = async (desiredName, currentPa) => {
+    const name = String(desiredName || "Activity").trim();
+    if (!name) return null;
+
+    // If this PA already has a master with the same visible name, reuse it
+    const existingMasterId =
+      currentPa?.master_activity_id?._id || currentPa?.master_activity_id || null;
+    const existingMasterName =
+      currentPa?.master_activity_id?.name ||
+      currentPa?.master_activity_id?.activity_name ||
+      currentPa?.activity_name ||
+      "";
+
+    if (existingMasterId && norm(existingMasterName) === norm(name)) {
+      return existingMasterId;
+    }
+
+    // Try to find in global activity master list
+    const hit = actByName.get(norm(name));
+    if (hit) return hit.id;
+
+    // Finally, create a new master activity
+    const res = await createActivity({ name, description: name }).unwrap();
+    return res?._id || res?.id || null;
   };
 
+  const buildPayloadFromTask = async (task) => {
+    const currentPa = paById.get(String(task.id)); // undefined for brand-new temp rows
+
+    const name = String(task.text || "Activity").trim() || "Activity";
+    const masterId = await ensureMasterActivity(name, currentPa);
+    if (!masterId) return null;
+
+    const startISO = toISO(task.start_date);
+    const duration = Number(task.duration || 1);
+    const endISO = endFromStartAndDuration(startISO, duration);
+
+    // current predecessors in Gantt (source is PA id; backend expects source MASTER id)
+    const links = gantt.getLinks().filter((l) => String(l.target) === String(task.id));
+    const predecessors = links
+      .map((l) => {
+        const sourcePa = paById.get(String(l.source));
+        const sourceMaster =
+          sourcePa?.master_activity_id?._id || sourcePa?.master_activity_id || null;
+        return {
+          type: typeToLabel[String(l.type)] || "FS",
+          lag: Number(l.lag || 0),
+          activity_id: sourceMaster,
+        };
+      })
+      .filter((p) => p.activity_id);
+
+    return {
+      project_id: projectId,
+      master_activity_id: masterId,
+      planned_start: startISO,
+      planned_finish: endISO,
+      duration,
+      predecessors,
+      successors: [],
+    };
+  };
+
+  // Compare task+payload vs server state to avoid useless PATCHes
+  const isSameAsServer = (task, payload) => {
+    const server = paById.get(String(task.id));
+    if (!server) return false; // temp/new task -> needs create
+
+    const serverName =
+      server.master_activity_id?.name ||
+      server.master_activity_id?.activity_name ||
+      server.activity_name ||
+      "Activity";
+
+    const serverStart = toISO(server.planned_start);
+    const serverEnd = toISO(server.planned_finish);
+    const serverDur = server.duration || diffDaysInclusive(serverStart, serverEnd) || 1;
+
+    const taskName = String(task.text || "Activity").trim() || "Activity";
+    if (norm(serverName) !== norm(taskName)) return false;
+
+    if (toISO(payload.planned_start) !== serverStart) return false;
+    if (Number(payload.duration) !== Number(serverDur)) return false;
+
+    const serverPreds = predsToComparable(
+      (server.predecessors || []).map((p) => ({
+        activity_id: p.activity_id,
+        type: p.type,
+        lag: Number(p.lag || 0),
+      }))
+    );
+
+    const payloadPreds = predsToComparable(payload.predecessors || []);
+    return serverPreds === payloadPreds;
+  };
+
+  // Schedule a debounced save for a given task (create only for tmp-* ids)
+  const scheduleSave = (task) => {
+    const id = String(task.id || "");
+    if (!id) return;
+
+    const isNew = idIsTemp(id);
+    pending.current[id] = { task, isNew };
+
+    clearTimeout(saveTimers.current[id]);
+    saveTimers.current[id] = setTimeout(async () => {
+      const pack = pending.current[id] || {};
+      const latestTask = pack.task;
+      const latestIsNew = pack.isNew;
+      if (!latestTask) return;
+
+      try {
+        const payload = await buildPayloadFromTask(latestTask);
+        if (!payload) return;
+
+        if (!latestIsNew && isSameAsServer(latestTask, payload)) {
+          // nothing changed; skip network call
+          return;
+        }
+
+        if (latestIsNew) {
+          // CREATE
+          const created = await createProjectActivity(payload).unwrap();
+          const newServerId = created?._id || created?.id;
+          if (newServerId && String(newServerId) !== String(latestTask.id)) {
+            const tempId = latestTask.id;
+            // Replace temp ID with server ID; fix links that reference it
+            gantt.changeTaskId(tempId, newServerId);
+            gantt.getLinks().forEach((l) => {
+              if (String(l.source) === String(tempId)) l.source = newServerId;
+              if (String(l.target) === String(tempId)) l.target = newServerId;
+            });
+          }
+        } else {
+          // UPDATE (must be a real server id)
+          await updateProjectActivity({
+            id: String(latestTask.id),
+            body: payload,
+          }).unwrap();
+        }
+
+        await refetchProjActs();
+      } catch (e) {
+        // Keep UI responsive, log for debugging
+        console.error("Auto-save failed:", e);
+      } finally {
+        delete pending.current[id];
+        clearTimeout(saveTimers.current[id]);
+        delete saveTimers.current[id];
+      }
+    }, 500);
+  };
+
+  // ============================ GANTT INIT ==================================
   useEffect(() => {
-    // Use ISO for server data interchange
     gantt.config.date_format = "%Y-%m-%d";
     gantt.locale.date.day_short = ["S", "M", "T", "W", "T", "F", "S"];
 
@@ -282,58 +357,112 @@ const projectActs = useMemo(() => {
     gantt.config.limit_view = false;
     gantt.config.fit_tasks = false;
 
-    // Grid order: Task name | Lag | Duration | Start | End
+    // Grid columns (inline editing only)
     gantt.config.columns = [
-      { name: "text", label: "Task name", tree: true, width: 200, resize: true,
-        editor: { type: "text", map_to: "text" } },
-      { name: "lag", label: "Lag", width: 140, align: "left", resize: true,
+      {
+        name: "text",
+        label: "Activity",
+        tree: true,
+        width: 260,
+        resize: true,
+        editor: { type: "text", map_to: "text" },
+      },
+      {
+        name: "lag",
+        label: "Predecessors",
+        width: 200,
+        align: "left",
+        resize: true,
         template: (t) => predecessorsToString(t.id),
-        editor: { type: "text", map_to: "lag" } }, // local-only; parses to links below
-      { name: "duration", label: "Duration", width: 90, align: "left", resize: true,
-        editor: { type: "number", map_to: "duration" } },
-      { name: "start", label: "Start", width: 120, align: "left", resize: true,
-        template: startDateTemplate, editor: { type: "date", map_to: "start_date" } },
-      { name: "end", label: "End", width: 120, align: "left", resize: true,
-        template: endDateTemplate },
+        editor: { type: "text", map_to: "lag" }, // parsed into real links
+      },
+      {
+        name: "duration",
+        label: "Duration",
+        width: 90,
+        align: "left",
+        resize: true,
+        editor: { type: "number", map_to: "duration" },
+      },
+      {
+        name: "start",
+        label: "Start",
+        width: 120,
+        align: "left",
+        resize: true,
+        template: (task) => toISO(task.start_date),
+        editor: { type: "date", map_to: "start_date" },
+      },
+      {
+        name: "end",
+        label: "End",
+        width: 120,
+        align: "left",
+        resize: true,
+        template: (task) => endFromStartAndDuration(toISO(task.start_date), task.duration),
+      },
     ];
 
     gantt.init(ganttContainer.current);
 
-    // keep grid synced after edits/drags
-    const refresh = () => gantt.refreshData();
-    const evts = [
-      gantt.attachEvent("onAfterTaskUpdate", refresh),
-      gantt.attachEvent("onAfterTaskAdd", refresh),
-      gantt.attachEvent("onAfterTaskDrag", refresh),
-      gantt.attachEvent("onAfterLinkUpdate", refresh),
-      gantt.attachEvent("onAfterLinkAdd", refresh),
-      gantt.attachEvent("onAfterLinkDelete", refresh),
-    ];
-
-    // Parse "Lag" cell into links (local only)
+    // Edit stop (text/start/duration/lag)
     gantt.attachEvent("onAfterEditStop", (state, editor) => {
-      if (editor && editor.columnName === "lag") {
-        const taskId = editor.task.id;
+      const task = editor?.task;
+      if (!task) return;
+
+      if (editor.columnName === "lag") {
+        // rebuild links from typed string (e.g., "12FS+2, 7SS-1")
         gantt
           .getLinks()
-          .filter((l) => String(l.target) === String(taskId))
+          .filter((l) => String(l.target) === String(task.id))
           .forEach((l) => gantt.deleteLink(l.id));
+
         parsePredString(state.value).forEach((p) => {
-          if (Number(p.source) !== Number(taskId)) {
-            gantt.addLink({ source: p.source, target: taskId, type: p.type, lag: p.lag || 0 });
+          if (Number(p.source) !== Number(task.id)) {
+            gantt.addLink({
+              source: p.source,
+              target: task.id,
+              type: p.type,
+              lag: p.lag || 0,
+            });
           }
         });
         gantt.refreshData();
+        scheduleSave(task);
+        return;
       }
+
+      scheduleSave(task);
+    });
+
+    // Drag/move/resize
+    gantt.attachEvent("onAfterTaskDrag", (id) => {
+      const task = gantt.getTask(id);
+      scheduleSave(task);
+    });
+
+    // Link changes
+    ["onAfterLinkAdd", "onAfterLinkUpdate", "onAfterLinkDelete"].forEach((ev) => {
+      gantt.attachEvent(ev, () => {
+        const all = gantt.getLinks();
+        const touched = new Set();
+        all.forEach((l) => {
+          touched.add(String(l.source));
+          touched.add(String(l.target));
+        });
+        touched.forEach((tid) => {
+          const t = gantt.getTask(tid);
+          if (t) scheduleSave(t);
+        });
+      });
     });
 
     return () => {
-      evts.forEach((id) => gantt.detachEvent(id));
       gantt.clearAll();
     };
   }, []);
 
-  // load/refresh gantt when server data changes
+  // Load/refresh gantt when server data changes
   useEffect(() => {
     gantt.clearAll();
     gantt.parse(ganttData);
@@ -363,17 +492,43 @@ const projectActs = useMemo(() => {
     gantt.render();
   }, [viewMode]);
 
-  // ----- computed project window chips (from current sheet entries) ----------
+  // ----- computed project window chips (from current server data) ----------
   const minStart = useMemo(() => {
-    const dates = rows.filter((r) => r.start).map((r) => +new Date(r.start));
+    const dates = projectActs
+      .map((r) => toISO(r.planned_start))
+      .filter(Boolean)
+      .map((d) => +new Date(d));
     if (!dates.length) return "—";
     return toISO(new Date(Math.min(...dates)));
-  }, [rows]);
+  }, [projectActs]);
+
   const maxEnd = useMemo(() => {
-    const dates = rows.filter((r) => r.end).map((r) => +new Date(r.end));
+    const dates = projectActs
+      .map((r) => toISO(r.planned_finish))
+      .filter(Boolean)
+      .map((d) => +new Date(d));
     if (!dates.length) return "—";
     return toISO(new Date(Math.max(...dates)));
-  }, [rows]);
+  }, [projectActs]);
+
+  // Add a blank task; it will be created on first edit (or call scheduleSave immediately)
+  const addBlankTask = () => {
+    const tempId = `tmp-${Date.now()}`;
+    const today = toISO(new Date());
+    gantt.addTask(
+      {
+        id: tempId,
+        text: "New Activity",
+        start_date: today,
+        duration: 1,
+        progress: 0,
+        open: true,
+      },
+      null
+    );
+    // If you want immediate create without waiting for first edit:
+    // scheduleSave(gantt.getTask(tempId));
+  };
 
   return (
     <Box
@@ -383,7 +538,7 @@ const projectActs = useMemo(() => {
         p: 0,
       }}
     >
-      {/* Header chips (unchanged) */}
+      {/* Header chips */}
       <Box
         sx={{
           display: "flex",
@@ -402,7 +557,7 @@ const projectActs = useMemo(() => {
               Project Code:
             </Typography>
             <Chip color="primary" size="sm" variant="solid" sx={{ fontWeight: 700 }}>
-              {/* put your code here */}
+              {projectId || "—"}
             </Chip>
           </Box>
         </Sheet>
@@ -425,123 +580,15 @@ const projectActs = useMemo(() => {
         </Sheet>
       </Box>
 
-      {/* Sheet controls */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-        <Button size="sm" startDecorator={<AddIcon />} onClick={addRow} variant="soft">
-          Add row
-        </Button>
-        <Button size="sm" onClick={submitAll}>
-          Submit activities
+      {/* Quick add */}
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1 }}>
+        <Button size="sm" startDecorator={<AddIcon />} variant="soft" onClick={addBlankTask}>
+          Add Activity
         </Button>
       </Box>
 
-      {/* Empty state */}
-      {rows.length === 0 ? (
-        <Sheet variant="outlined" sx={{ borderRadius: "md", p: 3, textAlign: "center", color: "text.tertiary", mb: 1.5 }}>
-          No activities yet. Click <b>“Add row”</b> to start.
-        </Sheet>
-      ) : null}
-
-      {/* Editable sheet */}
-      {rows.length > 0 && (
-        <Sheet variant="outlined" sx={{ borderRadius: "md", overflow: "hidden", mb: 1.5 }}>
-          <Table stickyHeader hoverRow>
-            <thead>
-              <tr>
-                <th style={{ width: 320, padding: 8 }}>Activity</th>
-                <th style={{ width: 90, padding: 8 }}>Lag</th>
-                <th style={{ width: 110, padding: 8 }}>Duration</th>
-                <th style={{ width: 160, padding: 8 }}>Start date</th>
-                <th style={{ width: 160, padding: 8 }}>End date</th>
-                <th style={{ width: 60, padding: 8 }} />
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r._id}>
-                  <td style={{ padding: 8 }}>
-                    <Autocomplete
-                      placeholder="Select or type to create…"
-                      size="sm"
-                      clearOnBlur={false}
-                      freeSolo
-                      options={activities}
-                      getOptionLabel={(opt) =>
-                        typeof opt === "string" ? opt : opt?.name || ""
-                      }
-                      value={
-                        r.master_activity_id
-                          ? activities.find((a) => a.id === r.master_activity_id) || r.activity_name
-                          : r.activity_name
-                      }
-                      onChange={(_, value) => handleActivityChange(r._id, value)}
-                      loading={actsLoading || creatingAct}
-                    />
-                  </td>
-                  <td style={{ padding: 8 }}>
-                    <Input
-                      size="sm"
-                      type="number"
-                      value={r.lag}
-                      onChange={(e) =>
-                        handleChange(r._id, "lag", Number(e.target.value || 0))
-                      }
-                      slotProps={{ input: { min: 0 } }}
-                    />
-                  </td>
-                  <td style={{ padding: 8 }}>
-                    <Input
-                      size="sm"
-                      type="number"
-                      value={r.duration}
-                      onChange={(e) =>
-                        handleChange(r._id, "duration", Number(e.target.value || 0))
-                      }
-                      slotProps={{ input: { min: 1 } }}
-                    />
-                  </td>
-                  <td style={{ padding: 8 }}>
-                    <Input
-                      size="sm"
-                      type="date"
-                      value={r.start || ""}
-                      onChange={(e) => handleChange(r._id, "start", e.target.value)}
-                    />
-                  </td>
-                  <td style={{ padding: 8 }}>
-                    <Input
-                      size="sm"
-                      type="date"
-                      value={r.end || ""}
-                      onChange={(e) => handleChange(r._id, "end", e.target.value)}
-                    />
-                  </td>
-                  <td style={{ padding: 8, textAlign: "center" }}>
-                    <IconButton
-                      size="sm"
-                      variant="plain"
-                      color="danger"
-                      onClick={() => removeRow(r._id)}
-                    >
-                      <DeleteOutlineIcon />
-                    </IconButton>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        </Sheet>
-      )}
-
       {/* Gantt */}
-      <Box
-        style={{
-          position: "relative",
-          width: "100%",
-          minWidth: 600,
-          height: "70vh",
-        }}
-      >
+      <Box style={{ position: "relative", width: "100%", minWidth: 600, height: "70vh" }}>
         <Box
           ref={ganttContainer}
           style={{
