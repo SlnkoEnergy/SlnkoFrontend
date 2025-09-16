@@ -233,6 +233,15 @@ export const purchasesApi = createApi({
       }),
       invalidatesTags: ["Logistic"],
     }),
+    // 👇 NEW: Bulk mark as delivered
+   bulkDeliverPOs: builder.mutation({
+     query: ({ ids, remarks, date }) => ({
+       url: `bulk-mark-delivered`,
+       method: "PUT",
+       body: clean({ ids, remarks, date }),
+     }),
+     invalidatesTags: ["Purchase", "Logistic"], // refresh PO table (& logistics if you display them)
+   }),
   }),
 });
 
@@ -254,5 +263,6 @@ export const {
   useLazyGetPoBasicQuery,
   useUpdateLogisticStatusMutation,
   useLazyGetLogisticsHistoryQuery,
-  useAddLogisticHistoryMutation
+  useAddLogisticHistoryMutation,
+   useBulkDeliverPOsMutation,
 } = purchasesApi;
