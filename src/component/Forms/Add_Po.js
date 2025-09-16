@@ -63,6 +63,7 @@ const VENDOR_LIMIT = 7;
 const SEARCH_MORE_VENDOR = "__SEARCH_MORE_VENDOR__";
 const SEARCH_MORE_PRODUCT = "__SEARCH_MORE_PRODUCT__";
 const SEARCH_MORE_CATEGORY = "__SEARCH_MORE_CATEGORY__";
+const CREATE_PRODUCT = "__CREATE_PRODUCT__"
 
 /* ---------- DARK DISABLED HELPERS ---------- */
 const DISABLED_SX = {
@@ -128,6 +129,7 @@ const makeEmptyLine = () => ({
   billed: 0,
   unitPrice: 0,
   taxPercent: 0,
+  isShow: false,
 });
 
 const getProdField = (row, fieldName) => {
@@ -196,7 +198,7 @@ const AddPurchaseOrder = ({
   const viewMode = effectiveMode === "view";
   const [openRefuse, setOpenRefuse] = useState(false);
   const [remarks, setRemarks] = useState("");
-
+  const isRowLocked = (l) => !!l.isShow;
   /* Vendors */
   const [vendorSearch, setVendorSearch] = useState("");
   const [vendorPage, setVendorPage] = useState(1);
@@ -475,6 +477,7 @@ const AddPurchaseOrder = ({
     return arr.length
       ? arr.map((it) => ({
         ...makeEmptyLine(),
+        isShow: true,
         productCategoryId:
           typeof it?.category === "object"
             ? it?.category?._id ?? ""
@@ -654,10 +657,11 @@ const AddPurchaseOrder = ({
   const [createProdLineId, setCreateProdLineId] = useState(null);
 
   const openCreateProductForLine = (line) => {
-    if (!line?.productCategoryId || !line?.productName) {
-      toast.error("Pick category and product name first.");
-      return;
-    }
+
+    // if (!line?.productCategoryId || !line?.productName) {
+    //   toast.error("Pick category and product name first.");
+    //   return;
+    // }
     setCreateProdLineId(line.id);
     setCreateProdInitial({
       name: line.productName || "",
@@ -680,6 +684,7 @@ const AddPurchaseOrder = ({
     try {
       const newProduct = normalizeCreatedProduct(raw);
       if (!newProduct || !createProdLineId) return;
+
       const name = getProdField(newProduct, "Product Name") || "";
       const make = getProdField(newProduct, "Make") || "";
       const uom =
@@ -689,8 +694,20 @@ const AddPurchaseOrder = ({
       const gst = Number(getProdField(newProduct, "GST") || 0);
       const cost = Number(getProdField(newProduct, "Cost") || 0);
       const desc = getProdField(newProduct, "Description") || "";
-      const catId = newProduct?.category?._id || newProduct?.category || "";
-      const catName = newProduct?.category?.name || "";
+
+      const catId =
+        newProduct?.category?._id || newProduct?.category || "";
+
+      const currentLine = lines.find((x) => x.id === createProdLineId);
+      let catName =
+        (newProduct?.category && newProduct?.category?.name) || "";
+      if (!catName && catId) {
+        const found = categoryData?.find((c) => c._id === catId);
+        if (found?.name) catName = found.name;
+        else if (currentLine?.productCategoryName)
+          catName = currentLine.productCategoryName;
+      }
+
       updateLine(createProdLineId, "productId", newProduct?._id || "");
       updateLine(createProdLineId, "productName", name);
       updateLine(createProdLineId, "productCategoryId", catId);
@@ -700,6 +717,7 @@ const AddPurchaseOrder = ({
       updateLine(createProdLineId, "taxPercent", gst);
       updateLine(createProdLineId, "unitPrice", cost);
       if (isValidMake(make)) updateLine(createProdLineId, "make", make);
+
       const key = mkKey(catId, name);
       setMakesCache((prev) => {
         const existing = prev[key] || [];
@@ -717,6 +735,7 @@ const AddPurchaseOrder = ({
       setCreateProdInitial(null);
     }
   };
+
 
   useEffect(() => {
     setLines((prev) =>
@@ -2144,7 +2163,7 @@ const AddPurchaseOrder = ({
                     const base = Number(l.quantity || 0) * Number(l.unitPrice || 0);
                     const taxAmt = (base * Number(l.taxPercent || 0)) / 100;
                     const gross = base + taxAmt;
-
+                    const show = l.isShow;
                     const key = mkKey(l.productCategoryId, l.productName);
                     const rowMakes = makesCache[key] || [];
 
@@ -2173,7 +2192,7 @@ const AddPurchaseOrder = ({
 
                         {/* Category Select */}
                         <td className="px-3 py-2 align-middle text-sm">
-                          {manualEdit && !fromModal ? (
+                          {!isRowLocked(l) && manualEdit && !fromModal ? (
                             <JSelect
                               variant="outlined"
                               size="sm"
@@ -2189,14 +2208,13 @@ const AddPurchaseOrder = ({
 
                                 const picked = categoryData.find((c) => c._id === v);
                                 updateLine(l.id, "productCategoryId", v);
-                                updateLine(l.id, "productCategoryName", picked?.name || "");
+                                updateLine(l.id, "productCategoryName", picked?.name || l.productCategoryName || "");
                               }}
                               placeholder="Select Category"
                               renderValue={(selected) => (
                                 <Typography level="body-sm" noWrap>
                                   {categoryData.find((c) => c._id === selected)?.name ||
-                                    l.productCategoryName ||
-                                    "Select Category"}
+                                    l.productCategoryName || "Select Category"}
                                 </Typography>
                               )}
                               className="min-w-[150px] rounded-md"
@@ -2210,34 +2228,30 @@ const AddPurchaseOrder = ({
                                 },
                               }}
                             >
+                              {/* normal page of categories */}
                               {categoryData.map((cat) => (
                                 <Option
                                   key={cat._id}
                                   value={cat._id}
-                                  sx={{
-                                    paddingY: 1,
-                                    paddingX: 2,
-                                    fontSize: '0.875rem',
-                                    '&:hover': { bgcolor: 'gray.100' },
-                                  }}
+                                  sx={{ paddingY: 1, paddingX: 2, fontSize: '0.875rem', '&:hover': { bgcolor: 'gray.100' } }}
                                 >
                                   {cat.name}
                                 </Option>
                               ))}
-                              <Option
-                                value={SEARCH_MORE_CATEGORY}
-                                sx={{
-                                  color: "#fff",
-                                  bgcolor: "#2563eb",
-                                  fontWeight: 600,
-                                  paddingY: 1,
-                                  paddingX: 2,
-                                  '&:hover': { bgcolor: "#1e40af" },
-                                }}
-                              >
+
+                              {/* ✅ ensure the currently selected category is visible even if it's not in categoryData */}
+                              {l.productCategoryId &&
+                                !categoryData.some((c) => c._id === l.productCategoryId) && (
+                                  <Option value={l.productCategoryId}>
+                                    {l.productCategoryName || "Current category"}
+                                  </Option>
+                                )}
+
+                              <Option value={SEARCH_MORE_CATEGORY} color="primary">
                                 Search more…
                               </Option>
                             </JSelect>
+
                           ) : (
                             <Typography level="body-sm">{l.productCategoryName}</Typography>
                           )}
@@ -2245,11 +2259,11 @@ const AddPurchaseOrder = ({
 
                         {/* Product Select */}
                         <td className="px-3 py-2 align-middle text-sm">
-                          {manualEdit && !fromModal ? (
+                          {!isRowLocked(l) && manualEdit && !fromModal ? (
                             <JSelect
                               variant="outlined"
                               size="sm"
-                              value={l.productId || null}
+                              value={l.productId ?? null}
                               onListboxOpenChange={(open) => {
                                 if (open) setActiveLineId(l.id);
                               }}
@@ -2263,6 +2277,10 @@ const AddPurchaseOrder = ({
                                     return;
                                   }
                                   setProductModalOpen(true);
+                                  return;
+                                }
+                                if (v === CREATE_PRODUCT) {
+                                  openCreateProductForLine(l);
                                   return;
                                 }
 
@@ -2364,17 +2382,15 @@ const AddPurchaseOrder = ({
 
                               <Option
                                 value={SEARCH_MORE_PRODUCT}
-                                sx={{
-                                  color: "#fff",
-                                  bgcolor: "#2563eb",
-                                  fontWeight: 600,
-                                  paddingY: 1,
-                                  paddingX: 2,
-                                  '&:hover': { bgcolor: "#1e40af" },
-                                }}
+                                color="primary"
                               >
                                 Search more…
                               </Option>
+                              {!!l.productCategoryId && (
+                                <Option value={CREATE_PRODUCT} color="success">
+                                  + Create new product…
+                                </Option>
+                              )}
                             </JSelect>
                           ) : (
                             <Typography level="body-sm">{l.productName}</Typography>
