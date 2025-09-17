@@ -217,15 +217,7 @@ const View_Project_Management = ({ viewModeParam = "week" }) => {
         width: 110,
         align: "left",
         resize: true,
-        template: (t) => {
-          // Always format via Gantt's formatters
-          const d = parseInternal(t.start_date);
-          if (!d) return "";
-          const curY = new Date().getFullYear();
-          const fmt = d.getFullYear() === curY ? fmtNoYearDM : fmtFullDMY;
-          return fmt(d);
-        },
-        editor: { type: "date", map_to: "start_date" },
+        template: endDateTemplate
       },
       {
         name: "end",
