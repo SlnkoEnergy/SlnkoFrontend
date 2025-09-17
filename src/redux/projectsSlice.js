@@ -85,7 +85,7 @@ export const projectsApi = createApi({
       }),
       invalidatesTags: ["Project"],
     }),
-    getAllProjectActivity: builder.query({
+    getProjectActivityByProjectId: builder.query({
       query: (projectId) => `projectactivity/projectactivity?projectId=${projectId}`,
       providesTags: ["Project"],
     }),
@@ -108,5 +108,5 @@ export const {
 
   //Project Activity
   useCreateProjectActivityMutation,
-  useGetAllProjectActivityQuery
+  useGetProjectActivityByProjectIdQuery
 } = projectsApi;

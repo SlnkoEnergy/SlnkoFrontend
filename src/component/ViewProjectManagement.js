@@ -1,274 +1,197 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "dhtmlx-gantt/codebase/dhtmlxgantt.css";
 import gantt from "dhtmlx-gantt/codebase/dhtmlxgantt";
-
-import {
-  Box, Button, Chip, IconButton, Input, Sheet, Table, Typography
-} from "@mui/joy";
+import { Box, Chip, Sheet, Typography } from "@mui/joy";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import EventOutlinedIcon from "@mui/icons-material/EventOutlined";
-import AddIcon from "@mui/icons-material/Add";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import Autocomplete from "@mui/joy/Autocomplete";
-
-// ===== RTK Query hooks (adjust import path to your project) ==================
-import {
-  useGetAllActivityQuery,
-  useCreateActivityMutation,
-  useCreateProjectActivityMutation,
-  useGetAllProjectActivityQuery,
-} from "../redux/projectsSlice";
+import { Timelapse } from "@mui/icons-material";
+import { useGetProjectActivityByProjectIdQuery } from "../redux/projectsSlice";
 import { useSearchParams } from "react-router-dom";
-// ============================================================================
 
-// ---- helpers ---------------------------------------------------------------
-const labelToType = { FS: "0", SS: "1", FF: "2", SF: "3" };
-const typeToLabel = { 0: "FS", 1: "SS", 2: "FF", 3: "SF" };
-
-function parsePredString(input) {
-  if (!input) return [];
-  return input
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map((tok) => {
-      const m = tok.match(/^(\d+)\s*([Ff][Ss]|[Ss][Ss]|[Ff][Ff]|[Ss][Ff])?\s*([+-]\s*\d+)?$/);
-      if (!m) return null;
-      const source = Number(m[1]);
-      const tLabel = (m[2] || "FS").toUpperCase();
-      const type = labelToType[tLabel] ?? "0";
-      const lag = m[3] ? Number(m[3].replace(/\s+/g, "")) : 0;
-      return { source, type, lag };
-    })
-    .filter(Boolean);
-}
-
-function predecessorsToString(taskId) {
-  const links = gantt.getLinks().filter((l) => String(l.target) === String(taskId));
-  if (!links.length) return "";
-  return links
-    .map((l) => {
-      const t = typeToLabel[String(l.type)] ?? "FS";
-      const lag = Number(l.lag || 0);
-      const lagStr = lag === 0 ? "" : lag > 0 ? `+${lag}` : `${lag}`;
-      return `${l.source}${t}${lagStr}`;
-    })
-    .join(", ");
-}
-
-function toISO(d) {
-  if (!d) return "";
-  const date = d instanceof Date ? d : new Date(d);
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
-function addDays(startISO, days) {
-  if (!startISO) return "";
-  const d = new Date(startISO);
-  d.setDate(d.getDate() + Number(days || 0) - 1); // inclusive
-  return toISO(d);
-}
-function diffDaysInclusive(startISO, endISO) {
-  if (!startISO || !endISO) return 0;
-  const s = new Date(startISO);
-  const e = new Date(endISO);
-  const ms = e - s;
-  return ms < 0 ? 0 : Math.floor(ms / (24 * 3600 * 1000)) + 1;
-}
-
-let uid = 0;
-const newRow = () => ({
-  _id: `row-${uid++}`,
-  master_activity_id: "",
-  activity_name: "",
-  lag: 0,
-  duration: 1,
-  start: "",
-  end: "",
-});
-
-// ============================================================================
-
-const View_Project_Management = ({
-  viewModeParam = "week",
-}) => {
-  const ganttContainer = useRef(null);
-  const [viewMode, setViewMode] = useState(viewModeParam);
-  const [searchParams] =  useSearchParams();
-  // ---- SHEET STATE ---------------------------------------------------------
-  const [rows, setRows] = useState([]);
-  const { data: actList = [], isLoading: actsLoading } = useGetAllActivityQuery();
-  const [createActivity, { isLoading: creatingAct }] = useCreateActivityMutation();
-  const projectId = searchParams.get("project_id");
-  const {
-    data: projectActsResp,
-    isFetching: fetchingProjActs,
-    refetch: refetchProjActs,
-  } = useGetAllProjectActivityQuery(projectId, { skip: !projectId });
-  
-
-  const [createProjectActivity, { isLoading: creatingRows }] =
-    useCreateProjectActivityMutation();
-
- const activities = useMemo(() => {
-  const raw = Array.isArray(actList) ? actList : actList?.data || [];
-  return raw.map((a) => ({ id: a._id || a.id, name: a.name }));
-}, [actList]);
-
-  const addRow = () => setRows((r) => [...r, newRow()]);
-  const removeRow = (_id) => setRows((r) => r.filter((x) => x._id !== _id));
-
-  const handleActivityChange = async (rowId, value) => {
-    // free-solo: if string, create activity
-    if (typeof value === "string") {
-      const name = value.trim();
-      if (!name) return;
-      try {
-        const res = await createActivity({
-          name,
-          description: name,
-        }).unwrap();
-        const newId = res?._id || res?.id;
-        setRows((prev) =>
-          prev?.map((r) =>
-            r._id === rowId
-              ? { ...r, master_activity_id: newId, activity_name: name }
-              : r
-          )
-        );
-      } catch (e) {
-        console.error("createActivity failed", e);
-      }
-      return;
-    }
-    if (value && value.id) {
-      setRows((prev) =>
-        prev?.map((r) =>
-          r._id === rowId
-            ? { ...r, master_activity_id: value.id, activity_name: value.name }
-            : r
-        )
-      );
-    } else {
-      setRows((prev) =>
-        prev?.map((r) =>
-          r._id === rowId ? { ...r, master_activity_id: "", activity_name: "" } : r
-        )
-      );
-    }
-  };
-
-  const handleChange = (rowId, field, val) => {
-    setRows((prev) =>
-      prev?.map((r) => {
-        if (r._id !== rowId) return r;
-        let next = { ...r, [field]: val };
-
-        if (field === "start" || field === "duration") {
-          if (next.start && Number(next.duration) > 0) {
-            next.end = addDays(next.start, next.duration);
-          } else next.end = "";
-        }
-        if (field === "end" && next.start && next.end) {
-          next.duration = diffDaysInclusive(next.start, next.end) || 1;
-        }
-        return next;
-      })
-    );
-  };
-
-  const canSubmit =
-    rows.length > 0 &&
-    rows.every(
-      (r) => r.master_activity_id && r.start && r.end && Number(r.duration) > 0
-    );
-
-  const submitAll = async () => {
-    const payloads = rows?.map((r) => ({
-      project_id: projectId,
-      master_activity_id: r.master_activity_id,
-      planned_start: r.start,
-      planned_finish: r.end,
-      duration: Number(r.duration) || 1,
-      predecessors: [], // extend later if you add predecessor editor
-      successors: [],
-    }));
-
-    try {
-      await Promise.all(payloads?.map((p) => createProjectActivity(p).unwrap()));
-      setRows([]);
-      await refetchProjActs();
-    } catch (e) {
-      console.error("createProjectActivity failed", e);
-    }
-  };
-
-  // ---- GANTT: data from API -----------------------------------------------
-const projectActs = useMemo(() => {
-  const raw = projectActsResp?.data ?? projectActsResp ?? [];
-  return Array.isArray(raw) ? raw : [];
-}, [projectActsResp]);
-
-  const ganttData = useMemo(() => {
-    // build tasks
-    const tasksArr = projectActs?.map((pa) => ({
-      id: pa._id,
-      text:
-        pa.master_activity_id?.name ||
-        pa.master_activity_id?.activity_name ||
-        "Activity",
-      start_date: toISO(pa.planned_start),
-      duration: pa.duration || diffDaysInclusive(pa.planned_start, pa.planned_finish) || 1,
-      progress: (pa.percent_complete ?? 0) / 100,
+const tasks = {
+  data: [
+    {
+      id: 1,
+      text: "Testing",
+      start_date: "01-09-2025",
+      duration: 33,
+      progress: 0.6,
       open: true,
-    }));
+    },
+    {
+      id: 2,
+      text: "Testing1",
+      start_date: "25-09-2025",
+      duration: 2,
+      parent: 1,
+      progress: 0.4,
+    },
+    {
+      id: 3,
+      text: "Testing2",
+      start_date: "30-09-2025",
+      duration: 1,
+      parent: 1,
+      progress: 0.8,
+    },
+    {
+      id: 4,
+      text: "Testing3",
+      start_date: "29-09-2025",
+      duration: 1,
+      parent: 1,
+      progress: 0.8,
+    },
+    {
+      id: 5,
+      text: "Testing4",
+      start_date: "29-09-2025",
+      duration: 1,
+      parent: 1,
+      progress: 0.8,
+    },
+    {
+      id: 6,
+      text: "Testing5",
+      start_date: "29-09-2025",
+      duration: 1,
+      parent: 1,
+      progress: 0.8,
+    },
+    {
+      id: 7,
+      text: "Testing6",
+      start_date: "29-09-2025",
+      duration: 1,
+      parent: 1,
+      progress: 0.8,
+    },
+  ],
+  links: [{ id: 1, source: 2, target: 3, type: "0", lag: 2 }],
+};
 
-    // map master_activity_id -> project activity id (to build links)
-    const byMaster = new Map(
-      projectActs.map((pa) => [
-        String(pa.master_activity_id?._id || pa.master_activity_id),
-        pa._id,
-      ])
-    );
-
-    let lid = 1;
-    const linksArr = [];
-    projectActs.forEach((pa) => {
-      (pa.predecessors || []).forEach((pred) => {
-        const srcId = byMaster.get(String(pred.activity_id));
-        if (srcId) {
-          linksArr.push({
-            id: lid++,
-            source: srcId,
-            target: pa._id,
-            type: labelToType[pred.type] ?? "0",
-            lag: pred.lag || 0,
-          });
-        }
-      });
-    });
-
-    return { data: tasksArr, links: linksArr };
-  }, [projectActs]);
-
-  // ---- GANTT: init/config --------------------------------------------------
-  const fmtISO = gantt.date.date_to_str("%Y-%m-%d");
-  const parseInternal = (d) =>
-    d instanceof Date ? d : gantt.date.parseDate(d, gantt.config.date_format);
-
-  const startDateTemplate = (task) => fmtISO(parseInternal(task.start_date));
-  const endDateTemplate = (task) => {
-    const s = parseInternal(task.start_date);
-    if (!s || !task.duration) return "";
-    const e = gantt.calculateEndDate({ start_date: s, duration: task.duration, task });
-    return fmtISO(e);
-  };
+function RemainingDaysChip({ project }) {
+  const [remainingTime, setRemainingTime] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+  });
 
   useEffect(() => {
-    // Use ISO for server data interchange
-    gantt.config.date_format = "%Y-%m-%d";
+    if (!project) return;
+
+    const bd = new Date(project.bd_commitment_date).getTime();
+    const comp = new Date(project.completion_date).getTime();
+    const projComp = new Date(project.project_completion_date).getTime();
+    const end = Math.min(bd, comp, projComp);
+
+    const interval = setInterval(() => {
+      const now = new Date().getTime();
+      const diff = end - now;
+
+      if (diff <= 0) {
+        setRemainingTime({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+        clearInterval(interval);
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor(
+        (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+      );
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      setRemainingTime({ days, hours, minutes, seconds });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [project]);
+
+  return (
+    <Chip
+      color="danger"
+      size="sm"
+      variant="solid"
+      sx={{
+        fontWeight: 700,
+        background: "#d32f2f",
+        color: "#fff",
+        fontSize: 16,
+      }}
+    >
+      {remainingTime.days}d {remainingTime.hours}h {remainingTime.minutes}m{" "}
+      {remainingTime.seconds}s
+    </Chip>
+  );
+}
+
+function fmtDMY(date) {
+  if (!date) return "";
+  const d = new Date(date);
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  const currentYear = new Date().getFullYear();
+  // Only show year if not current year
+  return year === currentYear ? `${day}-${month}` : `${day}-${month}-${year}`;
+}
+
+function parseInternal(dateStr) {
+  if (!dateStr) return null;
+  if (dateStr instanceof Date) return dateStr;
+  const [day, month, year] = dateStr.split("-");
+  return new Date(year, month - 1, day);
+}
+
+const endDateTemplate = (task) => {
+  const start = parseInternal(task.start_date);
+  if (!start || !task.duration) return "";
+  const end = gantt.calculateEndDate({
+    start_date: start,
+    duration: task.duration,
+    task,
+  });
+  return fmtDMY(end);
+};
+
+const typeMap = { 0: "FS", 1: "SS", 2: "FF", 3: "SF" };
+const predecessorTemplate = (task) => {
+  const incoming = gantt
+    .getLinks()
+    .filter((l) => String(l.target) === String(task.id));
+  if (!incoming.length) return "";
+  return incoming
+    .map((l) => {
+      const label = typeMap[String(l.type)] ?? "FS";
+      const lag = Number(l.lag || 0);
+      const lagStr = lag === 0 ? "" : lag > 0 ? `+${lag}` : `${lag}`;
+      return `${l.source}${label}${lagStr}`;
+    })
+    .join(", ");
+};
+
+const View_Project_Management = ({ viewModeParam = "week" }) => {
+  const ganttContainer = useRef(null);
+  const [viewMode, setViewMode] = useState(viewModeParam);
+  const [searchParams] = useSearchParams();
+
+  const projectId = searchParams.get("project_id");
+  const {
+    data: getProjectActivityByProjectId,
+    isLoading,
+    error,
+  } = useGetProjectActivityByProjectIdQuery(projectId);
+
+  const projectActiviy = getProjectActivityByProjectId?.projectactivity;
+
+  useEffect(() => {
+    setViewMode(viewModeParam);
+  }, [viewModeParam]);
+
+  useEffect(() => {
+    gantt.config.date_format = "%d-%m-%Y";
     gantt.locale.date.day_short = ["S", "M", "T", "W", "T", "F", "S"];
 
     gantt.config.readonly = false;
@@ -282,50 +205,88 @@ const projectActs = useMemo(() => {
     gantt.config.limit_view = false;
     gantt.config.fit_tasks = false;
 
-    // Grid order: Task name | Lag | Duration | Start | End
+    // Set timeline to 2 years before and after today
+    const today = new Date();
+    const start = new Date(
+      today.getFullYear() - 2,
+      today.getMonth(),
+      today.getDate()
+    );
+    const end = new Date(
+      today.getFullYear() + 2,
+      today.getMonth(),
+      today.getDate()
+    );
+    gantt.config.start_date = start;
+    gantt.config.end_date = end;
+
     gantt.config.columns = [
-      { name: "text", label: "Task name", tree: true, width: 200, resize: true,
-        editor: { type: "text", map_to: "text" } },
-      { name: "lag", label: "Lag", width: 140, align: "left", resize: true,
-        template: (t) => predecessorsToString(t.id),
-        editor: { type: "text", map_to: "lag" } }, // local-only; parses to links below
-      { name: "duration", label: "Duration", width: 90, align: "left", resize: true,
-        editor: { type: "number", map_to: "duration" } },
-      { name: "start", label: "Start", width: 120, align: "left", resize: true,
-        template: startDateTemplate, editor: { type: "date", map_to: "start_date" } },
-      { name: "end", label: "End", width: 120, align: "left", resize: true,
-        template: endDateTemplate },
+      {
+        name: "text",
+        label: "ACTIVITY",
+        tree: true,
+        width: 220,
+        resize: true,
+        editor: { type: "text", map_to: "text" },
+      },
+      {
+        name: "duration",
+        label: "Duration",
+        width: 90,
+        align: "left",
+        resize: true,
+        editor: { type: "number", map_to: "duration" },
+      },
+      {
+        name: "start_date",
+        label: "Start",
+        width: 110,
+        align: "left",
+        resize: true,
+        template: (t) => {
+          // Always format using dhtmlx-gantt's date_to_str utility
+          const dateToStrWithYear = gantt.date.date_to_str("%d-%m-%Y");
+          const dateToStrNoYear = gantt.date.date_to_str("%d-%m");
+          let d = t.start_date;
+          if (typeof d === "string") {
+            const parts = d.split("-");
+            d = new Date(parts[2], parts[1] - 1, parts[0]);
+          }
+          const currentYear = new Date().getFullYear();
+          return d.getFullYear() === currentYear ? dateToStrNoYear(d) : dateToStrWithYear(d);
+        },
+        editor: { type: "date", map_to: "start_date" },
+      },
+      {
+        name: "end",
+        label: "End",
+        width: 110,
+        align: "left",
+        resize: true,
+        template: endDateTemplate,
+      },
+      {
+        name: "pred",
+        label: "Predecessors",
+        width: 160,
+        align: "left",
+        resize: true,
+        template: predecessorTemplate,
+      },
     ];
 
     gantt.init(ganttContainer.current);
+    gantt.parse(tasks);
 
-    // keep grid synced after edits/drags
     const refresh = () => gantt.refreshData();
     const evts = [
       gantt.attachEvent("onAfterTaskUpdate", refresh),
       gantt.attachEvent("onAfterTaskAdd", refresh),
       gantt.attachEvent("onAfterTaskDrag", refresh),
-      gantt.attachEvent("onAfterLinkUpdate", refresh),
       gantt.attachEvent("onAfterLinkAdd", refresh),
+      gantt.attachEvent("onAfterLinkUpdate", refresh),
       gantt.attachEvent("onAfterLinkDelete", refresh),
     ];
-
-    // Parse "Lag" cell into links (local only)
-    gantt.attachEvent("onAfterEditStop", (state, editor) => {
-      if (editor && editor.columnName === "lag") {
-        const taskId = editor.task.id;
-        gantt
-          .getLinks()
-          .filter((l) => String(l.target) === String(taskId))
-          .forEach((l) => gantt.deleteLink(l.id));
-        parsePredString(state.value).forEach((p) => {
-          if (Number(p.source) !== Number(taskId)) {
-            gantt.addLink({ source: p.source, target: taskId, type: p.type, lag: p.lag || 0 });
-          }
-        });
-        gantt.refreshData();
-      }
-    });
 
     return () => {
       evts.forEach((id) => gantt.detachEvent(id));
@@ -333,47 +294,55 @@ const projectActs = useMemo(() => {
     };
   }, []);
 
-  // load/refresh gantt when server data changes
   useEffect(() => {
-    gantt.clearAll();
-    gantt.parse(ganttData);
-  }, [ganttData]);
+    setGanttScale(viewMode);
+    gantt.render();
+  }, [viewMode]);
 
-  // scale changes from parent filter
-  useEffect(() => setViewMode(viewModeParam), [viewModeParam]);
-
-  useEffect(() => {
-    if (viewMode === "day") {
+  const setGanttScale = (mode) => {
+    const currentYear = new Date().getFullYear();
+    if (mode === "day") {
       gantt.config.scale_unit = "day";
-      gantt.config.date_scale = "%d %M %Y";
+      const dateToStrWithYear = gantt.date.date_to_str("%d %M %Y");
+      const dateToStrNoYear = gantt.date.date_to_str("%d %M");
+      gantt.config.date_scale = function(date) {
+        let d = date;
+        if (!(d instanceof Date)) d = new Date(d);
+        return d.getFullYear() === currentYear
+          ? dateToStrNoYear(d)
+          : dateToStrWithYear(d);
+      };
       gantt.config.subscales = [{ unit: "day", step: 1, date: "%D" }];
-    } else if (viewMode === "week") {
+    } else if (mode === "week") {
       gantt.config.scale_unit = "week";
-      gantt.config.date_scale = "%d %M";
+      const dateToStrWithYear = gantt.date.date_to_str("%d %M %Y");
+      const dateToStrNoYear = gantt.date.date_to_str("%d %M");
+      gantt.config.date_scale = function(date) {
+        let d = date;
+        if (!(d instanceof Date)) d = new Date(d);
+        return d.getFullYear() === currentYear
+          ? dateToStrNoYear(d)
+          : dateToStrWithYear(d);
+      };
       gantt.config.subscales = [{ unit: "day", step: 1, date: "%D" }];
-    } else if (viewMode === "month") {
+    } else if (mode === "month") {
       gantt.config.scale_unit = "month";
-      gantt.config.date_scale = "%F, %Y";
+      const dateToStrWithYear = gantt.date.date_to_str("%F %Y");
+      const dateToStrNoYear = gantt.date.date_to_str("%F");
+      gantt.config.date_scale = function(date) {
+        let d = date;
+        if (!(d instanceof Date)) d = new Date(d);
+        return d.getFullYear() === currentYear
+          ? dateToStrNoYear(d)
+          : dateToStrWithYear(d);
+      };
       gantt.config.subscales = [{ unit: "week", step: 1, date: "Week #%W" }];
-    } else {
+    } else if (mode === "year") {
       gantt.config.scale_unit = "year";
       gantt.config.date_scale = "%Y";
       gantt.config.subscales = [{ unit: "month", step: 1, date: "%M" }];
     }
-    gantt.render();
-  }, [viewMode]);
-
-  // ----- computed project window chips (from current sheet entries) ----------
-  const minStart = useMemo(() => {
-    const dates = rows.filter((r) => r.start).map((r) => +new Date(r.start));
-    if (!dates.length) return "—";
-    return toISO(new Date(Math.min(...dates)));
-  }, [rows]);
-  const maxEnd = useMemo(() => {
-    const dates = rows.filter((r) => r.end).map((r) => +new Date(r.end));
-    if (!dates.length) return "—";
-    return toISO(new Date(Math.max(...dates)));
-  }, [rows]);
+  };
 
   return (
     <Box
@@ -383,7 +352,6 @@ const projectActs = useMemo(() => {
         p: 0,
       }}
     >
-      {/* Header chips (unchanged) */}
       <Box
         sx={{
           display: "flex",
@@ -391,155 +359,104 @@ const projectActs = useMemo(() => {
           gap: 1.5,
           alignItems: "center",
           justifyContent: "space-between",
-          mb: 1,
+          mb: 0.5,
           mt: 1,
         }}
       >
-        <Sheet variant="outlined" sx={{ display: "flex", alignItems: "center", gap: 2, borderRadius: "lg", px: 1.5, py: 1 }}>
+        <Sheet
+          variant="outlined"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            borderRadius: "lg",
+            px: 1.5,
+            py: 1,
+          }}
+        >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
             <DescriptionOutlinedIcon fontSize="small" color="primary" />
             <Typography level="body-sm" sx={{ color: "text.secondary" }}>
               Project Code:
             </Typography>
-            <Chip color="primary" size="sm" variant="solid" sx={{ fontWeight: 700 }}>
-              {/* put your code here */}
+            <Chip
+              color="primary"
+              size="sm"
+              variant="solid"
+              sx={{ fontWeight: 700 }}
+            >
+              {projectActiviy?.project_id?.code}
             </Chip>
           </Box>
         </Sheet>
-
-        <Sheet variant="outlined" sx={{ display: "flex", alignItems: "center", gap: 2, borderRadius: "lg", px: 1, py: 1 }}>
+        <Sheet
+          variant="outlined"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            borderRadius: "lg",
+            px: 1,
+            py: 1,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+            <Timelapse fontSize="small" color="primary" />
+            <Typography level="body-sm" sx={{ color: "text.secondary" }}>
+              Remaining:
+            </Typography>
+            <RemainingDaysChip
+              project={{
+                bd_commitment_date: "2025-09-29T05:42:23.508Z",
+                completion_date: "2025-09-28T05:42:23.508Z",
+                project_completion_date: "2025-09-27T05:42:23.508Z",
+              }}
+            />
+          </Box>
+        </Sheet>
+        <Sheet
+          variant="outlined"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            borderRadius: "lg",
+            px: 1,
+            py: 1,
+          }}
+        >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
             <EventOutlinedIcon fontSize="small" color="success" />
-            <Typography level="body-sm" sx={{ color: "text.secondary" }}>Start Date:</Typography>
-            <Chip color="success" size="sm" variant="soft" sx={{ fontWeight: 600 }}>
-              {minStart}
-            </Chip>
+            <Typography level="body-sm" sx={{ color: "text.secondary" }}>
+              Start Date:
+            </Typography>
+            <Chip
+              color="success"
+              size="sm"
+              variant="soft"
+              sx={{ fontWeight: 600 }}
+            ></Chip>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
             <EventOutlinedIcon fontSize="small" color="danger" />
-            <Typography level="body-sm" sx={{ color: "text.secondary" }}>End Date:</Typography>
-            <Chip color="danger" size="sm" variant="soft" sx={{ fontWeight: 600 }}>
-              {maxEnd}
-            </Chip>
+            <Typography level="body-sm" sx={{ color: "text.secondary" }}>
+              End Date:
+            </Typography>
+            <Chip
+              color="danger"
+              size="sm"
+              variant="soft"
+              sx={{ fontWeight: 600 }}
+            ></Chip>
           </Box>
         </Sheet>
       </Box>
-
-      {/* Sheet controls */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-        <Button size="sm" startDecorator={<AddIcon />} onClick={addRow} variant="soft">
-          Add row
-        </Button>
-        <Button size="sm" onClick={submitAll}>
-          Submit activities
-        </Button>
-      </Box>
-
-      {/* Empty state */}
-      {rows.length === 0 ? (
-        <Sheet variant="outlined" sx={{ borderRadius: "md", p: 3, textAlign: "center", color: "text.tertiary", mb: 1.5 }}>
-          No activities yet. Click <b>“Add row”</b> to start.
-        </Sheet>
-      ) : null}
-
-      {/* Editable sheet */}
-      {rows.length > 0 && (
-        <Sheet variant="outlined" sx={{ borderRadius: "md", overflow: "hidden", mb: 1.5 }}>
-          <Table stickyHeader hoverRow>
-            <thead>
-              <tr>
-                <th style={{ width: 320, padding: 8 }}>Activity</th>
-                <th style={{ width: 90, padding: 8 }}>Lag</th>
-                <th style={{ width: 110, padding: 8 }}>Duration</th>
-                <th style={{ width: 160, padding: 8 }}>Start date</th>
-                <th style={{ width: 160, padding: 8 }}>End date</th>
-                <th style={{ width: 60, padding: 8 }} />
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r._id}>
-                  <td style={{ padding: 8 }}>
-                    <Autocomplete
-                      placeholder="Select or type to create…"
-                      size="sm"
-                      clearOnBlur={false}
-                      freeSolo
-                      options={activities}
-                      getOptionLabel={(opt) =>
-                        typeof opt === "string" ? opt : opt?.name || ""
-                      }
-                      value={
-                        r.master_activity_id
-                          ? activities.find((a) => a.id === r.master_activity_id) || r.activity_name
-                          : r.activity_name
-                      }
-                      onChange={(_, value) => handleActivityChange(r._id, value)}
-                      loading={actsLoading || creatingAct}
-                    />
-                  </td>
-                  <td style={{ padding: 8 }}>
-                    <Input
-                      size="sm"
-                      type="number"
-                      value={r.lag}
-                      onChange={(e) =>
-                        handleChange(r._id, "lag", Number(e.target.value || 0))
-                      }
-                      slotProps={{ input: { min: 0 } }}
-                    />
-                  </td>
-                  <td style={{ padding: 8 }}>
-                    <Input
-                      size="sm"
-                      type="number"
-                      value={r.duration}
-                      onChange={(e) =>
-                        handleChange(r._id, "duration", Number(e.target.value || 0))
-                      }
-                      slotProps={{ input: { min: 1 } }}
-                    />
-                  </td>
-                  <td style={{ padding: 8 }}>
-                    <Input
-                      size="sm"
-                      type="date"
-                      value={r.start || ""}
-                      onChange={(e) => handleChange(r._id, "start", e.target.value)}
-                    />
-                  </td>
-                  <td style={{ padding: 8 }}>
-                    <Input
-                      size="sm"
-                      type="date"
-                      value={r.end || ""}
-                      onChange={(e) => handleChange(r._id, "end", e.target.value)}
-                    />
-                  </td>
-                  <td style={{ padding: 8, textAlign: "center" }}>
-                    <IconButton
-                      size="sm"
-                      variant="plain"
-                      color="danger"
-                      onClick={() => removeRow(r._id)}
-                    >
-                      <DeleteOutlineIcon />
-                    </IconButton>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        </Sheet>
-      )}
-
-      {/* Gantt */}
       <Box
         style={{
           position: "relative",
           width: "100%",
           minWidth: 600,
-          height: "70vh",
+          height: "80vh",
         }}
       >
         <Box
