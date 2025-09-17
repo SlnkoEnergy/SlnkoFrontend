@@ -78,6 +78,134 @@ function RemainingDaysChip({ project }) {
     seconds: 0,
   });
 
+  const buildPayloadFromTask = async (task) => {
+    const currentPa = paById.get(String(task.id)); // undefined for brand-new temp rows
+
+    const name = String(task.text || "Activity").trim() || "Activity";
+    const masterId = await ensureMasterActivity(name, currentPa);
+    if (!masterId) return null;
+
+    const startISO = toISO(task.start_date);
+    const duration = Number(task.duration || 1);
+    const endISO = endFromStartAndDuration(startISO, duration);
+
+    // current predecessors in Gantt (source is PA id; backend expects source MASTER id)
+    const links = gantt.getLinks().filter((l) => String(l.target) === String(task.id));
+    const predecessors = links
+      .map((l) => {
+        const sourcePa = paById.get(String(l.source));
+        const sourceMaster =
+          sourcePa?.master_activity_id?._id || sourcePa?.master_activity_id || null;
+        return {
+          type: typeToLabel[String(l.type)] || "FS",
+          lag: Number(l.lag || 0),
+          activity_id: sourceMaster,
+        };
+      })
+      .filter((p) => p.activity_id);
+
+    return {
+      project_id: projectId,
+      master_activity_id: masterId,
+      planned_start: startISO,
+      planned_finish: endISO,
+      duration,
+      predecessors,
+      successors: [],
+    };
+  };
+
+  // Compare task+payload vs server state to avoid useless PATCHes
+  const isSameAsServer = (task, payload) => {
+    const server = paById.get(String(task.id));
+    if (!server) return false; // temp/new task -> needs create
+
+    const serverName =
+      server.master_activity_id?.name ||
+      server.master_activity_id?.activity_name ||
+      server.activity_name ||
+      "Activity";
+
+    const serverStart = toISO(server.planned_start);
+    const serverEnd = toISO(server.planned_finish);
+    const serverDur = server.duration || diffDaysInclusive(serverStart, serverEnd) || 1;
+
+    const taskName = String(task.text || "Activity").trim() || "Activity";
+    if (norm(serverName) !== norm(taskName)) return false;
+
+    if (toISO(payload.planned_start) !== serverStart) return false;
+    if (Number(payload.duration) !== Number(serverDur)) return false;
+
+    const serverPreds = predsToComparable(
+      (server.predecessors || []).map((p) => ({
+        activity_id: p.activity_id,
+        type: p.type,
+        lag: Number(p.lag || 0),
+      }))
+    );
+
+    const payloadPreds = predsToComparable(payload.predecessors || []);
+    return serverPreds === payloadPreds;
+  };
+
+  // Schedule a debounced save for a given task (create only for tmp-* ids)
+  const scheduleSave = (task) => {
+    const id = String(task.id || "");
+    if (!id) return;
+
+    const isNew = idIsTemp(id);
+    pending.current[id] = { task, isNew };
+
+    clearTimeout(saveTimers.current[id]);
+    saveTimers.current[id] = setTimeout(async () => {
+      const pack = pending.current[id] || {};
+      const latestTask = pack.task;
+      const latestIsNew = pack.isNew;
+      if (!latestTask) return;
+
+      try {
+        const payload = await buildPayloadFromTask(latestTask);
+        if (!payload) return;
+
+        if (!latestIsNew && isSameAsServer(latestTask, payload)) {
+          // nothing changed; skip network call
+          return;
+        }
+
+        if (latestIsNew) {
+          // CREATE
+          const created = await createProjectActivity(payload).unwrap();
+          const newServerId = created?._id || created?.id;
+          if (newServerId && String(newServerId) !== String(latestTask.id)) {
+            const tempId = latestTask.id;
+            // Replace temp ID with server ID; fix links that reference it
+            gantt.changeTaskId(tempId, newServerId);
+            gantt.getLinks().forEach((l) => {
+              if (String(l.source) === String(tempId)) l.source = newServerId;
+              if (String(l.target) === String(tempId)) l.target = newServerId;
+            });
+          }
+        } else {
+          // UPDATE (must be a real server id)
+          await updateProjectActivity({
+            id: String(latestTask.id),
+            body: payload,
+          }).unwrap();
+        }
+
+        await refetchProjActs();
+      } catch (e) {
+        // Keep UI responsive, log for debugging
+        console.error("Auto-save failed:", e);
+      } finally {
+        delete pending.current[id];
+        clearTimeout(saveTimers.current[id]);
+        delete saveTimers.current[id];
+      }
+    }, 500);
+  };
+
+  // ============================ GANTT INIT ==================================
   useEffect(() => {
     if (!project) return;
 
@@ -289,7 +417,6 @@ const View_Project_Management = ({ viewModeParam = "week" }) => {
     ];
 
     return () => {
-      evts.forEach((id) => gantt.detachEvent(id));
       gantt.clearAll();
     };
   }, []);
