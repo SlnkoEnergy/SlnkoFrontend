@@ -997,6 +997,7 @@ const AddPurchaseOrder = ({
               : "";
         return {
           category: String(categoryId),
+          category_name: String(l.productCategoryName || ""),
           product_name: String(l.productName || ""),
           product_make: String(isValidMake(l.make) ? l.make : ""),
           description: String(l.briefDescription || ""),
