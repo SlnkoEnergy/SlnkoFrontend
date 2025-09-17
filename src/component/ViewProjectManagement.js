@@ -8,68 +8,23 @@ import { Timelapse } from "@mui/icons-material";
 import { useGetProjectActivityByProjectIdQuery } from "../redux/projectsSlice";
 import { useSearchParams } from "react-router-dom";
 
+// ---------------------------------------------------------------------------
+// Demo data (leave while wiring to API)
 const tasks = {
   data: [
-    {
-      id: 1,
-      text: "Testing",
-      start_date: "01-09-2025",
-      duration: 33,
-      progress: 0.6,
-      open: true,
-    },
-    {
-      id: 2,
-      text: "Testing1",
-      start_date: "25-09-2025",
-      duration: 2,
-      parent: 1,
-      progress: 0.4,
-    },
-    {
-      id: 3,
-      text: "Testing2",
-      start_date: "30-09-2025",
-      duration: 1,
-      parent: 1,
-      progress: 0.8,
-    },
-    {
-      id: 4,
-      text: "Testing3",
-      start_date: "29-09-2025",
-      duration: 1,
-      parent: 1,
-      progress: 0.8,
-    },
-    {
-      id: 5,
-      text: "Testing4",
-      start_date: "29-09-2025",
-      duration: 1,
-      parent: 1,
-      progress: 0.8,
-    },
-    {
-      id: 6,
-      text: "Testing5",
-      start_date: "29-09-2025",
-      duration: 1,
-      parent: 1,
-      progress: 0.8,
-    },
-    {
-      id: 7,
-      text: "Testing6",
-      start_date: "29-09-2025",
-      duration: 1,
-      parent: 1,
-      progress: 0.8,
-    },
+    { id: 1, text: "Testing",  start_date: "01-09-2025", duration: 33, progress: 0.6, open: true },
+    { id: 2, text: "Testing1", start_date: "25-09-2025", duration: 2,  parent: 1, progress: 0.4 },
+    { id: 3, text: "Testing2", start_date: "30-09-2025", duration: 1,  parent: 1, progress: 0.8 },
+    { id: 4, text: "Testing3", start_date: "29-09-2025", duration: 1,  parent: 1, progress: 0.8 },
+    { id: 5, text: "Testing4", start_date: "29-09-2025", duration: 1,  parent: 1, progress: 0.8 },
+    { id: 6, text: "Testing5", start_date: "29-09-2025", duration: 1,  parent: 1, progress: 0.8 },
+    { id: 7, text: "Testing6", start_date: "29-09-2025", duration: 1,  parent: 1, progress: 0.8 },
   ],
   links: [{ id: 1, source: 2, target: 3, type: "0", lag: 2 }],
 };
 
+// ---------------------------------------------------------------------------
+// Remaining timer — kept as-is
 function RemainingDaysChip({ project }) {
   const [remainingTime, setRemainingTime] = useState({
     days: 0,
@@ -78,134 +33,6 @@ function RemainingDaysChip({ project }) {
     seconds: 0,
   });
 
-  const buildPayloadFromTask = async (task) => {
-    const currentPa = paById.get(String(task.id)); // undefined for brand-new temp rows
-
-    const name = String(task.text || "Activity").trim() || "Activity";
-    const masterId = await ensureMasterActivity(name, currentPa);
-    if (!masterId) return null;
-
-    const startISO = toISO(task.start_date);
-    const duration = Number(task.duration || 1);
-    const endISO = endFromStartAndDuration(startISO, duration);
-
-    // current predecessors in Gantt (source is PA id; backend expects source MASTER id)
-    const links = gantt.getLinks().filter((l) => String(l.target) === String(task.id));
-    const predecessors = links
-      .map((l) => {
-        const sourcePa = paById.get(String(l.source));
-        const sourceMaster =
-          sourcePa?.master_activity_id?._id || sourcePa?.master_activity_id || null;
-        return {
-          type: typeToLabel[String(l.type)] || "FS",
-          lag: Number(l.lag || 0),
-          activity_id: sourceMaster,
-        };
-      })
-      .filter((p) => p.activity_id);
-
-    return {
-      project_id: projectId,
-      master_activity_id: masterId,
-      planned_start: startISO,
-      planned_finish: endISO,
-      duration,
-      predecessors,
-      successors: [],
-    };
-  };
-
-  // Compare task+payload vs server state to avoid useless PATCHes
-  const isSameAsServer = (task, payload) => {
-    const server = paById.get(String(task.id));
-    if (!server) return false; // temp/new task -> needs create
-
-    const serverName =
-      server.master_activity_id?.name ||
-      server.master_activity_id?.activity_name ||
-      server.activity_name ||
-      "Activity";
-
-    const serverStart = toISO(server.planned_start);
-    const serverEnd = toISO(server.planned_finish);
-    const serverDur = server.duration || diffDaysInclusive(serverStart, serverEnd) || 1;
-
-    const taskName = String(task.text || "Activity").trim() || "Activity";
-    if (norm(serverName) !== norm(taskName)) return false;
-
-    if (toISO(payload.planned_start) !== serverStart) return false;
-    if (Number(payload.duration) !== Number(serverDur)) return false;
-
-    const serverPreds = predsToComparable(
-      (server.predecessors || []).map((p) => ({
-        activity_id: p.activity_id,
-        type: p.type,
-        lag: Number(p.lag || 0),
-      }))
-    );
-
-    const payloadPreds = predsToComparable(payload.predecessors || []);
-    return serverPreds === payloadPreds;
-  };
-
-  // Schedule a debounced save for a given task (create only for tmp-* ids)
-  const scheduleSave = (task) => {
-    const id = String(task.id || "");
-    if (!id) return;
-
-    const isNew = idIsTemp(id);
-    pending.current[id] = { task, isNew };
-
-    clearTimeout(saveTimers.current[id]);
-    saveTimers.current[id] = setTimeout(async () => {
-      const pack = pending.current[id] || {};
-      const latestTask = pack.task;
-      const latestIsNew = pack.isNew;
-      if (!latestTask) return;
-
-      try {
-        const payload = await buildPayloadFromTask(latestTask);
-        if (!payload) return;
-
-        if (!latestIsNew && isSameAsServer(latestTask, payload)) {
-          // nothing changed; skip network call
-          return;
-        }
-
-        if (latestIsNew) {
-          // CREATE
-          const created = await createProjectActivity(payload).unwrap();
-          const newServerId = created?._id || created?.id;
-          if (newServerId && String(newServerId) !== String(latestTask.id)) {
-            const tempId = latestTask.id;
-            // Replace temp ID with server ID; fix links that reference it
-            gantt.changeTaskId(tempId, newServerId);
-            gantt.getLinks().forEach((l) => {
-              if (String(l.source) === String(tempId)) l.source = newServerId;
-              if (String(l.target) === String(tempId)) l.target = newServerId;
-            });
-          }
-        } else {
-          // UPDATE (must be a real server id)
-          await updateProjectActivity({
-            id: String(latestTask.id),
-            body: payload,
-          }).unwrap();
-        }
-
-        await refetchProjActs();
-      } catch (e) {
-        // Keep UI responsive, log for debugging
-        console.error("Auto-save failed:", e);
-      } finally {
-        delete pending.current[id];
-        clearTimeout(saveTimers.current[id]);
-        delete saveTimers.current[id];
-      }
-    }, 500);
-  };
-
-  // ============================ GANTT INIT ==================================
   useEffect(() => {
     if (!project) return;
 
@@ -255,6 +82,8 @@ function RemainingDaysChip({ project }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Date helpers + templates
 function fmtDMY(date) {
   if (!date) return "";
   const d = new Date(date);
@@ -300,6 +129,22 @@ const predecessorTemplate = (task) => {
     .join(", ");
 };
 
+// Utility: ensure we always have a Date object
+function safeDate(d) {
+  if (!d) return null;
+  if (d instanceof Date) return d;
+  const nd = new Date(d);
+  return Number.isNaN(nd.getTime()) ? null : nd;
+}
+
+// Pre-made formatters from Gantt (functions that accept Date, return string)
+const fmtFullDMY  = gantt.date.date_to_str("%d %M %Y");
+const fmtNoYearDM = gantt.date.date_to_str("%d %M");
+const fmtMonth    = gantt.date.date_to_str("%F");
+const fmtMonthY   = gantt.date.date_to_str("%F %Y");
+
+// ---------------------------------------------------------------------------
+
 const View_Project_Management = ({ viewModeParam = "week" }) => {
   const ganttContainer = useRef(null);
   const [viewMode, setViewMode] = useState(viewModeParam);
@@ -314,14 +159,16 @@ const View_Project_Management = ({ viewModeParam = "week" }) => {
 
   const projectActiviy = getProjectActivityByProjectId?.projectactivity;
 
-  useEffect(() => {
-    setViewMode(viewModeParam);
-  }, [viewModeParam]);
+  useEffect(() => setViewMode(viewModeParam), [viewModeParam]);
 
   useEffect(() => {
+    // Your data format (dd-mm-yyyy)
     gantt.config.date_format = "%d-%m-%Y";
+
+    // One-letter weekday names
     gantt.locale.date.day_short = ["S", "M", "T", "W", "T", "F", "S"];
 
+    // Behaviors
     gantt.config.readonly = false;
     gantt.config.scroll_on_click = true;
     gantt.config.autoscroll = true;
@@ -333,21 +180,20 @@ const View_Project_Management = ({ viewModeParam = "week" }) => {
     gantt.config.limit_view = false;
     gantt.config.fit_tasks = false;
 
-    // Set timeline to 2 years before and after today
+    // Timeline window: today ± 2 years
     const today = new Date();
-    const start = new Date(
+    gantt.config.start_date = new Date(
       today.getFullYear() - 2,
       today.getMonth(),
       today.getDate()
     );
-    const end = new Date(
+    gantt.config.end_date = new Date(
       today.getFullYear() + 2,
       today.getMonth(),
       today.getDate()
     );
-    gantt.config.start_date = start;
-    gantt.config.end_date = end;
 
+    // Grid columns: ACTIVITY | Duration | Start | End | Predecessors
     gantt.config.columns = [
       {
         name: "text",
@@ -372,16 +218,12 @@ const View_Project_Management = ({ viewModeParam = "week" }) => {
         align: "left",
         resize: true,
         template: (t) => {
-          // Always format using dhtmlx-gantt's date_to_str utility
-          const dateToStrWithYear = gantt.date.date_to_str("%d-%m-%Y");
-          const dateToStrNoYear = gantt.date.date_to_str("%d-%m");
-          let d = t.start_date;
-          if (typeof d === "string") {
-            const parts = d.split("-");
-            d = new Date(parts[2], parts[1] - 1, parts[0]);
-          }
-          const currentYear = new Date().getFullYear();
-          return d.getFullYear() === currentYear ? dateToStrNoYear(d) : dateToStrWithYear(d);
+          // Always format via Gantt's formatters
+          const d = parseInternal(t.start_date);
+          if (!d) return "";
+          const curY = new Date().getFullYear();
+          const fmt = d.getFullYear() === curY ? fmtNoYearDM : fmtFullDMY;
+          return fmt(d);
         },
         editor: { type: "date", map_to: "start_date" },
       },
@@ -417,59 +259,53 @@ const View_Project_Management = ({ viewModeParam = "week" }) => {
     ];
 
     return () => {
+      evts.forEach((id) => gantt.detachEvent(id));
       gantt.clearAll();
     };
   }, []);
 
   useEffect(() => {
-    setGanttScale(viewMode);
-    gantt.render();
-  }, [viewMode]);
-
-  const setGanttScale = (mode) => {
+    // IMPORTANT: Keep date_scale a STRING and customize labels via templates
     const currentYear = new Date().getFullYear();
-    if (mode === "day") {
+
+    // reset old template to avoid stale closures
+    gantt.templates.date_scale = null;
+
+    if (viewMode === "day") {
       gantt.config.scale_unit = "day";
-      const dateToStrWithYear = gantt.date.date_to_str("%d %M %Y");
-      const dateToStrNoYear = gantt.date.date_to_str("%d %M");
-      gantt.config.date_scale = function(date) {
-        let d = date;
-        if (!(d instanceof Date)) d = new Date(d);
-        return d.getFullYear() === currentYear
-          ? dateToStrNoYear(d)
-          : dateToStrWithYear(d);
+      gantt.config.date_scale = "%d %M %Y"; // string
+      gantt.templates.date_scale = (date) => {
+        const d = safeDate(date);
+        const fmt = d.getFullYear() === currentYear ? fmtNoYearDM : fmtFullDMY;
+        return fmt(d);
       };
       gantt.config.subscales = [{ unit: "day", step: 1, date: "%D" }];
-    } else if (mode === "week") {
+    } else if (viewMode === "week") {
       gantt.config.scale_unit = "week";
-      const dateToStrWithYear = gantt.date.date_to_str("%d %M %Y");
-      const dateToStrNoYear = gantt.date.date_to_str("%d %M");
-      gantt.config.date_scale = function(date) {
-        let d = date;
-        if (!(d instanceof Date)) d = new Date(d);
-        return d.getFullYear() === currentYear
-          ? dateToStrNoYear(d)
-          : dateToStrWithYear(d);
+      gantt.config.date_scale = "%d %M %Y"; // string
+      gantt.templates.date_scale = (date) => {
+        const d = safeDate(date);
+        const fmt = d.getFullYear() === currentYear ? fmtNoYearDM : fmtFullDMY;
+        return fmt(d);
       };
       gantt.config.subscales = [{ unit: "day", step: 1, date: "%D" }];
-    } else if (mode === "month") {
+    } else if (viewMode === "month") {
       gantt.config.scale_unit = "month";
-      const dateToStrWithYear = gantt.date.date_to_str("%F %Y");
-      const dateToStrNoYear = gantt.date.date_to_str("%F");
-      gantt.config.date_scale = function(date) {
-        let d = date;
-        if (!(d instanceof Date)) d = new Date(d);
-        return d.getFullYear() === currentYear
-          ? dateToStrNoYear(d)
-          : dateToStrWithYear(d);
+      gantt.config.date_scale = "%F %Y"; // string
+      gantt.templates.date_scale = (date) => {
+        const d = safeDate(date);
+        const fmt = d.getFullYear() === currentYear ? fmtMonth : fmtMonthY;
+        return fmt(d);
       };
       gantt.config.subscales = [{ unit: "week", step: 1, date: "Week #%W" }];
-    } else if (mode === "year") {
+    } else {
       gantt.config.scale_unit = "year";
-      gantt.config.date_scale = "%Y";
+      gantt.config.date_scale = "%Y"; // string
       gantt.config.subscales = [{ unit: "month", step: 1, date: "%M" }];
     }
-  };
+
+    gantt.render();
+  }, [viewMode]);
 
   return (
     <Box
@@ -479,6 +315,7 @@ const View_Project_Management = ({ viewModeParam = "week" }) => {
         p: 0,
       }}
     >
+      {/* Header chips */}
       <Box
         sx={{
           display: "flex",
@@ -516,6 +353,7 @@ const View_Project_Management = ({ viewModeParam = "week" }) => {
             </Chip>
           </Box>
         </Sheet>
+
         <Sheet
           variant="outlined"
           sx={{
@@ -541,6 +379,7 @@ const View_Project_Management = ({ viewModeParam = "week" }) => {
             />
           </Box>
         </Sheet>
+
         <Sheet
           variant="outlined"
           sx={{
@@ -562,7 +401,7 @@ const View_Project_Management = ({ viewModeParam = "week" }) => {
               size="sm"
               variant="soft"
               sx={{ fontWeight: 600 }}
-            ></Chip>
+            />
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
             <EventOutlinedIcon fontSize="small" color="danger" />
@@ -574,10 +413,12 @@ const View_Project_Management = ({ viewModeParam = "week" }) => {
               size="sm"
               variant="soft"
               sx={{ fontWeight: 600 }}
-            ></Chip>
+            />
           </Box>
         </Sheet>
       </Box>
+
+      {/* Gantt */}
       <Box
         style={{
           position: "relative",
