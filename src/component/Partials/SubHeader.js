@@ -12,6 +12,7 @@ export default function SubHeader({
   onBack,
   sticky = true,
   sidebarWidth = { lg: 30, xl: 30 },
+  rightSlot = null,
   children,
 }) {
   const navigate = useNavigate();
@@ -86,7 +87,7 @@ export default function SubHeader({
             "& > *": { flexShrink: 0 },
           }}
         >
-          {children}
+          {rightSlot || children || null}
         </Box>
       </Box>
     </Sheet>

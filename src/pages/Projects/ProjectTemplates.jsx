@@ -7,6 +7,7 @@ import SubHeader from "../../component/Partials/SubHeader";
 import MainHeader from "../../component/Partials/MainHeader";
 import { useNavigate } from "react-router-dom";
 import Dash_eng from "../../component/EngDashboard";
+import TemplateTable from "../../component/ProjectTemplate";
 
 function ProjectTemplate() {
   const navigate = useNavigate();
@@ -40,7 +41,7 @@ function ProjectTemplate() {
             px: "24px",
           }}
         >
-          {/* <Dash_eng /> */}
+          <TemplateTable />
         </Box>
       </Box>
     </CssVarsProvider>

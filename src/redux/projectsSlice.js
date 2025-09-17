@@ -93,6 +93,16 @@ export const projectsApi = createApi({
       query: (newActivity, id) => `projectactivity/projectactivity/${id}`,
       providesTags: ["Project"] 
     }),
+
+   pushActivityToProject: builder.mutation({
+  // args: { projectId, name, description, type }
+  query: ({ projectId, name, description, type }) => ({
+    url: `projectactivity/pushactivity/${encodeURIComponent(projectId)}`, // ✅ correct path
+    method: "PUT",
+    body: { name, description, type },
+  }),
+  invalidatesTags: ["Project"],
+}),
   }),
 });
 
@@ -113,5 +123,6 @@ export const {
   //Project Activity
   useCreateProjectActivityMutation,
   useGetAllProjectActivityQuery,
-  useUpdateProjectActivityMutation
+  useUpdateProjectActivityMutation,
+   usePushActivityToProjectMutation,
 } = projectsApi;
