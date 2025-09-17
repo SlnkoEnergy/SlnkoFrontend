@@ -30,11 +30,11 @@ export const camsApi = createApi({
     getHandOverById: builder.query({
       query: ({ leadId, p_id, id }) => {
         if (p_id) {
-          return `get-handoversheet?p_id=${p_id}`;
+          return `handover/get-handoversheet?p_id=${p_id}`;
         } else if (leadId) {
-          return `get-handoversheet?leadId=${leadId}`;
+          return `handover/get-handoversheet?leadId=${leadId}`;
         } else if (id) {
-          return `get-handoversheet?id=${id}`;
+          return `handover/get-handoversheet?id=${id}`;
         } else {
           console.warn("getHandOver called with no valid identifier.");
           return { url: "", method: "GET" };
@@ -45,7 +45,7 @@ export const camsApi = createApi({
 
     addHandOver: builder.mutation({
       query: (newHandOver) => ({
-        url: "create-hand-over-sheet",
+        url: "handover/create-hand-over-sheet",
         method: "POST",
         body: newHandOver,
       }),
@@ -54,7 +54,7 @@ export const camsApi = createApi({
 
     updateHandOver: builder.mutation({
       query: ({ _id, ...data }) => ({
-        url: `edit-hand-over-sheet/${_id}`,
+        url: `handover/edit-hand-over-sheet/${_id}`,
         method: "PUT",
         body: data,
       }),
@@ -63,7 +63,7 @@ export const camsApi = createApi({
 
     updateStatusHandOver: builder.mutation({
       query: ({ _id, ...data }) => ({
-        url: `update-status/${_id}`,
+        url: `handover/update-status/${_id}`,
         method: "PUT",
         body: data,
       }),
@@ -72,7 +72,7 @@ export const camsApi = createApi({
 
     updateUnlockHandoversheet: builder.mutation({
       query: ({ p_id, emp_id }) => ({
-        url: "update-status-of-handoversheet",
+        url: "handover/update-status-of-handoversheet",
         method: "PUT",
         body: { p_id, emp_id },
       }),

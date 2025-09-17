@@ -209,7 +209,8 @@ export default function VendorBillForm({
     const poVal = toNum(form.po_value);
     const billed = toNum(form.total_billed);
     const thisBill = toNum(totals.total);
-    return poVal - (billed + thisBill);
+    const result = Number((poVal - (billed + thisBill)).toFixed(2));
+    return Object.is(result, -0) ? 0 : result;
   }, [form.po_value, form.total_billed, totals.total]);
 
   const overBilling = remainingAmount < 0;
@@ -294,11 +295,11 @@ export default function VendorBillForm({
     } else if (itemShape.kind === "amount_change") {
       const changes = Array.isArray(itemShape.changes)
         ? itemShape.changes.map((c, idx) => ({
-            label: c.label || c.path || `field_${idx + 1}`,
-            path: c.path,
-            from: c.from,
-            to: c.to,
-          }))
+          label: c.label || c.path || `field_${idx + 1}`,
+          path: c.path,
+          from: c.from,
+          to: c.to,
+        }))
         : [];
       normalized = {
         ...base,

@@ -165,6 +165,8 @@ function Dash_eng() {
     }
   };
 
+  
+
   return (
     <Box
       sx={{
@@ -429,7 +431,7 @@ function Dash_eng() {
                     <>
                       <IconButton
                         onClick={() =>
-                          navigate(`/view_pm?project_id=${project._id}`)
+                          navigate(`/view_pm?project_id=${project.project_id}`)
                         }
                         size="sm"
                         variant="outlined"
