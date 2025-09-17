@@ -41,13 +41,11 @@ import {
   useLazyGetVendorsNameSearchQuery,
 } from "../../redux/vendorSlice";
 import { useGetLogisticsQuery } from "../../redux/purchasesSlice";
-import { Check, DeleteIcon, Plus } from "lucide-react";
+import { Check } from "lucide-react";
 import {
-  useGetAllMaterialsPOQuery,
   useGetProductsQuery,
   useLazyGetAllMaterialsPOQuery,
   useLazyGetAllProdcutPOQuery,
-  useLazyGetCategoriesNameSearchQuery,
   useLazyGetProductsQuery,
   useGetAllCategoriesQuery,
 } from "../../redux/productsSlice";
@@ -63,10 +61,9 @@ import { Select } from "@mui/material";
 
 const VENDOR_LIMIT = 7;
 const SEARCH_MORE_VENDOR = "__SEARCH_MORE_VENDOR__";
-const SEARCH_MORE_MAKE = "__SEARCH_MORE_MAKE__";
 const SEARCH_MORE_PRODUCT = "__SEARCH_MORE_PRODUCT__";
-const CREATE_PRODUCT_INLINE = "__CREATE_PRODUCT_INLINE__";
 const SEARCH_MORE_CATEGORY = "__SEARCH_MORE_CATEGORY__";
+const CREATE_PRODUCT = "__CREATE_PRODUCT__"
 
 /* ---------- DARK DISABLED HELPERS ---------- */
 const DISABLED_SX = {
@@ -87,14 +84,6 @@ const disabledTextareaProps = {
   disabled: true,
   sx: DISABLED_SX,
   slotProps: { textarea: { sx: { color: "text.primary" } } },
-};
-
-const disabledSelectProps = {
-  disabled: true,
-  sx: DISABLED_SX,
-  slotProps: {
-    button: { sx: { color: "text.primary", bgcolor: "neutral.softBg" } },
-  },
 };
 
 // react-select dark-disabled styles (uses Joy palette CSS vars)
@@ -140,6 +129,7 @@ const makeEmptyLine = () => ({
   billed: 0,
   unitPrice: 0,
   taxPercent: 0,
+  isShow: false,
 });
 
 const getProdField = (row, fieldName) => {
@@ -208,29 +198,20 @@ const AddPurchaseOrder = ({
   const viewMode = effectiveMode === "view";
   const [openRefuse, setOpenRefuse] = useState(false);
   const [remarks, setRemarks] = useState("");
-
+  const isRowLocked = (l) => !!l.isShow;
   /* Vendors */
   const [vendorSearch, setVendorSearch] = useState("");
   const [vendorPage, setVendorPage] = useState(1);
   const [vendorModalOpen, setVendorModalOpen] = useState(false);
   const [billModalOpen, setBillModalOpen] = useState(false);
 
-  const { data: categoryResponse, isLoading } = useGetAllCategoriesQuery({
+  const { data: categoryResponse } = useGetAllCategoriesQuery({
     page: 1,
     pageSize: 7,
     status: "Active",
   });
 
   const categoryData = categoryResponse?.data || [];
-
-  const { data: productResponse } = useGetProductsQuery({
-    page: 1,
-    limit: 7,
-    search: "",
-    category: "", 
-  });
-
-  const productData = productResponse?.data || [];
 
   const [triggerCategorySearch] = useLazyGetAllMaterialsPOQuery();
   const fetchCategoriesPageCat = async ({
@@ -252,23 +233,12 @@ const AddPurchaseOrder = ({
   };
 
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
-  const [categoryCode, setCategoryCode] = useState("");
-  const [categoryName, setCategoryName] = useState("");
-
   const categoryColumns = [
     { key: "name", label: "Name", width: 240 },
     { key: "description", label: "Description", width: 420 },
   ];
 
-  const onPickCategory = (row) => {
-    if (!row || !activeLineId) return;
-    updateLine(activeLineId, "productCategoryId", row.id || "");
-    updateLine(activeLineId, "productCategoryName", row.name || "");
-    setCategoryModalOpen(false);
-  };
-
   const [triggerProductSearch] = useLazyGetAllProdcutPOQuery();
-
   const fetchProductPageCat = async ({
     search = "",
     page = 1,
@@ -276,7 +246,13 @@ const AddPurchaseOrder = ({
     categoryId = "",
   }) => {
     const res = await triggerProductSearch(
-      { search, page, limit: pageSize, pr: "true" },
+      {
+        search,
+        page,
+        limit: pageSize,
+        pr: "true",
+        categoryId: String(categoryId || ""),
+      },
       true
     );
     const d = res?.data;
@@ -289,10 +265,6 @@ const AddPurchaseOrder = ({
   };
 
   const [productModalOpen, setProductModalOpen] = useState(false);
-  const [briefDesc, setBriefDesc] = useState("");
-  const [cost, setCost] = useState(0);
-  const [gst, setGst] = useState(0);
-  const [make, setMake] = useState("");
 
   const productColumns = [
     { key: "sku_code", label: "Code" },
@@ -303,59 +275,59 @@ const AddPurchaseOrder = ({
     },
   ];
 
+  const [activeLineId, setActiveLineId] = useState(null);
+
+  const onPickCategory = (row) => {
+    if (!row || !activeLineId) return;
+
+    const id = row._id ?? row.id ?? row.value ?? "";
+    const name = row.name ?? row.label ?? "";
+
+    updateLine(activeLineId, "productCategoryId", String(id));
+    updateLine(activeLineId, "productCategoryName", name);
+    setCategoryModalOpen(false);
+  };
+
   const onPickProduct = (row) => {
     const getInputValueByName = (row, fieldName, defaultValue = "") => {
-      // console.log(fieldName)
-      const field = row.data.find((d) => d.name === fieldName);
-      console.log(field);
+      const field = row?.data?.find((d) => d?.name === fieldName);
       return field?.values?.[0]?.input_values ?? defaultValue;
     };
 
     if (!row || !activeLineId) return;
-    updateLine(activeLineId, "productId", row.id || "");
-    updateLine(
-      activeLineId,
-      "productName",
-      row?.data?.[0]?.values?.[0]?.input_values || ""
-    );
+
+    const id = row._id ?? row.id ?? row.value ?? "";
+    const name =
+      getInputValueByName(row, "Product Name", row.name || "") ||
+      getInputValueByName(row, "Name", row.name || "");
+
+    updateLine(activeLineId, "productId", String(id));
+    updateLine(activeLineId, "productName", name);
     updateLine(
       activeLineId,
       "briefDescription",
       getInputValueByName(row, "Description", "N/A")
     );
-    updateLine(activeLineId, "productCategoryId", row.category);
-    updateLine(activeLineId, "unitPrice", getInputValueByName(row, "Cost", 0));
-    updateLine(activeLineId, "taxPercent", getInputValueByName(row, "GST", 0));
-    updateLine(activeLineId, "make", getInputValueByName(row, "Make", "N/A"));
+    updateLine(
+      activeLineId,
+      "unitPrice",
+      Number(getInputValueByName(row, "Cost", 0))
+    );
+    updateLine(
+      activeLineId,
+      "taxPercent",
+      Number(getInputValueByName(row, "GST", 0))
+    );
+    updateLine(
+      activeLineId,
+      "make",
+      getInputValueByName(row, "Make", "N/A")
+    );
     updateLine(activeLineId, "uom", getInputValueByName(row, "UoM", "N/A"));
 
+    // ⛔️ No productCategoryId / productCategoryName updates
     setProductModalOpen(false);
   };
-
-  // const [triggerMakeSearch] = useLazyGetAllMaterialsPOQuery();
-  // const fetchMakePageCat = async ({ search = "", page = 1, pageSize = 7 }) => {
-  //   const res = await triggerMakeSearch(
-  //     { search, page, limit: pageSize, pr: "true" },
-  //     true
-  //   );
-  //   const d = res?.data;
-  //   return {
-  //     rows: d?.data || [],
-  //     total: d?.pagination?.total || 0,
-  //     page: d?.pagination?.page || page,
-  //     pageSize: d?.pagination?.pageSize || pageSize,
-  //   };
-  // };
-
-  // const [makeModalOpen, setMakeModalOpen] = useState("");
-  // const [makeCode, setMakeCode] = useState("");
-  // const makeColumns = [{ key: "name", label: "Name" }];
-
-  // const onPickMake = (row) => {
-  //   if (!row || !activeLineId) return;
-  //   updateLine(activeLineId, "MakeName", row.name || "");
-  //   setMakeModalOpen(false);
-  // };
 
   const { data: vendorsResp, isFetching: vendorsLoading } =
     useGetVendorsNameSearchQuery({
@@ -436,10 +408,10 @@ const AddPurchaseOrder = ({
   const [lines, setLines] = useState(() =>
     Array.isArray(initialLines) && initialLines.length
       ? initialLines.map((l) => ({
-          ...makeEmptyLine(),
-          ...l,
-          id: crypto.randomUUID(),
-        }))
+        ...makeEmptyLine(),
+        ...l,
+        id: crypto.randomUUID(),
+      }))
       : [makeEmptyLine()]
   );
 
@@ -452,8 +424,6 @@ const AddPurchaseOrder = ({
     setLines((prev) =>
       prev.map((l) => (l.id === id ? { ...l, [field]: value } : l))
     );
-
-  const AddProductRow = () => {};
 
   /* -------- totals -------- */
   const amounts = useMemo(() => {
@@ -502,26 +472,27 @@ const AddPurchaseOrder = ({
     const arr = Array.isArray(po?.items)
       ? po.items
       : Array.isArray(po?.item)
-      ? po.item
-      : [];
+        ? po.item
+        : [];
     return arr.length
       ? arr.map((it) => ({
-          ...makeEmptyLine(),
-          productCategoryId:
-            typeof it?.category === "object"
-              ? it?.category?._id ?? ""
-              : it?.category ?? "",
-          productCategoryName:
-            typeof it?.category === "object" ? it?.category?.name ?? "" : "",
-          productName: it?.product_name ?? "",
-          make: isValidMake(it?.product_make) ? it.product_make : "",
-          makeQ: isValidMake(it?.product_make) ? it.product_make : "",
-          briefDescription: it?.description ?? "",
-          uom: it?.uom ?? "",
-          quantity: Number(it?.quantity ?? 0),
-          unitPrice: Number(it?.cost ?? 0),
-          taxPercent: Number(it?.gst_percent ?? it?.gst ?? 0),
-        }))
+        ...makeEmptyLine(),
+        isShow: true,
+        productCategoryId:
+          typeof it?.category === "object"
+            ? it?.category?._id ?? ""
+            : it?.category ?? "",
+        productCategoryName:
+          typeof it?.category === "object" ? it?.category?.name ?? "" : "",
+        productName: it?.product_name ?? "",
+        make: isValidMake(it?.product_make) ? it.product_make : "",
+        makeQ: isValidMake(it?.product_make) ? it.product_make : "",
+        briefDescription: it?.description ?? "",
+        uom: it?.uom ?? "",
+        quantity: Number(it?.quantity ?? 0),
+        unitPrice: Number(it?.cost ?? 0),
+        taxPercent: Number(it?.gst_percent ?? it?.gst ?? 0),
+      }))
       : [makeEmptyLine()];
   };
 
@@ -610,43 +581,23 @@ const AddPurchaseOrder = ({
     setFormData((prev) => ({ ...prev, name: opt.value || "" }));
   };
 
-  const [activeLineId, setActiveLineId] = useState(null);
-
   useGetProductsQuery(
     { search: "", page: 1, limit: 1, category: "" },
     { skip: true }
   );
-  const [triggerGetProducts] = useLazyGetProductsQuery();
-  // const [productModalOpen, setProductModalOpen] = useState(false);
 
-  // const onPickProduct = (row) => {
-  //   if (!row || !activeLineId) {
-  //     setProductModalOpen(false);
-  //     return;
-  //   }
-  //   const pickedMake = getProdField(row, "Make") || "";
-  //   const pickedUom =
-  //     getProdField(row, "UoM") || getProdField(row, "UOM") || "";
-  //   const patch = {
-  //     productId: row?._id || "",
-  //     productName: getProdField(row, "Product Name") || "",
-  //     productCategoryId:
-  //       row?.category?._id ||
-  //       lines.find((l) => l.id === activeLineId)?.productCategoryId ||
-  //       "",
-  //     productCategoryName:
-  //       row?.category?.name ||
-  //       lines.find((l) => l.id === activeLineId)?.productCategoryName ||
-  //       "",
-  //     briefDescription: getProdField(row, "Description") || "",
-  //     make: isValidMake(pickedMake) ? pickedMake : "",
-  //     uom: pickedUom,
-  //     unitPrice: Number(getProdField(row, "Cost") || 0),
-  //     taxPercent: Number(getProdField(row, "GST") || 0),
-  //   };
-  //   Object.entries(patch).forEach(([k, v]) => updateLine(activeLineId, k, v));
-  //   setProductModalOpen(false);
-  // };
+  const activeCatId = useMemo(
+    () => lines.find((l) => l.id === activeLineId)?.productCategoryId || "",
+    [lines, activeLineId]
+  );
+
+  const { data: productResponse } = useGetProductsQuery(
+    { page: 1, limit: 7, search: "", category: activeCatId },
+    { skip: !activeCatId }
+  );
+
+  const productData = productResponse?.data || [];
+  const [triggerGetProducts] = useLazyGetProductsQuery();
 
   const [makesCache, setMakesCache] = useState({});
 
@@ -694,65 +645,23 @@ const AddPurchaseOrder = ({
         await fetchUniqueMakes(cat, name);
       }
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     Array.isArray(lines)
       ? lines.map((l) => `${l.productCategoryId}::${l.productName}`).join("|")
       : "",
-  ]); // eslint-disable-line
-
-  /* ---------- Make modal ---------- */
-  // const [makeModalOpen, setMakeModalOpen] = useState(false);
-  // const fetchMakesPage = async ({ search = "", page = 1, pageSize = 7 }) => {
-  //   const row = lines.find((r) => r.id === activeLineId);
-  //   const cat = row?.productCategoryId;
-  //   const pname = row?.productName;
-  //   if (!cat || !pname) return { rows: [], total: 0, page: 1, pageSize };
-  //   const res = await triggerGetProducts(
-  //     { search: pname, page: 1, limit: 300, category: String(cat) },
-  //     true
-  //   );
-  //   const rows = res?.data?.data || [];
-  //   const normalized = String(pname).trim().toLowerCase();
-  //   const makes = rows
-  //     .filter(
-  //       (r) =>
-  //         String(getProdField(r, "Product Name") || "")
-  //           .trim()
-  //           .toLowerCase() === normalized
-  //     )
-  //     .map((r) => String(getProdField(r, "Make") || "").trim())
-  //     .filter(isValidMake);
-  //   const unique = Array.from(new Set(makes));
-  //   const filtered = search
-  //     ? unique.filter((m) =>
-  //       m.toLowerCase().includes(String(search).toLowerCase())
-  //     )
-  //     : unique;
-  //   const total = filtered.length;
-  //   const start = (page - 1) * pageSize;
-  //   const pageRows = filtered
-  //     .slice(start, start + pageSize)
-  //     .map((m) => ({ make: m }));
-  //   return { rows: pageRows, total, page, pageSize };
-  // };
-  // const onPickMake = (row) => {
-  //   if (!row || !activeLineId) {
-  //     setMakeModalOpen(false);
-  //     return;
-  //   }
-  //   updateLine(activeLineId, "make", row.make || "");
-  //   setMakeModalOpen(false);
-  // };
+  ]);
 
   const [createProdOpen, setCreateProdOpen] = useState(false);
   const [createProdInitial, setCreateProdInitial] = useState(null);
   const [createProdLineId, setCreateProdLineId] = useState(null);
 
   const openCreateProductForLine = (line) => {
-    if (!line?.productCategoryId || !line?.productName) {
-      toast.error("Pick category and product name first.");
-      return;
-    }
+
+    // if (!line?.productCategoryId || !line?.productName) {
+    //   toast.error("Pick category and product name first.");
+    //   return;
+    // }
     setCreateProdLineId(line.id);
     setCreateProdInitial({
       name: line.productName || "",
@@ -775,6 +684,7 @@ const AddPurchaseOrder = ({
     try {
       const newProduct = normalizeCreatedProduct(raw);
       if (!newProduct || !createProdLineId) return;
+
       const name = getProdField(newProduct, "Product Name") || "";
       const make = getProdField(newProduct, "Make") || "";
       const uom =
@@ -784,8 +694,20 @@ const AddPurchaseOrder = ({
       const gst = Number(getProdField(newProduct, "GST") || 0);
       const cost = Number(getProdField(newProduct, "Cost") || 0);
       const desc = getProdField(newProduct, "Description") || "";
-      const catId = newProduct?.category?._id || newProduct?.category || "";
-      const catName = newProduct?.category?.name || "";
+
+      const catId =
+        newProduct?.category?._id || newProduct?.category || "";
+
+      const currentLine = lines.find((x) => x.id === createProdLineId);
+      let catName =
+        (newProduct?.category && newProduct?.category?.name) || "";
+      if (!catName && catId) {
+        const found = categoryData?.find((c) => c._id === catId);
+        if (found?.name) catName = found.name;
+        else if (currentLine?.productCategoryName)
+          catName = currentLine.productCategoryName;
+      }
+
       updateLine(createProdLineId, "productId", newProduct?._id || "");
       updateLine(createProdLineId, "productName", name);
       updateLine(createProdLineId, "productCategoryId", catId);
@@ -795,6 +717,7 @@ const AddPurchaseOrder = ({
       updateLine(createProdLineId, "taxPercent", gst);
       updateLine(createProdLineId, "unitPrice", cost);
       if (isValidMake(make)) updateLine(createProdLineId, "make", make);
+
       const key = mkKey(catId, name);
       setMakesCache((prev) => {
         const existing = prev[key] || [];
@@ -813,6 +736,7 @@ const AddPurchaseOrder = ({
     }
   };
 
+
   useEffect(() => {
     setLines((prev) =>
       prev.map((l) => {
@@ -825,7 +749,8 @@ const AddPurchaseOrder = ({
         return ok ? l : { ...l, make: "" };
       })
     );
-  }, [makesCache]); // eslint-disable-line
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [makesCache]);
 
   const [historyItems, setHistoryItems] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -890,9 +815,9 @@ const AddPurchaseOrder = ({
         note: doc.message || "",
         attachments: Array.isArray(doc?.attachments)
           ? doc.attachments.map((a) => ({
-              name: a?.name || a?.attachment_name,
-              url: a?.url || a?.attachment_url,
-            }))
+            name: a?.name || a?.attachment_name,
+            url: a?.url || a?.attachment_url,
+          }))
           : [],
       };
     }
@@ -930,7 +855,8 @@ const AddPurchaseOrder = ({
     ) {
       fetchPoHistory();
     }
-  }, [formData._id]); // eslint-disable-line
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData._id]);
 
   const feedRef = useRef(null);
   const scrollToFeed = () => {
@@ -962,19 +888,19 @@ const AddPurchaseOrder = ({
     } else if (itemShape.kind === "amount_change") {
       const changes = Array.isArray(itemShape.changes)
         ? itemShape.changes.map((c, idx) => ({
-            label: c.label || c.path || `field_${idx + 1}`,
-            path: c.path,
-            from: Number(c.from ?? 0),
-            to: Number(c.to ?? 0),
-          }))
+          label: c.label || c.path || `field_${idx + 1}`,
+          path: c.path,
+          from: Number(c.from ?? 0),
+          to: Number(c.to ?? 0),
+        }))
         : [
-            {
-              label: itemShape.label || itemShape.field || "amount",
-              path: itemShape.path,
-              from: Number(itemShape.from || 0),
-              to: Number(itemShape.to || 0),
-            },
-          ];
+          {
+            label: itemShape.label || itemShape.field || "amount",
+            path: itemShape.path,
+            from: Number(itemShape.from || 0),
+            to: Number(itemShape.to || 0),
+          },
+        ];
 
       normalized = {
         ...base,
@@ -1027,15 +953,48 @@ const AddPurchaseOrder = ({
     const action =
       submitter?.value || new FormData(e.currentTarget).get("action") || "";
 
+    // --- REQUIRE: category & product on any touched row ---
+    const missingCategory = [];
+    const missingProduct = [];
+
+    (lines || []).forEach((l, idx) => {
+      const touched =
+        l.productCategoryId ||
+        l.productName ||
+        l.briefDescription ||
+        Number(l.quantity) ||
+        Number(l.unitPrice) ||
+        Number(l.taxPercent);
+
+      if (!touched) return;
+
+      if (!l.productCategoryId) missingCategory.push(idx + 1);
+      if (l.productCategoryId && !l.productName) missingProduct.push(idx + 1);
+    });
+
+    if (missingCategory.length) {
+      toast.error(
+        `Please select a Category for row(s): ${missingCategory.join(", ")}`
+      );
+      return;
+    }
+    if (missingProduct.length) {
+      toast.error(
+        `Please select a Product for row(s): ${missingProduct.join(", ")}`
+      );
+      return;
+    }
+
+    // Build payload ONLY from rows that have both category & product
     const item = (lines || [])
-      .filter((l) => l?.productName || l?.productCategoryName)
+      .filter((l) => l.productCategoryId && l.productName)
       .map((l) => {
         const categoryId =
           typeof l.productCategoryId === "object" && l.productCategoryId?._id
             ? String(l.productCategoryId._id)
             : l.productCategoryId != null
-            ? String(l.productCategoryId)
-            : "";
+              ? String(l.productCategoryId)
+              : "";
         return {
           category: String(categoryId),
           product_name: String(l.productName || ""),
@@ -1047,8 +1006,6 @@ const AddPurchaseOrder = ({
           gst_percent: String(l.taxPercent ?? 0),
         };
       });
-
-    console.log(item);
 
     const hasValidLine =
       item.length > 0 && item.some((it) => Number(it.quantity) > 0);
@@ -1416,7 +1373,6 @@ const AddPurchaseOrder = ({
       toast.error(err?.response?.data?.message || "Failed to refuse");
     }
   };
-
   const user = getUserData();
 
   /* -------- vendor options -------- */
@@ -1581,11 +1537,11 @@ const AddPurchaseOrder = ({
           },
           attachments: last
             ? [
-                {
-                  name: last.attachment_name,
-                  url: last.attachment_url,
-                },
-              ]
+              {
+                name: last.attachment_name,
+                url: last.attachment_url,
+              },
+            ]
             : [],
         }).unwrap();
       } catch (e) {
@@ -1670,7 +1626,7 @@ const AddPurchaseOrder = ({
                   {/* Send Approval Button */}
                   {(effectiveMode === "edit" &&
                     statusNow === "approval_rejected") ||
-                  fromModal ? (
+                    fromModal ? (
                     <Button
                       component="button"
                       type="submit"
@@ -1760,17 +1716,17 @@ const AddPurchaseOrder = ({
                       user?.name === "Guddu Rani Dubey" ||
                       user?.name === "Varun Mishra" ||
                       user?.name === "IT Team") && (
-                      <Box>
-                        <Button
-                          variant={manualEdit ? "outlined" : "solid"}
-                          color={manualEdit ? "neutral" : "primary"}
-                          onClick={() => setManualEdit((s) => !s)}
-                          sx={{ width: "fit-content" }}
-                        >
-                          {manualEdit ? "Cancel Edit" : "Edit"}
-                        </Button>
-                      </Box>
-                    )}
+                        <Box>
+                          <Button
+                            variant={manualEdit ? "outlined" : "solid"}
+                            color={manualEdit ? "neutral" : "primary"}
+                            onClick={() => setManualEdit((s) => !s)}
+                            sx={{ width: "fit-content" }}
+                          >
+                            {manualEdit ? "Cancel Edit" : "Edit"}
+                          </Button>
+                        </Box>
+                      )}
                   </Box>
                 )}
             </Box>
@@ -2122,14 +2078,14 @@ const AddPurchaseOrder = ({
                     value={
                       formData.delivery_type
                         ? {
-                            value: formData.delivery_type,
-                            label:
-                              formData.delivery_type === "for"
-                                ? "For"
-                                : formData.delivery_type === "slnko"
+                          value: formData.delivery_type,
+                          label:
+                            formData.delivery_type === "for"
+                              ? "For"
+                              : formData.delivery_type === "slnko"
                                 ? "Slnko"
                                 : "",
-                          }
+                        }
                         : null
                     }
                     onChange={(selected) =>
@@ -2203,29 +2159,28 @@ const AddPurchaseOrder = ({
                 </thead>
                 <tbody>
                   {lines.map((l) => {
-                    const base =
-                      Number(l.quantity || 0) * Number(l.unitPrice || 0);
+                    const base = Number(l.quantity || 0) * Number(l.unitPrice || 0);
                     const taxAmt = (base * Number(l.taxPercent || 0)) / 100;
                     const gross = base + taxAmt;
-
+                    const show = l.isShow;
                     const key = mkKey(l.productCategoryId, l.productName);
                     const rowMakes = makesCache[key] || [];
 
                     const selectedMakeSafe = isValidMake(l.make) ? l.make : "";
                     const inList = rowMakes.some(
-                      (m) =>
-                        String(m).toLowerCase() ===
-                        String(selectedMakeSafe).toLowerCase()
+                      (m) => String(m).toLowerCase() === String(selectedMakeSafe).toLowerCase()
                     );
                     const selectValue = inList ? selectedMakeSafe : "";
 
-                    const makeDisabled =
-                      inputsDisabled || !l.productCategoryId || !l.productName;
+                    const makeDisabled = inputsDisabled || !l.productCategoryId || !l.productName;
 
                     return (
-                      <tr key={l.id}>
+                      <tr
+                        key={l.id}
+                        className="hover:bg-gray-50 transition-colors border-b border-gray-200"
+                      >
                         {inspectionEnabled && (
-                          <td>
+                          <td className="px-3 py-2 align-middle">
                             <Checkbox
                               size="sm"
                               checked={!!selectedForInspection[l.id]}
@@ -2233,88 +2188,226 @@ const AddPurchaseOrder = ({
                             />
                           </td>
                         )}
-                        <td>
-                          {manualEdit && !fromModal ? (
+
+                        {/* Category Select */}
+                        <td className="px-3 py-2 align-middle text-sm">
+                          {!isRowLocked(l) && manualEdit && !fromModal ? (
                             <JSelect
-                              variant="plain"
+                              variant="outlined"
                               size="sm"
+                              value={l.productCategoryId ?? null}
                               onChange={(_, v) => {
+                                if (!v) return;
+
                                 if (v === SEARCH_MORE_CATEGORY) {
                                   setActiveLineId(l.id);
                                   setCategoryModalOpen(true);
                                   return;
                                 }
+
+                                const picked = categoryData.find((c) => c._id === v);
+                                updateLine(l.id, "productCategoryId", v);
+                                updateLine(l.id, "productCategoryName", picked?.name || l.productCategoryName || "");
                               }}
                               placeholder="Select Category"
-                              renderValue={() => (
-                                <Typography level="body-sm">
-                                  {l.productCategoryName || "Select Category"}
+                              renderValue={(selected) => (
+                                <Typography level="body-sm" noWrap>
+                                  {categoryData.find((c) => c._id === selected)?.name ||
+                                    l.productCategoryName || "Select Category"}
                                 </Typography>
                               )}
+                              className="min-w-[150px] rounded-md"
+                              sx={{
+                                '& .MuiSelect-listbox': {
+                                  maxHeight: 250,
+                                  overflowY: 'auto',
+                                  borderRadius: '0.5rem',
+                                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                  paddingY: 0.5,
+                                },
+                              }}
                             >
-                              <Option
-                                value={SEARCH_MORE_CATEGORY}
-                                color="neutral"
-                              >
+                              {/* normal page of categories */}
+                              {categoryData.map((cat) => (
+                                <Option
+                                  key={cat._id}
+                                  value={cat._id}
+                                  sx={{ paddingY: 1, paddingX: 2, fontSize: '0.875rem', '&:hover': { bgcolor: 'gray.100' } }}
+                                >
+                                  {cat.name}
+                                </Option>
+                              ))}
+
+                              {/* ✅ ensure the currently selected category is visible even if it's not in categoryData */}
+                              {l.productCategoryId &&
+                                !categoryData.some((c) => c._id === l.productCategoryId) && (
+                                  <Option value={l.productCategoryId}>
+                                    {l.productCategoryName || "Current category"}
+                                  </Option>
+                                )}
+
+                              <Option value={SEARCH_MORE_CATEGORY} color="primary">
                                 Search more…
                               </Option>
                             </JSelect>
+
                           ) : (
-                            <Typography level="body-sm">
-                              {l.productCategoryName}
-                            </Typography>
+                            <Typography level="body-sm">{l.productCategoryName}</Typography>
                           )}
                         </td>
 
-                        <td>
-                          {manualEdit && !fromModal ? (
+                        {/* Product Select */}
+                        <td className="px-3 py-2 align-middle text-sm">
+                          {!isRowLocked(l) && manualEdit && !fromModal ? (
                             <JSelect
-                              variant="plain"
+                              variant="outlined"
                               size="sm"
+                              value={l.productId ?? null}
+                              onListboxOpenChange={(open) => {
+                                if (open) setActiveLineId(l.id);
+                              }}
                               onChange={(_, v) => {
+                                if (!v) return;
+
                                 if (v === SEARCH_MORE_PRODUCT) {
                                   setActiveLineId(l.id);
+                                  if (!l.productCategoryId) {
+                                    toast.error("Pick a category first.");
+                                    return;
+                                  }
                                   setProductModalOpen(true);
                                   return;
                                 }
+                                if (v === CREATE_PRODUCT) {
+                                  openCreateProductForLine(l);
+                                  return;
+                                }
+
+                                const picked = productData.find((p) => p._id === v);
+                                if (!picked) return;
+
+                                const getVal = (prod, field, def = "") => {
+                                  const f = prod?.data?.find((d) => d?.name === field);
+                                  return f?.values?.[0]?.input_values ?? def;
+                                };
+
+                                const name =
+                                  getVal(picked, "Product Name", picked.name || "") ||
+                                  getVal(picked, "Name", picked.name || "");
+
+                                updateLine(l.id, "productId", picked._id);
+                                updateLine(l.id, "productName", name);
+                                updateLine(
+                                  l.id,
+                                  "briefDescription",
+                                  getVal(picked, "Description", "N/A")
+                                );
+                                updateLine(
+                                  l.id,
+                                  "unitPrice",
+                                  Number(getVal(picked, "Cost", 0))
+                                );
+                                updateLine(
+                                  l.id,
+                                  "taxPercent",
+                                  Number(getVal(picked, "GST", 0))
+                                );
+                                updateLine(l.id, "make", getVal(picked, "Make", "N/A"));
+                                updateLine(l.id, "uom", getVal(picked, "UoM", "N/A"));
                               }}
                               placeholder="Select Product"
-                              renderValue={() => (
-                                <Typography level="body-sm">
-                                  {l.productName || "Select Product"}
-                                </Typography>
-                              )}
+                              renderValue={(selected) => {
+                                const picked = productData.find((p) => p._id === selected);
+                                const getVal = (prod, field, def = "") => {
+                                  const f = prod?.data?.find((d) => d?.name === field);
+                                  return f?.values?.[0]?.input_values ?? def;
+                                };
+                                const label =
+                                  (picked &&
+                                    getVal(
+                                      picked,
+                                      "Product Name",
+                                      picked?.name || ""
+                                    )) ||
+                                  l.productName ||
+                                  "Select Product";
+                                return (
+                                  <Typography level="body-sm" noWrap>
+                                    {label}
+                                  </Typography>
+                                );
+                              }}
+                              disabled={!l.productCategoryId || inputsDisabled}
+                              className="min-w-[240px] rounded-md"
+                              sx={{
+                                '& .MuiSelect-listbox': {
+                                  maxHeight: 300,
+                                  overflowY: 'auto',
+                                  borderRadius: '0.5rem',
+                                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                  paddingY: 0.5,
+                                },
+                              }}
                             >
+                              {productData.map((prod) => {
+                                const f = prod?.data?.find((d) => d?.name === "Product Name");
+                                const label =
+                                  f?.values?.[0]?.input_values ?? prod?.name ?? "Unnamed";
+                                return (
+                                  <Option
+                                    key={prod._id}
+                                    value={prod._id}
+                                    sx={{
+                                      paddingY: 1,
+                                      paddingX: 2,
+                                      fontSize: '0.875rem',
+                                      whiteSpace: 'normal',
+                                      '&:hover': { bgcolor: 'gray.100' },
+                                    }}
+                                  >
+                                    <Typography noWrap>{label}</Typography>
+                                  </Option>
+                                );
+                              })}
+
+                              {l.productId &&
+                                !productData.some((p) => p._id === l.productId) && (
+                                  <Option value={l.productId}>
+                                    <Typography noWrap>
+                                      {l.productName || "Unnamed"}
+                                    </Typography>
+                                  </Option>
+                                )}
+
                               <Option
                                 value={SEARCH_MORE_PRODUCT}
-                                color="neutral"
+                                color="primary"
                               >
                                 Search more…
                               </Option>
+                              {!!l.productCategoryId && (
+                                <Option value={CREATE_PRODUCT} color="success">
+                                  + Create new product…
+                                </Option>
+                              )}
                             </JSelect>
                           ) : (
-                            <Typography level="body-sm">
-                              {l.productName}
-                            </Typography>
+                            <Typography level="body-sm">{l.productName}</Typography>
                           )}
                         </td>
 
-                        <td>
+                        {/* Description */}
+                        <td className="px-3 py-2 align-middle text-gray-600 text-sm">
                           {manualEdit && !fromModal ? (
                             <Textarea
                               minRows={1}
                               size="sm"
-                              variant="plain"
+                              variant="outlined"
                               placeholder="Brief Description"
                               value={l.briefDescription}
-                              onChange={(e) =>
-                                updateLine(
-                                  l.id,
-                                  "briefDescription",
-                                  e.target.value
-                                )
-                              }
+                              onChange={(e) => updateLine(l.id, "briefDescription", e.target.value)}
                               {...disabledTextareaProps}
+                              className="w-56 rounded-md"
                               sx={{
                                 whiteSpace: "normal",
                                 wordBreak: "break-word",
@@ -2322,13 +2415,12 @@ const AddPurchaseOrder = ({
                               }}
                             />
                           ) : (
-                            <Typography level="body-sm">
-                              {l.briefDescription}
-                            </Typography>
+                            <Typography level="body-sm">{l.briefDescription}</Typography>
                           )}
                         </td>
 
-                        <td>
+                        {/* Make */}
+                        <td className="px-3 py-2 align-middle text-sm">
                           {manualEdit && !fromModal ? (
                             <Typography
                               level="body-sm"
@@ -2346,51 +2438,54 @@ const AddPurchaseOrder = ({
                           )}
                         </td>
 
-                        <td>
+                        {/* Quantity */}
+                        <td className="px-3 py-2 align-middle">
                           <Input
                             size="sm"
                             type="number"
-                            variant="plain"
+                            variant="outlined"
                             value={l.quantity}
-                            onChange={(e) =>
-                              updateLine(l.id, "quantity", e.target.value)
-                            }
+                            onChange={(e) => updateLine(l.id, "quantity", e.target.value)}
                             slotProps={{ input: { min: 0, step: "0.00001" } }}
                             {...(inputsDisabled ? disabledInputProps : {})}
+                            className="w-20 rounded-md"
                           />
                         </td>
-                        <td>
+
+                        {/* Unit Price */}
+                        <td className="px-3 py-2 align-middle">
                           <Input
                             size="sm"
                             type="number"
-                            variant="plain"
+                            variant="outlined"
                             value={l.unitPrice}
-                            onChange={(e) =>
-                              updateLine(l.id, "unitPrice", e.target.value)
-                            }
+                            onChange={(e) => updateLine(l.id, "unitPrice", e.target.value)}
                             slotProps={{ input: { min: 0, step: "0.00001" } }}
                             {...(inputsDisabled ? disabledInputProps : {})}
+                            className="w-24 rounded-md"
                           />
                         </td>
-                        <td>
+
+                        {/* Tax */}
+                        <td className="px-3 py-2 align-middle">
                           <Input
                             size="sm"
                             type="number"
-                            variant="plain"
+                            variant="outlined"
                             value={l.taxPercent}
-                            onChange={(e) =>
-                              updateLine(l.id, "taxPercent", e.target.value)
-                            }
+                            onChange={(e) => updateLine(l.id, "taxPercent", e.target.value)}
                             slotProps={{ input: { min: 0, step: "0.00001" } }}
                             {...(inputsDisabled ? disabledInputProps : {})}
+                            className="w-20 rounded-md"
                           />
                         </td>
-                        <td>
-                          <Typography level="body-sm" fontWeight="lg">
+
+                        {/* Gross */}
+                        <td className="px-3 py-2 align-middle">
+                          <Typography className="text-green-700 font-semibold text-sm">
                             ₹{" "}
                             {(
-                              Number(l.quantity || 0) *
-                                Number(l.unitPrice || 0) +
+                              Number(l.quantity || 0) * Number(l.unitPrice || 0) +
                               ((Number(l.quantity || 0) *
                                 Number(l.unitPrice || 0) *
                                 Number(l.taxPercent || 0)) /
@@ -2401,11 +2496,14 @@ const AddPurchaseOrder = ({
                             })}
                           </Typography>
                         </td>
-                        <td>
+
+                        {/* Delete */}
+                        <td className="px-3 py-2 align-middle">
                           {manualEdit && (
                             <IconButton
                               variant="plain"
                               color="danger"
+                              className="hover:bg-red-50"
                               onClick={() => removeLine(l.id)}
                             >
                               <DeleteOutline />
@@ -2415,6 +2513,8 @@ const AddPurchaseOrder = ({
                       </tr>
                     );
                   })}
+
+
                 </tbody>
               </Box>
 
@@ -2538,68 +2638,7 @@ const AddPurchaseOrder = ({
           pageSize={VENDOR_LIMIT}
           backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
         />
-        {/* Product picker */}
-        {/* <SearchPickerModal
-          open={productModalOpen}
-          onClose={() => {
-            setProductModalOpen(false);
-            setActiveLineId(null);
-          }}
-          onPick={onPickProduct}
-          title="Search: Product"
-          columns={[
-            { key: "sku_code", label: "Code", width: 160 },
-            {
-              key: "name",
-              label: "Product Name",
-              width: 320,
-              render: (row) => getProdField(row, "Product Name") || "-",
-            },
-            {
-              key: "category",
-              label: "Category",
-              width: 220,
-              render: (row) => row?.category?.name || "-",
-            },
-          ]}
-          fetchPage={async ({ search = "", page = 1, pageSize = 7 }) => {
-            const res = await triggerGetProducts(
-              { search, page, limit: pageSize, category: "" },
-              true
-            );
-            const d = res?.data;
-            const total = d?.meta?.total ?? d?.pagination?.total ?? 0;
-            const curPage = d?.meta?.page ?? d?.pagination?.page ?? page;
-            const limit = d?.meta?.limit ?? d?.pagination?.limit ?? pageSize;
-            return {
-              rows: d?.data || [],
-              total,
-              page: curPage,
-              pageSize: limit,
-            };
-          }}
-          searchKey="name"
-          pageSize={7}
-          backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
-        /> */}
-
-        {/* Make Search Modal */}
-        {/* <SearchPickerModal
-          open={makeModalOpen}
-          onClose={() => {
-            setMakeModalOpen(false);
-            setActiveLineId(null);
-          }}
-          onPick={onPickMake}
-          title="Select Make"
-          columns={[{ key: "make", label: "Make", width: 320 }]}
-          fetchPage={fetchMakesPage}
-          searchKey="make"
-          pageSize={7}
-          backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
-        /> */}
-
-        {/* Create Product (embedded ProductForm) */}
+        
         <Modal open={createProdOpen} onClose={() => setCreateProdOpen(false)}>
           <ModalDialog
             sx={{ maxWidth: 1000, width: "95vw", p: 0, overflow: "hidden" }}
@@ -2693,8 +2732,8 @@ const AddPurchaseOrder = ({
                   console.error(e);
                   toast.error(
                     e?.data?.message ||
-                      e?.error ||
-                      "Failed to submit inspection request"
+                    e?.error ||
+                    "Failed to submit inspection request"
                   );
                 }
               }}
@@ -2807,7 +2846,12 @@ const AddPurchaseOrder = ({
         onPick={onPickProduct}
         title="Search: Product"
         columns={productColumns}
-        fetchPage={fetchProductPageCat}
+        fetchPage={(args) =>
+          fetchProductPageCat({
+            ...args,
+            categoryId: lines.find(x => x.id === activeLineId)?.productCategoryId || "",
+          })
+        }
         searchKey="name"
         pageSize={7}
         backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}

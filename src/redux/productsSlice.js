@@ -122,8 +122,8 @@ export const productsApi = createApi({
     }),
 
     getAllProdcutPO : builder.query({
-      query: ({page = 1, pageSize = 10, search = "", categoryId}) =>
-        `/engineering/all-product-po?page=${page}$pageSize=${pageSize}$search=${encodeURIComponent(search)}$categoryId=${categoryId}`,
+      query: ({ page = 1, pageSize = 10, search = "", categoryId = "" }) =>
+   `/engineering/all-product-po?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}&categoryId=${encodeURIComponent(categoryId)}`,
       providesTags: [{ type: "Products", id: "LIST"}]
     }),
 
