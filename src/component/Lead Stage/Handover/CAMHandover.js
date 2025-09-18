@@ -25,9 +25,8 @@ import {
   useUpdateHandOverMutation,
   useUpdateStatusHandOverMutation,
 } from "../../../redux/camsSlice";
-import {
-  useGetModuleMasterQuery,
-} from "../../../redux/leadsSlice";
+import { useGetModuleMasterQuery } from "../../../redux/leadsSlice";
+import Axios from "../../../utils/Axios";
 
 const CamHandoverSheetForm = ({ onBack, p_id }) => {
   const navigate = useNavigate();
@@ -159,21 +158,18 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
     submitted_by: "",
     status_of_handoversheet: "submitted",
     is_locked: "locked",
+    assigned_to: [],
   });
 
+  const [users, setUsers] = useState([]);
+  const [camMembersSelected, setCamMembersSelected] = useState([]);
+  const [assigneesSelected, setAssigneesSelected] = useState([]);
+
   const [moduleMakeOptions, setModuleMakeOptions] = useState([]);
-  const [moduleTypeOptions, setModuleTypeOptions] = useState([]);
-  const [moduleModelOptions, setModuleModelOptions] = useState([]);
   const [moduleCapacityOptions, setModuleCapacityOptions] = useState([]);
-  const [inverterMakeOptions, setInverterMakeOptions] = useState([]);
-  const [inverterSizeOptions, setInverterSizeOptions] = useState([]);
-  const [inverterModelOptions, setInverterModelOptions] = useState([]);
-  const [inverterTypeOptions, setInverterTypeOptions] = useState([]);
   const location = useLocation();
   const isCAMDash = location.pathname === "/project_detail";
-  const handlePrint = () => {
-    window.print();
-  };
+
   const inverterTypeToSave =
     formData.project_detail.inverter_type === "Other"
       ? formData.project_detail.custom_inverter_type
@@ -186,28 +182,33 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
     () => getModuleMaster?.data ?? [],
     [getModuleMaster?.data]
   );
+  const asDateInputValue = (v) => {
+  if (!v) return "";
+  const s = typeof v === "string" ? v : new Date(v).toISOString();
+  return s.split("T")[0];
+};
 
   useEffect(() => {
-    if (ModuleMaster.length > 0) {
-      setModuleMakeOptions([
-        ...new Set(ModuleMaster.map((item) => item.make).filter(Boolean)),
-      ]);
-      setModuleTypeOptions([
-        ...new Set(ModuleMaster.map((item) => item.Type).filter(Boolean)),
-      ]);
-      setModuleModelOptions([
-        ...new Set(ModuleMaster.map((item) => item.model).filter(Boolean)),
-      ]);
-      setModuleCapacityOptions([
-        ...new Set(ModuleMaster.map((item) => item.power).filter(Boolean)),
-      ]);
-    }
-
-  }, [ModuleMaster]);
-
-  const handleExpand = (panel) => {
-    setExpanded(expanded === panel ? null : panel);
-  };
+    let isMounted = true;
+    (async () => {
+      const token = localStorage.getItem("authToken");
+      try {
+        const { data } = await Axios.get("all-list", {
+          headers: {
+            "x-auth-token": token,
+          },
+        });
+        if (isMounted) {
+          setUsers(Array.isArray(data.users) ? data.users : []);
+        }
+      } catch (e) {
+        console.error("Failed to load users", e);
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleAutocompleteChange = (section, field, value) => {
     setFormData((prev) => ({
@@ -231,14 +232,14 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
 
   useEffect(() => {
     const userData = getUserData();
-    if (userData && userData.name) {
+    if (userData && userData._id) {
       setFormData((prev) => ({
         ...prev,
         other_details: {
           ...prev.other_details,
-          submitted_by_BD: userData.name,
+         submitted_by_BD: userData._id,
         },
-        submitted_by: userData.name,
+        submitted_by: userData._id,
       }));
     }
     setUser(userData);
@@ -261,8 +262,8 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
   } = useGetHandOverByIdQuery(
     { id: id, p_id: p_id },
     {
-    skip: !id && !p_id
-  }
+      skip: !id && !p_id,
+    }
   );
   const handoverData = getHandOverSheet?.data ?? null;
 
@@ -339,6 +340,22 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
       console.warn("No matching handover data found.");
       return;
     }
+
+    if (!users.length) return;
+
+    const raw = handoverData?.assigned_to ?? formData.assigned_to ?? [];
+
+    const ids = Array.isArray(raw)
+      ? raw
+          .map((v) => (typeof v === "object" && v?._id ? v._id : v))
+          .filter(Boolean)
+      : raw
+      ? [typeof raw === "object" && raw?._id ? raw._id : raw]
+      : [];
+
+    const selected = users.filter((u) => ids.includes(u._id));
+
+    setAssigneesSelected(selected);
 
     setFormData((prev) => ({
       ...prev,
@@ -468,8 +485,34 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
       status_of_handoversheet: handoverData?.status_of_handoversheet,
       is_locked: handoverData?.is_locked,
     }));
-  }, [handoverData]);
 
+    if (handoverData?.assigned_to) {
+      const assigneeId =
+        typeof handoverData.assigned_to === "object"
+          ? handoverData.assigned_to._id
+          : handoverData.assigned_to;
+      setFormData((prev) => ({ ...prev, assigned_to: assigneeId || "" }));
+    }
+
+    const camStr = handoverData?.other_details?.cam_member_name || "";
+    const camArr = camStr
+      ? camStr
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : [];
+    setCamMembersSelected(camArr);
+  }, [user, handoverData]);
+
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      other_details: {
+        ...prev.other_details,
+        cam_member_name: camMembersSelected.join(", "),
+      },
+    }));
+  }, [camMembersSelected]);
 
   const calculateDcCapacity = (ac, overloadingPercent) => {
     const acValue = parseFloat(ac);
@@ -512,7 +555,7 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
         service: calculated,
       },
     }));
-  
+
     if (!isNaN(serviceAmount)) {
       let gstPercentage = 0;
       if (billingType === "Composite") {
@@ -583,7 +626,10 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
         invoice_detail: { ...formData.invoice_detail },
         // status_of_handoversheet: "Approved",
         is_locked: "locked",
-        submitted_by: user?.name,
+        submitted_by: user?._id,
+        assigned_to: Array.isArray(formData.assigned_to)
+          ? formData.assigned_to
+          : [],
       };
 
       const statusPayload = {
@@ -1221,9 +1267,7 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
               <Input
                 fullWidth
                 type="date"
-                value={
-                  formData["project_detail"]?.["project_completion_date"] || ""
-                }
+                value={asDateInputValue(formData.project_detail?.project_completion_date)}
                 onChange={(e) =>
                   handleChange(
                     "project_detail",
@@ -1254,22 +1298,7 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
-              <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                CAM Member Name
-              </Typography>
-              <Input
-                value={formData.other_details.cam_member_name}
-                placeholder="CAM Member Name"
-                onChange={(e) =>
-                  handleChange(
-                    "other_details",
-                    "cam_member_name",
-                    e.target.value
-                  )
-                }
-              />
-            </Grid>
+           
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 LOA Number
@@ -1292,6 +1321,48 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
                 placeholder="PPA Number"
                 onChange={(e) =>
                   handleChange("other_details", "ppa_number", e.target.value)
+                }
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                Assigned To / CAM Members (multiple)
+              </Typography>
+              <Autocomplete
+                multiple
+                options={users}
+                value={assigneesSelected}
+                getOptionLabel={(option) => option?.name || ""}
+                isOptionEqualToValue={(opt, val) => opt._id === val._id}
+                placeholder="Select users"
+                onChange={(_, value) => {
+                  const sel = value || [];
+                  setAssigneesSelected(sel);
+                  setFormData((prev) => ({
+                    ...prev,
+                    assigned_to: sel.map((u) => u._id),
+                    other_details: {
+                      ...prev.other_details,
+                      cam_member_name: sel.map((u) => u.name).join(", "),
+                    },
+                  }));
+                }}
+              />
+            </Grid>
+             <Grid item xs={12} sm={6}>
+              <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                CAM Member Name
+              </Typography>
+              <Input
+                value={formData.other_details.cam_member_name}
+                placeholder="CAM Member Name"
+                onChange={(e) =>
+                  handleChange(
+                    "other_details",
+                    "cam_member_name",
+                    e.target.value
+                  )
                 }
               />
             </Grid>
@@ -1395,8 +1466,8 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
                 {formData?.other_details?.billing_type === "Composite"
                   ? "Total Slnko Service Charge(with GST)"
                   : formData?.other_details?.billing_type === "Individual"
-                    ? "Total Slnko Service Charge (with GST)"
-                    : "Total Slnko Service Charge(with GST)"}
+                  ? "Total Slnko Service Charge (with GST)"
+                  : "Total Slnko Service Charge(with GST)"}
               </Typography>
               <Input
                 fullWidth
