@@ -588,99 +588,106 @@ const [snack, setSnack] = useState({ open: false, msg: "" });
   };
 
   /* ---------- SAVE AS TEMPLATE: exposed via ref ---------- */
-  useImperativeHandle(ref, () => ({
-    saveAsTemplate: async () => {
-      // gather tasks
-      const tasks = [];
-      gantt.eachTask((t) => {
-        const start = t.start_date instanceof Date ? t.start_date : null;
-        const end =
-          t._end_dmy
-            ? parseDMY(t._end_dmy)
-            : start && Number(t.duration) > 0
-            ? gantt.calculateEndDate({ start_date: start, duration: t.duration, task: t })
-            : null;
+ /* ---------- SAVE AS TEMPLATE: exposed via ref (accept name/description) ---------- */
+useImperativeHandle(ref, () => ({
+  saveAsTemplate: async (meta = {}) => {
+    const { name, description } = meta || {};
 
-        tasks.push({
-          si: String(t.id),
-          dbId: String(t._dbId || ""),
-          start,
-          end,
-          duration: Number(t.duration || 0),
-          percent: Math.round((Number(t.progress || 0)) * 100),
-        });
+    // gather tasks
+    const tasks = [];
+    gantt.eachTask((t) => {
+      const start = t.start_date instanceof Date ? t.start_date : null;
+      const end =
+        t._end_dmy
+          ? parseDMY(t._end_dmy)
+          : start && Number(t.duration) > 0
+          ? gantt.calculateEndDate({ start_date: start, duration: t.duration, task: t })
+          : null;
+
+      tasks.push({
+        si: String(t.id),
+        dbId: String(t._dbId || ""),
+        start,
+        end,
+        duration: Number(t.duration || 0),
+        percent: Math.round((Number(t.progress || 0)) * 100),
+      });
+    });
+
+    // index by SI
+    const bySi = new Map(tasks.map((x) => [x.si, x]));
+
+    // build predecessors/successors from links
+    const predsBySi = new Map();
+    const succsBySi = new Map();
+    gantt.getLinks().forEach((l) => {
+      const src = String(l.source);
+      const trg = String(l.target);
+      const type = typeToLabel[String(l.type)] || "FS";
+      const lag = Number(l.lag || 0);
+
+      if (!predsBySi.has(trg)) predsBySi.set(trg, []);
+      predsBySi.get(trg).push({ activityIdSi: src, type, lag });
+
+      if (!succsBySi.has(src)) succsBySi.set(src, []);
+      succsBySi.get(src).push({ activityIdSi: trg, type, lag });
+    });
+
+    const activities = tasks
+      .filter((t) => t.dbId)
+      .map((t) => {
+        const preds = (predsBySi.get(t.si) || [])
+          .map((p) => {
+            const src = bySi.get(p.activityIdSi);
+            if (!src?.dbId) return null;
+            return {
+              activity_id: src.dbId,
+              type: p.type,
+              lag: p.lag,
+            };
+          })
+          .filter(Boolean);
+
+        const succs = (succsBySi.get(t.si) || [])
+          .map((s) => {
+            const trg = bySi.get(s.activityIdSi);
+            if (!trg?.dbId) return null;
+            return {
+              activity_id: trg.dbId,
+              type: s.type,
+              lag: s.lag,
+            };
+          })
+          .filter(Boolean);
+
+        return {
+          activity_id: t.dbId,
+          planned_start: t.start ? t.start.toISOString() : null,
+          planned_finish: t.end ? t.end.toISOString() : null,
+          duration: t.duration || (t.start && t.end ? diffDaysInclusive(t.start, t.end) : 0),
+          percent_complete: t.percent || 0,
+          predecessors: preds,
+          successors: succs,
+        };
       });
 
-      // index by SI
-      const bySi = new Map(tasks.map((x) => [x.si, x]));
+    // ⬅️ include name/description with your existing payload
+    const payload = {
+      status: "template",
+      ...(name ? { name } : {}),
+      ...(description ? { description } : {}),
+      activities,
+    };
 
-      // build predecessors/successors from links
-      const predsBySi = new Map();
-      const succsBySi = new Map();
-      gantt.getLinks().forEach((l) => {
-        const src = String(l.source);
-        const trg = String(l.target);
-        const type = typeToLabel[String(l.type)] || "FS";
-        const lag = Number(l.lag || 0);
+    try {
+      await createProjectActivity(payload).unwrap();
+      setSnack({ open: true, msg: "Template saved successfully" });
+    } catch (e) {
+      setSnack({ open: true, msg: "Failed to save template" });
+    }
+  },
+}));
 
-        if (!predsBySi.has(trg)) predsBySi.set(trg, []);
-        predsBySi.get(trg).push({ activityIdSi: src, type, lag });
-
-        if (!succsBySi.has(src)) succsBySi.set(src, []);
-        succsBySi.get(src).push({ activityIdSi: trg, type, lag });
-      });
-
-      const activities = tasks
-        .filter((t) => t.dbId) 
-        .map((t) => {
-          const preds = (predsBySi.get(t.si) || [])
-            .map((p) => {
-              const src = bySi.get(p.activityIdSi);
-              if (!src?.dbId) return null;
-              return {
-                activity_id: src.dbId,
-                type: p.type,
-                lag: p.lag,
-              };
-            })
-            .filter(Boolean);
-
-          const succs = (succsBySi.get(t.si) || [])
-            .map((s) => {
-              const trg = bySi.get(s.activityIdSi);
-              if (!trg?.dbId) return null;
-              return {
-                activity_id: trg.dbId,
-                type: s.type,
-                lag: s.lag,
-              };
-            })
-            .filter(Boolean);
-
-          return {
-            activity_id: t.dbId,
-            planned_start: t.start ? t.start.toISOString() : null,
-            planned_finish: t.end ? t.end.toISOString() : null,
-            duration: t.duration || (t.start && t.end ? diffDaysInclusive(t.start, t.end) : 0),
-            percent_complete: t.percent || 0,
-            predecessors: preds,
-            successors: succs,
-          };
-        });
-
-      const payload = {
-        status: "template",
-        activities,
-      };
-
-      try {
-        await createProjectActivity(payload).unwrap();
-        setSnack({ open: true, msg: "Template saved successfully" });
-      } catch (e) {
-        setSnack({ open: true, msg: "Failed to save template" });
-      }
-    },
-  }));
 
   /* ---------- init gantt ---------- */
   useEffect(() => {
