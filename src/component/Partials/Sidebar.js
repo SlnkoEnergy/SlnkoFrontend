@@ -866,7 +866,7 @@ function Sidebar() {
                       User Dashboard
                     </ListItemButton>
                   </ListItem>
-                  {user?.department === "BD" && user?.emp_id === "SE-277" && (
+                  {user?.department === "BD" && (user?.emp_id === "SE-277" || user?.emp_id === "SE-099") && (
                     <ListItem>
                       <ListItemButton
                         onClick={() => navigate("/expense_approval")}
