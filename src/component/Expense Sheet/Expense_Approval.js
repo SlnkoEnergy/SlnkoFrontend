@@ -43,8 +43,17 @@ const ExpenseApproval = forwardRef(() => {
   const [user, setUser] = useState(null);
   const [department, setDepartment] = useState("");
 
-  const searchParam = selectedstatus ? selectedstatus : searchQuery;
+  // --- helper to merge into URL params without wiping others ---
+  const updateParams = (patch) => {
+    const next = new URLSearchParams(searchParams);
+    Object.entries(patch).forEach(([k, v]) => {
+      if (v == null || v === "") next.delete(k);
+      else next.set(k, String(v));
+    });
+    setSearchParams(next);
+  };
 
+  const searchParam = selectedstatus ? selectedstatus : searchQuery;
 
   useEffect(() => {
     const userDataString = localStorage.getItem("userDetails");
@@ -55,26 +64,24 @@ const ExpenseApproval = forwardRef(() => {
     }
   }, []);
 
-const {
-  data: getExpense = [],
-  isLoading,
-  error,
-} = useGetAllExpenseQuery(
-  department
-    ? {
-        page: currentPage,
-        department: department === "admin" ? "" : department,
-        search: searchQuery,
-        status: selectedstatus,
-        from,
-        to,
-      }
-    : skipToken
-);
+  const {
+    data: getExpense = [],
+    isLoading,
+    error,
+  } = useGetAllExpenseQuery(
+    department
+      ? {
+          page: currentPage,
+          department: department === "admin" ? "" : department,
+          search: searchQuery,
+          status: selectedstatus,
+          from,
+          to,
+        }
+      : skipToken
+  );
 
   const renderFilters = () => {
-   
-
     const statuses = [
       { value: "submitted", label: "Pending" },
       { value: "manager approval", label: "Manager Approved" },
@@ -101,6 +108,8 @@ const {
             onChange={(e, newValue) => {
               setSelectedstatus(newValue);
               setCurrentPage(1);
+              // push to URL
+              updateParams({ status: newValue ?? "", page: 1 });
             }}
             size="sm"
             placeholder="Select Status"
@@ -122,6 +131,8 @@ const {
             onChange={(e) => {
               setFrom(e.target.value);
               setCurrentPage(1);
+              // push to URL
+              updateParams({ from: e.target.value, page: 1 });
             }}
           />
         </FormControl>
@@ -134,13 +145,14 @@ const {
             onChange={(e) => {
               setTo(e.target.value);
               setCurrentPage(1);
+              // push to URL
+              updateParams({ to: e.target.value, page: 1 });
             }}
           />
         </FormControl>
       </Box>
     );
   };
-
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
@@ -161,8 +173,12 @@ const {
       prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
     );
   };
+
   const handleSearch = (query) => {
-    setSearchQuery(query.toLowerCase());
+    const q = query.toLowerCase();
+    setSearchQuery(q);
+    // push to URL + reset page
+    updateParams({ q, page: 1 });
   };
 
   const expenses = useMemo(
@@ -233,16 +249,30 @@ const {
     );
   };
 
+  // --- read all filters from URL and sync local state ---
   useEffect(() => {
-    const page = parseInt(searchParams.get("page")) || 1;
-    setCurrentPage(page);
-  }, [searchParams]);
+    const pageParam = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    if (pageParam !== currentPage) setCurrentPage(pageParam);
+
+    const qParam = searchParams.get("q") || "";
+    if (qParam !== searchQuery) setSearchQuery(qParam);
+
+    const statusParam = searchParams.get("status") || "";
+    if (statusParam !== selectedstatus) setSelectedstatus(statusParam);
+
+    const fromParam = searchParams.get("from") || "";
+    if (fromParam !== from) setFrom(fromParam);
+
+    const toParam = searchParams.get("to") || "";
+    if (toParam !== to) setTo(toParam);
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const paginatedExpenses = expenses;
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
-      setSearchParams({ page: String(page) });
+      // merge, don't replace
+      updateParams({ page: String(page) });
     }
   };
 

@@ -38,6 +38,50 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
+  // ---- helper: merge update to URL params (preserve others) ----
+  const updateParams = (patch) => {
+    const next = new URLSearchParams(searchParams);
+    Object.entries(patch).forEach(([k, v]) => {
+      if (v == null || v === "") next.delete(k);
+      else next.set(k, String(v));
+    });
+    setSearchParams(next);
+  };
+
+  // ---- read values from URL and sync local state (on back/forward or manual edits) ----
+  useEffect(() => {
+    const pageParam = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    if (pageParam !== currentPage) setCurrentPage(pageParam);
+
+    const qParam = searchParams.get("q") || "";
+    if (qParam !== searchQuery) setSearchQuery(qParam);
+
+    const deptParam = searchParams.get("department") || "";
+    if (deptParam !== selectedDepartment) setSelectedDepartment(deptParam);
+
+    const statusParam = searchParams.get("status") || "";
+    if (statusParam !== selectedstatus) setSelectedstatus(statusParam);
+
+    const fromParam = searchParams.get("from") || "";
+    if (fromParam !== from) setFrom(fromParam);
+
+    const toParam = searchParams.get("to") || "";
+    if (toParam !== to) setTo(toParam);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // ---- push search to URL (debounced) ----
+  useEffect(() => {
+    const id = setTimeout(() => {
+      // only write if actually different from current URL
+      if ((searchParams.get("q") || "") !== searchQuery) {
+        updateParams({ q: searchQuery, page: 1 });
+      }
+    }, 400);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
+
   const searchParam = searchQuery;
 
   const { data: getExpense = [], isLoading } = useGetAllExpenseQuery({
@@ -89,6 +133,7 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
             onChange={(e, newValue) => {
               setSelectedDepartment(newValue);
               setCurrentPage(1);
+              updateParams({ department: newValue ?? "", page: 1 });
             }}
             size="sm"
             placeholder="Select Department"
@@ -109,7 +154,7 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
             onChange={(e, newValue) => {
               setSelectedstatus(newValue);
               setCurrentPage(1);
-
+              updateParams({ status: newValue ?? "", page: 1 });
             }}
             size="sm"
             placeholder="Select Status"
@@ -131,6 +176,7 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
             onChange={(e) => {
               setFrom(e.target.value);
               setCurrentPage(1);
+              updateParams({ from: e.target.value, page: 1 });
             }}
           />
         </FormControl>
@@ -143,6 +189,7 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
             onChange={(e) => {
               setTo(e.target.value);
               setCurrentPage(1);
+              updateParams({ to: e.target.value, page: 1 });
             }}
           />
         </FormControl>
@@ -181,36 +228,35 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
     [getExpense]
   );
 
-const handleSelectAll = (event) => {
-  const ids = paginatedExpenses.map((row) => row._id);
+  const handleSelectAll = (event) => {
+    const ids = paginatedExpenses.map((row) => row._id);
 
-  if (event.target.checked) {
-    setSelectedExpenses((prevSelected) => [
-      ...new Set([...prevSelected, ...ids]),
-    ]);
-    setSheetIds((prevSheetIds) => [
-      ...new Set([...prevSheetIds, ...ids]),
-    ]);
-  } else {
-    setSelectedExpenses((prevSelected) =>
-      prevSelected.filter((id) => !ids.includes(id))
-    );
-    setSheetIds((prevSheetIds) =>
-      prevSheetIds.filter((id) => !ids.includes(id))
-    );
-  }
-};
-
+    if (event.target.checked) {
+      setSelectedExpenses((prevSelected) => [
+        ...new Set([...prevSelected, ...ids]),
+      ]);
+      setSheetIds((prevSheetIds) => [
+        ...new Set([...prevSheetIds, ...ids]),
+      ]);
+    } else {
+      setSelectedExpenses((prevSelected) =>
+        prevSelected.filter((id) => !ids.includes(id))
+      );
+      setSheetIds((prevSheetIds) =>
+        prevSheetIds.filter((id) => !ids.includes(id))
+      );
+    }
+  };
 
   const handleRowSelect = (_id) => {
-  setSelectedExpenses((prev) =>
-    prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
-  );
+    setSelectedExpenses((prev) =>
+      prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
+    );
 
-  setSheetIds((prev) =>
-    prev.includes(_id) ? prev.filter((id) => id !== _id) : [...prev, _id]
-  );
-};
+    setSheetIds((prev) =>
+      prev.includes(_id) ? prev.filter((id) => id !== _id) : [...prev, _id]
+    );
+  };
 
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
@@ -253,6 +299,7 @@ const handleSelectAll = (event) => {
     );
   };
 
+  // keep this effect: state already synced above, but harmless
   useEffect(() => {
     const page = parseInt(searchParams.get("page")) || 1;
     setCurrentPage(page);
@@ -262,7 +309,8 @@ const handleSelectAll = (event) => {
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
-      setSearchParams({ page: String(page) });
+      // MERGE page instead of replacing other params
+      updateParams({ page: String(page) });
     }
   };
 
