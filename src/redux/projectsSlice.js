@@ -75,7 +75,7 @@ export const projectsApi = createApi({
       query: () => `activities/activities`,
       providesTags: ["Project"],
     }),
-    
+
     //Project Activity
     createProjectActivity: builder.mutation({
       query: (newProjectActivity) => ({
@@ -86,23 +86,31 @@ export const projectsApi = createApi({
       invalidatesTags: ["Project"],
     }),
     getProjectActivityByProjectId: builder.query({
-      query: (projectId) => `projectactivity/projectactivity?projectId=${projectId}`,
+      query: (projectId) =>
+        `projectactivity/projectactivity?projectId=${projectId}`,
       providesTags: ["Project"],
     }),
     updateProjectActivity: builder.mutation({
       query: (newActivity, id) => `projectactivity/projectactivity/${id}`,
-      providesTags: ["Project"] 
+      providesTags: ["Project"],
     }),
 
-   pushActivityToProject: builder.mutation({
-  // args: { projectId, name, description, type }
-  query: ({ projectId, name, description, type }) => ({
-    url: `projectactivity/pushactivity/${encodeURIComponent(projectId)}`, // ✅ correct path
-    method: "PUT",
-    body: { name, description, type },
-  }),
-  invalidatesTags: ["Project"],
-}),
+    pushActivityToProject: builder.mutation({
+      query: ({ projectId, name, description, type }) => ({
+        url: `projectactivity/pushactivity/${encodeURIComponent(projectId)}`, 
+        method: "PUT",
+        body: { name, description, type },
+      }),
+      invalidatesTags: ["Project"],
+    }),
+    updateActivityInProject: builder.mutation({
+      query: ({projectId, activityId, data}) => ({
+        url: `projectactivity/${projectId}/updateActivity/${activityId}`,
+        method: 'PUT',
+        body: data
+      }),
+      invalidatesTags:['Project']
+    })
   }),
 });
 
@@ -124,6 +132,7 @@ export const {
   useCreateProjectActivityMutation,
   useGetAllProjectActivityQuery,
   useUpdateProjectActivityMutation,
-   usePushActivityToProjectMutation,
-  useGetProjectActivityByProjectIdQuery
+  usePushActivityToProjectMutation,
+  useGetProjectActivityByProjectIdQuery,
+  updateActivityInProject
 } = projectsApi;
