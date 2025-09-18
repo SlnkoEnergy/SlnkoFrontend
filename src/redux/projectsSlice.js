@@ -105,12 +105,16 @@ export const projectsApi = createApi({
     }),
     updateActivityInProject: builder.mutation({
       query: ({projectId, activityId, data}) => ({
-        url: `projectactivity/${projectId}/updateActivity/${activityId}`,
+        url: `projectactivity/${projectId}/activity/${activityId}`,
         method: 'PUT',
         body: data
       }),
       invalidatesTags:['Project']
-    })
+    }),
+    getActivityInProject: builder.query({
+      query: ({projectId, activityId}) => `projectactivity/${projectId}/activity/${activityId}`,
+      providesTags: ["Project"],
+    }),
   }),
 });
 
@@ -134,5 +138,6 @@ export const {
   useUpdateProjectActivityMutation,
   usePushActivityToProjectMutation,
   useGetProjectActivityByProjectIdQuery,
-  updateActivityInProject
+  useUpdateActivityInProjectMutation,
+  useGetActivityInProjectQuery
 } = projectsApi;

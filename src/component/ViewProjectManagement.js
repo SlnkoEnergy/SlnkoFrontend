@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+// component/ViewProjectManagement.jsx
+import  {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import "dhtmlx-gantt/codebase/dhtmlxgantt.css";
 import gantt from "dhtmlx-gantt/codebase/dhtmlxgantt";
 import {
@@ -20,13 +28,18 @@ import {
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import EventOutlinedIcon from "@mui/icons-material/EventOutlined";
 import { Timelapse, Add, Delete } from "@mui/icons-material";
-import { useGetProjectActivityByProjectIdQuery } from "../redux/projectsSlice";
+import Snackbar from "@mui/joy/Snackbar";
+import {
+  useGetProjectActivityByProjectIdQuery,
+  useUpdateActivityInProjectMutation,
+  useCreateProjectActivityMutation, // <-- NEW
+} from "../redux/projectsSlice";
 import { useSearchParams } from "react-router-dom";
+import AppSnackbar from "./AppSnackbar";
 
-/* ============ helpers ============ */
+/* ---------------- helpers (unchanged) ---------------- */
 const labelToType = { FS: "0", SS: "1", FF: "2", SF: "3" };
 const typeToLabel = { 0: "FS", 1: "SS", 2: "FF", 3: "SF" };
-
 const toDMY = (d) => {
   if (!d) return "";
   const dt = d instanceof Date ? d : new Date(d);
@@ -42,20 +55,30 @@ const parseDMY = (s) => {
   if (!dd || !mm || !yyyy) return null;
   return new Date(yyyy, mm - 1, dd);
 };
-const diffDaysInclusiveISO = (sISO, eISO) => {
-  const s = parseISOAsLocalDate(sISO);
-  const e = parseISOAsLocalDate(eISO);
+function parseISOAsLocalDate(v) {
+  if (!v) return null;
+  if (v instanceof Date && !isNaN(v))
+    return new Date(v.getFullYear(), v.getMonth(), v.getDate(), 0, 0, 0);
+  const d0 = new Date(String(v));
+  if (d0 && !Number.isNaN(d0.getTime()))
+    return new Date(d0.getFullYear(), d0.getMonth(), d0.getDate(), 0, 0, 0);
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v));
+  if (m) return new Date(+m[1], +m[2] - 1, +m[3], 0, 0, 0);
+  return null;
+}
+const diffDaysInclusive = (sIn, eIn) => {
+  const s = sIn instanceof Date ? sIn : parseISOAsLocalDate(sIn);
+  const e = eIn instanceof Date ? eIn : parseISOAsLocalDate(eIn);
   if (!s || !e) return 0;
-  const ms = e - s;
+  const s0 = new Date(s.getFullYear(), s.getMonth(), s.getDate());
+  const e0 = new Date(e.getFullYear(), e.getMonth(), e.getDate());
+  const ms = e0 - s0;
   return ms < 0 ? 0 : Math.floor(ms / 86400000) + 1;
 };
-
-
 const startCellTemplate = (task) =>
   task.start_date instanceof Date
     ? gantt.date.date_to_str("%d-%m-%Y")(task.start_date)
     : "";
-
 const endCellTemplate = (task) => {
   if (task._end_dmy) return task._end_dmy;
   if (task.start_date instanceof Date && Number(task.duration) > 0) {
@@ -68,12 +91,6 @@ const endCellTemplate = (task) => {
   }
   return "";
 };
-
-function parseISOAsLocalDate(isoStr) {
-  if (!isoStr) return null;
-  const [yyyy, mm, dd] = isoStr.split("-").map(Number);
-  return new Date(yyyy, mm - 1, dd, 0, 0, 0); // 👈 local midnight
-}
 const durationTemplate = (task) =>
   Number(task.duration) > 0 ? String(task.duration) : "";
 const predecessorTemplate = (task) => {
@@ -90,16 +107,190 @@ const predecessorTemplate = (task) => {
     })
     .join(", ");
 };
+const computeTaskRange = () => {
+  let min = null,
+    max = null;
+  gantt.eachTask((t) => {
+    const s = t.start_date instanceof Date ? t.start_date : null;
+    let e = null;
+    if (t._end_dmy) {
+      e = parseDMY(t._end_dmy);
+    } else if (s && Number(t.duration) > 0) {
+      e = gantt.calculateEndDate({
+        start_date: s,
+        duration: t.duration,
+        task: t,
+      });
+    }
+    if (s) min = !min || s < min ? s : min;
+    if (e) max = !max || e > max ? e : max;
+  });
+  return { min, max };
+};
+const fitViewportToTasks = () => {
+  const { min, max } = computeTaskRange();
+  if (!min || !max) return;
+  const pad = 3; // days
+  const s = new Date(min.getFullYear(), min.getMonth(), min.getDate() - pad);
+  const e = new Date(max.getFullYear(), max.getMonth(), max.getDate() + pad);
+  gantt.config.start_date = s;
+  gantt.config.end_date = e;
+  gantt.render();
+};
+const msProjectSort = () => {
+  const endOf = (t) => {
+    if (t._end_dmy) return parseDMY(t._end_dmy);
+    if (t.start_date instanceof Date && Number(t.duration) > 0) {
+      return gantt.calculateEndDate({
+        start_date: t.start_date,
+        duration: t.duration,
+        task: t,
+      });
+    }
+    return null;
+  };
+  gantt.sort((a, b) => {
+    const aStart =
+      a.start_date instanceof Date && !isNaN(a.start_date)
+        ? a.start_date.getTime()
+        : Infinity;
+    const bStart =
+      b.start_date instanceof Date && !isNaN(b.start_date)
+        ? b.start_date.getTime()
+        : Infinity;
+    if (aStart !== bStart) return aStart - bStart;
 
-/* ============ right-panel row component ============ */
+    const aEnd = endOf(a);
+    const bEnd = endOf(b);
+    const aEndMs = aEnd ? aEnd.getTime() : Infinity;
+    const bEndMs = bEnd ? bEnd.getTime() : Infinity;
+    if (aEndMs !== bEndMs) return aEndMs - bEndMs;
+
+    return 0; // no name tiebreaker
+  });
+};
+
+/* ---------------- dependencies & scheduling (unchanged) ---------------- */
+const rebuildLinksForTask = (taskId, preds, succs) => {
+  const all = gantt.getLinks();
+  const toRemove = all.filter(
+    (l) => String(l.target) === String(taskId) || String(l.source) === String(taskId)
+  );
+  toRemove.forEach((l) => gantt.deleteLink(l.id));
+  (preds || []).forEach((r) => {
+    const src = String(r.activityId || "");
+    if (!src || src === String(taskId)) return;
+    const typeCode = labelToType[String((r.type || "FS").toUpperCase())] ?? "0";
+    gantt.addLink({
+      id: gantt.uid(),
+      source: src,
+      target: String(taskId),
+      type: typeCode,
+      lag: Number(r.lag || 0),
+    });
+  });
+  (succs || []).forEach((r) => {
+    const trg = String(r.activityId || "");
+    if (!trg || trg === String(taskId)) return;
+    const typeCode = labelToType[String((r.type || "FS").toUpperCase())] ?? "0";
+    gantt.addLink({
+      id: gantt.uid(),
+      source: String(taskId),
+      target: trg,
+      type: typeCode,
+      lag: Number(r.lag || 0),
+    });
+  });
+};
+const scheduleFromPredecessors = (taskId) => {
+  const t = gantt.getTask(taskId);
+  if (!t) return;
+  const incoming = gantt.getLinks().filter((l) => String(l.target) === String(taskId));
+  if (!incoming.length) return;
+
+  const dur = Number(t.duration) || 0;
+  const start0 = t.start_date instanceof Date ? t.start_date : new Date();
+  const end0 = dur > 0 ? gantt.calculateEndDate({ start_date: start0, duration: dur, task: t }) : null;
+
+  let requiredStart = start0;
+  let requiredEnd = end0;
+
+  incoming.forEach((l) => {
+    const src = gantt.getTask(l.source);
+    if (!src) return;
+    const srcStart = src.start_date instanceof Date ? src.start_date : null;
+    const srcEnd =
+      srcStart && Number(src.duration) > 0
+        ? gantt.calculateEndDate({ start_date: srcStart, duration: src.duration, task: src })
+        : null;
+    const lagDays = Number(l.lag || 0);
+    const type = String(l.type);
+
+    if (type === "0") {
+      // FS
+      if (srcEnd) {
+        const minStart = gantt.calculateEndDate({ start_date: srcEnd, duration: lagDays });
+        if (!requiredStart || minStart > requiredStart) requiredStart = minStart;
+      }
+    } else if (type === "1") {
+      // SS
+      if (srcStart) {
+        const minStart = gantt.calculateEndDate({ start_date: srcStart, duration: lagDays });
+        if (!requiredStart || minStart > requiredStart) requiredStart = minStart;
+      }
+    } else if (type === "2") {
+      // FF
+      if (srcEnd) {
+        const minEnd = gantt.calculateEndDate({ start_date: srcEnd, duration: lagDays });
+        if (!requiredEnd || minEnd > requiredEnd) requiredEnd = minEnd;
+      }
+    } else if (type === "3") {
+      // SF
+      if (srcStart) {
+        const minEnd = gantt.calculateEndDate({ start_date: srcStart, duration: lagDays });
+        if (!requiredEnd || minEnd > requiredEnd) requiredEnd = minEnd;
+      }
+    }
+  });
+
+  if (dur > 0) {
+    if (
+      requiredEnd &&
+      (!requiredStart ||
+        requiredEnd > gantt.calculateEndDate({ start_date: requiredStart, duration: dur }))
+    ) {
+      const newStart = gantt.calculateEndDate({ start_date: requiredEnd, duration: -dur + 1 });
+      t.start_date = newStart;
+      t._hadStart = true;
+      t.end_date = gantt.calculateEndDate({ start_date: newStart, duration: dur, task: t });
+      t._end_dmy = toDMY(t.end_date);
+    } else if (requiredStart && requiredStart > start0) {
+      t.start_date = requiredStart;
+      t._hadStart = true;
+      t.end_date = gantt.calculateEndDate({ start_date: requiredStart, duration: dur, task: t });
+      t._end_dmy = toDMY(t.end_date);
+    } else if (requiredEnd && (!end0 || requiredEnd > end0)) {
+      t.end_date = requiredEnd;
+      t._end_dmy = toDMY(requiredEnd);
+      t.start_date = gantt.calculateEndDate({ start_date: requiredEnd, duration: -dur + 1 });
+      t._hadStart = true;
+    }
+  } else {
+    if (requiredStart && (!t.start_date || requiredStart > t.start_date)) {
+      t.start_date = requiredStart;
+      t._hadStart = true;
+    }
+    if (requiredEnd && !t._end_dmy) {
+      t._end_dmy = toDMY(requiredEnd);
+      t.end_date = requiredEnd;
+    }
+  }
+};
+
+/* ---------------- right panel row ---------------- */
 function DepRow({ title, options, row, onChange, onRemove }) {
   return (
-    <Stack
-      direction="row"
-      alignItems="center"
-      spacing={1}
-      sx={{ width: "100%" }}
-    >
+    <Stack direction="row" alignItems="center" spacing={1} sx={{ width: "100%" }}>
       <Autocomplete
         placeholder={`${title} activity…`}
         size="sm"
@@ -107,25 +298,21 @@ function DepRow({ title, options, row, onChange, onRemove }) {
         getOptionLabel={(o) => o?.label || ""}
         value={options.find((o) => o.value === row.activityId) || null}
         onChange={(_, val) =>
-          onChange({ ...row, activityId: val?.value || "" })
+          onChange({
+            ...row,
+            activityId: val?.value || "",
+            activityName: val?.label || "",
+          })
         }
         sx={{ minWidth: 180, flex: 1 }}
-        slotProps={{
-          listbox: {
-            sx: { zIndex: 1401 },
-          },
-        }}
+        slotProps={{ listbox: { sx: { zIndex: 1401 } } }}
       />
       <Select
         size="sm"
         value={row.type}
         onChange={(_, v) => onChange({ ...row, type: v || "FS" })}
         sx={{ width: 90 }}
-        slotProps={{
-          listbox: {
-            sx: { zIndex: 1401 },
-          },
-        }}
+        slotProps={{ listbox: { sx: { zIndex: 1401 } } }}
       >
         {["FS", "SS", "FF", "SF"].map((t) => (
           <Option key={t} value={t}>
@@ -148,16 +335,22 @@ function DepRow({ title, options, row, onChange, onRemove }) {
   );
 }
 
-/* ============ main component ============ */
-const View_Project_Management = ({ viewModeParam = "week" }) => {
+/* ---------------- main component ---------------- */
+const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => {
   const ganttContainer = useRef(null);
   const [viewMode, setViewMode] = useState(viewModeParam);
   const [searchParams] = useSearchParams();
-
   const projectId = searchParams.get("project_id");
+const [snack, setSnack] = useState({ open: false, msg: "" });
   const { data: apiData } = useGetProjectActivityByProjectIdQuery(projectId, {
     skip: !projectId,
   });
+
+  const [updateActivityInProject, { isLoading: isSaving }] =
+    useUpdateActivityInProjectMutation();
+
+  const [createProjectActivity, { isLoading: isSavingTemplate }] =
+    useCreateProjectActivityMutation(); // <-- NEW
 
   const paWrapper = apiData?.projectactivity || apiData || {};
   const paList = Array.isArray(paWrapper.activities)
@@ -167,15 +360,16 @@ const View_Project_Management = ({ viewModeParam = "week" }) => {
     : [];
   const projectMeta = paWrapper.project_id || apiData?.project || {};
 
-  /* ---------- map API -> gantt payload ---------- */
-  const ganttPayload = useMemo(() => {
-    const byMasterToPA = new Map();
+  const { ganttData, ganttLinks, siToDbId } = useMemo(() => {
+    const byMasterToSI = new Map();
+    const _siToDbId = new Map();
 
-    const data = paList.map((pa) => {
-      const paId = String(pa._id || pa.id || "");
+    const data = paList.map((pa, idx) => {
+      const si = String(idx + 1);
       const master = pa.activity_id || pa.master_activity_id || {};
-      const masterId = String(master?._id || master?.id || "");
-      if (masterId && paId) byMasterToPA.set(masterId, paId);
+      const masterId = String(master?._id || "");
+      if (masterId) byMasterToSI.set(masterId, si);
+      if (masterId) _siToDbId.set(si, masterId);
 
       const text = master?.name || pa.name || pa.activity_name || "—";
       const sISO = pa.planned_start || pa.start_date || pa.start || null;
@@ -184,21 +378,21 @@ const View_Project_Management = ({ viewModeParam = "week" }) => {
       const startDateObj = sISO ? parseISOAsLocalDate(sISO) : null;
       const endDateObj = eISO ? parseISOAsLocalDate(eISO) : null;
 
-      const duration =
-        Number(pa.duration) ||
-        (startDateObj && endDateObj
-          ? diffDaysInclusiveISO(startDateObj, endDateObj)
-          : 0);
+      let duration = 0;
+      if (startDateObj && endDateObj) {
+        duration = diffDaysInclusive(startDateObj, endDateObj);
+      } else if (Number.isFinite(Number(pa.duration)) && Number(pa.duration) > 0) {
+        duration = Number(pa.duration);
+      }
 
       const hadStart = !!startDateObj;
       const unscheduled = !hadStart && !duration;
-      const internalStart = hadStart ? startDateObj : new Date();
-
-      // basic status fallback
       const status = pa.current_status?.status || "not started";
 
       return {
-        id: paId || `tmp-${Math.random().toString(36).slice(2)}`,
+        id: si,
+        _si: si,
+        _dbId: masterId,
         text,
         start_date: startDateObj || new Date(),
         _end_dmy: endDateObj ? toDMY(endDateObj) : "",
@@ -209,26 +403,26 @@ const View_Project_Management = ({ viewModeParam = "week" }) => {
             : 0,
         open: true,
         _hadStart: hadStart,
-        _end_dmy: endDateObj ? toDMY(endDateObj) : "", // ✅ keep grid in dd-mm-yyyy
         _unscheduled: unscheduled,
         _status: status,
       };
     });
 
+    // links from predecessors
     let lid = 1;
     const links = [];
-    paList.forEach((pa) => {
+    paList.forEach((pa, idx) => {
+      const targetSI = String(idx + 1);
       const preds = Array.isArray(pa.predecessors) ? pa.predecessors : [];
       preds.forEach((p) => {
         const srcMaster = String(p.activity_id || p.master_activity_id || "");
-        const srcPaId = byMasterToPA.get(srcMaster);
-        const targetPaId = String(pa._id || pa.id || "");
-        if (srcPaId && targetPaId) {
+        const srcSI = byMasterToSI.get(srcMaster);
+        if (srcSI) {
           const typeCode = labelToType[(p.type || "FS").toUpperCase()] ?? "0";
           links.push({
             id: lid++,
-            source: String(srcPaId),
-            target: String(targetPaId),
+            source: String(srcSI),
+            target: String(targetSI),
             type: typeCode,
             lag: Number(p.lag || 0),
           });
@@ -236,131 +430,259 @@ const View_Project_Management = ({ viewModeParam = "week" }) => {
       });
     });
 
-    return { data, links };
+    return { ganttData: data, ganttLinks: links, siToDbId: _siToDbId };
   }, [paList]);
 
-  /* ---------- header min/max ---------- */
+  /* ---------- chips ---------- */
   const minStartDMY = useMemo(() => {
-    const nums = (ganttPayload.data || [])
+    const nums = (ganttData || [])
       .filter((t) => t._hadStart)
       .map((t) => (t.start_date instanceof Date ? t.start_date.getTime() : null))
       .filter((n) => Number.isFinite(n));
     if (!nums.length) return "—";
     return toDMY(new Date(Math.min(...nums)));
-  }, [ganttPayload]);
+  }, [ganttData]);
 
- const maxEndDMY = useMemo(() => {
-  const ends = (ganttPayload.data || []).map((t) => {
-    if (t._end_dmy) return parseDMY(t._end_dmy); // still fine, because _end_dmy is dd-mm-yyyy
-    if (t._hadStart && Number(t.duration) > 0) {
-      const s = t.start_date instanceof Date ? t.start_date : null; // ✅ use Date directly
-      if (!s) return null;
-      return gantt.calculateEndDate({
-        start_date: s,
-        duration: t.duration,
-        task: t,
-      });
-    }
-    return null;
-  });
+  const maxEndDMY = useMemo(() => {
+    const ends = (ganttData || []).map((t) => {
+      if (t._end_dmy) return parseDMY(t._end_dmy);
+      if (t._hadStart && Number(t.duration) > 0) {
+        const s = t.start_date instanceof Date ? t.start_date : null;
+        if (!s) return null;
+        return gantt.calculateEndDate({
+          start_date: s,
+          duration: t.duration,
+          task: t,
+        });
+      }
+      return null;
+    });
+    const nums = ends.map((d) => d?.getTime()).filter((n) => Number.isFinite(n));
+    if (!nums.length) return "—";
+    return toDMY(new Date(Math.max(...nums)));
+  }, [ganttData]);
 
-  const nums = ends.map((d) => d?.getTime()).filter((n) => Number.isFinite(n));
-  if (!nums.length) return "—";
-  return toDMY(new Date(Math.max(...nums)));
-}, [ganttPayload]);
-
-
-  /* ---------- RIGHT PANEL STATE ---------- */
+  /* ---------- right panel state ---------- */
   const [selectedId, setSelectedId] = useState(null);
   const [form, setForm] = useState({
     status: "not started",
     start: "",
     end: "",
     duration: "",
-    predecessors: [], // { activityId, type, lag }
-    successors: [], // { activityId, type, lag }
+    predecessors: [],
+    successors: [],
   });
 
-  // Options for activity pickers
   const activityOptions = useMemo(
     () =>
-      (ganttPayload.data || []).map((t) => ({
+      (ganttData || []).map((t) => ({
         value: String(t.id),
         label: t.text,
       })),
-    [ganttPayload]
+    [ganttData]
   );
 
-  // load current task -> form
   const loadTaskIntoForm = (taskId) => {
     const task = gantt.getTask(taskId);
     if (!task) return;
-    const incoming = gantt
-      .getLinks()
-      .filter((l) => String(l.target) === String(taskId));
-    const outgoing = gantt
-      .getLinks()
-      .filter((l) => String(l.source) === String(taskId));
+    const incoming = gantt.getLinks().filter((l) => String(l.target) === String(taskId));
+    const outgoing = gantt.getLinks().filter((l) => String(l.source) === String(taskId));
 
     setForm({
       status: task._status || "not started",
-      start: task.start_date
-        ? gantt.date.date_to_str("%Y-%m-%d")(task.start_date) // 👈 ISO for input
-        : "",
-      end: task._end_dmy
-        ? task._end_dmy.split("-").reverse().join("-") // dd-mm-yyyy → yyyy-mm-dd
-        : "",
+      start: task.start_date ? gantt.date.date_to_str("%Y-%m-%d")(task.start_date) : "",
+      end: task._end_dmy ? task._end_dmy.split("-").reverse().join("-") : "",
       duration: task.duration || "",
       predecessors: incoming.map((l) => ({
         activityId: String(l.source),
+        activityName: (gantt.getTask(l.source) || {}).text || "",
         type: typeToLabel[String(l.type)] || "FS",
         lag: Number(l.lag || 0),
       })),
       successors: outgoing.map((l) => ({
         activityId: String(l.target),
+        activityName: (gantt.getTask(l.target) || {}).text || "",
         type: typeToLabel[String(l.type)] || "FS",
         lag: Number(l.lag || 0),
       })),
     });
   };
 
-  // Apply form -> gantt
-  const applyForm = () => {
+  /* ---------- APPLY (unchanged from your last code) ---------- */
+  const applyForm = async () => {
     if (!selectedId) return;
     const task = gantt.getTask(selectedId);
     if (!task) return;
 
-    let newDuration = Number(form.duration || 0);
     let startDate = form.start ? parseISOAsLocalDate(form.start) : null;
     let endDate = form.end ? parseISOAsLocalDate(form.end) : null;
+    let newDuration = Number(form.duration || 0);
 
-    if (startDate && endDate && !newDuration) {
-      newDuration = Math.floor((endDate - startDate) / 86400000) + 1;
-    } else if (startDate && newDuration && !endDate) {
-      endDate = gantt.calculateEndDate({
-        start_date: startDate,
-        duration: newDuration,
-      });
-    } else if (endDate && newDuration && !startDate) {
-      startDate = gantt.calculateEndDate({
-        start_date: endDate,
-        duration: -newDuration + 1,
-      });
+    if (startDate && endDate) {
+      newDuration = diffDaysInclusive(startDate, endDate);
+    } else if (startDate && newDuration > 0 && !endDate) {
+      endDate = gantt.calculateEndDate({ start_date: startDate, duration: newDuration });
+    } else if (endDate && newDuration > 0 && !startDate) {
+      startDate = gantt.calculateEndDate({ start_date: endDate, duration: -newDuration + 1 });
     }
 
-    // ✅ Gantt must always have Date objects
     task.start_date = startDate || new Date();
-    task.duration = Number.isFinite(newDuration) ? newDuration : 0;
+    task.duration = Number.isFinite(newDuration) && newDuration > 0 ? newDuration : 0;
+    task.end_date =
+      endDate ||
+      (task.duration > 0
+        ? gantt.calculateEndDate({ start_date: task.start_date, duration: task.duration })
+        : null);
+
     task._hadStart = !!startDate;
-    task._unscheduled = !startDate && !newDuration;
-    task._end_dmy = endDate ? toDMY(endDate) : "";
+    task._unscheduled = !startDate && !task.duration;
+    task._end_dmy = task.end_date ? toDMY(task.end_date) : "";
     task._status = form.status;
+    task.$no_end = !task.end_date;
+    task.$calculate_duration = false;
+
+    rebuildLinksForTask(selectedId, form.predecessors, form.successors);
+    scheduleFromPredecessors(selectedId);
 
     gantt.updateTask(selectedId);
+    msProjectSort();
     gantt.render();
+    fitViewportToTasks();
+
+    try {
+      const dbActivityId = task._dbId;
+      if (projectId && dbActivityId) {
+        const mapSiToDb = (arr = []) =>
+          arr
+            .map((r) => {
+              const si = String(r.activityId || "");
+              const dbId = siToDbId.get(si);
+              if (!dbId) return null;
+              return {
+                activity_id: dbId,
+                type: String(r.type || "FS").toUpperCase(),
+                lag: Number(r.lag || 0),
+              };
+            })
+            .filter(Boolean);
+
+        const payload = {
+          planned_start: startDate ? startDate.toISOString() : null,
+          planned_finish: task.end_date ? task.end_date.toISOString() : null,
+          duration: Number(task.duration || 0),
+          current_status: { status: form.status },
+          predecessors: mapSiToDb(form.predecessors),
+          successors: mapSiToDb(form.successors),
+        };
+
+        await updateActivityInProject({
+          projectId,
+          activityId: dbActivityId,
+          data: payload,
+        });
+         
+      }
+    } catch (e) {
+       
+    }
   };
 
-  /* ---------- init gantt once ---------- */
+  /* ---------- SAVE AS TEMPLATE: exposed via ref ---------- */
+  useImperativeHandle(ref, () => ({
+    saveAsTemplate: async () => {
+      // gather tasks
+      const tasks = [];
+      gantt.eachTask((t) => {
+        const start = t.start_date instanceof Date ? t.start_date : null;
+        const end =
+          t._end_dmy
+            ? parseDMY(t._end_dmy)
+            : start && Number(t.duration) > 0
+            ? gantt.calculateEndDate({ start_date: start, duration: t.duration, task: t })
+            : null;
+
+        tasks.push({
+          si: String(t.id),
+          dbId: String(t._dbId || ""),
+          start,
+          end,
+          duration: Number(t.duration || 0),
+          percent: Math.round((Number(t.progress || 0)) * 100),
+        });
+      });
+
+      // index by SI
+      const bySi = new Map(tasks.map((x) => [x.si, x]));
+
+      // build predecessors/successors from links
+      const predsBySi = new Map();
+      const succsBySi = new Map();
+      gantt.getLinks().forEach((l) => {
+        const src = String(l.source);
+        const trg = String(l.target);
+        const type = typeToLabel[String(l.type)] || "FS";
+        const lag = Number(l.lag || 0);
+
+        if (!predsBySi.has(trg)) predsBySi.set(trg, []);
+        predsBySi.get(trg).push({ activityIdSi: src, type, lag });
+
+        if (!succsBySi.has(src)) succsBySi.set(src, []);
+        succsBySi.get(src).push({ activityIdSi: trg, type, lag });
+      });
+
+      const activities = tasks
+        .filter((t) => t.dbId) 
+        .map((t) => {
+          const preds = (predsBySi.get(t.si) || [])
+            .map((p) => {
+              const src = bySi.get(p.activityIdSi);
+              if (!src?.dbId) return null;
+              return {
+                activity_id: src.dbId,
+                type: p.type,
+                lag: p.lag,
+              };
+            })
+            .filter(Boolean);
+
+          const succs = (succsBySi.get(t.si) || [])
+            .map((s) => {
+              const trg = bySi.get(s.activityIdSi);
+              if (!trg?.dbId) return null;
+              return {
+                activity_id: trg.dbId,
+                type: s.type,
+                lag: s.lag,
+              };
+            })
+            .filter(Boolean);
+
+          return {
+            activity_id: t.dbId,
+            planned_start: t.start ? t.start.toISOString() : null,
+            planned_finish: t.end ? t.end.toISOString() : null,
+            duration: t.duration || (t.start && t.end ? diffDaysInclusive(t.start, t.end) : 0),
+            percent_complete: t.percent || 0,
+            predecessors: preds,
+            successors: succs,
+          };
+        });
+
+      const payload = {
+        status: "template",
+        activities,
+      };
+
+      try {
+        await createProjectActivity(payload).unwrap();
+        setSnack({ open: true, msg: "Template saved successfully" });
+      } catch (e) {
+        setSnack({ open: true, msg: "Failed to save template" });
+      }
+    },
+  }));
+
+  /* ---------- init gantt ---------- */
   useEffect(() => {
     gantt.config.date_format = "%d-%m-%Y";
     gantt.locale.date.day_short = ["S", "M", "T", "W", "T", "F", "S"];
@@ -379,59 +701,19 @@ const View_Project_Management = ({ viewModeParam = "week" }) => {
     gantt.showLightbox = function () {
       return false;
     };
-    const today = new Date();
-    gantt.config.start_date = new Date(
-      today.getFullYear() - 2,
-      today.getMonth(),
-      today.getDate()
-    );
-    gantt.config.end_date = new Date(
-      today.getFullYear() + 2,
-      today.getMonth(),
-      today.getDate()
-    );
 
     gantt.config.columns = [
+      { name: "si", label: "SI No", width: 80, align: "left", resize: true, template: (t) => t._si || t.id || "" },
       { name: "text", label: "Activity", tree: true, width: 260, resize: true },
-      {
-        name: "duration",
-        label: "Duration",
-        width: 90,
-        align: "left",
-        resize: true,
-        template: durationTemplate,
-      },
-      {
-        name: "start",
-        label: "Start",
-        width: 120,
-        align: "left",
-        resize: true,
-        template: startCellTemplate,
-      },
-      {
-        name: "end",
-        label: "End",
-        width: 120,
-        align: "left",
-        resize: true,
-        template: endCellTemplate,
-      },
-      {
-        name: "pred",
-        label: "Predecessors",
-        width: 180,
-        align: "left",
-        resize: true,
-        template: predecessorTemplate,
-      },
+      { name: "duration", label: "Duration", width: 90, align: "left", resize: true, template: durationTemplate },
+      { name: "start", label: "Start", width: 120, align: "left", resize: true, template: startCellTemplate },
+      { name: "end", label: "End", width: 120, align: "left", resize: true, template: endCellTemplate },
+      { name: "pred", label: "Predecessors", width: 180, align: "left", resize: true, template: predecessorTemplate },
     ];
 
-    // hide bars for unscheduled rows
     gantt.templates.task_class = (_, __, task) =>
       task._unscheduled ? "gantt-task-unscheduled" : "";
 
-    // select -> open panel
     gantt.attachEvent("onTaskClick", function (id) {
       setSelectedId(String(id));
       loadTaskIntoForm(String(id));
@@ -445,13 +727,15 @@ const View_Project_Management = ({ viewModeParam = "week" }) => {
     };
   }, []);
 
-  // feed data whenever API changes
+  /* ---------- feed data ---------- */
   useEffect(() => {
     gantt.clearAll();
-    gantt.parse(ganttPayload);
-  }, [ganttPayload]);
+    gantt.parse({ data: ganttData, links: ganttLinks });
+    msProjectSort();
+    fitViewportToTasks();
+  }, [ganttData, ganttLinks]);
 
-  // scale / headers
+  /* ---------- scales ---------- */
   useEffect(() => setViewMode(viewModeParam), [viewModeParam]);
   useEffect(() => {
     const currentYear = new Date().getFullYear();
@@ -484,12 +768,11 @@ const View_Project_Management = ({ viewModeParam = "week" }) => {
   return (
     <Box
       sx={{
-        ml: { lg: "var(--Sidebar-width)" },
-        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+        ml:'0px',
+        width:  "100%", 
         p: 0,
       }}
     >
-      {/* Hide bars for unscheduled rows */}
       <style>{`.gantt_task_line.gantt-task-unscheduled{display:none!important;}`}</style>
 
       {/* Header chips */}
@@ -520,12 +803,7 @@ const View_Project_Management = ({ viewModeParam = "week" }) => {
             <Typography level="body-sm" sx={{ color: "text.secondary" }}>
               Project Code:
             </Typography>
-            <Chip
-              color="primary"
-              size="sm"
-              variant="solid"
-              sx={{ fontWeight: 700 }}
-            >
+            <Chip color="primary" size="sm" variant="solid" sx={{ fontWeight: 700 }}>
               {projectMeta?.code || "—"}
             </Chip>
           </Box>
@@ -533,52 +811,26 @@ const View_Project_Management = ({ viewModeParam = "week" }) => {
 
         <Sheet
           variant="outlined"
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 2,
-            borderRadius: "lg",
-            px: 1,
-            py: 1,
-          }}
+          sx={{ display: "flex", alignItems: "center", gap: 2, borderRadius: "lg", px: 1, py: 1 }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
             <Timelapse fontSize="small" color="primary" />
             <Typography level="body-sm" sx={{ color: "text.secondary" }}>
               Remaining:
             </Typography>
-            {/* <RemainingDaysChip
-              project={{
-                bd_commitment_date: projectMeta?.bd_commitment_date,
-                completion_date: projectMeta?.completion_date,
-                project_completion_date: projectMeta?.project_completion_date,
-              }}
-            /> */}
           </Box>
         </Sheet>
 
         <Sheet
           variant="outlined"
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 2,
-            borderRadius: "lg",
-            px: 1,
-            py: 1,
-          }}
+          sx={{ display: "flex", alignItems: "center", gap: 2, borderRadius: "lg", px: 1, py: 1 }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
             <EventOutlinedIcon fontSize="small" color="success" />
             <Typography level="body-sm" sx={{ color: "text.secondary" }}>
               Start Date:
             </Typography>
-            <Chip
-              color="success"
-              size="sm"
-              variant="soft"
-              sx={{ fontWeight: 600 }}
-            >
+            <Chip color="success" size="sm" variant="soft" sx={{ fontWeight: 600 }}>
               {minStartDMY}
             </Chip>
           </Box>
@@ -587,28 +839,15 @@ const View_Project_Management = ({ viewModeParam = "week" }) => {
             <Typography level="body-sm" sx={{ color: "text.secondary" }}>
               End Date:
             </Typography>
-            <Chip
-              color="danger"
-              size="sm"
-              variant="soft"
-              sx={{ fontWeight: 600 }}
-            >
+            <Chip color="danger" size="sm" variant="soft" sx={{ fontWeight: 600 }}>
               {maxEndDMY}
             </Chip>
           </Box>
         </Sheet>
       </Box>
 
-      {/* Main area: Gantt (left) + Form (right) */}
-      {/* Gantt */}
-      <Box
-        style={{
-          position: "relative",
-          width: "100%",
-          minWidth: 600,
-          height: "80vh",
-        }}
-      >
+      {/* Gantt area */}
+      <Box style={{ position: "relative", width: "100%", minWidth: 600, height: "80vh" }}>
         <Box
           ref={ganttContainer}
           style={{
@@ -625,254 +864,271 @@ const View_Project_Management = ({ viewModeParam = "week" }) => {
         />
       </Box>
 
+      {/* Backdrop animations */}
+      <style>
+        {`
+          @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0.5; }
+            to   { transform: translateX(0);     opacity: 1; }
+          }
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+          }
+        `}
+      </style>
+
       {/* Right panel */}
       {selectedId && (
-        <Sheet
-          variant="outlined"
-          sx={{
-            position: "fixed",
-            overflow: "auto",
-            height: "80vh",
-            p: 2,
-            borderRadius: "md",
-            transition: "width 0.2s",
-            zIndex: 1400,
-            right: 16,
-            top: 80,
-            bottom: 16,
-            width: 380,
-          }}
-        >
-          <Stack spacing={1.5}>
-            <Typography level="title-sm">Edit Activity</Typography>
-            <Divider />
+        <>
+          <Box
+            onClick={() => setSelectedId(null)}
+            sx={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 1399,
+              backgroundColor: "rgba(0,0,0,0.10)",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+              animation: "fadeIn 140ms ease-out",
+            }}
+          />
 
-            <FormControl>
-              <FormLabel>Status</FormLabel>
-              <Select
-                size="sm"
-                value={form.status}
-                onChange={(_, v) =>
-                  setForm((f) => ({ ...f, status: v || "not started" }))
-                }
-                slotProps={{
-                  listbox: {
-                    sx: { zIndex: 1401 },
-                  },
-                }}
-              >
-                <Option value="not started">Not started</Option>
-                <Option value="in progress">In progress</Option>
-                <Option value="completed">Completed</Option>
-              </Select>
-            </FormControl>
-
-            <Stack direction="row" spacing={1}>
-              <FormControl sx={{ flex: 1 }}>
-                <FormLabel>Start date</FormLabel>
-                <Input
-                  size="sm"
-                  type="date"
-                  value={form.start}
-                  onChange={(e) => {
-                    const startISO = e.target.value; // yyyy-mm-dd
-                    setForm((f) => {
-                      let endISO = f.end;
-                      if (startISO && f.duration) {
-                        const s = parseISOAsLocalDate(startISO); // ✅ Date object
-                        if (!isNaN(s)) {
-                          const eDate = gantt.calculateEndDate({
-                            start_date: s,
-                            duration: Number(f.duration),
-                          });
-                          endISO = gantt.date.date_to_str("%Y-%m-%d")(eDate); // store as ISO
-                        }
-                      }
-                      return { ...f, start: startISO, end: endISO };
-                    });
-                  }}
-                />
-              </FormControl>
+          <Sheet
+            variant="outlined"
+            sx={{
+              position: "fixed",
+              overflow: "auto",
+              height: "100%",
+              p: 2,
+              transition: "width 0.2s",
+              zIndex: 1400,
+              right: 0,
+              top: 0,
+              width: "40%",
+              animation: "slideInRight 230ms ease-out",
+              willChange: "transform, opacity",
+            }}
+          >
+            <Stack spacing={1.5}>
+              <Typography level="title-sm">Edit Activity</Typography>
+              <Divider />
 
               <FormControl>
-                <FormLabel>Duration (days)</FormLabel>
-                <Input
+                <FormLabel>Status</FormLabel>
+                <Select
                   size="sm"
-                  type="number"
-                  value={form.duration}
-                  onChange={(e) => {
-                    const duration = Number(e.target.value) || 0;
-                    setForm((f) => {
-                      let endISO = f.end;
-                      if (f.start && duration > 0) {
-                        const s = parseISOAsLocalDate(f.start); // ✅ Date object
-                        if (!isNaN(s)) {
-                          const eDate = gantt.calculateEndDate({
-                            start_date: s,
-                            duration,
-                          });
-                          endISO = gantt.date.date_to_str("%Y-%m-%d")(eDate);
-                        }
-                      }
-                      return { ...f, duration, end: endISO };
-                    });
-                  }}
-                />
+                  value={form.status}
+                  onChange={(_, v) =>
+                    setForm((f) => ({ ...f, status: v || "not started" }))
+                  }
+                  slotProps={{ listbox: { sx: { zIndex: 1401 } } }}
+                >
+                  <Option value="not started">Not started</Option>
+                  <Option value="in progress">In progress</Option>
+                  <Option value="completed">Completed</Option>
+                </Select>
               </FormControl>
-            </Stack>
 
-            <FormControl sx={{ flex: 1 }}>
-              <FormLabel>End date</FormLabel>
-              <Input size="sm" type="date" value={form.end} disabled />
-            </FormControl>
+              <Stack direction="row" spacing={1}>
+                <FormControl sx={{ flex: 1 }}>
+                  <FormLabel>Start date</FormLabel>
+                  <Input
+                    size="sm"
+                    type="date"
+                    value={form.start}
+                    onChange={(e) => {
+                      const startISO = e.target.value;
+                      setForm((f) => {
+                        let endISO = f.end;
+                        if (startISO && f.duration) {
+                          const s = parseISOAsLocalDate(startISO);
+                          if (!isNaN(s)) {
+                            const eDate = gantt.calculateEndDate({
+                              start_date: s,
+                              duration: Number(f.duration),
+                            });
+                            endISO = gantt.date.date_to_str("%Y-%m-%d")(eDate);
+                          }
+                        }
+                        return { ...f, start: startISO, end: endISO };
+                      });
+                    }}
+                  />
+                </FormControl>
 
-            <Divider />
+                <FormControl>
+                  <FormLabel>Duration (days)</FormLabel>
+                  <Input
+                    size="sm"
+                    type="number"
+                    value={form.duration}
+                    onChange={(e) => {
+                      const duration = Number(e.target.value) || 0;
+                      setForm((f) => {
+                        let endISO = f.end;
+                        if (f.start && duration > 0) {
+                          const s = parseISOAsLocalDate(f.start);
+                          if (!isNaN(s)) {
+                            const eDate = gantt.calculateEndDate({
+                              start_date: s,
+                              duration,
+                            });
+                            endISO = gantt.date.date_to_str("%Y-%m-%d")(eDate);
+                          }
+                        }
+                        return { ...f, duration, end: endISO };
+                      });
+                    }}
+                  />
+                </FormControl>
+              </Stack>
 
-            {/* Predecessors */}
-            <Stack spacing={1}>
-              <Stack
-                direction="row"
-                alignItems="center"
-                justifyContent="space-between"
-              >
-                <Typography level="title-sm">Predecessors</Typography>
+              <FormControl sx={{ flex: 1 }}>
+                <FormLabel>End date</FormLabel>
+                <Input size="sm" type="date" value={form.end} disabled />
+              </FormControl>
+
+              <Divider />
+
+              {/* Predecessors */}
+              <Stack spacing={1}>
+                <Stack direction="row" alignItems="center" justifyContent="space-between">
+                  <Typography level="title-sm">Predecessors</Typography>
+                  <Button
+                    size="sm"
+                    variant="soft"
+                    startDecorator={<Add />}
+                    onClick={() =>
+                      setForm((f) => ({
+                        ...f,
+                        predecessors: [
+                          ...f.predecessors,
+                          { activityId: "", activityName: "", type: "FS", lag: 0 },
+                        ],
+                      }))
+                    }
+                  >
+                    Add
+                  </Button>
+                </Stack>
+                <Stack spacing={1}>
+                  {form.predecessors.length === 0 && (
+                    <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
+                      No predecessors
+                    </Typography>
+                  )}
+                  {form.predecessors.map((r, idx) => (
+                    <DepRow
+                      key={`pred-${idx}`}
+                      title="Predecessor"
+                      options={activityOptions.filter((o) => o.value !== selectedId)}
+                      row={r}
+                      onChange={(nr) =>
+                        setForm((f) => {
+                          const arr = [...f.predecessors];
+                          arr[idx] = nr;
+                          return { ...f, predecessors: arr };
+                        })
+                      }
+                      onRemove={() =>
+                        setForm((f) => {
+                          const arr = f.predecessors.slice();
+                          arr.splice(idx, 1);
+                          return { ...f, predecessors: arr };
+                        })
+                      }
+                    />
+                  ))}
+                </Stack>
+              </Stack>
+
+              <Divider />
+
+              {/* Successors */}
+              <Stack spacing={1}>
+                <Stack direction="row" alignItems="center" justifyContent="space-between">
+                  <Typography level="title-sm">Successors</Typography>
+                  <Button
+                    size="sm"
+                    variant="soft"
+                    startDecorator={<Add />}
+                    onClick={() =>
+                      setForm((f) => ({
+                        ...f,
+                        successors: [
+                          ...f.successors,
+                          { activityId: "", activityName: "", type: "FS", lag: 0 },
+                        ],
+                      }))
+                    }
+                  >
+                    Add
+                  </Button>
+                </Stack>
+                <Stack spacing={1}>
+                  {form.successors.length === 0 && (
+                    <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
+                      No successors
+                    </Typography>
+                  )}
+                  {form.successors.map((r, idx) => (
+                    <DepRow
+                      key={`succ-${idx}`}
+                      title="Successor"
+                      options={activityOptions.filter((o) => o.value !== selectedId)}
+                      row={r}
+                      onChange={(nr) =>
+                        setForm((f) => {
+                          const arr = [...f.successors];
+                          arr[idx] = nr;
+                          return { ...f, successors: arr };
+                        })
+                      }
+                      onRemove={() =>
+                        setForm((f) => {
+                          const arr = f.successors.slice();
+                          arr.splice(idx, 1);
+                          return { ...f, successors: arr };
+                        })
+                      }
+                    />
+                  ))}
+                </Stack>
+              </Stack>
+
+              <Divider />
+
+              <Stack direction="row" spacing={1}>
+                <Button size="sm" onClick={applyForm} disabled={isSaving}>
+                  {isSaving ? "Saving…" : "Apply"}
+                </Button>
                 <Button
                   size="sm"
-                  variant="soft"
-                  startDecorator={<Add />}
-                  onClick={() =>
-                    setForm((f) => ({
-                      ...f,
-                      predecessors: [
-                        ...f.predecessors,
-                        { activityId: "", type: "FS", lag: 0 },
-                      ],
-                    }))
-                  }
+                  variant="plain"
+                  onClick={() => selectedId && loadTaskIntoForm(selectedId)}
                 >
-                  Add
+                  Reset
+                </Button>
+                <Button size="sm" variant="soft" color="neutral" onClick={() => setSelectedId(null)}>
+                  Close
                 </Button>
               </Stack>
-              <Stack spacing={1}>
-                {form.predecessors.length === 0 && (
-                  <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
-                    No predecessors
-                  </Typography>
-                )}
-                {form.predecessors.map((r, idx) => (
-                  <DepRow
-                    key={`pred-${idx}`}
-                    title="Predecessor"
-                    options={activityOptions.filter(
-                      (o) => o.value !== selectedId
-                    )}
-                    row={r}
-                    onChange={(nr) =>
-                      setForm((f) => {
-                        const arr = [...f.predecessors];
-                        arr[idx] = nr;
-                        return { ...f, predecessors: arr };
-                      })
-                    }
-                    onRemove={() =>
-                      setForm((f) => {
-                        const arr = f.predecessors.slice();
-                        arr.splice(idx, 1);
-                        return { ...f, predecessors: arr };
-                      })
-                    }
-                  />
-                ))}
-              </Stack>
             </Stack>
-
-            <Divider />
-
-            {/* Successors */}
-            <Stack spacing={1}>
-              <Stack
-                direction="row"
-                alignItems="center"
-                justifyContent="space-between"
-              >
-                <Typography level="title-sm">Successors</Typography>
-                <Button
-                  size="sm"
-                  variant="soft"
-                  startDecorator={<Add />}
-                  onClick={() =>
-                    setForm((f) => ({
-                      ...f,
-                      successors: [
-                        ...f.successors,
-                        { activityId: "", type: "FS", lag: 0 },
-                      ],
-                    }))
-                  }
-                >
-                  Add
-                </Button>
-              </Stack>
-              <Stack spacing={1}>
-                {form.successors.length === 0 && (
-                  <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
-                    No successors
-                  </Typography>
-                )}
-                {form.successors.map((r, idx) => (
-                  <DepRow
-                    key={`succ-${idx}`}
-                    title="Successor"
-                    options={activityOptions.filter(
-                      (o) => o.value !== selectedId
-                    )}
-                    row={r}
-                    onChange={(nr) =>
-                      setForm((f) => {
-                        const arr = [...f.successors];
-                        arr[idx] = nr;
-                        return { ...f, successors: arr };
-                      })
-                    }
-                    onRemove={() =>
-                      setForm((f) => {
-                        const arr = f.successors.slice();
-                        arr.splice(idx, 1);
-                        return { ...f, successors: arr };
-                      })
-                    }
-                  />
-                ))}
-              </Stack>
-            </Stack>
-
-            <Divider />
-
-            <Stack direction="row" spacing={1}>
-              <Button size="sm" onClick={applyForm}>
-                Apply
-              </Button>
-              <Button
-                size="sm"
-                variant="plain"
-                onClick={() => selectedId && loadTaskIntoForm(selectedId)}
-              >
-                Reset
-              </Button>
-              <Button
-                size="sm"
-                variant="soft"
-                color="neutral"
-                onClick={() => setSelectedId(null)}
-              >
-                Close
-              </Button>
-            </Stack>
-          </Stack>
-        </Sheet>
+          </Sheet>
+        </>
       )}
+
+      <AppSnackbar
+  color={snack.msg.startsWith("Failed") ? "danger" : "success"}
+  open={snack.open}
+  message={snack.msg}
+  onClose={() => setSnack((s) => ({ ...s, open: false }))}
+  >
+</AppSnackbar>
+
     </Box>
   );
-};
+});
 
 export default View_Project_Management;

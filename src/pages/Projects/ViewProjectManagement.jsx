@@ -1,3 +1,4 @@
+// pages/Projects/ViewProjectManagement.jsx
 import Box from "@mui/joy/Box";
 import CssBaseline from "@mui/joy/CssBaseline";
 import { CssVarsProvider } from "@mui/joy/styles";
@@ -5,24 +6,21 @@ import Button from "@mui/joy/Button";
 import Sidebar from "../../component/Partials/Sidebar";
 import SubHeader from "../../component/Partials/SubHeader";
 import MainHeader from "../../component/Partials/MainHeader";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import View_Project_Management from "../../component/ViewProjectManagement";
 import Filter from "../../component/Partials/Filter";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Save } from "@mui/icons-material";
 
 function ViewProjectManagement() {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [user, setUser] = useState(null);
   const [open, setOpen] = useState(false);
+  const ganttRef = useRef(null); // NEW
 
   useEffect(() => {
-    const userData = localStorage.getItem("userDetails");
-    if (userData) setUser(JSON.parse(userData));
+    // keep whatever you had for user, etc.
   }, []);
 
-  // pick value from URL (default week)
   const selectedView = searchParams.get("view") || "week";
 
   const fields = [
@@ -44,10 +42,7 @@ function ViewProjectManagement() {
       <CssBaseline />
       <Box sx={{ display: "flex", minHeight: "100dvh", flexDirection: "column" }}>
         <Sidebar />
-        <MainHeader title="Projects" sticky>
-          {/* your header buttons */}
-        </MainHeader>
-
+        <MainHeader title="Projects" sticky />
         <SubHeader title="View Project Schedule" isBackEnabled sticky>
           <Box display="flex" gap={1} alignItems="center">
             <Button
@@ -55,17 +50,19 @@ function ViewProjectManagement() {
               size="sm"
               startDecorator={<Save />}
               sx={{
-                  color: "#3366a3",
-                  borderColor: "#3366a3",
-                  backgroundColor: "transparent",
-                  "--Button-hoverBg": "#e0e0e0",
-                  "--Button-hoverBorderColor": "#3366a3",
-                  "&:hover": { color: "#3366a3" },
-                  height: "8px",
-                }}
+                color: "#3366a3",
+                borderColor: "#3366a3",
+                backgroundColor: "transparent",
+                "--Button-hoverBg": "#e0e0e0",
+                "--Button-hoverBorderColor": "#3366a3",
+                "&:hover": { color: "#3366a3" },
+                height: "8px",
+              }}
+              onClick={() => ganttRef.current?.saveAsTemplate?.()} // NEW
             >
               Save as Template
             </Button>
+
             <Filter
               open={open}
               onOpenChange={setOpen}
@@ -107,8 +104,8 @@ function ViewProjectManagement() {
             px: "16px",
           }}
         >
-          {/* pass viewModeParam to gantt */}
-          <View_Project_Management viewModeParam={selectedView} />
+          {/* pass view + ref */}
+          <View_Project_Management ref={ganttRef} viewModeParam={selectedView} />
         </Box>
       </Box>
     </CssVarsProvider>

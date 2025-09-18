@@ -1,5 +1,5 @@
 // src/components/Header.js
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Sheet from "@mui/joy/Sheet";
 import Box from "@mui/joy/Box";
 import Typography from "@mui/joy/Typography";
@@ -16,8 +16,9 @@ export default function SubHeader({
   children,
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const handleBack = () => (onBack ? onBack() : navigate(-1));
-
+  const isProjectsPage = location.pathname === "/view_pm";
   return (
     <Sheet
       variant="primary"
@@ -29,9 +30,9 @@ export default function SubHeader({
         backgroundColor: "#f8f9fa",
         borderBottom: `1px solid ${theme.vars.palette.neutral.outlinedBorder}`,
         boxShadow: "sm",
-        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+        width: isProjectsPage ? '100%': { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
         height: "48px",
-        ml: {
+        ml: isProjectsPage ? '0px' : {
           md: "0px",
           lg: "var(--Sidebar-width)",
         },
