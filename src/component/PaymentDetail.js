@@ -123,7 +123,6 @@ const PaymentDetail = forwardRef((props, ref) => {
   const toggleSelectAllPage = () => {
     setSelectedRows((prev) => {
       if (allSelectedOnPage) {
-        // unselect all on page
         return prev.filter((id) => !allSelectableIds.includes(id));
       }
       // add all on page
@@ -133,13 +132,13 @@ const PaymentDetail = forwardRef((props, ref) => {
     });
   };
 
-  const escapeValue = (value, isAccountNumber = false) => {
-    if (value === null || value === undefined || value === "") return "-";
-    const s = String(value).replace(/"/g, '""');
-    return isAccountNumber ? `="${s}"` : s; // keep leading zeros in Excel
-  };
+const escapeValue = (value, isAccountNumber = false) => {
+  if (value === null || value === undefined || value === "") return "-";
+  const s = String(value).replace(/"/g, '""');
+  return isAccountNumber ? `'${s}` : s;
+};
 
-  const downloadSelectedRows = async () => {
+const downloadSelectedRows = async () => {
     setError("");
     setSuccess("");
 
