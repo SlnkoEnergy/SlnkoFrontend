@@ -217,43 +217,6 @@ function Sidebar() {
               <Toggler
                 renderToggle={({ open, setOpen }) => (
                   <ListItemButton onClick={() => setOpen(!open)}>
-                    <AccountCircleIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm"> User</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/add_user")}>
-                      Add User
-                    </ListItemButton>
-                  </ListItem>
-                  <ListItem>
-                    <ListItemButton onClick={() => navigate("/edit_user")}>
-                      Edit User
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
-            </ListItem>
-
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
                     <AssignmentRoundedIcon />
                     <ListItemContent>
                       <Typography level="title-sm">BD</Typography>
