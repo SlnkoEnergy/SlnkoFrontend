@@ -85,6 +85,16 @@ export const projectsApi = createApi({
       }),
       invalidatesTags: ["Project"],
     }),
+
+getAllProjectActivities: builder.query({
+  // GET /v1/projectactivity/activities?search=&status=&page=1&limit=10
+  query: ({ search = "", status = "", page = 1, limit = 10 } = {}) => ({
+    url: "projectactivity/allprojectactivity",
+    params: { search, ...(status ? { status } : {}), page, limit },
+  }),
+  providesTags: ["Project"],
+}),
+
     getProjectActivityByProjectId: builder.query({
       query: (projectId) =>
         `projectactivity/projectactivity?projectId=${projectId}`,
@@ -154,5 +164,7 @@ export const {
   useUpdateActivityInProjectMutation,
   useGetActivityInProjectQuery,
   useLazyGetAllTemplateNameSearchQuery,
-  useUpdateProjectActivityFromTemplateMutation
+  useUpdateProjectActivityFromTemplateMutation,
+  useGetAllProjectActivitiesQuery,
+  useLazyGetAllProjectActivitiesQuery,
 } = projectsApi;

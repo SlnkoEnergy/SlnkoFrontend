@@ -37,6 +37,7 @@ import {
 } from "../redux/projectsSlice";
 import { useSearchParams } from "react-router-dom";
 import AppSnackbar from "./AppSnackbar";
+import { useNavigate } from "react-router-dom";
 
 /* ---------------- helpers ---------------- */
 const labelToType = { FS: "0", SS: "1", FF: "2", SF: "3" };
@@ -261,6 +262,7 @@ function RemainingDaysChip({ target, usedKey }) {
 
 /* ---------------- right panel row ---------------- */
 function DepRow({ title, options, row, onChange, onRemove }) {
+  
   return (
     <Stack direction="row" alignItems="center" spacing={1} sx={{ width: "100%" }}>
       <Autocomplete
@@ -313,6 +315,7 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
   const [viewMode, setViewMode] = useState(viewModeParam);
   const [searchParams] = useSearchParams();
   const projectId = searchParams.get("project_id");
+  const navigate = useNavigate();
 
   const [snack, setSnack] = useState({ open: false, msg: "" });
   const [selectedId, setSelectedId] = useState(null);
@@ -337,13 +340,14 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
     { skip: !activeDbId || !projectId }
   );
 
-  const paWrapper = apiData?.projectactivity || apiData || {};
-  const paList = Array.isArray(paWrapper.activities)
-    ? paWrapper.activities
-    : Array.isArray(paWrapper)
-    ? paWrapper
-    : [];
-  const projectMeta = paWrapper.project_id || apiData?.project || {};
+    const paWrapper = apiData?.projectactivity || apiData || {};
+    const paList = Array.isArray(paWrapper.activities)
+      ? paWrapper.activities
+      : Array.isArray(paWrapper)
+      ? paWrapper
+      : [];
+    const projectMeta = paWrapper.project_id || apiData?.project || {};
+    const projectDbId = projectMeta?._id || projectId;
 
   const { target: countdownTarget, usedKey: countdownKey } = useMemo(
     () => pickCountdownTarget(paWrapper, paList),
@@ -846,20 +850,35 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
           mt: 1,
         }}
       >
-        <Sheet
-          variant="outlined"
-          sx={{ display: "flex", alignItems: "center", gap: 2, borderRadius: "lg", px: 1.5, py: 1 }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-            <DescriptionOutlinedIcon fontSize="small" color="primary" />
-            <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-              Project Code:
-            </Typography>
-            <Chip color="primary" size="sm" variant="solid" sx={{ fontWeight: 700 }}>
-              {projectMeta?.code || "—"}
-            </Chip>
-          </Box>
-        </Sheet>
+        
+          <Sheet
+            variant="outlined"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              borderRadius: "lg",
+              px: 1.5,
+              py: 1,
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+  <DescriptionOutlinedIcon fontSize="small" color="primary" />
+  <Typography level="body-sm" sx={{ color: "text.secondary" }}>
+    Project Code:
+  </Typography>
+  <Chip
+    color="primary"
+    size="sm"
+    variant="solid"
+    sx={{ fontWeight: 700, cursor: "pointer" }}
+    onClick={() => projectDbId && navigate(`/project_detail?project_id=${projectDbId}`)}
+    aria-label="Open project detail"
+  >
+    {projectMeta?.code || "—"}
+  </Chip>
+</Box>
+          </Sheet>
 
         <Sheet
           variant="outlined"

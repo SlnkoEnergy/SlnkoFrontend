@@ -392,23 +392,24 @@ function ViewProjectManagement() {
           </DialogContent>
 
           <DialogActions sx={{ pt: 1 }}>
-            <Button
-              variant="plain"
-              color="neutral"
-              onClick={() => setTplOpen(false)}
-              disabled={tplSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              startDecorator={<Save />}
-              onClick={handleSubmitTemplate}
-              loading={tplSubmitting}
-              disabled={tplSubmitting}
-            >
-              Submit
-            </Button>
-          </DialogActions>
+  <Button
+    variant="plain"
+    color="neutral"
+    onClick={() => setTplOpen(false)}
+    disabled={tplSubmitting}
+  >
+    Cancel
+  </Button>
+  <Button
+    startDecorator={<Save />}
+    onClick={handleSubmitTemplate}
+    loading={tplSubmitting}
+    disabled={tplSubmitting || !tplConfirm} // ✅ disable until checkbox ticked
+  >
+    Submit
+  </Button>
+</DialogActions>
+
         </ModalDialog>
       </Modal>
 

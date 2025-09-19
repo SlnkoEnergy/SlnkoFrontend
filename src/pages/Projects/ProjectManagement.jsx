@@ -7,7 +7,7 @@ import SubHeader from "../../component/Partials/SubHeader";
 import MainHeader from "../../component/Partials/MainHeader";
 import { useNavigate } from "react-router-dom";
 import Dash_eng from "../../component/EngDashboard";
-import { AddIcCallOutlined } from "@mui/icons-material";
+import LibraryAddOutlined from "@mui/icons-material/LibraryAddOutlined";
 import AddActivityModal from "./ActivityModal";
 import { useState } from "react";
 import { usePushActivityToProjectMutation } from "../../redux/projectsSlice";
@@ -122,7 +122,7 @@ function ProjectManagement() {
                 "&:hover": { color: "#3366a3" },
                 height: "8px",
               }}
-              startDecorator={<AddIcCallOutlined />}
+              startDecorator={<LibraryAddOutlined />}
               onClick={() => setOpenAdd(true)}// or open modal
             >
               Add Activity
