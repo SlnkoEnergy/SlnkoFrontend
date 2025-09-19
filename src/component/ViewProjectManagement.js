@@ -36,6 +36,7 @@ import {
 } from "../redux/projectsSlice";
 import { useSearchParams } from "react-router-dom";
 import AppSnackbar from "./AppSnackbar";
+import { useNavigate } from "react-router-dom";
 
 /* ---------------- helpers ---------------- */
 const labelToType = { FS: "0", SS: "1", FF: "2", SF: "3" };
@@ -135,6 +136,7 @@ const extractBackendError = (err) => {
 
 /* ---------------- right panel row ---------------- */
 function DepRow({ title, options, row, onChange, onRemove }) {
+  
   return (
     <Stack
       direction="row"
@@ -226,6 +228,7 @@ const View_Project_Management = forwardRef(
       ? paWrapper
       : [];
     const projectMeta = paWrapper.project_id || apiData?.project || {};
+    const projectDbId = projectMeta?._id || projectId;
 
     const { ganttData, ganttLinks, siToDbId, dbIdToSi } = useMemo(() => {
       const byMasterToSI = new Map();
@@ -339,6 +342,7 @@ const View_Project_Management = forwardRef(
       if (!nums.length) return "—";
       return toDMY(new Date(Math.max(...nums)));
     }, [ganttData]);
+  const navigate = useNavigate();
 
     /* ---------- right panel form state (UNCHANGED STRUCTURE) ---------- */
     const [form, setForm] = useState({
@@ -753,19 +757,21 @@ const View_Project_Management = forwardRef(
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-              <DescriptionOutlinedIcon fontSize="small" color="primary" />
-              <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-                Project Code:
-              </Typography>
-              <Chip
-                color="primary"
-                size="sm"
-                variant="solid"
-                sx={{ fontWeight: 700 }}
-              >
-                {projectMeta?.code || "—"}
-              </Chip>
-            </Box>
+  <DescriptionOutlinedIcon fontSize="small" color="primary" />
+  <Typography level="body-sm" sx={{ color: "text.secondary" }}>
+    Project Code:
+  </Typography>
+  <Chip
+    color="primary"
+    size="sm"
+    variant="solid"
+    sx={{ fontWeight: 700, cursor: "pointer" }}
+    onClick={() => projectDbId && navigate(`/project_detail?project_id=${projectDbId}`)}
+    aria-label="Open project detail"
+  >
+    {projectMeta?.code || "—"}
+  </Chip>
+</Box>
           </Sheet>
 
           <Sheet
