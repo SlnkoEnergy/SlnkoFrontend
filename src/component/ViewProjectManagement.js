@@ -85,7 +85,9 @@ const durationTemplate = (task) =>
   Number(task.duration) > 0 ? String(task.duration) : "";
 
 const predecessorTemplate = (task) => {
-  const incoming = gantt.getLinks().filter((l) => String(l.target) === String(task.id));
+  const incoming = gantt
+    .getLinks()
+    .filter((l) => String(l.target) === String(task.id));
   if (!incoming.length) return "";
   return incoming
     .map((l) => {
@@ -100,13 +102,19 @@ const predecessorTemplate = (task) => {
 // backend error -> pretty msg
 const extractBackendError = (err) => {
   const data = err?.data || err?.response?.data || {};
-  const msg = String(data.message || err?.message || "Failed to update activity.");
+  const msg = String(
+    data.message || err?.message || "Failed to update activity."
+  );
   const details = data.details || {};
   const parts = [msg];
 
   if (details.required_min_start || details.required_min_finish) {
-    const reqStart = details.required_min_start ? new Date(details.required_min_start) : null;
-    const reqFinish = details.required_min_finish ? new Date(details.required_min_finish) : null;
+    const reqStart = details.required_min_start
+      ? new Date(details.required_min_start)
+      : null;
+    const reqFinish = details.required_min_finish
+      ? new Date(details.required_min_finish)
+      : null;
 
     const tips = [
       reqStart ? `Min Start: ${toDMY(reqStart)}` : null,
@@ -128,7 +136,12 @@ const extractBackendError = (err) => {
 /* ---------------- right panel row ---------------- */
 function DepRow({ title, options, row, onChange, onRemove }) {
   return (
-    <Stack direction="row" alignItems="center" spacing={1} sx={{ width: "100%" }}>
+    <Stack
+      direction="row"
+      alignItems="center"
+      spacing={1}
+      sx={{ width: "100%" }}
+    >
       <Autocomplete
         placeholder={`${title} activity…`}
         size="sm"
@@ -174,805 +187,959 @@ function DepRow({ title, options, row, onChange, onRemove }) {
 }
 
 /* ---------------- main component ---------------- */
-const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => {
-  const ganttContainer = useRef(null);
-  const [viewMode, setViewMode] = useState(viewModeParam);
-  const [searchParams] = useSearchParams();
-  const projectId = searchParams.get("project_id");
+const View_Project_Management = forwardRef(
+  ({ viewModeParam = "week" }, ref) => {
+    const ganttContainer = useRef(null);
+    const [viewMode, setViewMode] = useState(viewModeParam);
+    const [searchParams] = useSearchParams();
+    const projectId = searchParams.get("project_id");
 
-  const [snack, setSnack] = useState({ open: false, msg: "" });
-  const [selectedId, setSelectedId] = useState(null); // SI id clicked
-  const [activeDbId, setActiveDbId] = useState(null); // DB id for single fetch
+    const [snack, setSnack] = useState({ open: false, msg: "" });
+    const [selectedId, setSelectedId] = useState(null); // SI id clicked
+    const [activeDbId, setActiveDbId] = useState(null); // DB id for single fetch
 
-  // GET ALL
-  const {
-    data: apiData,
-    refetch: refetchAll,
-  } = useGetProjectActivityByProjectIdQuery(projectId, { skip: !projectId });
+    // GET ALL
+    const { data: apiData, refetch: refetchAll } =
+      useGetProjectActivityByProjectIdQuery(projectId, { skip: !projectId });
 
-  // UPDATE + CREATE
-  const [updateActivityInProject, { isLoading: isSaving }] =
-    useUpdateActivityInProjectMutation();
-  const [createProjectActivity] = useCreateProjectActivityMutation();
+    // UPDATE + CREATE
+    const [updateActivityInProject, { isLoading: isSaving }] =
+      useUpdateActivityInProjectMutation();
+    const [createProjectActivity] = useCreateProjectActivityMutation();
 
-  // GET SINGLE (when modal opens)
-  const {
-    data: activityFetch,
-    isFetching: isFetchingActivity,
-    error: activityFetchError,
-  } = useGetActivityInProjectQuery(
-    activeDbId && projectId ? { projectId, activityId: activeDbId } : { skip: true },
-    { skip: !activeDbId || !projectId }
-  );
+    // GET SINGLE (when modal opens)
+    const {
+      data: activityFetch,
+      isFetching: isFetchingActivity,
+      error: activityFetchError,
+    } = useGetActivityInProjectQuery(
+      activeDbId && projectId
+        ? { projectId, activityId: activeDbId }
+        : { skip: true },
+      { skip: !activeDbId || !projectId }
+    );
 
-  const paWrapper = apiData?.projectactivity || apiData || {};
-  const paList = Array.isArray(paWrapper.activities)
-    ? paWrapper.activities
-    : Array.isArray(paWrapper)
-    ? paWrapper
-    : [];
-  const projectMeta = paWrapper.project_id || apiData?.project || {};
+    const paWrapper = apiData?.projectactivity || apiData || {};
+    const paList = Array.isArray(paWrapper.activities)
+      ? paWrapper.activities
+      : Array.isArray(paWrapper)
+      ? paWrapper
+      : [];
+    const projectMeta = paWrapper.project_id || apiData?.project || {};
 
-  const { ganttData, ganttLinks, siToDbId, dbIdToSi } = useMemo(() => {
-    const byMasterToSI = new Map();
-    const _siToDbId = new Map();
+    const { ganttData, ganttLinks, siToDbId, dbIdToSi } = useMemo(() => {
+      const byMasterToSI = new Map();
+      const _siToDbId = new Map();
 
-    const data = paList.map((pa, idx) => {
-      const si = String(idx + 1);
-      const master = pa.activity_id || pa.master_activity_id || {};
-      const masterId = String(master?._id || "");
-      if (masterId) byMasterToSI.set(masterId, si);
-      if (masterId) _siToDbId.set(si, masterId);
+      const data = paList.map((pa, idx) => {
+        const si = String(idx + 1);
+        const master = pa.activity_id || pa.master_activity_id || {};
+        const masterId = String(master?._id || "");
+        if (masterId) byMasterToSI.set(masterId, si);
+        if (masterId) _siToDbId.set(si, masterId);
 
-      const text = master?.name || pa.name || pa.activity_name || "—";
+        const text = master?.name || pa.name || pa.activity_name || "—";
 
-      // Use backend dates only; if missing, leave null (grid shows empty, no bar).
-      const sISO = pa.planned_start || pa.start_date || null;
-      const eISO = pa.planned_finish || pa.end_date || null;
+        // Use backend dates only; if missing, leave null (grid shows empty, no bar).
+        const sISO = pa.planned_start || pa.start_date || null;
+        const eISO = pa.planned_finish || pa.end_date || null;
 
-      const startDateObj = sISO ? parseISOAsLocalDate(sISO) : null;
-      const endDateObj = eISO ? parseISOAsLocalDate(eISO) : null;
+        const startDateObj = sISO ? parseISOAsLocalDate(sISO) : null;
+        const endDateObj = eISO ? parseISOAsLocalDate(eISO) : null;
 
-      const duration = Number.isFinite(Number(pa.duration)) ? Number(pa.duration) : 0;
-      const status = pa.current_status?.status || "not started";
+        const duration = Number.isFinite(Number(pa.duration))
+          ? Number(pa.duration)
+          : 0;
+        const status = pa.current_status?.status || "not started";
 
+        return {
+          id: si,
+          _si: si,
+          _dbId: masterId,
+          text,
+          start_date: startDateObj || null,
+          _end_dmy: endDateObj ? toDMY(endDateObj) : "",
+          duration,
+          progress:
+            typeof pa.percent_complete === "number"
+              ? pa.percent_complete / 100
+              : 0,
+          open: true,
+          _hadStart: !!startDateObj,
+          _unscheduled: !startDateObj && !duration,
+          _status: status,
+          // hints for gantt to treat it as unscheduled
+          $no_start: !startDateObj,
+          $no_end: !endDateObj && !(startDateObj && duration > 0),
+        };
+      });
+
+      // links strictly from backend predecessors
+      let lid = 1;
+      const links = [];
+      paList.forEach((pa, idx) => {
+        const targetSI = String(idx + 1);
+        const preds = Array.isArray(pa.predecessors) ? pa.predecessors : [];
+        preds.forEach((p) => {
+          const srcMaster = String(p.activity_id || p.master_activity_id || "");
+          const srcSI = byMasterToSI.get(srcMaster);
+          if (srcSI) {
+            const typeCode = labelToType[(p.type || "FS").toUpperCase()] ?? "0";
+            links.push({
+              id: lid++,
+              source: String(srcSI),
+              target: String(targetSI),
+              type: typeCode,
+              lag: Number(p.lag || 0),
+            });
+          }
+        });
+      });
+
+      const _dbIdToSi = new Map(
+        Array.from(_siToDbId.entries()).map(([si, db]) => [db, si])
+      );
       return {
-        id: si,
-        _si: si,
-        _dbId: masterId,
-        text,
-        start_date: startDateObj || null,
-        _end_dmy: endDateObj ? toDMY(endDateObj) : "",
-        duration,
-        progress:
-          typeof pa.percent_complete === "number" ? pa.percent_complete / 100 : 0,
-        open: true,
-        _hadStart: !!startDateObj,
-        _unscheduled: !startDateObj && !duration,
-        _status: status,
-        // hints for gantt to treat it as unscheduled
-        $no_start: !startDateObj,
-        $no_end: !endDateObj && !(startDateObj && duration > 0),
+        ganttData: data,
+        ganttLinks: links,
+        siToDbId: _siToDbId,
+        dbIdToSi: _dbIdToSi,
       };
-    });
+    }, [paList]);
 
-    // links strictly from backend predecessors
-    let lid = 1;
-    const links = [];
-    paList.forEach((pa, idx) => {
-      const targetSI = String(idx + 1);
-      const preds = Array.isArray(pa.predecessors) ? pa.predecessors : [];
-      preds.forEach((p) => {
-        const srcMaster = String(p.activity_id || p.master_activity_id || "");
-        const srcSI = byMasterToSI.get(srcMaster);
-        if (srcSI) {
-          const typeCode = labelToType[(p.type || "FS").toUpperCase()] ?? "0";
-          links.push({
-            id: lid++,
-            source: String(srcSI),
-            target: String(targetSI),
-            type: typeCode,
-            lag: Number(p.lag || 0),
+    // header chips
+    const minStartDMY = useMemo(() => {
+      const nums = (ganttData || [])
+        .filter(
+          (t) => t.start_date instanceof Date && !Number.isNaN(t.start_date)
+        )
+        .map((t) => t.start_date.getTime());
+      if (!nums.length) return "—";
+      return toDMY(new Date(Math.min(...nums)));
+    }, [ganttData]);
+
+    const maxEndDMY = useMemo(() => {
+      const ends = (ganttData || []).map((t) => {
+        if (t._end_dmy) {
+          const [dd, mm, yyyy] = t._end_dmy.split("-").map(Number);
+          return new Date(yyyy, mm - 1, dd);
+        }
+        if (t.start_date instanceof Date && Number(t.duration) > 0) {
+          return gantt.calculateEndDate({
+            start_date: t.start_date,
+            duration: t.duration,
+            task: t,
           });
         }
+        return null;
       });
+      const nums = ends
+        .map((d) => d?.getTime())
+        .filter((n) => Number.isFinite(n));
+      if (!nums.length) return "—";
+      return toDMY(new Date(Math.max(...nums)));
+    }, [ganttData]);
+
+    /* ---------- right panel form state (UNCHANGED STRUCTURE) ---------- */
+    const [form, setForm] = useState({
+      status: "not started",
+      start: "", // YYYY-MM-DD
+      end: "", // YYYY-MM-DD
+      duration: "", // number (days)
+      predecessors: [],
+      successors: [],
     });
 
-    const _dbIdToSi = new Map(Array.from(_siToDbId.entries()).map(([si, db]) => [db, si]));
-    return { ganttData: data, ganttLinks: links, siToDbId: _siToDbId, dbIdToSi: _dbIdToSi };
-  }, [paList]);
+    const activityOptions = useMemo(
+      () =>
+        (ganttData || []).map((t) => ({
+          value: String(t.id), // SI id
+          label: t.text,
+        })),
+      [ganttData]
+    );
 
-  // header chips
-  const minStartDMY = useMemo(() => {
-    const nums = (ganttData || [])
-      .filter((t) => t.start_date instanceof Date && !Number.isNaN(t.start_date))
-      .map((t) => t.start_date.getTime());
-    if (!nums.length) return "—";
-    return toDMY(new Date(Math.min(...nums)));
-  }, [ganttData]);
+    // open modal & fetch single activity
+    const onOpenModalForTask = (siId) => {
+      const task = gantt.getTask(siId);
+      setSelectedId(String(siId));
+      setActiveDbId(task?._dbId || null);
+    };
 
-  const maxEndDMY = useMemo(() => {
-    const ends = (ganttData || []).map((t) => {
-      if (t._end_dmy) {
-        const [dd, mm, yyyy] = t._end_dmy.split("-").map(Number);
-        return new Date(yyyy, mm - 1, dd);
+    // Map backend single activity → form (including successors, duration)
+    useEffect(() => {
+      if (!activityFetch || !selectedId) return;
+
+      const act = activityFetch.activity || activityFetch.data || activityFetch;
+
+      const preds = Array.isArray(act?.predecessors) ? act.predecessors : [];
+      const succs = Array.isArray(act?.successors) ? act.successors : [];
+
+      const uiPreds = preds
+        .map((p) => {
+          const db = String(p.activity_id || "");
+          const si = dbIdToSi.get(db);
+          if (!si) return null;
+          const task = gantt.getTask(si);
+          return {
+            activityId: si,
+            activityName: task?.text || "",
+            type: String(p.type || "FS").toUpperCase(),
+            lag: Number(p.lag || 0),
+          };
+        })
+        .filter(Boolean);
+
+      const uiSuccs = succs
+        .map((s) => {
+          const db = String(s.activity_id || "");
+          const si = dbIdToSi.get(db);
+          if (!si) return null;
+          const task = gantt.getTask(si);
+          return {
+            activityId: si,
+            activityName: task?.text || "",
+            type: String(s.type || "FS").toUpperCase(),
+            lag: Number(s.lag || 0),
+          };
+        })
+        .filter(Boolean);
+
+      const startISO = act?.planned_start || act?.start || null;
+      const finishISO = act?.planned_finish || act?.end || null;
+      const dur = Number.isFinite(Number(act?.duration))
+        ? String(Number(act.duration))
+        : "";
+
+      const toYMD = (iso) =>
+        iso ? gantt.date.date_to_str("%Y-%m-%d")(parseISOAsLocalDate(iso)) : "";
+
+      setForm({
+        status: act?.current_status?.status || "not started",
+        start: toYMD(startISO),
+        end: toYMD(finishISO),
+        duration: dur,
+        predecessors: uiPreds,
+        successors: uiSuccs,
+      });
+    }, [activityFetch, selectedId, dbIdToSi]);
+
+    // backend fetch error → snackbar
+    useEffect(() => {
+      if (activityFetchError) {
+        setSnack({ open: true, msg: extractBackendError(activityFetchError) });
       }
-      if (t.start_date instanceof Date && Number(t.duration) > 0) {
-        return gantt.calculateEndDate({
-          start_date: t.start_date,
-          duration: t.duration,
-          task: t,
+    }, [activityFetchError]);
+
+    /* ---------- save from modal ---------- */
+    const saveFromModal = async () => {
+      if (!selectedId) return;
+      const task = gantt.getTask(selectedId);
+      const dbActivityId = task?._dbId;
+      if (!projectId || !dbActivityId) return;
+
+      try {
+        const predsPayload = (form.predecessors || [])
+          .map((r) => {
+            const si = String(r.activityId || "");
+            const dbId = siToDbId.get(si);
+            if (!dbId) return null;
+            return {
+              activity_id: dbId,
+              type: String(r.type || "FS").toUpperCase(),
+              lag: Number(r.lag || 0),
+            };
+          })
+          .filter(Boolean);
+
+        const succsPayload = (form.successors || [])
+          .map((r) => {
+            const si = String(r.activityId || "");
+            const dbId = siToDbId.get(si);
+            if (!dbId) return null;
+            return {
+              activity_id: dbId,
+              type: String(r.type || "FS").toUpperCase(),
+              lag: Number(r.lag || 0),
+            };
+          })
+          .filter(Boolean);
+
+        const payload = {
+          planned_start: form.start || null, // YYYY-MM-DD
+          planned_finish: form.end || null, // YYYY-MM-DD
+          duration: Number(form.duration || 0), // number
+          status: form.status,
+          predecessors: predsPayload,
+          successors: succsPayload, // successors intentionally NOT sent
+        };
+
+        await updateActivityInProject({
+          projectId,
+          activityId: dbActivityId,
+          data: payload,
         });
+
+        await (refetchAll().unwrap?.() ?? refetchAll());
+
+        setSnack({ open: true, msg: "Activity updated." });
+        setSelectedId(null);
+        setActiveDbId(null);
+      } catch (e) {
+        setSnack({ open: true, msg: extractBackendError(e) });
       }
-      return null;
-    });
-    const nums = ends.map((d) => d?.getTime()).filter((n) => Number.isFinite(n));
-    if (!nums.length) return "—";
-    return toDMY(new Date(Math.max(...nums)));
-  }, [ganttData]);
+    };
+    const parseDMY = (s) => {
+      if (!s) return null;
+      const [dd, mm, yyyy] = String(s).split("-").map(Number);
+      if (!dd || !mm || !yyyy) return null;
+      return new Date(yyyy, mm - 1, dd);
+    };
+    const diffDaysInclusive = (sIn, eIn) => {
+      const s = sIn instanceof Date ? sIn : parseISOAsLocalDate(sIn);
+      const e = eIn instanceof Date ? eIn : parseISOAsLocalDate(eIn);
+      if (!s || !e) return 0;
+      const s0 = new Date(s.getFullYear(), s.getMonth(), s.getDate());
+      const e0 = new Date(e.getFullYear(), e.getMonth(), e.getDate());
+      const ms = e0 - s0;
+      return ms < 0 ? 0 : Math.floor(ms / 86400000) + 1;
+    };
+    /* ---------- SAVE AS TEMPLATE: exposed via ref (accept name/description) ---------- */
+    useImperativeHandle(ref, () => ({
+      saveAsTemplate: async (meta = {}) => {
+        const { name, description } = meta || {};
 
-  /* ---------- right panel form state (UNCHANGED STRUCTURE) ---------- */
-  const [form, setForm] = useState({
-    status: "not started",
-    start: "",      // YYYY-MM-DD
-    end: "",        // YYYY-MM-DD
-    duration: "",   // number (days)
-    predecessors: [],
-    successors: [], 
-  });
+        // gather tasks
+        const tasks = [];
+        gantt.eachTask((t) => {
+          const start = t.start_date instanceof Date ? t.start_date : null;
+          const end = t._end_dmy
+            ? parseDMY(t._end_dmy)
+            : start && Number(t.duration) > 0
+            ? gantt.calculateEndDate({
+                start_date: start,
+                duration: t.duration,
+                task: t,
+              })
+            : null;
 
-  const activityOptions = useMemo(
-    () =>
-      (ganttData || []).map((t) => ({
-        value: String(t.id), // SI id
-        label: t.text,
-      })),
-    [ganttData]
-  );
+          tasks.push({
+            si: String(t.id),
+            dbId: String(t._dbId || ""),
+            start,
+            end,
+            duration: Number(t.duration || 0),
+            percent: Math.round(Number(t.progress || 0) * 100),
+          });
+        });
 
-  // open modal & fetch single activity
-  const onOpenModalForTask = (siId) => {
-    const task = gantt.getTask(siId);
-    setSelectedId(String(siId));
-    setActiveDbId(task?._dbId || null);
-  };
+        // index by SI
+        const bySi = new Map(tasks.map((x) => [x.si, x]));
 
-  // Map backend single activity → form (including successors, duration)
-  useEffect(() => {
-    if (!activityFetch || !selectedId) return;
+        // build predecessors/successors from links
+        const predsBySi = new Map();
+        const succsBySi = new Map();
+        gantt.getLinks().forEach((l) => {
+          const src = String(l.source);
+          const trg = String(l.target);
+          const type = typeToLabel[String(l.type)] || "FS";
+          const lag = Number(l.lag || 0);
 
-    const act = activityFetch.activity || activityFetch.data || activityFetch;
+          if (!predsBySi.has(trg)) predsBySi.set(trg, []);
+          predsBySi.get(trg).push({ activityIdSi: src, type, lag });
 
-    const preds = Array.isArray(act?.predecessors) ? act.predecessors : [];
-    const succs = Array.isArray(act?.successors) ? act.successors : [];
+          if (!succsBySi.has(src)) succsBySi.set(src, []);
+          succsBySi.get(src).push({ activityIdSi: trg, type, lag });
+        });
 
-    const uiPreds = preds
-      .map((p) => {
-        const db = String(p.activity_id || "");
-        const si = dbIdToSi.get(db);
-        if (!si) return null;
-        const task = gantt.getTask(si);
-        return {
-          activityId: si,
-          activityName: task?.text || "",
-          type: String(p.type || "FS").toUpperCase(),
-          lag: Number(p.lag || 0),
+        const activities = tasks
+          .filter((t) => t.dbId)
+          .map((t) => {
+            const preds = (predsBySi.get(t.si) || [])
+              .map((p) => {
+                const src = bySi.get(p.activityIdSi);
+                if (!src?.dbId) return null;
+                return {
+                  activity_id: src.dbId,
+                  type: p.type,
+                  lag: p.lag,
+                };
+              })
+              .filter(Boolean);
+
+            const succs = (succsBySi.get(t.si) || [])
+              .map((s) => {
+                const trg = bySi.get(s.activityIdSi);
+                if (!trg?.dbId) return null;
+                return {
+                  activity_id: trg.dbId,
+                  type: s.type,
+                  lag: s.lag,
+                };
+              })
+              .filter(Boolean);
+
+            return {
+              activity_id: t.dbId,
+              planned_start: t.start ? t.start.toISOString() : null,
+              planned_finish: t.end ? t.end.toISOString() : null,
+              duration:
+                t.duration ||
+                (t.start && t.end ? diffDaysInclusive(t.start, t.end) : 0),
+              percent_complete: t.percent || 0,
+              predecessors: preds,
+              successors: succs,
+            };
+          });
+
+        // ⬅️ include name/description with your existing payload
+        const payload = {
+          status: "template",
+          ...(name ? { name } : {}),
+          ...(description ? { description } : {}),
+          activities,
         };
-      })
-      .filter(Boolean);
 
-    const uiSuccs = succs
-      .map((s) => {
-        const db = String(s.activity_id || "");
-        const si = dbIdToSi.get(db);
-        if (!si) return null;
-        const task = gantt.getTask(si);
-        return {
-          activityId: si,
-          activityName: task?.text || "",
-          type: String(s.type || "FS").toUpperCase(),
-          lag: Number(s.lag || 0),
-        };
-      })
-      .filter(Boolean);
+        try {
+          await createProjectActivity(payload).unwrap();
+          setSnack({ open: true, msg: "Template saved successfully" });
+        } catch (e) {
+          setSnack({ open: true, msg: "Failed to save template" });
+        }
+      },
+    }));
 
-    const startISO = act?.planned_start || act?.start || null;
-    const finishISO = act?.planned_finish || act?.end || null;
-    const dur = Number.isFinite(Number(act?.duration)) ? String(Number(act.duration)) : "";
-
-    const toYMD = (iso) =>
-      iso ? gantt.date.date_to_str("%Y-%m-%d")(parseISOAsLocalDate(iso)) : "";
-
-    setForm({
-      status: act?.current_status?.status || "not started",
-      start: toYMD(startISO),
-      end: toYMD(finishISO),
-      duration: dur,
-      predecessors: uiPreds,
-      successors: uiSuccs,
-    });
-  }, [activityFetch, selectedId, dbIdToSi]);
-
-  // backend fetch error → snackbar
-  useEffect(() => {
-    if (activityFetchError) {
-      setSnack({ open: true, msg: extractBackendError(activityFetchError) });
-    }
-  }, [activityFetchError]);
-
-  /* ---------- save from modal ---------- */
-  const saveFromModal = async () => {
-    if (!selectedId) return;
-    const task = gantt.getTask(selectedId);
-    const dbActivityId = task?._dbId;
-    if (!projectId || !dbActivityId) return;
-
-    try {
-      const predsPayload = (form.predecessors || [])
-        .map((r) => {
-          const si = String(r.activityId || "");
-          const dbId = siToDbId.get(si);
-          if (!dbId) return null;
-          return {
-            activity_id: dbId,
-            type: String(r.type || "FS").toUpperCase(),
-            lag: Number(r.lag || 0),
-          };
-        })
-        .filter(Boolean);
-
-      const succsPayload = (form.successors || [])
-        .map((r) => {
-          const si = String(r.activityId || "");
-          const dbId = siToDbId.get(si);
-          if (!dbId) return null;
-          return {
-            activity_id: dbId,
-            type: String(r.type || "FS").toUpperCase(),
-            lag: Number(r.lag || 0),
-          };
-        })
-        .filter(Boolean);
-
-      const payload = {
-        planned_start: form.start || null,     // YYYY-MM-DD
-        planned_finish: form.end || null,      // YYYY-MM-DD
-        duration: Number(form.duration || 0),  // number
-        status: form.status,
-        predecessors: predsPayload,
-        successors:succsPayload            // successors intentionally NOT sent
+    /* ---------- init gantt ---------- */
+    useEffect(() => {
+      gantt.config.date_format = "%d-%m-%Y";
+      gantt.locale.date.day_short = ["S", "M", "T", "W", "T", "F", "S"];
+      gantt.config.readonly = false;
+      gantt.config.scroll_on_click = true;
+      gantt.config.autoscroll = true;
+      gantt.config.preserve_scroll = true;
+      gantt.config.show_chart_scroll = true;
+      gantt.config.show_grid_scroll = true;
+      gantt.config.smart_rendering = true;
+      gantt.config.start_on_monday = false;
+      gantt.config.limit_view = false;
+      gantt.config.fit_tasks = false;
+      gantt.config.lightbox = false;
+      gantt.showLightbox = function () {
+        return false;
       };
+      // IMPORTANT: allow grid rows without dates, but no chart bars
+      gantt.config.show_unscheduled = true;
 
-      await updateActivityInProject({
-        projectId,
-        activityId: dbActivityId,
-        data: payload,
+      gantt.config.columns = [
+        {
+          name: "text",
+          label: "Activity",
+          tree: true,
+          width: 260,
+          resize: true,
+        },
+        {
+          name: "duration",
+          label: "Duration",
+          width: 90,
+          align: "left",
+          resize: true,
+          template: durationTemplate,
+        },
+        {
+          name: "start",
+          label: "Start",
+          width: 120,
+          align: "left",
+          resize: true,
+          template: startCellTemplate,
+        },
+        {
+          name: "end",
+          label: "End",
+          width: 120,
+          align: "left",
+          resize: true,
+          template: endCellTemplate,
+        },
+        {
+          name: "pred",
+          label: "Predecessors",
+          width: 180,
+          align: "left",
+          resize: true,
+          template: predecessorTemplate,
+        },
+      ];
+
+      gantt.templates.task_class = (_, __, task) =>
+        task._unscheduled ? "gantt-task-unscheduled" : "";
+
+      gantt.attachEvent("onTaskClick", function (id) {
+        onOpenModalForTask(String(id));
+        return true;
       });
 
-      await (refetchAll().unwrap?.() ?? refetchAll());
+      gantt.init(ganttContainer.current);
+      return () => gantt.clearAll();
+    }, []);
 
-      setSnack({ open: true, msg: "Activity updated." });
-      setSelectedId(null);
-      setActiveDbId(null);
-    } catch (e) {
-      setSnack({ open: true, msg: extractBackendError(e) });
-    }
-  };
+    // feed data from backend “get all”
+    useEffect(() => {
+      gantt.clearAll();
+      gantt.parse({ data: ganttData, links: ganttLinks });
+    }, [ganttData, ganttLinks]);
 
-  /* ---------- SAVE AS TEMPLATE: exposed via ref ---------- */
- /* ---------- SAVE AS TEMPLATE: exposed via ref (accept name/description) ---------- */
-useImperativeHandle(ref, () => ({
-  saveAsTemplate: async (meta = {}) => {
-    const { name, description } = meta || {};
+    /* ---------- scales ---------- */
+    useEffect(() => setViewMode(viewModeParam), [viewModeParam]);
+    useEffect(() => {
+      const currentYear = new Date().getFullYear();
+      gantt.templates.date_scale = null;
 
-    // gather tasks
-    const tasks = [];
-    gantt.eachTask((t) => {
-      const start = t.start_date instanceof Date ? t.start_date : null;
-      const end =
-        t._end_dmy
-          ? parseDMY(t._end_dmy)
-          : start && Number(t.duration) > 0
-          ? gantt.calculateEndDate({ start_date: start, duration: t.duration, task: t })
-          : null;
+      if (viewMode === "day" || viewMode === "week") {
+        gantt.config.scale_unit = viewMode;
+        gantt.config.date_scale = "%d %M %Y";
+        const fmtFull = gantt.date.date_to_str("%d %M %Y");
+        const fmtNoY = gantt.date.date_to_str("%d %M");
+        gantt.templates.date_scale = (date) =>
+          date.getFullYear() === currentYear ? fmtNoY(date) : fmtFull(date);
+        gantt.config.subscales = [{ unit: "day", step: 1, date: "%D" }];
+      } else if (viewMode === "month") {
+        gantt.config.scale_unit = "month";
+        gantt.config.date_scale = "%F %Y";
+        const fmtM = gantt.date.date_to_str("%F");
+        const fmtMY = gantt.date.date_to_str("%F %Y");
+        gantt.templates.date_scale = (date) =>
+          date.getFullYear() === currentYear ? fmtM(date) : fmtMY(date);
+        gantt.config.subscales = [{ unit: "week", step: 1, date: "Week #%W" }];
+      } else {
+        gantt.config.scale_unit = "year";
+        gantt.config.date_scale = "%Y";
+        gantt.config.subscales = [{ unit: "month", step: 1, date: "%M" }];
+      }
+      gantt.render();
+    }, [viewMode]);
 
-      tasks.push({
-        si: String(t.id),
-        dbId: String(t._dbId || ""),
-        start,
-        end,
-        duration: Number(t.duration || 0),
-        percent: Math.round((Number(t.progress || 0)) * 100),
-      });
-    });
+    const safeMsg = String(snack?.msg ?? "");
+    const isError = /^(failed|invalid|error|server)/i.test(safeMsg);
 
-    // index by SI
-    const bySi = new Map(tasks.map((x) => [x.si, x]));
-
-    // build predecessors/successors from links
-    const predsBySi = new Map();
-    const succsBySi = new Map();
-    gantt.getLinks().forEach((l) => {
-      const src = String(l.source);
-      const trg = String(l.target);
-      const type = typeToLabel[String(l.type)] || "FS";
-      const lag = Number(l.lag || 0);
-
-      if (!predsBySi.has(trg)) predsBySi.set(trg, []);
-      predsBySi.get(trg).push({ activityIdSi: src, type, lag });
-
-      if (!succsBySi.has(src)) succsBySi.set(src, []);
-      succsBySi.get(src).push({ activityIdSi: trg, type, lag });
-    });
-
-    const activities = tasks
-      .filter((t) => t.dbId)
-      .map((t) => {
-        const preds = (predsBySi.get(t.si) || [])
-          .map((p) => {
-            const src = bySi.get(p.activityIdSi);
-            if (!src?.dbId) return null;
-            return {
-              activity_id: src.dbId,
-              type: p.type,
-              lag: p.lag,
-            };
-          })
-          .filter(Boolean);
-
-        const succs = (succsBySi.get(t.si) || [])
-          .map((s) => {
-            const trg = bySi.get(s.activityIdSi);
-            if (!trg?.dbId) return null;
-            return {
-              activity_id: trg.dbId,
-              type: s.type,
-              lag: s.lag,
-            };
-          })
-          .filter(Boolean);
-
-        return {
-          activity_id: t.dbId,
-          planned_start: t.start ? t.start.toISOString() : null,
-          planned_finish: t.end ? t.end.toISOString() : null,
-          duration: t.duration || (t.start && t.end ? diffDaysInclusive(t.start, t.end) : 0),
-          percent_complete: t.percent || 0,
-          predecessors: preds,
-          successors: succs,
-        };
-      });
-
-    // ⬅️ include name/description with your existing payload
-    const payload = {
-      status: "template",
-      ...(name ? { name } : {}),
-      ...(description ? { description } : {}),
-      activities,
-    };
-
-    try {
-      await createProjectActivity(payload).unwrap();
-      setSnack({ open: true, msg: "Template saved successfully" });
-    } catch (e) {
-      setSnack({ open: true, msg: "Failed to save template" });
-    }
-  },
-}));
-
-
-  /* ---------- init gantt ---------- */
-  useEffect(() => {
-    gantt.config.date_format = "%d-%m-%Y";
-    gantt.locale.date.day_short = ["S", "M", "T", "W", "T", "F", "S"];
-    gantt.config.readonly = false;
-    gantt.config.scroll_on_click = true;
-    gantt.config.autoscroll = true;
-    gantt.config.preserve_scroll = true;
-    gantt.config.show_chart_scroll = true;
-    gantt.config.show_grid_scroll = true;
-    gantt.config.smart_rendering = true;
-    gantt.config.start_on_monday = false;
-    gantt.config.limit_view = false;
-    gantt.config.fit_tasks = false;
-    gantt.config.lightbox = false;
-    gantt.showLightbox = function () {
-      return false;
-    };
-    // IMPORTANT: allow grid rows without dates, but no chart bars
-    gantt.config.show_unscheduled = true;
-
-    gantt.config.columns = [
-      { name: "text", label: "Activity", tree: true, width: 260, resize: true },
-      { name: "duration", label: "Duration", width: 90, align: "left", resize: true, template: durationTemplate },
-      { name: "start", label: "Start", width: 120, align: "left", resize: true, template: startCellTemplate },
-      { name: "end", label: "End", width: 120, align: "left", resize: true, template: endCellTemplate },
-      { name: "pred", label: "Predecessors", width: 180, align: "left", resize: true, template: predecessorTemplate },
-    ];
-
-    gantt.templates.task_class = (_, __, task) =>
-      task._unscheduled ? "gantt-task-unscheduled" : "";
-
-    gantt.attachEvent("onTaskClick", function (id) {
-      onOpenModalForTask(String(id));
-      return true;
-    });
-
-    gantt.init(ganttContainer.current);
-    return () => gantt.clearAll();
-  }, []);
-
-  // feed data from backend “get all”
-  useEffect(() => {
-    gantt.clearAll();
-    gantt.parse({ data: ganttData, links: ganttLinks });
-  }, [ganttData, ganttLinks]);
-
-  /* ---------- scales ---------- */
-  useEffect(() => setViewMode(viewModeParam), [viewModeParam]);
-  useEffect(() => {
-    const currentYear = new Date().getFullYear();
-    gantt.templates.date_scale = null;
-
-    if (viewMode === "day" || viewMode === "week") {
-      gantt.config.scale_unit = viewMode;
-      gantt.config.date_scale = "%d %M %Y";
-      const fmtFull = gantt.date.date_to_str("%d %M %Y");
-      const fmtNoY = gantt.date.date_to_str("%d %M");
-      gantt.templates.date_scale = (date) =>
-        date.getFullYear() === currentYear ? fmtNoY(date) : fmtFull(date);
-      gantt.config.subscales = [{ unit: "day", step: 1, date: "%D" }];
-    } else if (viewMode === "month") {
-      gantt.config.scale_unit = "month";
-      gantt.config.date_scale = "%F %Y";
-      const fmtM = gantt.date.date_to_str("%F");
-      const fmtMY = gantt.date.date_to_str("%F %Y");
-      gantt.templates.date_scale = (date) =>
-        date.getFullYear() === currentYear ? fmtM(date) : fmtMY(date);
-      gantt.config.subscales = [{ unit: "week", step: 1, date: "Week #%W" }];
-    } else {
-      gantt.config.scale_unit = "year";
-      gantt.config.date_scale = "%Y";
-      gantt.config.subscales = [{ unit: "month", step: 1, date: "%M" }];
-    }
-    gantt.render();
-  }, [viewMode]);
-
-  const safeMsg = String(snack?.msg ?? "");
-  const isError = /^(failed|invalid|error|server)/i.test(safeMsg);
-
-  return (
-    <Box sx={{ ml: "0px", width: "100%", p: 0 }}>
-      <style>{`
+    return (
+      <Box sx={{ ml: "0px", width: "100%", p: 0 }}>
+        <style>{`
         .gantt_task_line.gantt-task-unscheduled { display: none !important; }
       `}</style>
 
-      {/* Header chips */}
-      <Box
-        sx={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1.5,
-          alignItems: "center",
-          justifyContent: "space-between",
-          mb: 0.5,
-          mt: 1,
-        }}
-      >
-        <Sheet variant="outlined" sx={{ display: "flex", alignItems: "center", gap: 2, borderRadius: "lg", px: 1.5, py: 1 }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-            <DescriptionOutlinedIcon fontSize="small" color="primary" />
-            <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-              Project Code:
-            </Typography>
-            <Chip color="primary" size="sm" variant="solid" sx={{ fontWeight: 700 }}>
-              {projectMeta?.code || "—"}
-            </Chip>
-          </Box>
-        </Sheet>
-
-        <Sheet variant="outlined" sx={{ display: "flex", alignItems: "center", gap: 2, borderRadius: "lg", px: 1, py: 1 }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-            <Timelapse fontSize="small" color="primary" />
-            <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-              Remaining:
-            </Typography>
-          </Box>
-        </Sheet>
-
-        <Sheet variant="outlined" sx={{ display: "flex", alignItems: "center", gap: 2, borderRadius: "lg", px: 1, py: 1 }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-            <EventOutlinedIcon fontSize="small" color="success" />
-            <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-              Start Date:
-            </Typography>
-            <Chip color="success" size="sm" variant="soft" sx={{ fontWeight: 600 }}>
-              {minStartDMY}
-            </Chip>
-          </Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-            <EventOutlinedIcon fontSize="small" color="danger" />
-            <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-              End Date:
-            </Typography>
-            <Chip color="danger" size="sm" variant="soft" sx={{ fontWeight: 600 }}>
-              {maxEndDMY}
-            </Chip>
-          </Box>
-        </Sheet>
-      </Box>
-
-      {/* Gantt area */}
-      <Box style={{ position: "relative", width: "100%", minWidth: 600, height: "80vh" }}>
+        {/* Header chips */}
         <Box
-          ref={ganttContainer}
-          style={{
-            width: "100%",
-            height: "100%",
-            background: "#fff",
-            borderRadius: 8,
-            boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
-            zIndex: 1,
-            position: "relative",
-            top: 12,
-            transition: "box-shadow 0.2s, top 0.2s",
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 1.5,
+            alignItems: "center",
+            justifyContent: "space-between",
+            mb: 0.5,
+            mt: 1,
           }}
-        />
-      </Box>
-
-      {/* Right panel (form structure unchanged) */}
-      {selectedId && (
-        <>
-          <Box
-            onClick={() => {
-              setSelectedId(null);
-              setActiveDbId(null);
-            }}
+        >
+          <Sheet
+            variant="outlined"
             sx={{
-              position: "fixed",
-              inset: 0,
-              zIndex: 1399,
-              backgroundColor: "rgba(0,0,0,0.10)",
-              backdropFilter: "blur(8px)",
-              WebkitBackdropFilter: "blur(8px)",
-              animation: "fadeIn 140ms ease-out",
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              borderRadius: "lg",
+              px: 1.5,
+              py: 1,
             }}
-          />
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+              <DescriptionOutlinedIcon fontSize="small" color="primary" />
+              <Typography level="body-sm" sx={{ color: "text.secondary" }}>
+                Project Code:
+              </Typography>
+              <Chip
+                color="primary"
+                size="sm"
+                variant="solid"
+                sx={{ fontWeight: 700 }}
+              >
+                {projectMeta?.code || "—"}
+              </Chip>
+            </Box>
+          </Sheet>
 
           <Sheet
             variant="outlined"
             sx={{
-              position: "fixed",
-              overflow: "auto",
-              height: "100%",
-              p: 2,
-              transition: "width 0.2s",
-              zIndex: 1400,
-              right: 0,
-              top: 0,
-              width: "40%",
-              animation: "slideInRight 230ms ease-out",
-              willChange: "transform, opacity",
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              borderRadius: "lg",
+              px: 1,
+              py: 1,
             }}
           >
-            <Stack spacing={1.5}>
-              <Typography level="title-sm">
-                Edit Activity {isFetchingActivity ? "(loading…)" : ""}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+              <Timelapse fontSize="small" color="primary" />
+              <Typography level="body-sm" sx={{ color: "text.secondary" }}>
+                Remaining:
               </Typography>
-              <Divider />
+            </Box>
+          </Sheet>
 
-              <FormControl>
-                <FormLabel>Status</FormLabel>
-                <Select
-                  size="sm"
-                  value={form.status}
-                  onChange={(_, v) => setForm((f) => ({ ...f, status: v || "not started" }))}
-                  slotProps={{ listbox: { sx: { zIndex: 1401 } } }}
-                >
-                  <Option value="not started">Not started</Option>
-                  <Option value="in progress">In progress</Option>
-                  <Option value="completed">Completed</Option>
-                </Select>
-              </FormControl>
+          <Sheet
+            variant="outlined"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              borderRadius: "lg",
+              px: 1,
+              py: 1,
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+              <EventOutlinedIcon fontSize="small" color="success" />
+              <Typography level="body-sm" sx={{ color: "text.secondary" }}>
+                Start Date:
+              </Typography>
+              <Chip
+                color="success"
+                size="sm"
+                variant="soft"
+                sx={{ fontWeight: 600 }}
+              >
+                {minStartDMY}
+              </Chip>
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+              <EventOutlinedIcon fontSize="small" color="danger" />
+              <Typography level="body-sm" sx={{ color: "text.secondary" }}>
+                End Date:
+              </Typography>
+              <Chip
+                color="danger"
+                size="sm"
+                variant="soft"
+                sx={{ fontWeight: 600 }}
+              >
+                {maxEndDMY}
+              </Chip>
+            </Box>
+          </Sheet>
+        </Box>
 
-              <Stack direction="row" spacing={1}>
-                <FormControl sx={{ flex: 1 }}>
-                  <FormLabel>Start date</FormLabel>
-                  <Input
-                    size="sm"
-                    type="date"
-                    value={form.start}
-                    onChange={(e) => {
-                      const startISO = e.target.value;
-                      setForm((f) => {
-                        let endISO = f.end;
-                        if (startISO && f.duration) {
-                          const s = parseISOAsLocalDate(startISO);
-                          if (!isNaN(s)) {
-                            const eDate = gantt.calculateEndDate({
-                              start_date: s,
-                              duration: Number(f.duration),
-                            });
-                            endISO = gantt.date.date_to_str("%Y-%m-%d")(eDate);
-                          }
-                        }
-                        return { ...f, start: startISO, end: endISO };
-                      });
-                    }}
-                  />
-                </FormControl>
+        {/* Gantt area */}
+        <Box
+          style={{
+            position: "relative",
+            width: "100%",
+            minWidth: 600,
+            height: "80vh",
+          }}
+        >
+          <Box
+            ref={ganttContainer}
+            style={{
+              width: "100%",
+              height: "100%",
+              background: "#fff",
+              borderRadius: 8,
+              boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
+              zIndex: 1,
+              position: "relative",
+              top: 12,
+              transition: "box-shadow 0.2s, top 0.2s",
+            }}
+          />
+        </Box>
+
+        {/* Right panel (form structure unchanged) */}
+        {selectedId && (
+          <>
+            <Box
+              onClick={() => {
+                setSelectedId(null);
+                setActiveDbId(null);
+              }}
+              sx={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 1399,
+                backgroundColor: "rgba(0,0,0,0.10)",
+                backdropFilter: "blur(8px)",
+                WebkitBackdropFilter: "blur(8px)",
+                animation: "fadeIn 140ms ease-out",
+              }}
+            />
+
+            <Sheet
+              variant="outlined"
+              sx={{
+                position: "fixed",
+                overflow: "auto",
+                height: "100%",
+                p: 2,
+                transition: "width 0.2s",
+                zIndex: 1400,
+                right: 0,
+                top: 0,
+                width: "40%",
+                animation: "slideInRight 230ms ease-out",
+                willChange: "transform, opacity",
+              }}
+            >
+              <Stack spacing={1.5}>
+                <Typography level="title-sm">
+                  Edit Activity {isFetchingActivity ? "(loading…)" : ""}
+                </Typography>
+                <Divider />
 
                 <FormControl>
-                  <FormLabel>Duration (days)</FormLabel>
-                  <Input
+                  <FormLabel>Status</FormLabel>
+                  <Select
                     size="sm"
-                    type="number"
-                    value={form.duration}
-                    onChange={(e) => {
-                      const duration = Number(e.target.value) || 0;
-                      setForm((f) => {
-                        let endISO = f.end;
-                        if (f.start && duration > 0) {
-                          const s = parseISOAsLocalDate(f.start);
-                          if (!isNaN(s)) {
-                            const eDate = gantt.calculateEndDate({
-                              start_date: s,
-                              duration,
-                            });
-                            endISO = gantt.date.date_to_str("%Y-%m-%d")(eDate);
-                          }
-                        }
-                        return { ...f, duration, end: endISO };
-                      });
-                    }}
-                  />
+                    value={form.status}
+                    onChange={(_, v) =>
+                      setForm((f) => ({ ...f, status: v || "not started" }))
+                    }
+                    slotProps={{ listbox: { sx: { zIndex: 1401 } } }}
+                  >
+                    <Option value="not started">Not started</Option>
+                    <Option value="in progress">In progress</Option>
+                    <Option value="completed">Completed</Option>
+                  </Select>
                 </FormControl>
-              </Stack>
 
-              <FormControl sx={{ flex: 1 }}>
-                <FormLabel>End date</FormLabel>
-                <Input size="sm" type="date" value={form.end} disabled />
-              </FormControl>
+                <Stack direction="row" spacing={1}>
+                  <FormControl sx={{ flex: 1 }}>
+                    <FormLabel>Start date</FormLabel>
+                    <Input
+                      size="sm"
+                      type="date"
+                      value={form.start}
+                      onChange={(e) => {
+                        const startISO = e.target.value;
+                        setForm((f) => {
+                          let endISO = f.end;
+                          if (startISO && f.duration) {
+                            const s = parseISOAsLocalDate(startISO);
+                            if (!isNaN(s)) {
+                              const eDate = gantt.calculateEndDate({
+                                start_date: s,
+                                duration: Number(f.duration),
+                              });
+                              endISO =
+                                gantt.date.date_to_str("%Y-%m-%d")(eDate);
+                            }
+                          }
+                          return { ...f, start: startISO, end: endISO };
+                        });
+                      }}
+                    />
+                  </FormControl>
 
-              <Divider />
+                  <FormControl>
+                    <FormLabel>Duration (days)</FormLabel>
+                    <Input
+                      size="sm"
+                      type="number"
+                      value={form.duration}
+                      onChange={(e) => {
+                        const duration = Number(e.target.value) || 0;
+                        setForm((f) => {
+                          let endISO = f.end;
+                          if (f.start && duration > 0) {
+                            const s = parseISOAsLocalDate(f.start);
+                            if (!isNaN(s)) {
+                              const eDate = gantt.calculateEndDate({
+                                start_date: s,
+                                duration,
+                              });
+                              endISO =
+                                gantt.date.date_to_str("%Y-%m-%d")(eDate);
+                            }
+                          }
+                          return { ...f, duration, end: endISO };
+                        });
+                      }}
+                    />
+                  </FormControl>
+                </Stack>
 
-              {/* Predecessors (editable) */}
-              <Stack spacing={1}>
-                <Stack direction="row" alignItems="center" justifyContent="space-between">
-                  <Typography level="title-sm">Predecessors</Typography>
+                <FormControl sx={{ flex: 1 }}>
+                  <FormLabel>End date</FormLabel>
+                  <Input size="sm" type="date" value={form.end} disabled />
+                </FormControl>
+
+                <Divider />
+
+                {/* Predecessors (editable) */}
+                <Stack spacing={1}>
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                  >
+                    <Typography level="title-sm">Predecessors</Typography>
+                    <Button
+                      size="sm"
+                      variant="soft"
+                      startDecorator={<Add />}
+                      onClick={() =>
+                        setForm((f) => ({
+                          ...f,
+                          predecessors: [
+                            ...f.predecessors,
+                            {
+                              activityId: "",
+                              activityName: "",
+                              type: "FS",
+                              lag: 0,
+                            },
+                          ],
+                        }))
+                      }
+                    >
+                      Add
+                    </Button>
+                  </Stack>
+                  <Stack spacing={1}>
+                    {form.predecessors.length === 0 && (
+                      <Typography
+                        level="body-xs"
+                        sx={{ color: "text.tertiary" }}
+                      >
+                        No predecessors
+                      </Typography>
+                    )}
+                    {form.predecessors.map((r, idx) => (
+                      <DepRow
+                        key={`pred-${idx}`}
+                        title="Predecessor"
+                        options={activityOptions.filter(
+                          (o) => o.value !== selectedId
+                        )}
+                        row={r}
+                        onChange={(nr) =>
+                          setForm((f) => {
+                            const arr = [...f.predecessors];
+                            arr[idx] = nr;
+                            return { ...f, predecessors: arr };
+                          })
+                        }
+                        onRemove={() =>
+                          setForm((f) => {
+                            const arr = f.predecessors.slice();
+                            arr.splice(idx, 1);
+                            return { ...f, predecessors: arr };
+                          })
+                        }
+                      />
+                    ))}
+                  </Stack>
+                </Stack>
+
+                <Divider />
+
+                {/* Successors (kept in form; backend still builds from predecessors) */}
+                <Stack spacing={1}>
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                  >
+                    <Typography level="title-sm">Successors</Typography>
+                    <Button
+                      size="sm"
+                      variant="soft"
+                      startDecorator={<Add />}
+                      onClick={() =>
+                        setForm((f) => ({
+                          ...f,
+                          successors: [
+                            ...f.successors,
+                            {
+                              activityId: "",
+                              activityName: "",
+                              type: "FS",
+                              lag: 0,
+                            },
+                          ],
+                        }))
+                      }
+                    >
+                      Add
+                    </Button>
+                  </Stack>
+                  <Stack spacing={1}>
+                    {form.successors.length === 0 && (
+                      <Typography
+                        level="body-xs"
+                        sx={{ color: "text.tertiary" }}
+                      >
+                        No successors
+                      </Typography>
+                    )}
+                    {form.successors.map((r, idx) => (
+                      <DepRow
+                        key={`succ-${idx}`}
+                        title="Successor"
+                        options={activityOptions.filter(
+                          (o) => o.value !== selectedId
+                        )}
+                        row={r}
+                        onChange={(nr) =>
+                          setForm((f) => {
+                            const arr = [...f.successors];
+                            arr[idx] = nr;
+                            return { ...f, successors: arr };
+                          })
+                        }
+                        onRemove={() =>
+                          setForm((f) => {
+                            const arr = f.successors.slice();
+                            arr.splice(idx, 1);
+                            return { ...f, successors: arr };
+                          })
+                        }
+                      />
+                    ))}
+                  </Stack>
+                </Stack>
+
+                <Divider />
+
+                <Stack direction="row" spacing={1}>
+                  <Button size="sm" onClick={saveFromModal} disabled={isSaving}>
+                    {isSaving ? "Saving…" : "Save"}
+                  </Button>
                   <Button
                     size="sm"
                     variant="soft"
-                    startDecorator={<Add />}
-                    onClick={() =>
-                      setForm((f) => ({
-                        ...f,
-                        predecessors: [
-                          ...f.predecessors,
-                          { activityId: "", activityName: "", type: "FS", lag: 0 },
-                        ],
-                      }))
-                    }
+                    color="neutral"
+                    onClick={() => {
+                      setSelectedId(null);
+                      setActiveDbId(null);
+                    }}
                   >
-                    Add
+                    Close
                   </Button>
                 </Stack>
-                <Stack spacing={1}>
-                  {form.predecessors.length === 0 && (
-                    <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
-                      No predecessors
-                    </Typography>
-                  )}
-                  {form.predecessors.map((r, idx) => (
-                    <DepRow
-                      key={`pred-${idx}`}
-                      title="Predecessor"
-                      options={activityOptions.filter((o) => o.value !== selectedId)}
-                      row={r}
-                      onChange={(nr) =>
-                        setForm((f) => {
-                          const arr = [...f.predecessors];
-                          arr[idx] = nr;
-                          return { ...f, predecessors: arr };
-                        })
-                      }
-                      onRemove={() =>
-                        setForm((f) => {
-                          const arr = f.predecessors.slice();
-                          arr.splice(idx, 1);
-                          return { ...f, predecessors: arr };
-                        })
-                      }
-                    />
-                  ))}
-                </Stack>
               </Stack>
+            </Sheet>
+          </>
+        )}
 
-              <Divider />
-
-              {/* Successors (kept in form; backend still builds from predecessors) */}
-              <Stack spacing={1}>
-                <Stack direction="row" alignItems="center" justifyContent="space-between">
-                  <Typography level="title-sm">Successors</Typography>
-                  <Button
-                    size="sm"
-                    variant="soft"
-                    startDecorator={<Add />}
-                    onClick={() =>
-                      setForm((f) => ({
-                        ...f,
-                        successors: [
-                          ...f.successors,
-                          { activityId: "", activityName: "", type: "FS", lag: 0 },
-                        ],
-                      }))
-                    }
-                  >
-                    Add
-                  </Button>
-                </Stack>
-                <Stack spacing={1}>
-                  {form.successors.length === 0 && (
-                    <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
-                      No successors
-                    </Typography>
-                  )}
-                  {form.successors.map((r, idx) => (
-                    <DepRow
-                      key={`succ-${idx}`}
-                      title="Successor"
-                      options={activityOptions.filter((o) => o.value !== selectedId)}
-                      row={r}
-                      onChange={(nr) =>
-                        setForm((f) => {
-                          const arr = [...f.successors];
-                          arr[idx] = nr;
-                          return { ...f, successors: arr };
-                        })
-                      }
-                      onRemove={() =>
-                        setForm((f) => {
-                          const arr = f.successors.slice();
-                          arr.splice(idx, 1);
-                          return { ...f, successors: arr };
-                        })
-                      }
-                    />
-                  ))}
-                </Stack>
-              </Stack>
-
-              <Divider />
-
-              <Stack direction="row" spacing={1}>
-                <Button size="sm" onClick={saveFromModal} disabled={isSaving}>
-                  {isSaving ? "Saving…" : "Save"}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="soft"
-                  color="neutral"
-                  onClick={() => {
-                    setSelectedId(null);
-                    setActiveDbId(null);
-                  }}
-                >
-                  Close
-                </Button>
-              </Stack>
-            </Stack>
-          </Sheet>
-        </>
-      )}
-
-      <AppSnackbar
-        color={isError ? "danger" : "success"}
-        open={!!snack.open}
-        message={safeMsg}
-        onClose={() => setSnack((s) => ({ ...s, open: false }))}
-      />
-    </Box>
-  );
-});
+        <AppSnackbar
+          color={isError ? "danger" : "success"}
+          open={!!snack.open}
+          message={safeMsg}
+          onClose={() => setSnack((s) => ({ ...s, open: false }))}
+        />
+      </Box>
+    );
+  }
+);
 
 export default View_Project_Management;
