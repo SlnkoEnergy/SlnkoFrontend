@@ -89,7 +89,7 @@ export const projectsApi = createApi({
 getAllProjectActivities: builder.query({
   // GET /v1/projectactivity/activities?search=&status=&page=1&limit=10
   query: ({ search = "", status = "", page = 1, limit = 10 } = {}) => ({
-    url: "activities/activities",
+    url: "projectactivity/allprojectactivity",
     params: { search, ...(status ? { status } : {}), page, limit },
   }),
   providesTags: ["Project"],
