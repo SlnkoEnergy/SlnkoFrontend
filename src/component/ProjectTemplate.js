@@ -14,14 +14,17 @@ import { CircularProgress, Option, Select } from "@mui/joy";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
+// ⬇️ use the "get all" endpoint from your slice
+import { useGetAllProjectActivitiesQuery } from "../redux/projectsSlice";
+
 /**
- * Optional row shape if you pass data later:
+ * Row shape:
  * {
- *   _id?: string,          // internal id
- *   template_id: string,   // shown in "Template Id"
- *   name: string,          // shown in "Template Name"
- *   created_by: string,    // shown in "Created By"
- *   description: string,   // shown in "Description"
+ *   _id?: string,
+ *   template_code: string,
+ *   template_name: string,
+ *   created_by: string,
+ *   description: string,
  * }
  */
 function TemplateTable({ rows = [] }) {
@@ -29,72 +32,86 @@ function TemplateTable({ rows = [] }) {
   const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
+
   const options = [10, 20, 50, 100];
   const [rowsPerPage, setRowsPerPage] = useState(
     () => Number(searchParams.get("pageSize")) || 10
   );
 
-  // ---- NO API: local filter/sort/paginate only -----------------------------
+  // --- URL params (source of truth) ---------------------------------------
+  const pageFromUrl = parseInt(searchParams.get("page") || "1", 10);
+  const statusFromUrl = searchParams.get("status") || "";   // optional: template|project
+  const searchFromUrl = searchParams.get("q") || "";        // search term
+
+  useEffect(() => {
+    setSearchQuery(searchFromUrl);
+    setCurrentPage(pageFromUrl || 1);
+  }, [searchFromUrl, pageFromUrl]);
+
+  // --- API call: GET /projectactivity/all ---------------------------------
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+  } = useGetAllProjectActivitiesQuery({
+    search: searchFromUrl,
+    status: statusFromUrl,
+    page: pageFromUrl || 1,
+    limit: rowsPerPage,
+  });
+
+  // Controller returns: { ok, page, limit, total, totalPages, rows: [...] }
+  const apiRows = data?.rows || [];
+  const total = data?.total || 0;
+  const totalPages = data?.totalPages || 1;
+
+  // Prefer prop rows if provided; else API rows
+  const inputRows = rows.length ? rows : apiRows;
+
+  // ---- local filter/sort (client-side) -----------------------------------
   const filteredAndSortedData = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    const base = Array.isArray(rows) ? rows : [];
+    const q = (searchQuery || "").trim().toLowerCase();
+    const base = Array.isArray(inputRows) ? inputRows : [];
     const filtered = q
       ? base.filter((r) =>
-          ["template_id", "name", "created_by", "description"].some((k) =>
-            String(r?.[k] ?? "").toLowerCase().includes(q)
+          ["template_code", "template_name", "created_by", "description"].some(
+            (k) => String(r?.[k] ?? "").toLowerCase().includes(q)
           )
         )
       : base;
 
-    // keep a deterministic order; change to whatever you prefer
     return [...filtered].sort((a, b) =>
-      String(a?.name ?? "").localeCompare(String(b?.name ?? ""))
+      String(a?.template_name ?? "").localeCompare(
+        String(b?.template_name ?? "")
+      )
     );
-  }, [rows, searchQuery]);
+  }, [inputRows, searchQuery]);
 
-  useEffect(() => {
-    const page = parseInt(searchParams.get("page")) || 1;
-    setCurrentPage(page);
-  }, [searchParams]);
+  // We paginate on the server; `data.rows` is already the current page.
+  // Keeping client-side slice identical to your layout (no-op but harmless).
+  const draftTemplates = filteredAndSortedData;
 
-  const total = filteredAndSortedData.length;
-  const pageSize = Number(rowsPerPage || 1);
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-
-  const start = (currentPage - 1) * pageSize;
-  const paginatedRows = filteredAndSortedData.slice(start, start + pageSize);
-  const draftTemplates = paginatedRows; // keep naming consistent with your layout
-
+  // ---- handlers -----------------------------------------------------------
   const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setSearchParams({ page });
-      setCurrentPage(page);
-      setSelected([]); // clear selection when page changes
-    }
+    if (page < 1 || page > totalPages) return;
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+      p.set("page", String(page));
+      return p;
+    });
+    setCurrentPage(page);
+    setSelected([]);
   };
 
   const handleSearch = (query) => {
-    setSearchQuery(query.toLowerCase());
-    // reset to page 1 on new search
+    setSearchQuery(query);
     setSearchParams((prev) => {
       const p = new URLSearchParams(prev);
-      p.set("page", 1);
+      p.set("q", query);
+      p.set("page", "1"); // reset page on search
       return p;
     });
-  };
-
-  const handleSelectAll = (event) => {
-    if (event.target.checked) {
-      setSelected(draftTemplates.map((row, i) => row._id ?? `${start + i}`));
-    } else {
-      setSelected([]);
-    }
-  };
-
-  const handleRowSelect = (id) => {
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
   };
 
   return (
@@ -105,25 +122,23 @@ function TemplateTable({ rows = [] }) {
         width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
       }}
     >
-      {/* ==== HEADER BAR (same placement) =================================== */}
+      {/* ==== HEADER BAR ===================================================== */}
       <Box display={"flex"} justifyContent={"space-between"} pb={0.5}>
-        <Box /> {/* left side empty (tabs removed, keeps spacing identical) */}
-
+        <Box />
         <Box
           className="SearchAndFilters-tabletUp"
-          sx={{
-            borderRadius: "sm",
+           sx={{
             py: 1,
             display: "flex",
-            flexWrap: "wrap",
+            alignItems: "flex-end",
             gap: 1.5,
-            width: { lg: "100%" },
+            width: { xs: "100%", md: "50%" },
           }}
         >
           <FormControl sx={{ flex: 1 }} size="sm">
             <Input
               size="sm"
-              placeholder="Search by Template Id, Name, Created By, or Description"
+              placeholder="Search by Template Code, Name, Created By, or Description"
               startDecorator={<SearchIcon />}
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
@@ -132,7 +147,7 @@ function TemplateTable({ rows = [] }) {
         </Box>
       </Box>
 
-      {/* ==== TABLE (same look) ============================================ */}
+      {/* ==== TABLE ========================================================== */}
       <Sheet
         className="OrderTableContainer"
         variant="outlined"
@@ -173,14 +188,22 @@ function TemplateTable({ rows = [] }) {
                     draftTemplates.length > 0 &&
                     selected.length === draftTemplates.length
                   }
-                  onChange={handleSelectAll}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelected(
+                        draftTemplates.map((row, i) => row._id ?? `${i}`)
+                      );
+                    } else {
+                      setSelected([]);
+                    }
+                  }}
                   indeterminate={
                     selected.length > 0 &&
                     selected.length < draftTemplates.length
                   }
                 />
               </th>
-              {["Template Id", "Template Name", "Created By", "Description"].map(
+              {["Template Code", "Template Name", "Created By", "Description"].map(
                 (header, index) => (
                   <th
                     key={index}
@@ -203,21 +226,42 @@ function TemplateTable({ rows = [] }) {
           </thead>
 
           <tbody>
-            {/* no API: no loading spinner; keep empty state styling same-ish */}
-            {draftTemplates.length > 0 ? (
+            {isLoading ? (
+              <tr>
+                <td colSpan={5} style={{ padding: "12px", textAlign: "left" }}>
+                  <CircularProgress size="sm" />
+                  <span style={{ marginLeft: 8 }}>Loading…</span>
+                </td>
+              </tr>
+            ) : isError ? (
+              <tr>
+                <td colSpan={5} style={{ padding: "12px", textAlign: "left" }}>
+                  <Typography color="danger">
+                    Failed to load data
+                    {error?.data?.message ? `: ${error.data.message}` : ""}
+                  </Typography>
+                </td>
+              </tr>
+            ) : draftTemplates.length > 0 ? (
               draftTemplates.map((row, index) => {
-                const rowId = row._id ?? `${start + index}`;
+                const rowId = row._id ?? `${index}`;
                 return (
                   <tr key={rowId}>
                     <td style={tdCell}>
                       <Checkbox
                         size="sm"
                         checked={selected.includes(rowId)}
-                        onChange={() => handleRowSelect(rowId)}
+                        onChange={() =>
+                          setSelected((prev) =>
+                            prev.includes(rowId)
+                              ? prev.filter((x) => x !== rowId)
+                              : [...prev, rowId]
+                          )
+                        }
                       />
                     </td>
-                    <td style={tdCell}>{row.template_id ?? "-"}</td>
-                    <td style={tdCell}>{row.name ?? "-"}</td>
+                    <td style={tdCell}>{row.template_code ?? "-"}</td>
+                    <td style={tdCell}>{row.template_name ?? "-"}</td>
                     <td style={tdCell}>{row.created_by ?? "-"}</td>
                     <td style={{ ...tdCell, maxWidth: 600 }}>
                       <span style={ellipsis}>{row.description ?? "-"}</span>
@@ -248,7 +292,7 @@ function TemplateTable({ rows = [] }) {
         </Box>
       </Sheet>
 
-      {/* ==== PAGINATION (same placement & style) =========================== */}
+      {/* ==== PAGINATION ===================================================== */}
       <Box
         className="Pagination-laptopUp"
         sx={{
@@ -266,16 +310,14 @@ function TemplateTable({ rows = [] }) {
           color="neutral"
           startDecorator={<KeyboardArrowLeftIcon />}
           onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage === 1}
+          disabled={currentPage <= 1}
         >
           Previous
         </Button>
 
-        <Box>Showing {draftTemplates.length} results</Box>
+        <Box>Showing {draftTemplates.length} of {total} results</Box>
 
-        <Box
-          sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
-        >
+        <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
           {currentPage > 1 && (
             <IconButton
               size="sm"
@@ -311,7 +353,7 @@ function TemplateTable({ rows = [] }) {
                 setRowsPerPage(newValue);
                 setSearchParams((prev) => {
                   const params = new URLSearchParams(prev);
-                  params.set("pageSize", newValue);
+                  params.set("pageSize", String(newValue));
                   params.set("page", "1");
                   return params;
                 });

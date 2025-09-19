@@ -85,6 +85,16 @@ export const projectsApi = createApi({
       }),
       invalidatesTags: ["Project"],
     }),
+
+getAllProjectActivities: builder.query({
+  // GET /v1/projectactivity/activities?search=&status=&page=1&limit=10
+  query: ({ search = "", status = "", page = 1, limit = 10 } = {}) => ({
+    url: "activities/activities",
+    params: { search, ...(status ? { status } : {}), page, limit },
+  }),
+  providesTags: ["Project"],
+}),
+
     getProjectActivityByProjectId: builder.query({
       query: (projectId) =>
         `projectactivity/projectactivity?projectId=${projectId}`,
@@ -97,22 +107,23 @@ export const projectsApi = createApi({
 
     pushActivityToProject: builder.mutation({
       query: ({ projectId, name, description, type }) => ({
-        url: `projectactivity/pushactivity/${encodeURIComponent(projectId)}`, 
+        url: `projectactivity/pushactivity/${encodeURIComponent(projectId)}`,
         method: "PUT",
         body: { name, description, type },
       }),
       invalidatesTags: ["Project"],
     }),
     updateActivityInProject: builder.mutation({
-      query: ({projectId, activityId, data}) => ({
+      query: ({ projectId, activityId, data }) => ({
         url: `projectactivity/${projectId}/activity/${activityId}`,
-        method: 'PUT',
-        body: data
+        method: "PUT",
+        body: data,
       }),
-      invalidatesTags:['Project']
+      invalidatesTags: ["Project"],
     }),
     getActivityInProject: builder.query({
-      query: ({projectId, activityId}) => `projectactivity/${projectId}/activity/${activityId}`,
+      query: ({ projectId, activityId }) =>
+        `projectactivity/${projectId}/activity/${activityId}`,
       providesTags: ["Project"],
     }),
   }),
@@ -139,5 +150,7 @@ export const {
   usePushActivityToProjectMutation,
   useGetProjectActivityByProjectIdQuery,
   useUpdateActivityInProjectMutation,
-  useGetActivityInProjectQuery
+  useGetActivityInProjectQuery,
+  useGetAllProjectActivitiesQuery,
+  useLazyGetAllProjectActivitiesQuery,
 } = projectsApi;
