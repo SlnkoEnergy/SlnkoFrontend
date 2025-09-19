@@ -132,9 +132,11 @@ export default function MainHeader({ title, children }) {
         backgroundColor: "#1f487c",
         borderBottom: `1px solid ${theme.vars.palette.neutral.outlinedBorder}`,
         boxShadow: "sm",
-        width: isProjectsPage ? '100%' : { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+        width: isProjectsPage
+          ? "100%"
+          : { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
         height: "60px",
-        ml:isProjectsPage? '0px': { md: "0px", lg: "var(--Sidebar-width)" },
+        ml: isProjectsPage ? "0px" : { md: "0px", lg: "var(--Sidebar-width)" },
       })}
     >
       <Box
@@ -154,7 +156,7 @@ export default function MainHeader({ title, children }) {
             size="sm"
             sx={{
               "@media print": { display: "none!important" },
-              display: isProjectsPage ? 'flex' : { sm: "flex", lg: "none" },
+              display: isProjectsPage ? "flex" : { sm: "flex", lg: "none" },
               borderColor: "#fff",
               "&:hover": {
                 backgroundColor: "rgba(255,255,255,0.12)",
@@ -208,7 +210,6 @@ export default function MainHeader({ title, children }) {
             overflowX: { xs: "auto", sm: "visible" },
           }}
         >
-      
           <Dropdown>
             <MenuButton
               variant="plain"

@@ -25,9 +25,7 @@ import {
   useUpdateHandOverMutation,
   useUpdateStatusHandOverMutation,
 } from "../../../redux/camsSlice";
-import {
-  useGetModuleMasterQuery,
-} from "../../../redux/leadsSlice";
+import { useGetModuleMasterQuery } from "../../../redux/leadsSlice";
 
 const CamHandoverSheetForm = ({ onBack, p_id }) => {
   const navigate = useNavigate();
@@ -120,7 +118,6 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
       proposed_dc_capacity: "",
       distance: "",
       tarrif: "",
-      // substation_name: "",
       overloading: "",
       project_kwp: "",
       land: { type: "", acres: "" },
@@ -128,6 +125,8 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
       project_component: "",
       project_component_other: "",
       transmission_scope: "",
+      ppa_expiry_date: "",
+      bd_commitment_date: "",
       loan_scope: "",
     },
 
@@ -202,7 +201,6 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
         ...new Set(ModuleMaster.map((item) => item.power).filter(Boolean)),
       ]);
     }
-
   }, [ModuleMaster]);
 
   const handleExpand = (panel) => {
@@ -261,8 +259,8 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
   } = useGetHandOverByIdQuery(
     { id: id, p_id: p_id },
     {
-    skip: !id && !p_id
-  }
+      skip: !id && !p_id,
+    }
   );
   const handoverData = getHandOverSheet?.data ?? null;
 
@@ -323,6 +321,22 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
       purchase_supply_net_meter: Yup.string().required(
         "Purchase supply net metering is required"
       ),
+      project_completion_date: Yup.string()
+        .required("Project Completion Date is required")
+        .test(
+          "max-90-days",
+          "Project Completion Date could not be more than 90 days from today",
+          function (value) {
+            if (!value) return true;
+            const inputDate = new Date(value);
+            if (isNaN(inputDate)) return true;
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const diffMs = inputDate - today;
+            const diffDays = diffMs / (1000 * 60 * 60 * 24);
+            return diffDays <= 90;
+          }
+        ),
     }),
     commercial_details: Yup.object().shape({
       type: Yup.string().required("Commercial type is required"),
@@ -350,10 +364,6 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
         name: handoverData?.customer_details?.name || "",
         customer: handoverData?.customer_details?.customer || "",
         epc_developer: handoverData?.customer_details?.epc_developer || "",
-        // billing_address: handoverData?.customer_details?.billing_address || {
-        //   village_name: "",
-        //   district_name: "",
-        // },
         site_address: handoverData?.customer_details?.site_address || {
           village_name: "",
           district_name: "",
@@ -361,7 +371,6 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
         site_google_coordinates:
           handoverData?.customer_details?.site_google_coordinates || "",
         number: handoverData?.customer_details?.number || "",
-        // gst_no: handoverData?.customer_details?.gst_no || "",
         gender_of_Loa_holder:
           handoverData?.customer_details?.gender_of_Loa_holder || "",
         email: handoverData?.customer_details?.email || "",
@@ -396,9 +405,6 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
           handoverData?.project_detail?.inverter_make_capacity || "",
         inverter_make: handoverData?.project_detail?.inverter_make || "",
         inverter_type: handoverData?.project_detail?.inverter_type || "",
-        // inverter_size: handoverData?.project_detail?.inverter_size || "",
-        // inverter_model_no:
-        //   handoverData?.project_detail?.inverter_model_no || "",
         work_by_slnko: handoverData?.project_detail?.work_by_slnko || "",
         topography_survey:
           handoverData?.project_detail?.topography_survey || "",
@@ -470,7 +476,6 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
     }));
   }, [handoverData]);
 
-
   const calculateDcCapacity = (ac, overloadingPercent) => {
     const acValue = parseFloat(ac);
     const overloadingValue = parseFloat(overloadingPercent) / 100;
@@ -512,7 +517,7 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
         service: calculated,
       },
     }));
-  
+
     if (!isNaN(serviceAmount)) {
       let gstPercentage = 0;
       if (billingType === "Composite") {
@@ -1216,38 +1221,27 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
-                Project Completion Date(As per PPA)
+                Project Completion Date (Slnko) {" "}
+                <span style={{ color: "red" }}>*</span>
               </Typography>
               <Input
                 fullWidth
                 type="date"
-                value={
-                  formData["project_detail"]?.["project_completion_date"] || ""
-                }
+                value={(() => {
+                  const val = formData.project_detail.project_completion_date;
+                  if (!val) return "";
+                  if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+                  const d = new Date(val);
+                  if (isNaN(d)) return "";
+                  const year = d.getFullYear();
+                  const month = String(d.getMonth() + 1).padStart(2, "0");
+                  const day = String(d.getDate()).padStart(2, "0");
+                  return `${year}-${month}-${day}`;
+                })()}
                 onChange={(e) =>
                   handleChange(
                     "project_detail",
                     "project_completion_date",
-                    e.target.value
-                  )
-                }
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Typography
-                level="body1"
-                sx={{ fontWeight: "bold", marginBottom: 0.5 }}
-              >
-                LOA/PPA Date
-              </Typography>
-              <Input
-                fullWidth
-                type="date"
-                value={formData["project_detail"]?.["agreement_date"] || ""}
-                onChange={(e) =>
-                  handleChange(
-                    "project_detail",
-                    "agreement_date",
                     e.target.value
                   )
                 }
@@ -1395,8 +1389,8 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
                 {formData?.other_details?.billing_type === "Composite"
                   ? "Total Slnko Service Charge(with GST)"
                   : formData?.other_details?.billing_type === "Individual"
-                    ? "Total Slnko Service Charge (with GST)"
-                    : "Total Slnko Service Charge(with GST)"}
+                  ? "Total Slnko Service Charge (with GST)"
+                  : "Total Slnko Service Charge(with GST)"}
               </Typography>
               <Input
                 fullWidth
@@ -1995,6 +1989,48 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
                 <Option value="DCR">DCR</Option>
                 <Option value="Non DCR">Non DCR</Option>
               </Select>
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                PPA Expiry Date
+                <span style={{ color: "red" }}>*</span>
+              </Typography>
+              <Input
+                value={(() => {
+                  const val = formData.project_detail.ppa_expiry_date;
+                  if (!val) return "";
+                  const d = new Date(val);
+                  if (isNaN(d)) return val;
+                  const day = String(d.getDate()).padStart(2, "0");
+                  const month = String(d.getMonth() + 1).padStart(2, "0");
+                  const year = d.getFullYear();
+                  return `${day}-${month}-${year}`;
+                })()}
+                placeholder="PPA Expiry Date"
+                readOnly
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                BD Commitment Date
+                <span style={{ color: "red" }}>*</span>
+              </Typography>
+              <Input
+                value={(() => {
+                  const val = formData.project_detail.bd_commitment_date;
+                  if (!val) return "";
+                  const d = new Date(val);
+                  if (isNaN(d)) return val;
+                  const day = String(d.getDate()).padStart(2, "0");
+                  const month = String(d.getMonth() + 1).padStart(2, "0");
+                  const year = d.getFullYear();
+                  return `${day}-${month}-${year}`;
+                })()}
+                placeholder="BD Commitment Date"
+                readOnly
+              />
             </Grid>
 
             <Grid item xs={12} sm={6}>

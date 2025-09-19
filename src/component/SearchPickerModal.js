@@ -47,31 +47,23 @@ export default function SearchPickerModal({
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  // track selected rows for highlight
-  const [selectedRows, setSelectedRows] = useState([]); // array of ids
+  const [selectedRows, setSelectedRows] = useState([]);
 
-  // keep latest fetchPage in a ref (stable in effects)
   const fetchPageRef = useRef(fetchPage);
   useEffect(() => {
     fetchPageRef.current = fetchPage;
   }, [fetchPage]);
 
-
-  // Reset pagination and search state on open
   useEffect(() => {
     if (!open) return;
     setPage(1);
-    // keep selection when modal reopens? Typically reset:
     setSelectedRows([]);
   }, [open]);
-
-  // Reset to page 1 whenever search changes
   useEffect(() => {
     if (!open) return;
     setPage(1);
   }, [debounced, open]);
 
-  // Fetch current page
   useEffect(() => {
     let cancelled = false;
     async function run() {
@@ -134,13 +126,8 @@ export default function SearchPickerModal({
   };
 
   const handleRowClick = (row) => {
-    // update local selection highlight
     toggleSelect(row);
-
-    // notify parent
     onPick?.(row);
-
-    // close only when not multi
     if (!multi) {
       onClose?.();
     }

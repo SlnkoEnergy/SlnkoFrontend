@@ -207,7 +207,7 @@ function Sidebar() {
                     level="title-sm"
                     onClick={() => navigate("/dashboard")}
                   >
-                    Dashboard
+                    Home
                   </Typography>
                 </ListItemContent>
               </ListItemButton>
@@ -312,36 +312,13 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <SettingsSuggestIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Internal Ops</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List>
-                  <ListItem>
-                    <ListItemButton onClick={() => navigate("/handover_dash")}>
-                      HandOver Approval
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/handover_dash")}>
+                <SettingsSuggestIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Internal Operation</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
 
             <ListItem nested>

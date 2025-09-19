@@ -97,23 +97,36 @@ export const projectsApi = createApi({
 
     pushActivityToProject: builder.mutation({
       query: ({ projectId, name, description, type }) => ({
-        url: `projectactivity/pushactivity/${encodeURIComponent(projectId)}`, 
+        url: `projectactivity/pushactivity/${encodeURIComponent(projectId)}`,
         method: "PUT",
         body: { name, description, type },
       }),
       invalidatesTags: ["Project"],
     }),
     updateActivityInProject: builder.mutation({
-      query: ({projectId, activityId, data}) => ({
+      query: ({ projectId, activityId, data }) => ({
         url: `projectactivity/${projectId}/activity/${activityId}`,
-        method: 'PUT',
-        body: data
+        method: "PUT",
+        body: data,
       }),
-      invalidatesTags:['Project']
+      invalidatesTags: ["Project"],
     }),
     getActivityInProject: builder.query({
-      query: ({projectId, activityId}) => `projectactivity/${projectId}/activity/${activityId}`,
+      query: ({ projectId, activityId }) =>
+        `projectactivity/${projectId}/activity/${activityId}`,
       providesTags: ["Project"],
+    }),
+    getAllTemplateNameSearch: builder.query({
+      query: ({ search, page, limit }) =>
+        `projectactivity/namesearchtemplate?search=${search}&page=${page}&limit=${limit}`,
+      providesTags: ["Project"],
+    }),
+    updateProjectActivityFromTemplate: builder.mutation({
+      query: ({ projectId, activityId}) => ({
+        url: `projectactivity/${projectId}/projectactivity/${activityId}/fromtemplate`,
+        method: "PUT"
+      }),
+      invalidatesTags: ["Project"],
     }),
   }),
 });
@@ -139,5 +152,7 @@ export const {
   usePushActivityToProjectMutation,
   useGetProjectActivityByProjectIdQuery,
   useUpdateActivityInProjectMutation,
-  useGetActivityInProjectQuery
+  useGetActivityInProjectQuery,
+  useLazyGetAllTemplateNameSearchQuery,
+  useUpdateProjectActivityFromTemplateMutation
 } = projectsApi;
