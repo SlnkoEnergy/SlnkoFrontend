@@ -145,7 +145,7 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
       loa_number: "",
       ppa_number: "",
       remark: "",
-      submitted_by_BD: "",
+      // submitted_by_BD: "",
     },
     invoice_detail: {
       invoice_recipient: "",
@@ -158,12 +158,9 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
     submitted_by: "",
     status_of_handoversheet: "submitted",
     is_locked: "locked",
-    assigned_to: [],
   });
 
-  const [users, setUsers] = useState([]);
   const [camMembersSelected, setCamMembersSelected] = useState([]);
-  const [assigneesSelected, setAssigneesSelected] = useState([]);
 
   const [moduleMakeOptions, setModuleMakeOptions] = useState([]);
   const [moduleCapacityOptions, setModuleCapacityOptions] = useState([]);
@@ -188,27 +185,7 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
   return s.split("T")[0];
 };
 
-  useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      const token = localStorage.getItem("authToken");
-      try {
-        const { data } = await Axios.get("all-list", {
-          headers: {
-            "x-auth-token": token,
-          },
-        });
-        if (isMounted) {
-          setUsers(Array.isArray(data.users) ? data.users : []);
-        }
-      } catch (e) {
-        console.error("Failed to load users", e);
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+
 
   const handleAutocompleteChange = (section, field, value) => {
     setFormData((prev) => ({
@@ -230,20 +207,20 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
     }));
   };
 
-  useEffect(() => {
-    const userData = getUserData();
-    if (userData && userData._id) {
-      setFormData((prev) => ({
-        ...prev,
-        other_details: {
-          ...prev.other_details,
-         submitted_by_BD: userData._id,
-        },
-        submitted_by: userData._id,
-      }));
-    }
-    setUser(userData);
-  }, []);
+  // useEffect(() => {
+  //   const userData = getUserData();
+  //   if (userData && userData._id) {
+  //     setFormData((prev) => ({
+  //       ...prev,
+  //       other_details: {
+  //         ...prev.other_details,
+  //        submitted_by_BD: userData._id,
+  //       },
+  //       submitted_by: userData._id,
+  //     }));
+  //   }
+  //   setUser(userData);
+  // }, []);
 
   const getUserData = () => {
     const userData = localStorage.getItem("userDetails");
@@ -341,21 +318,10 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
       return;
     }
 
-    if (!users.length) return;
 
-    const raw = handoverData?.assigned_to ?? formData.assigned_to ?? [];
 
-    const ids = Array.isArray(raw)
-      ? raw
-          .map((v) => (typeof v === "object" && v?._id ? v._id : v))
-          .filter(Boolean)
-      : raw
-      ? [typeof raw === "object" && raw?._id ? raw._id : raw]
-      : [];
+    
 
-    const selected = users.filter((u) => ids.includes(u._id));
-
-    setAssigneesSelected(selected);
 
     setFormData((prev) => ({
       ...prev,
@@ -467,7 +433,7 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
         ppa_number: handoverData?.other_details?.ppa_number || "",
         remark: handoverData?.other_details?.remark || "",
         remarks_for_slnko: handoverData?.other_details?.remarks_for_slnko || "",
-        submitted_by_BD: handoverData?.other_details?.submitted_by_BD || "",
+        // submitted_by_BD: handoverData?.other_details?.submitted_by_BD || "",
       },
       invoice_detail: {
         ...prev.invoice_detail,
@@ -486,13 +452,13 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
       is_locked: handoverData?.is_locked,
     }));
 
-    if (handoverData?.assigned_to) {
-      const assigneeId =
-        typeof handoverData.assigned_to === "object"
-          ? handoverData.assigned_to._id
-          : handoverData.assigned_to;
-      setFormData((prev) => ({ ...prev, assigned_to: assigneeId || "" }));
-    }
+    // if (handoverData?.assigned_to) {
+    //   const assigneeId =
+    //     typeof handoverData.assigned_to === "object"
+    //       ? handoverData.assigned_to._id
+    //       : handoverData.assigned_to;
+    //   setFormData((prev) => ({ ...prev, assigned_to: assigneeId || "" }));
+    // }
 
     const camStr = handoverData?.other_details?.cam_member_name || "";
     const camArr = camStr
@@ -627,9 +593,7 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
         // status_of_handoversheet: "Approved",
         is_locked: "locked",
         submitted_by: user?._id,
-        assigned_to: Array.isArray(formData.assigned_to)
-          ? formData.assigned_to
-          : [],
+       
       };
 
       const statusPayload = {
@@ -1325,47 +1289,7 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
-              <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                Assigned To / CAM Members (multiple)
-              </Typography>
-              <Autocomplete
-                multiple
-                options={users}
-                value={assigneesSelected}
-                getOptionLabel={(option) => option?.name || ""}
-                isOptionEqualToValue={(opt, val) => opt._id === val._id}
-                placeholder="Select users"
-                onChange={(_, value) => {
-                  const sel = value || [];
-                  setAssigneesSelected(sel);
-                  setFormData((prev) => ({
-                    ...prev,
-                    assigned_to: sel.map((u) => u._id),
-                    other_details: {
-                      ...prev.other_details,
-                      cam_member_name: sel.map((u) => u.name).join(", "),
-                    },
-                  }));
-                }}
-              />
-            </Grid>
-             <Grid item xs={12} sm={6}>
-              <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                CAM Member Name
-              </Typography>
-              <Input
-                value={formData.other_details.cam_member_name}
-                placeholder="CAM Member Name"
-                onChange={(e) =>
-                  handleChange(
-                    "other_details",
-                    "cam_member_name",
-                    e.target.value
-                  )
-                }
-              />
-            </Grid>
+           
           </Grid>
         </AccordionDetails>
       </Accordion>
