@@ -237,10 +237,10 @@ function PurchaseReqSummary() {
 
     const formattedDate = createdAt
       ? new Date(createdAt).toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        })
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
       : "N/A";
 
     const isClickable = Boolean(pr_no && pr_id);
@@ -331,13 +331,61 @@ function PurchaseReqSummary() {
     return out;
   };
 
+  // helpers (safe getters)
+  const getName = (it) =>
+    it?.item_id?.name ?? it?.name ?? it?.other_item_name ?? "-";
+
+  const getProductData = (it) =>
+    it?.product_data ?? it?.item_id?.product_data ?? it?.item_id?.product_Data ?? "-";
+
   const RenderItemCell = (item) => {
-    const name = item?.item_id?.name || item?.name || item?.other_item_name;
+    const name = getName(item);
     const isOthers = name === "Others";
+    const pData = getProductData(item);
+
+    // Tooltip body for "Others"
+    const othersTooltip = (
+      <Box
+        sx={{
+          bgcolor: "primary.softBg",
+          color: "primary.solidColor",
+          p: 1,
+          borderRadius: "sm",
+          minWidth: "150px",
+        }}
+      >
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.25 }}>
+          <Typography fontWeight="lg" sx={{ color: "black" }}>Other's Product Name</Typography>
+          {Array.isArray(pData) ? (
+            pData.map((pd, i) => (
+              <Typography key={i} level="body-xs">
+                {pd ?? "-"}
+              </Typography>
+            ))
+          ) : (
+            <Typography level="body-xs">{pData ?? "-"}</Typography>
+          )}
+        </Box>
+
+      </Box>
+    );
+
     return (
       <Box>
-        <Typography>{name || "-"}</Typography>
-        {isOthers && (
+        <Typography>
+          {isOthers ? (
+            <Tooltip arrow placement="top" title={othersTooltip}>
+              {/* make the hover target obvious but unobtrusive */}
+              <span style={{ cursor: "help" }}>
+                {name}
+              </span>
+            </Tooltip>
+          ) : (
+            name
+          )}
+        </Typography>
+
+        {/* {isOthers && (
           <Box sx={{ fontSize: 12, color: "gray" }}>
             <div>
               <b>
@@ -352,24 +400,33 @@ function PurchaseReqSummary() {
               ₹{item?.amount || "0"}
             </div>
           </Box>
-        )}
+        )} */}
       </Box>
     );
   };
 
   const ItemsCell = ({ items }) => {
     const uniq = uniqueByName(items);
-    if (uniq.length === 0) return <span>-</span>;
-    if (uniq.length === 1) return <>{RenderItemCell(uniq[0].item)}</>;
+    if (!uniq?.length) return <span>-</span>;
+
+    if (uniq.length === 1) {
+      return <>{RenderItemCell(uniq[0].item)}</>;
+    }
+
+    // Tooltip for the "+N" chip: show the names of the remaining items
     const tooltipContent = (
       <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, py: 0.5 }}>
-        {uniq.slice(1).map(({ name }, i) => (
-          <Typography level="body-sm" key={`${name}-${i}`}>
-            {name}
-          </Typography>
-        ))}
+        {uniq.slice(1).map(({ item }, i) => {
+          const nm = getName(item);
+          return (
+            <Typography level="body-sm" key={`${nm}-${i}`}>
+              {nm}
+            </Typography>
+          );
+        })}
       </Box>
     );
+
     return (
       <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
         <span>{RenderItemCell(uniq[0].item)}</span>
@@ -426,8 +483,8 @@ function PurchaseReqSummary() {
             onListboxOpenChange={(_e, open) => setCategorySelectOpen(open)} // closes on outside click
             onChange={(_e, newValue) => {
               if (newValue === "__more__") {
-                setCategorySelectOpen(false); 
-                setCategoryModalOpen(true); 
+                setCategorySelectOpen(false);
+                setCategoryModalOpen(true);
                 return;
               }
               setSelecteditem(newValue || "");
@@ -803,7 +860,7 @@ function PurchaseReqSummary() {
                       }}
                     >
                       {Array.isArray(row.po_numbers) &&
-                      row.po_numbers.length > 0 ? (
+                        row.po_numbers.length > 0 ? (
                         (() => {
                           const cleaned = row.po_numbers.map((s) =>
                             (s ?? "").trim()
@@ -915,7 +972,7 @@ function PurchaseReqSummary() {
                         textAlign: "left",
                       }}
                     >
-                      ₹ {row.po_value || "0"}
+                      ₹ {(Number(row?.po_value) || 0).toFixed(2)}
                     </td>
                   </tr>
                 );
