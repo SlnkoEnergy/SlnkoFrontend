@@ -355,7 +355,7 @@ function PurchaseReqSummary() {
         }}
       >
         <Box sx={{ display: "flex", flexDirection: "column", gap: 0.25 }}>
-          <Typography fontWeight="lg" sx={{ color: "black" }}>Product Names:</Typography>
+          <Typography fontWeight="lg" sx={{ color: "black" }}>Other's Product Name</Typography>
           {Array.isArray(pData) ? (
             pData.map((pd, i) => (
               <Typography key={i} level="body-xs">
