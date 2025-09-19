@@ -161,6 +161,13 @@ export const camsApi = createApi({
         responseHandler: (response) => response.blob(),
       }),
     }),
+    updateHandoverAssignee: builder.mutation({
+      query: ({selected, assignee}) => ({
+        url: `/change-assignee`,
+        method: "PUT",
+        body: {handoverIds: selected, AssignedTo: assignee}
+      }),
+    }),
   }),
 });
 
@@ -169,6 +176,7 @@ export const {
   useGetHandOverByIdQuery,
   useAddHandOverMutation,
   useUpdateHandOverMutation,
+  useUpdateHandoverAssigneeMutation,
   useUpdateUnlockHandoversheetMutation,
   useUpdateStatusHandOverMutation,
   useGetMaterialCategoryQuery,

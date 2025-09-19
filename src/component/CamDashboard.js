@@ -7,6 +7,8 @@ import SearchIcon from "@mui/icons-material/Search";
 import {
   Chip,
   CircularProgress,
+  DialogContent,
+  DialogTitle,
   Option,
   Select,
   Tab,
@@ -39,8 +41,11 @@ import {
   useUpdateHandOverMutation,
   useGetMaterialCategoryQuery,
   useCreatePurchaseRequestMutation,
+  useUpdateHandoverAssigneeMutation,
 } from "../redux/camsSlice";
 import { toast } from "react-toastify";
+import SearchPickerModal from "./SearchPickerModal";
+import { useGetAllUserWithPaginationQuery, useLazyGetAllUserWithPaginationQuery } from "../redux/globalTaskSlice";
 function Dash_cam() {
   const navigate = useNavigate();
   const [selected, setSelected] = useState([]);
@@ -145,6 +150,72 @@ function Dash_cam() {
     }
   };
 
+  const [userModel, setUserModel] = useState(false);
+  const [confirmAssigneeOpen, setConfirmAssigneeOpen] = useState(false);
+  const [confirmSubmitting, setConfirmSubmitting] = useState(false);
+  const [pendingAssignee, setPendingAssignee] = useState(null);
+  const [pendingAssigneLabel, setPendingAssigneLabel] = useState("");
+
+
+  const userColumns = [
+    { key: "name", label: "Name", width: 240 },
+    { key: "emp_id", label: "Employee Code", width: 420 },
+  ]
+
+  const [triggerUserSearch] = useLazyGetAllUserWithPaginationQuery();
+
+  const fetchUserPage = async ({
+    search = "",
+    page = 1,
+    pageSize = 7,
+  }) => {
+    const res = await triggerUserSearch(
+      {
+        search,
+        page,
+        limit: pageSize,
+        pr: "true",
+      },
+      true
+    );
+
+    const d = res?.data;
+    return {
+      rows: d?.data || [],
+      total: d?.pagination?.total || 0,
+      page: d?.pagination?.page || page,
+      pageSize: d?.pagination?.pageSize || pageSize,
+    };
+  };
+
+  const onPickUser = (row) => {
+    if (!row) return;
+    setUserModel(false);
+    const userId = row._id;
+
+    setPendingAssignee(userId);
+    setPendingAssigneLabel(`${row.name}  ${row.emp_id}`);
+    setConfirmAssigneeOpen(true);
+
+  }
+
+  const handleConfirmAssign = async () => {
+    try {
+      setConfirmSubmitting(true);
+      await handleAssingTo({ assignee: pendingAssignee, selected });
+      setConfirmAssigneeOpen(false);
+    } catch (e) {
+      // handleAssingTo already logs/errors; keep UX simple here
+    } finally {
+      setConfirmSubmitting(false);
+    }
+  };
+
+  const handleCancelAssign = () => {
+    if (confirmSubmitting) return;
+    setConfirmAssigneeOpen(false);
+  };
+
   const ProjectOverView = ({ currentPage, project_id, code, id }) => {
     return (
       <>
@@ -169,18 +240,18 @@ function Dash_cam() {
   };
   const HandOverSheet = Array.isArray(getHandOverSheet?.data)
     ? getHandOverSheet.data.map((entry) => {
-        return {
-          ...entry,
-          _id: entry._id,
-          ...entry.customer_details,
-          ...entry.order_details,
-          ...entry.project_detail,
-          ...entry.commercial_details,
-          ...entry.other_details,
-          ...entry?.scheme,
-          is_locked: entry.is_locked,
-        };
-      })
+      return {
+        ...entry,
+        _id: entry._id,
+        ...entry.customer_details,
+        ...entry.order_details,
+        ...entry.project_detail,
+        ...entry.commercial_details,
+        ...entry.other_details,
+        ...entry?.scheme,
+        is_locked: entry.is_locked,
+      };
+    })
     : [];
 
   useEffect(() => {
@@ -356,6 +427,30 @@ function Dash_cam() {
     }
   };
 
+  const [updateHandoverAssignee, { isLoading: assigning }] =
+    useUpdateHandoverAssigneeMutation();
+  const handleAssingTo = async ({ assignee, selected }) => {
+    try {
+      if (!assignee) throw new Error("No assignee selected.");
+      if (!selected || selected.length === 0)
+        throw new Error("No rows selected to assign.");
+      const ids = selected.map((r) =>
+        typeof r === "string" ? r : r.id || r._id
+      );
+
+      const res = await updateHandoverAssignee({
+        selected: ids,
+        assignee,
+      }).unwrap();
+
+      console.log("Updated:", res);
+
+    } catch (error) {
+      console.error("Assign to Failed:", error);
+      alert("Failed to change Assignies");
+    }
+  }
+
   return (
     <>
       {/* Tablet and Up Filters */}
@@ -434,40 +529,70 @@ function Dash_cam() {
           </Tabs>
         </Box>
 
-        <Box
-          display="flex"
-          alignItems="center"
-          gap={1}
-          sx={{ padding: "8px 16px" }}
-        >
-          <Typography level="body-sm">Rows Per Page:</Typography>
-          <Select
-            value={rowsPerPage}
-            onChange={(e, newValue) => {
-              if (newValue !== null) {
-                setRowsPerPage(newValue);
-                setSearchParams((prev) => {
-                  const params = new URLSearchParams(prev);
-                  params.set("pageSize", newValue);
-                  return params;
-                });
-              }
-            }}
-            size="sm"
-            variant="outlined"
-            sx={{
-              minWidth: 80,
-              borderRadius: "md",
-              boxShadow: "sm",
-            }}
+
+
+
+        <Box display="flex" gap={1} alignItems="center">
+          {selected?.length > 0 && (
+            <Button
+              variant="outlined"
+              size="sm"
+              onClick={() => {
+                setUserModel(true);
+              }}
+              sx={{
+                color: "#3366a3",
+                borderColor: "#3366a3",
+                backgroundColor: "transparent",
+                "--Button-hoverBg": "#e0e0e0",
+                "--Button-hoverBorderColor": "#3366a3",
+                "&:hover": { color: "#3366a3" },
+                height: "8px",
+              }}
+            >
+              + Assing To
+            </Button>
+          )}
+
+
+
+          <Box
+            display="flex"
+            alignItems="center"
+            gap={1}
+            sx={{ padding: "8px 16px" }}
           >
-            {options.map((value) => (
-              <Option key={value} value={value}>
-                {value}
-              </Option>
-            ))}
-          </Select>
+            <Typography level="body-sm">Rows Per Page:</Typography>
+            <Select
+              value={rowsPerPage}
+              onChange={(e, newValue) => {
+                if (newValue !== null) {
+                  setRowsPerPage(newValue);
+                  setSearchParams((prev) => {
+                    const params = new URLSearchParams(prev);
+                    params.set("pageSize", newValue);
+                    return params;
+                  });
+                }
+              }}
+              size="sm"
+              variant="outlined"
+              sx={{
+                minWidth: 80,
+                borderRadius: "md",
+                boxShadow: "sm",
+              }}
+            >
+              {options.map((value) => (
+                <Option key={value} value={value}>
+                  {value}
+                </Option>
+              ))}
+            </Select>
+          </Box>
         </Box>
+
+
       </Box>
 
       {/* Table */}
@@ -595,7 +720,7 @@ function Dash_cam() {
                     }}
                   >
                     {project.is_locked === "locked" &&
-                    project.status_of_handoversheet === "Approved" ? (
+                      project.status_of_handoversheet === "Approved" ? (
                       <Tooltip title="View Project Detail" arrow>
                         <span>
                           <ProjectOverView
@@ -712,8 +837,8 @@ function Dash_cam() {
                     }}
                   >
                     {project.is_locked === "locked" &&
-                    project.scope_status !== "open" &&
-                    project.status_of_handoversheet === "Approved" ? (
+                      project.scope_status !== "open" &&
+                      project.status_of_handoversheet === "Approved" ? (
                       <Button
                         size="xs"
                         variant="soft"
@@ -919,6 +1044,64 @@ function Dash_cam() {
               </Button>
             </Sheet>
           </ModalDialog>
+        </Modal>
+
+        <SearchPickerModal
+          open={userModel}
+          onClose={() => setUserModel(false)}
+          onPick={onPickUser}
+          title="Select User"
+          columns={userColumns}
+          fetchPage={fetchUserPage}
+          searchKey="name emp_id"
+          pageSize={7}
+          backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
+        />
+
+        <Modal
+          open={confirmAssigneeOpen}
+          onClose={handleCancelAssign}
+          keepMounted
+          slotProps={{
+            backdrop: {
+              sx: {
+                // ↓ make it less blurry (or use 'none' to remove blur)
+                backdropFilter: 'blur(1px)',
+                // ↓ lighter, less opaque overlay
+                bgcolor: 'rgba(0, 0, 0, 0.08)',
+              },
+            },
+          }}
+        >
+          <ModalDialog variant="outlined" sx={{ minWidth: 600 }}>
+            <DialogTitle>
+              Confirm Assignment
+            </DialogTitle>
+            <DialogContent>
+              Are you sure you want to assign
+
+              to <b>{pendingAssigneLabel || "Selected User"}</b>
+            </DialogContent>
+
+            <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end", mt: 1.5 }}>
+              <Button
+                variant="plain"
+                onClick={handleCancelAssign}
+                disabled={confirmSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="solid"
+                color="primary"
+                onClick={handleConfirmAssign}
+                loading={confirmSubmitting}
+              >
+                Submit
+              </Button>
+            </Box>
+          </ModalDialog>
+
         </Modal>
       </Box>
     </>
