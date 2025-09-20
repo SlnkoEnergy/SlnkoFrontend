@@ -1,4 +1,3 @@
-// src/pages/Projects/ActivityModal.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
@@ -16,14 +15,18 @@ import {
   Typography,
   RadioGroup,
   Radio,
+  Checkbox,
 } from "@mui/joy";
 import ModalClose from "@mui/joy/ModalClose";
 import SaveRoundedIcon from "@mui/icons-material/SaveRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import SelectRS from "react-select";
 
-import { useLazyGetProjectSearchDropdownQuery } from "../../redux/projectsSlice";
-import { useLazyGetActivitiesByNameQuery } from "../../redux/projectsSlice"; // keep as you have it
+import {
+  useLazyGetProjectSearchDropdownQuery,
+  useLazyGetActivitiesByNameQuery,
+  useLazyGetAllModulesQuery, // modules API hook from your slice
+} from "../../redux/projectsSlice";
 import SearchPickerModal from "../../component/SearchPickerModal";
 
 export default function AddActivityModal({
@@ -33,6 +36,7 @@ export default function AddActivityModal({
   isSubmitting = false,
 }) {
   const [mode, setMode] = useState("new"); // 'new' | 'existing'
+  const [scope, setScope] = useState("project"); // 'project' | 'global'
 
   const [form, setForm] = useState({
     projectId: "",
@@ -41,22 +45,31 @@ export default function AddActivityModal({
     activityName: "",
     type: "frontend",
     description: "",
+    dependencies: {
+      engineeringEnabled: false,
+      engineeringModules: [], // [{ value: _id, label: name, raw }]
+      scmEnabled: false,
+    },
   });
 
   const [touched, setTouched] = useState({});
   const [openProjectPicker, setOpenProjectPicker] = useState(false);
-  const [openActivityPicker, setOpenActivityPicker] = useState(false); // activity modal
+  const [openActivityPicker, setOpenActivityPicker] = useState(false);
+  const [openModulePicker, setOpenModulePicker] = useState(false);
 
-  /* ---------------- Projects quick list (for NEW) ---------------- */
+  const RS_MORE = { label: "Search more…", value: "__more__" };
+
+  /* ---------------- Project quick list (max 7) ---------------- */
   const [quickOptions, setQuickOptions] = useState([]);
   const [fetchProjects, { isFetching }] = useLazyGetProjectSearchDropdownQuery();
 
-  const loadQuick = async () => {
+  const loadQuickProjects = async () => {
     try {
       const res = await fetchProjects({ search: "", page: 1, limit: 7 }).unwrap();
       const arr = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+      const limited = arr.slice(0, 7);
       setQuickOptions(
-        arr.map((p) => ({
+        limited.map((p) => ({
           _id: p._id || p.id,
           code: p.code || p.project_id || p.p_id || "",
           name: p.name || p.project_name || "",
@@ -66,9 +79,8 @@ export default function AddActivityModal({
       setQuickOptions([]);
     }
   };
-  useEffect(() => { if (open) loadQuick(); }, [open]); // eslint-disable-line
+  useEffect(() => { if (open) loadQuickProjects(); }, [open]); // eslint-disable-line
 
-  const RS_MORE = { label: "Search more…", value: "__more__" };
   const rsOptions = useMemo(
     () => [
       ...quickOptions.map((p) => ({ label: p.code, value: p._id, name: p.name })),
@@ -80,7 +92,7 @@ export default function AddActivityModal({
     ? { value: form.projectId, label: form.projectCode || "", name: form.projectName }
     : null;
 
-  /* ---------------- Activities (quick + modal) for EXISTING ---------------- */
+  /* ---------------- Activities quick list (max 7) ---------------- */
   const [fetchActivities, { isFetching: isFetchingActs }] = useLazyGetActivitiesByNameQuery();
   const [actQuickOptions, setActQuickOptions] = useState([]);
   const actSearchRef = useRef("");
@@ -88,8 +100,9 @@ export default function AddActivityModal({
   const loadActivitiesQuick = async () => {
     try {
       const { items } = await fetchActivities({ search: "", page: 1, limit: 7 }).unwrap();
+      const limited = (items || []).slice(0, 7);
       setActQuickOptions(
-        (items || []).map((a) => ({
+        limited.map((a) => ({
           value: a._id,
           label: a.name,
           name: a.name,
@@ -103,27 +116,64 @@ export default function AddActivityModal({
   };
   useEffect(() => { if (open && mode === "existing") loadActivitiesQuick(); }, [open, mode]); // eslint-disable-line
 
-  const actRsOptions = useMemo(
-    () => [...actQuickOptions, RS_MORE],
-    [actQuickOptions]
-  );
+  const actRsOptions = useMemo(() => [...actQuickOptions, RS_MORE], [actQuickOptions]);
   const actRsValue =
     form.activityName ? { value: form.activityName, label: form.activityName } : null;
 
+  /* ---------------- Modules quick list (max 7) ---------------- */
+  const [fetchModules, { isFetching: isFetchingModules }] = useLazyGetAllModulesQuery();
+  const [moduleQuickOptions, setModuleQuickOptions] = useState([]);
+
+  const loadModulesQuick = async () => {
+    try {
+      const list = await fetchModules({ search: "", page: 1, limit: 7 }).unwrap();
+      const limited = (Array.isArray(list) ? list : []).slice(0, 7);
+      setModuleQuickOptions(
+        limited.map((m) => ({
+          value: m._id,
+          label: m.name,
+          raw: m,
+        }))
+      );
+    } catch {
+      setModuleQuickOptions([]);
+    }
+  };
+  useEffect(() => {
+    if (open && form.dependencies.engineeringEnabled) loadModulesQuick();
+  }, [open, form.dependencies.engineeringEnabled]); // eslint-disable-line
+
+  const moduleRsOptions = useMemo(
+    () => [...moduleQuickOptions, RS_MORE],
+    [moduleQuickOptions]
+  );
+
   /* ---------------- Validation ---------------- */
+  const needProject = scope === "project";
   const errors =
     mode === "new"
       ? {
-          projectId: !form.projectId,
-          projectName: !form.projectName.trim(),
+          projectId: needProject ? !form.projectId : false,
+          projectName: needProject ? !form.projectName.trim() : false,
           activityName: !form.activityName.trim(),
           type: !form.type.trim(),
           description: !form.description.trim(),
+          dependencies:
+            form.dependencies.engineeringEnabled &&
+            (!form.dependencies.engineeringModules ||
+              form.dependencies.engineeringModules.length === 0),
         }
       : {
           activityName: !form.activityName.trim(),
           type: !form.type.trim(),
           description: !form.description.trim(),
+          dependencies:
+            form.dependencies.engineeringEnabled &&
+            (!form.dependencies.engineeringModules ||
+              form.dependencies.engineeringModules.length === 0),
+          ...(needProject
+            ? { projectId: !form.projectId, projectName: !form.projectName.trim() }
+            : {}),
         };
   const hasErrors = Object.values(errors).some(Boolean);
 
@@ -131,27 +181,46 @@ export default function AddActivityModal({
   const handleSubmit = (e) => {
     e?.preventDefault?.();
 
-    // ✅ Guard: parent always needs a projectId for the POST
-    if (!form.projectId) {
-      setTouched((t) => ({ ...t, projectId: true, projectName: true }));
-      return;
-    }
-
     setTouched((prev) =>
       mode === "new"
-        ? { ...prev, projectId: true, projectName: true, activityName: true, type: true, description: true }
-        : { ...prev, activityName: true, type: true, description: true }
+        ? {
+            ...prev,
+            projectId: true,
+            projectName: true,
+            activityName: true,
+            type: true,
+            description: true,
+            dependencies: true,
+          }
+        : {
+            ...prev,
+            activityName: true,
+            type: true,
+            description: true,
+            dependencies: true,
+            ...(needProject ? { projectId: true, projectName: true } : {}),
+          }
     );
     if (hasErrors) return;
+
+    // Build dependencies payload
+    const dependencies = [];
+    if (form.dependencies.engineeringEnabled && form.dependencies.engineeringModules?.length) {
+      form.dependencies.engineeringModules.forEach((opt) => {
+        dependencies.push({ model: "module", model_id: opt.value });
+      });
+    }
 
     const payload = {
       name: form.activityName.trim(),
       description: form.description.trim(),
       type: form.type.toLowerCase(),
-      ...(mode === "new"
+      ...(scope === "project" && form.projectId
         ? { project_id: form.projectId, project_name: form.projectName }
         : {}),
+      ...(dependencies.length ? { dependencies } : {}),
       __mode: mode,
+      __scope: scope,
     };
 
     onCreate?.(payload);
@@ -161,7 +230,7 @@ export default function AddActivityModal({
     "&::after": { content: '" *"', color: "danger.500", fontWeight: 700 },
   };
 
-  /* ---------------- Paginated fetchers for SearchPickerModal ---------------- */
+  /* ---------------- Data providers for SearchPickerModal ---------------- */
   const fetchPage = async ({ page, search, pageSize }) => {
     const res = await fetchProjects({ search: search || "", page: page || 1, limit: pageSize || 10 }).unwrap();
     const arr = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
@@ -190,14 +259,31 @@ export default function AddActivityModal({
     return { rows, total };
   };
 
+  const fetchModulePage = async ({ page, search, pageSize }) => {
+    const list = await fetchModules({ search: search || "", page: page || 1, limit: pageSize || 10 }).unwrap();
+    const rows = (Array.isArray(list) ? list : []).map((m) => ({
+      _id: m._id,
+      name: m.name || "Unnamed",
+      category: m.category || "",
+      description: m.description || "",
+    }));
+    const total = rows.length; // adjust when backend paginates
+    return { rows, total };
+  };
+
+  /* ---------------- Columns for pickers ---------------- */
   const projectPickerColumns = [
     { key: "code", label: "Project Id", width: 220 },
     { key: "name", label: "Project Name" },
   ];
-
   const activityPickerColumns = [
     { key: "name", label: "Activity Name", width: 250 },
     { key: "type", label: "Type", width: 140 },
+    { key: "description", label: "Description" },
+  ];
+  const modulePickerColumns = [
+    { key: "name", label: "Module Name", width: 260 },
+    { key: "category", label: "Category", width: 160 },
     { key: "description", label: "Description" },
   ];
 
@@ -212,17 +298,9 @@ export default function AddActivityModal({
           {/* Header */}
           <Box
             sx={{
-              px: 2,
-              py: 1.5,
-              borderBottom: "1px solid",
-              borderColor: "divider",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              position: "sticky",
-              top: 0,
-              bgcolor: "background.body",
-              zIndex: 1,
+              px: 2, py: 1.5, borderBottom: "1px solid", borderColor: "divider",
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              position: "sticky", top: 0, bgcolor: "background.body", zIndex: 1,
             }}
           >
             <DialogTitle id="add-activity-title" sx={{ p: 0 }}>
@@ -238,24 +316,38 @@ export default function AddActivityModal({
             </ModalClose>
           </Box>
 
-          {/* Mode toggle */}
-          <Box sx={{ px: 2, pt: 1, pb: 0 }}>
+          {/* Toggles: Mode + Scope */}
+          <Box sx={{ px: 2, pt: 1, pb: 0, display: "flex", gap: 2, flexWrap: "wrap" }}>
             <RadioGroup
               orientation="horizontal"
               value={mode}
-              onChange={(event) => {
-                const next = event.target.value;
+              onChange={(e) => {
+                const next = e.target.value;
                 setMode(next);
-                if (next === "existing") {
-                  // ✅ keep selected project; just preload activities
-                  loadActivitiesQuick();
-                }
+                if (next === "existing") loadActivitiesQuick();
               }}
               sx={{ gap: 1 }}
               disabled={isSubmitting}
             >
               <Radio value="existing" size="sm" label="Existing Activity" />
               <Radio value="new" size="sm" label="New Activity" />
+            </RadioGroup>
+
+            <RadioGroup
+              orientation="horizontal"
+              value={scope}
+              onChange={(e) => {
+                const next = e.target.value;
+                setScope(next);
+                if (next === "global") {
+                  setTouched((t) => ({ ...t, projectId: false, projectName: false }));
+                }
+              }}
+              sx={{ gap: 1, ml: { xs: 0, md: "auto" } }}
+              disabled={isSubmitting}
+            >
+              <Radio value="project" size="sm" label="Individual Project" />
+              <Radio value="global" size="sm" label="Global" />
             </RadioGroup>
           </Box>
 
@@ -272,8 +364,8 @@ export default function AddActivityModal({
               gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
             }}
           >
-            {/* NEW Activity — project fields */}
-            {mode === "new" && (
+            {/* Project fields when scope === project */}
+            {scope === "project" && (
               <>
                 <FormControl
                   size="sm"
@@ -287,7 +379,7 @@ export default function AddActivityModal({
                     options={rsOptions}
                     isClearable
                     isSearchable
-                    onMenuOpen={() => loadQuick()}
+                    onMenuOpen={() => loadQuickProjects()}
                     onChange={(opt) => {
                       if (!opt) {
                         setForm((p) => ({ ...p, projectId: "", projectCode: "", projectName: "" }));
@@ -337,7 +429,7 @@ export default function AddActivityModal({
               </>
             )}
 
-            {/* Activity Name — Existing uses dropdown with “Search more…” */}
+            {/* Activity Name */}
             <FormControl size="sm" error={touched.activityName && !!errors.activityName}>
               <FormLabel sx={labelRequiredSx}>Activity Name</FormLabel>
 
@@ -350,19 +442,12 @@ export default function AddActivityModal({
                   isClearable
                   onMenuOpen={() => loadActivitiesQuick()}
                   onInputChange={(input, { action }) => {
-                    if (action === "input-change") {
-                      actSearchRef.current = input || "";
-                    }
+                    if (action === "input-change") actSearchRef.current = input || "";
                     return input;
                   }}
                   onChange={(opt) => {
                     if (!opt) {
-                      setForm((p) => ({
-                        ...p,
-                        activityName: "",
-                        type: "frontend",
-                        description: "",
-                      }));
+                      setForm((p) => ({ ...p, activityName: "", type: "frontend", description: "" }));
                       return;
                     }
                     if (opt.value === "__more__") {
@@ -375,12 +460,7 @@ export default function AddActivityModal({
                       type: opt.type || "frontend",
                       description: opt.description || "",
                     }));
-                    setTouched((t) => ({
-                      ...t,
-                      activityName: true,
-                      type: true,
-                      description: true,
-                    }));
+                    setTouched((t) => ({ ...t, activityName: true, type: true, description: true }));
                   }}
                   isLoading={isFetchingActs}
                   menuPortalTarget={document.body}
@@ -446,6 +526,88 @@ export default function AddActivityModal({
               )}
             </FormControl>
 
+            {/* Dependencies */}
+            <Box sx={{ gridColumn: "1 / -1", display: "grid", gap: 1 }}>
+              <Typography level="title-sm">Dependencies</Typography>
+
+              <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+                <Checkbox
+                  label="Engineering"
+                  checked={form.dependencies.engineeringEnabled}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      dependencies: {
+                        ...p.dependencies,
+                        engineeringEnabled: e.target.checked,
+                      },
+                    }))
+                  }
+                  disabled={isSubmitting}
+                />
+                <Checkbox
+                  label="SCM"
+                  checked={form.dependencies.scmEnabled}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      dependencies: { ...p.dependencies, scmEnabled: e.target.checked },
+                    }))
+                  }
+                  disabled={isSubmitting}
+                />
+              </Box>
+
+              {/* Engineering modules: multi-select inline with “Search more…”; keep menu open */}
+              {form.dependencies.engineeringEnabled && (
+                <FormControl size="sm" error={touched.dependencies && !!errors.dependencies}>
+                  <FormLabel sx={labelRequiredSx}>Model Entry (Modules)</FormLabel>
+                  <SelectRS
+                    placeholder="Pick one or more modules"
+                    value={form.dependencies.engineeringModules}
+                    options={moduleRsOptions}
+                    isMulti
+                    isSearchable
+                    closeMenuOnSelect={false}  // keep open while selecting
+                    onMenuOpen={() => loadModulesQuick()}
+                    onChange={(opts) => {
+                      const arr = Array.isArray(opts) ? opts : [];
+                      const hasMore = arr.some((o) => o?.value === "__more__");
+                      if (hasMore) {
+                        setOpenModulePicker(true);
+                        // remove sentinel if user clicked it
+                        const filtered = arr.filter((o) => o.value !== "__more__");
+                        setForm((p) => ({
+                          ...p,
+                          dependencies: {
+                            ...p.dependencies,
+                            engineeringModules: filtered,
+                          },
+                        }));
+                        return;
+                      }
+                      setForm((p) => ({
+                        ...p,
+                        dependencies: { ...p.dependencies, engineeringModules: arr },
+                      }));
+                    }}
+                    onBlur={() => setTouched((t) => ({ ...t, dependencies: true }))}
+                    menuPortalTarget={document.body}
+                    styles={{
+                      menuPortal: (base) => ({ ...base, zIndex: 2000 }),
+                      control: (base) => ({ ...base, minHeight: 36 }),
+                    }}
+                    isLoading={isFetchingModules}
+                  />
+                  {touched.dependencies && !!errors.dependencies && (
+                    <Typography level="body-xs" color="danger" sx={{ mt: 0.5 }}>
+                      Please pick at least one module.
+                    </Typography>
+                  )}
+                </FormControl>
+              )}
+            </Box>
+
             {/* Actions */}
             <Box sx={{ gridColumn: "1 / -1", display: "flex", gap: 1, justifyContent: "flex-end", mt: 0.5 }}>
               <Button
@@ -472,7 +634,7 @@ export default function AddActivityModal({
         </ModalDialog>
       </Modal>
 
-      {/* Project picker (unchanged) */}
+      {/* Project picker */}
       <SearchPickerModal
         open={openProjectPicker}
         onClose={() => setOpenProjectPicker(false)}
@@ -493,7 +655,7 @@ export default function AddActivityModal({
         }}
       />
 
-      {/* Activity picker (like project picker) */}
+      {/* Activity picker */}
       <SearchPickerModal
         open={openActivityPicker}
         onClose={() => setOpenActivityPicker(false)}
@@ -513,6 +675,31 @@ export default function AddActivityModal({
           setTouched((t) => ({ ...t, activityName: true, type: true, description: true }));
           setOpenActivityPicker(false);
         }}
+      />
+
+      {/* Module picker (opened by selecting “Search more…”) */}
+      <SearchPickerModal
+        open={openModulePicker}
+        onClose={() => setOpenModulePicker(false)}
+        title="Select Modules"
+        columns={modulePickerColumns}
+        rowKey="_id"
+        pageSize={10}
+        searchKey="name or category"
+        fetchPage={fetchModulePage}
+        onPick={(row) => {
+          setForm((prev) => {
+            const exists = prev.dependencies.engineeringModules.some((opt) => opt.value === row?._id);
+            const next = exists
+              ? prev.dependencies.engineeringModules
+              : [...prev.dependencies.engineeringModules, { value: row?._id, label: row?.name || "Unnamed", raw: row }];
+            return {
+              ...prev,
+              dependencies: { ...prev.dependencies, engineeringModules: next },
+            };
+          });
+        }}
+        allowMultiple
       />
     </>
   );

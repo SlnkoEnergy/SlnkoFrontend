@@ -104,19 +104,16 @@ export const projectsApi = createApi({
       providesTags: ["Project"],
     }),
 
-
     getProjectActivityByProjectId: builder.query({
       query: (projectId) =>
         `projectactivity/projectactivity?projectId=${projectId}`,
       providesTags: ["Project"],
     }),
 
-
     updateProjectActivity: builder.mutation({
       query: (newActivity, id) => `projectactivity/projectactivity/${id}`,
       providesTags: ["Project"],
     }),
-
 
     pushActivityToProject: builder.mutation({
       query: ({ projectId, name, description, type }) => ({
@@ -127,7 +124,6 @@ export const projectsApi = createApi({
       invalidatesTags: ["Project"],
     }),
 
-
     updateActivityInProject: builder.mutation({
       query: ({ projectId, activityId, data }) => ({
         url: `projectactivity/${projectId}/activity/${activityId}`,
@@ -137,20 +133,17 @@ export const projectsApi = createApi({
       invalidatesTags: ["Project"],
     }),
 
-
     getActivityInProject: builder.query({
       query: ({ projectId, activityId }) =>
         `projectactivity/${projectId}/activity/${activityId}`,
       providesTags: ["Project"],
     }),
 
-
     getAllTemplateNameSearch: builder.query({
       query: ({ search, page, limit }) =>
         `projectactivity/namesearchtemplate?search=${search}&page=${page}&limit=${limit}`,
       providesTags: ["Project"],
     }),
-
 
     updateProjectActivityFromTemplate: builder.mutation({
       query: ({ projectId, activityId }) => ({
@@ -184,6 +177,42 @@ export const projectsApi = createApi({
             ]
           : [{ type: "Activity", id: "LIST" }],
     }),
+
+    getAllModules: builder.query({
+      query: ({ search = "", page = 1, limit = 50 } = {}) => ({
+        url: "engineering/get-module", // <--- UPDATE to your real endpoint
+        method: "GET",
+        params: { search, page, limit }, // safe even if backend ignores
+      }),
+      transformResponse: (res) => {
+        const arr = Array.isArray(res?.data)
+          ? res.data
+          : Array.isArray(res)
+          ? res
+          : [];
+        // Normalize to a flat list the modal can use
+        return arr.map((m) => ({
+          _id: m._id,
+          name:
+            m.name ||
+            m.title ||
+            m.module_name ||
+            m.template_name ||
+            m?.boq?.template_category?.name ||
+            "Unnamed",
+          description: m.description || "",
+          category:
+            (m?.boq && m?.boq?.template_category?.name) || m.category || "",
+        }));
+      },
+      providesTags: (result) =>
+        result && Array.isArray(result)
+          ? [
+              ...result.map((m) => ({ type: "Module", id: m._id })),
+              { type: "Module", id: "LIST" },
+            ]
+          : [{ type: "Module", id: "LIST" }],
+    }),
   }),
 });
 
@@ -213,6 +242,8 @@ export const {
   useUpdateProjectActivityFromTemplateMutation,
   useGetAllProjectActivitiesQuery,
   useLazyGetAllProjectActivitiesQuery,
-    useGetActivitiesByNameQuery,
+  useGetActivitiesByNameQuery,
   useLazyGetActivitiesByNameQuery,
+  useGetAllModulesQuery,
+  useLazyGetAllModulesQuery,
 } = projectsApi;
