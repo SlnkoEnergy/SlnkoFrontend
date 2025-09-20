@@ -15,12 +15,14 @@ export const projectsApi = createApi({
       return headers;
     },
   }),
+
   tagTypes: ["Project"],
   endpoints: (builder) => ({
     getProjects: builder.query({
       query: () => "get-all-projecT-IT",
       providesTags: ["Project"],
     }),
+
     deleteProject: builder.mutation({
       query: (_id) => ({
         url: `delete-by-id-IT/${_id}`,
@@ -28,6 +30,7 @@ export const projectsApi = createApi({
       }),
       invalidatesTags: ["Project"],
     }),
+
     addProject: builder.mutation({
       query: (newProject) => ({
         url: "add-new-project-IT",
@@ -36,6 +39,7 @@ export const projectsApi = createApi({
       }),
       invalidatesTags: ["Project"],
     }),
+
     updateProject: builder.mutation({
       query: ({ _id, updatedData }) => ({
         url: `update-projecT-IT/${_id}`,
@@ -44,18 +48,22 @@ export const projectsApi = createApi({
       }),
       invalidatesTags: ["Project"],
     }),
+
     getProjectByPId: builder.query({
       query: (p_id) => `project?p_id=${p_id}`,
       providesTags: ["Project"],
     }),
+
     getProjectById: builder.query({
       query: (id) => `get-project-iD-IT/${id}`,
       providesTags: ["Project"],
     }),
+
     getProjectDropdown: builder.query({
       query: () => "project-dropdown",
       providesTags: ["Project"],
     }),
+
     getProjectSearchDropdown: builder.query({
       query: ({ search, page, limit }) =>
         `project-search?search=${search}&page=${page}&limit=${limit}`,
@@ -71,6 +79,7 @@ export const projectsApi = createApi({
       }),
       invalidatesTags: ["Project"],
     }),
+
     getAllActivity: builder.query({
       query: () => `activities/activities`,
       providesTags: ["Project"],
@@ -86,24 +95,28 @@ export const projectsApi = createApi({
       invalidatesTags: ["Project"],
     }),
 
-getAllProjectActivities: builder.query({
-  // GET /v1/projectactivity/activities?search=&status=&page=1&limit=10
-  query: ({ search = "", status = "", page = 1, limit = 10 } = {}) => ({
-    url: "projectactivity/allprojectactivity",
-    params: { search, ...(status ? { status } : {}), page, limit },
-  }),
-  providesTags: ["Project"],
-}),
+    getAllProjectActivities: builder.query({
+      // GET /v1/projectactivity/activities?search=&status=&page=1&limit=10
+      query: ({ search = "", status = "", page = 1, limit = 10 } = {}) => ({
+        url: "projectactivity/allprojectactivity",
+        params: { search, ...(status ? { status } : {}), page, limit },
+      }),
+      providesTags: ["Project"],
+    }),
+
 
     getProjectActivityByProjectId: builder.query({
       query: (projectId) =>
         `projectactivity/projectactivity?projectId=${projectId}`,
       providesTags: ["Project"],
     }),
+
+
     updateProjectActivity: builder.mutation({
       query: (newActivity, id) => `projectactivity/projectactivity/${id}`,
       providesTags: ["Project"],
     }),
+
 
     pushActivityToProject: builder.mutation({
       query: ({ projectId, name, description, type }) => ({
@@ -113,6 +126,8 @@ getAllProjectActivities: builder.query({
       }),
       invalidatesTags: ["Project"],
     }),
+
+
     updateActivityInProject: builder.mutation({
       query: ({ projectId, activityId, data }) => ({
         url: `projectactivity/${projectId}/activity/${activityId}`,
@@ -121,22 +136,53 @@ getAllProjectActivities: builder.query({
       }),
       invalidatesTags: ["Project"],
     }),
+
+
     getActivityInProject: builder.query({
       query: ({ projectId, activityId }) =>
         `projectactivity/${projectId}/activity/${activityId}`,
       providesTags: ["Project"],
     }),
+
+
     getAllTemplateNameSearch: builder.query({
       query: ({ search, page, limit }) =>
         `projectactivity/namesearchtemplate?search=${search}&page=${page}&limit=${limit}`,
       providesTags: ["Project"],
     }),
+
+
     updateProjectActivityFromTemplate: builder.mutation({
-      query: ({ projectId, activityId}) => ({
+      query: ({ projectId, activityId }) => ({
         url: `projectactivity/${projectId}/projectactivity/${activityId}/fromtemplate`,
-        method: "PUT"
+        method: "PUT",
       }),
       invalidatesTags: ["Project"],
+    }),
+
+    getActivitiesByName: builder.query({
+      query: ({ search = "", page = 1, limit = 10 } = {}) => ({
+        url: "activities/activities",
+        params: { search, page, limit },
+      }),
+      transformResponse: (res) => ({
+        items: Array.isArray(res?.data) ? res.data : [],
+        pagination: res?.pagination ?? {
+          page: 1,
+          pageSize: 10,
+          total: 0,
+          totalPages: 1,
+          hasMore: false,
+          nextPage: null,
+        },
+      }),
+      providesTags: (result) =>
+        result?.items
+          ? [
+              ...result.items.map((a) => ({ type: "Activity", id: a._id })),
+              { type: "Activity", id: "LIST" },
+            ]
+          : [{ type: "Activity", id: "LIST" }],
     }),
   }),
 });
@@ -167,4 +213,6 @@ export const {
   useUpdateProjectActivityFromTemplateMutation,
   useGetAllProjectActivitiesQuery,
   useLazyGetAllProjectActivitiesQuery,
+    useGetActivitiesByNameQuery,
+  useLazyGetActivitiesByNameQuery,
 } = projectsApi;

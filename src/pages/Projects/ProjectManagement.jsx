@@ -21,10 +21,10 @@ function ProjectManagement() {
     // payload comes from modal: { project_id, project_name, name, description, type }
     try {
       await pushActivity({
-        projectId: payload.project_id,     // goes to :projectId param
-        name: payload.name,                // activityModel.name
-        description: payload.description,  // activityModel.description
-        type: payload.type,                // "frontend" | "backend"
+        projectId: payload.project_id,
+        name: payload.name,
+        description: payload.description,
+        type: payload.type,
       }).unwrap();
 
       toast.success("Activity added to project");
