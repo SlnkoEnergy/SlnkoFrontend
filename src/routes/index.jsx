@@ -116,6 +116,7 @@ import TaskDashboard from "../pages/AllTask/Dashboard";
 import ProjectManagement from "../pages/Projects/ProjectManagement";
 import ViewProjectManagement from "../pages/Projects/ViewProjectManagement";
 import ProjectTemplate from "../pages/Projects/ProjectTemplates";
+import ProjectDashBoard from "../pages/Projects/ProjectDashboard";
 
 function index() {
   return (
@@ -361,6 +362,14 @@ function index() {
         element={
           <PrivateRoute>
             <ProjectManagement />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/project_dash"
+        element={
+          <PrivateRoute>
+            <ProjectDashBoard />
           </PrivateRoute>
         }
       />

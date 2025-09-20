@@ -45,7 +45,7 @@ function ProjectManagement() {
           <Box display="flex" gap={1}>
             <Button
               size="sm"
-              onClick={() => navigate(`/eng_dash`)}
+              onClick={() => navigate(`/project_dash`)}
               sx={{
                 color: "white",
                 bgcolor: "transparent",

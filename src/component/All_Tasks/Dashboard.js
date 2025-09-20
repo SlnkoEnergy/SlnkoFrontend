@@ -1,6 +1,6 @@
 // src/components/Dashboard/AllTaskDashboard.jsx
 import * as React from "react";
-import { Box, Grid } from "@mui/joy";
+import { Avatar, Box, Grid, Typography } from "@mui/joy";
 import CloudStatCard from "./TaskDashboardCards";
 import TaskStatusList from "./TaskListCard";
 import ActivityFeedCard from "./ActivityCard";
@@ -115,6 +115,37 @@ export default function AllTaskDashboard() {
     deadlineTo: apiParams?.deadlineTo ?? "",
     includeSubtasks: true,
   });
+
+  // in parent component
+  const leaderboardColumns = [
+    {
+      key: "name",
+      label: "Name",
+      sortable: true,
+      render: (r) => (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Avatar src={r.avatar} size="sm">{r.name?.[0]}</Avatar>
+          <Typography level="body-sm" sx={{ color: "#0f172a", fontWeight: 600 }}>
+            {r.name}
+          </Typography>
+        </Box>
+      ),
+    },
+    { key: "assigned", label: "Assigned Tasks", sortable: true },
+    { key: "completed", label: "Completed Tasks", sortable: true },
+    { key: "delayed", label: "Delayed Tasks", sortable: true },
+    {
+      key: "completion",
+      label: "Completion %",
+      sortable: true,
+      render: (r) => (
+        <Typography level="body-sm" sx={{ fontWeight: 700 }}>
+          {r.completion}%
+        </Typography>
+      ),
+    },
+  ];
+
 
   const leaderboardRows = React.useMemo(() => {
     if (!perfRes) return [];
@@ -302,7 +333,7 @@ export default function AllTaskDashboard() {
           <ActivityFeedCard
             items={feedLoading || feedFetching ? [] : feedItems}
             height={320}
-            onSeeAll={() => {}}
+            onSeeAll={() => { }}
           />
         </Grid>
       </Grid>
@@ -315,18 +346,21 @@ export default function AllTaskDashboard() {
               perfLoading || perfFetching
                 ? []
                 : leaderboardRows.map((u) => ({
-                    name: u.name,
-                    avatar: u.avatar,
-                    assigned: u.assigned,
-                    completed: u.completed,
-                    delayed: u.delayed,
-                  }))
+                  id: u._id,           // keep an id for React key
+                  name: u.name,
+                  avatar: u.avatar,
+                  assigned: u.assigned,
+                  completed: u.completed,
+                  delayed: u.delayed,
+                }))
             }
+            columns={leaderboardColumns}  // <-- here
             title="Team Leaderboard"
             searchValue={userSearch}
             onSearchChange={setUserSearch}
           />
         </Grid>
+
 
         <Grid xs={12} md={4}>
           <ProjectsWorkedCard
