@@ -116,6 +116,8 @@ import TaskDashboard from "../pages/AllTask/Dashboard";
 import ProjectManagement from "../pages/Projects/ProjectManagement";
 import ViewProjectManagement from "../pages/Projects/ViewProjectManagement";
 import ProjectTemplate from "../pages/Projects/ProjectTemplates";
+import MyApproval from "../pages/Approvals/MyApproval";
+import ApprovalDashboard from "../pages/Approvals/ApprovalDashboard";
 
 function index() {
   return (
@@ -1067,6 +1069,25 @@ function index() {
           </PrivateRoute>
         }
       />
+
+      {/* Approvals */}
+      <Route
+        path="/approval_dashboard"
+        element={
+          <PrivateRoute>
+            <ApprovalDashboard />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/my_approval"
+        element={
+          <PrivateRoute>
+            <MyApproval />
+          </PrivateRoute>
+        }
+      />
+
     </Routes>
   );
 }

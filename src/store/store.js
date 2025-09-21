@@ -28,6 +28,7 @@ import { vendorsApi } from "../redux/vendorSlice";
 import { poHistoryApi } from "../redux/poHistory";
 import { inspectionApi } from "../redux/inspectionSlice";
 import { postsApi } from "../redux/postsSlice";
+import { approvalsApi } from "../redux/ApprovalsSlice";
 
 export const store = configureStore({
   reducer: {
@@ -59,7 +60,8 @@ export const store = configureStore({
     [vendorsApi.reducerPath]: vendorsApi.reducer,
     [poHistoryApi.reducerPath]: poHistoryApi.reducer,
     [inspectionApi.reducerPath]: inspectionApi.reducer,
-    [postsApi.reducerPath] : postsApi.reducer
+    [postsApi.reducerPath] : postsApi.reducer,
+    [approvalsApi.reducerPath] : approvalsApi.reducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -91,6 +93,7 @@ export const store = configureStore({
       vendorsApi.middleware,
       poHistoryApi.middleware,
       inspectionApi.middleware,
-      postsApi.middleware
+      postsApi.middleware,
+      approvalsApi.middleware
     ),
 });

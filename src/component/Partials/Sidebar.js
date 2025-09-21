@@ -29,9 +29,8 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Main_Logo from "../../assets/protrac_logo.png";
 import { closeSidebar } from "../../utils/utils";
-
 import DatabaseIcon from "@mui/icons-material/Storage";
-import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
+import FactCheckIcon from "@mui/icons-material/FactCheck";
 import ColorSchemeToggle from "./ColorSchemeToggle";
 import {
   NovuProvider,
@@ -517,6 +516,15 @@ function Sidebar() {
                   </ListItem>
                 </List>
               </Toggler>
+            </ListItem>
+
+             <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/approval_dashboard")}>
+                <FactCheckIcon  />
+                <ListItemContent>
+                  <Typography level="title-sm">Approvals</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
           </List>
         ) : user?.department === "Accounts" &&
