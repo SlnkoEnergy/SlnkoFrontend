@@ -1278,9 +1278,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       case "out_for_delivery":
         return "orange";
       case "partially_delivered":
-        return "#f59e0b"; // amber
+        return "#f59e0b";
       case "short_quantity":
-        return "#b45309"; // darker amber
+        return "#b45309"; 
       case "delivered":
         return "green";
       case "etd pending":

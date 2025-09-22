@@ -91,6 +91,8 @@ const Overview = () => {
   } = useGetBoqProjectByProjectIdQuery(projectId, {
     skip: !projectId,
   });
+
+  // (kept as-is) your original categoryData block with duplicates
   const categoryData = {
     Electrical: [],
     Mechanical: [],
@@ -99,12 +101,26 @@ const Overview = () => {
     boq: [],
     Equipment: [],
     Mechanical_Inspection: [],
-    Electrcial_Inspection: [],
+    Electrical_Inspection: [],
     summary: [],
     Equipment: [],
-    Mechanical_Inspection: [],
-    Electrcial_Inspection: [],
     summary: [],
+  };
+
+  // 👉 ADDED: Allowed keys for SCM & helpers to filter & clamp selection
+  const SCM_ALLOWED = ["boq", "Equipment"];
+
+  const pickKeys = (obj, keys) =>
+    keys.reduce((acc, k) => {
+      if (obj && Object.prototype.hasOwnProperty.call(obj, k)) {
+        acc[k] = obj[k];
+      }
+      return acc;
+    }, {});
+
+  const clampSelectedCategory = (sel, allowedKeys) => {
+    if (allowedKeys.includes(sel)) return sel;
+    return allowedKeys[0] || sel;
   };
 
   const templates = data?.data || [];
@@ -117,7 +133,7 @@ const Overview = () => {
         : [];
 
       const latestStatus =
-        template.current_status?.status.toLowerCase() || null;
+        template.current_status?.status?.toLowerCase() || null;
       const latestRemarks = template.current_status?.remarks || "";
       if (category && categoryData[category]) {
         categoryData[category].push({
@@ -135,6 +151,27 @@ const Overview = () => {
       }
     });
   }
+
+  // 👉 ADDED: Derive an effective category map based on user department
+  const effectiveCategoryData =
+    user?.department === "SCM"
+      ? pickKeys(categoryData, SCM_ALLOWED)
+      : categoryData;
+
+  const allowedKeys = Object.keys(effectiveCategoryData);
+
+  // 👉 ADDED: Clamp selected category & URL param when user/data changes
+  useEffect(() => {
+    if (!allowedKeys.length) return;
+    setSelected((prev) => clampSelectedCategory(prev, allowedKeys));
+    setSearchParams((sp) => {
+      const fromUrl = sp.get("category") || initialCategory;
+      const fixed = clampSelectedCategory(fromUrl, allowedKeys);
+      sp.set("category", fixed);
+      return sp;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, data]);
 
   const handleMultiFileChange = (index, files) => {
     setFileUploads((prev) => ({
@@ -167,7 +204,7 @@ const Overview = () => {
 
     const formData = new FormData();
 
-    const item = categoryData[selected][index];
+    const item = effectiveCategoryData[selected][index];
     const templateId = item.templateId;
 
     const statusHistory = [
@@ -503,6 +540,14 @@ const Overview = () => {
     setSearchParams(searchParams);
   };
 
+  // 👉 ADDED: safe onChange that clamps to allowed values without altering your existing handler
+  const handleCategorySelectSafe = (category) => {
+    const next = clampSelectedCategory(category, allowedKeys);
+    setSelected(next);
+    searchParams.set("category", next);
+    setSearchParams(searchParams);
+  };
+
   const handlePreview = async (url) => {
     if (/\.(pdf)$/i.test(url)) {
       try {
@@ -596,7 +641,9 @@ const Overview = () => {
             >
               <Select
                 value={selected}
-                onChange={(event, newValue) => handleCategorySelect(newValue)}
+                // onChange={(event, newValue) => handleCategorySelect(newValue)}
+                // 👉 ADDED: use safe selector to clamp to allowed list without touching your original handler
+                onChange={(event, newValue) => handleCategorySelectSafe(newValue)}
                 disabled={isLoading}
                 variant="soft"
                 sx={{
@@ -606,7 +653,7 @@ const Overview = () => {
                   px: 1,
                 }}
               >
-                {Object.keys(categoryData).map((category) => (
+                {Object.keys(effectiveCategoryData).map((category) => (
                   <Option key={category} value={category}>
                     {category
                       .replace(/_/g, " ")
@@ -674,8 +721,8 @@ const Overview = () => {
               ) : (
                 <Typography>No summary data found.</Typography>
               )
-            ) : categoryData[selected]?.length > 0 ? (
-              categoryData[selected].map((item, index) => {
+            ) : effectiveCategoryData[selected]?.length > 0 ? (
+              effectiveCategoryData[selected].map((item, index) => {
                 const isUploadDisabled = item.latestStatus === "approved";
                 const isAnyFileSelectedForThis = fileUploads[index]?.length > 0;
 
