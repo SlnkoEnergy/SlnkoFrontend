@@ -8,13 +8,12 @@ import { engsLTPanelApi } from "../redux/Eng/ltsSlice";
 import { engsModuleApi } from "../redux/Eng/modulesSlice";
 import { engsPoolingApi } from "../redux/Eng/poolingsSlice";
 import { engsTransformerApi } from "../redux/Eng/transformersSlice";
-import { expensesApi } from "../redux/Expense/expenseSlice";
+import { expensesApi } from "../redux/expenseSlice";
 import { templatesApi } from "../redux/Eng/templatesSlice";
 import { billsApi } from "../redux/billsSlice";
 import { camsApi } from "../redux/camsSlice";
 import { commsApi } from "../redux/commsSlice";
 import { engsApi } from "../redux/engsSlice";
-import { leadsApi } from "../redux/leadsSlice";
 import { loginsApi } from "../redux/loginSlice";
 import { paymentsApi } from "../redux/paymentsSlice";
 import { projectsApi } from "../redux/projectsSlice";
@@ -35,7 +34,6 @@ export const store = configureStore({
     [projectsApi.reducerPath]: projectsApi.reducer,
     [paymentsApi.reducerPath]: paymentsApi.reducer,
     [purchasesApi.reducerPath]: purchasesApi.reducer,
-    [leadsApi.reducerPath]: leadsApi.reducer,
     [tasksApi.reducerPath]: tasksApi.reducer,
     [loginsApi.reducerPath]: loginsApi.reducer,
     [commsApi.reducerPath]: commsApi.reducer,
@@ -68,7 +66,6 @@ export const store = configureStore({
       projectsApi.middleware,
       paymentsApi.middleware,
       purchasesApi.middleware,
-      leadsApi.middleware,
       tasksApi.middleware,
       loginsApi.middleware,
       commsApi.middleware,

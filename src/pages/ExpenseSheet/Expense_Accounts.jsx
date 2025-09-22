@@ -15,7 +15,7 @@ import AccountsExpense from "../../component/Expense Sheet/Accounts_Expense_Appr
 import {
   useExportExpenseToCSVMutation,
   useExportExpenseToPDFMutation,
-} from "../../redux/Expense/expenseSlice";
+} from "../../redux/expenseSlice";
 import { toast } from "react-toastify";
 import {
   CircularProgress,
