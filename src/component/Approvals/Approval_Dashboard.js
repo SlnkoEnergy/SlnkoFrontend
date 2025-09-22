@@ -60,6 +60,24 @@ const CardSkeleton = () => (
   </Card>
 );
 
+function resolveTitle(model) {
+  return (
+    model?.title ??
+    model?.model_name ??
+    model?.name ??
+    (typeof model === "string" ? model : "Untitled")
+  );
+}
+
+function resolveCount(model) {
+  const n = model?.to_review ?? model?.count ?? model?.pending ?? 0;
+  return Number(n) || 0;
+}
+
+function resolveName(model) {
+  return model?.name ?? model?.model_name ?? (typeof model === "string" ? model : "");
+}
+
 function ModelCard({ model, onNewRequest, onOpenList }) {
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
@@ -67,30 +85,29 @@ function ModelCard({ model, onNewRequest, onOpenList }) {
   const handleMenu = (e) => setAnchorEl(e.currentTarget);
   const handleClose = () => setAnchorEl(null);
 
-  const title = model ?? "Untitled";
-  const toReview = Number(model?.to_review ?? 0);
-  const imgSrc = model?.icon; // URL/base64 from backend
+  const title = resolveTitle(model);
+  const toReview = resolveCount(model);
+  const modelName = resolveName(model);
+  const imgSrc = model?.icon;
 
   return (
     <Card
       variant="outlined"
       sx={{
-        borderRadius: "xl",
-        boxShadow: "sm",
-        p: 3,
-        transition: "transform 120ms ease, box-shadow 120ms ease",
-        "&:hover": { transform: "translateY(-2px)", boxShadow: "md" },
+        borderRadius: "md",
+        boxShadow: "xs",
+        p: 1.5,
       }}
     >
-      <Box sx={{ display: "flex", gap: 3, alignItems: "flex-start" }}>
-        {/* Icon / Illustration */}
+      <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-start" }}>
+        {/* Icon */}
         <Sheet
           variant="soft"
           color="neutral"
           sx={{
-            width: 64,
-            height: 64,
-            borderRadius: "lg",
+            width: 100,
+            height: 100,
+            borderRadius: "md",
             display: "grid",
             placeItems: "center",
             flexShrink: 0,
@@ -102,19 +119,19 @@ function ModelCard({ model, onNewRequest, onOpenList }) {
               component="img"
               src={imgSrc}
               alt={title}
-              sx={{ width: 56, height: 56, objectFit: "contain" }}
+              sx={{ width: 32, height: 32, objectFit: "contain" }}
             />
           ) : (
-            <FactCheckIcon />
+            <FactCheckIcon fontSize="small" />
           )}
         </Sheet>
 
         {/* Content */}
-        <CardContent sx={{ p: 0, flex: 1, minWidth: 0 }}>
+        <CardContent sx={{ p: 0, flex: 1, minWidth: 0, display:'flex',justifyContent:'space-between' }}>
           <Typography
-            level="title-md"
+            level="title-sm"
             sx={{
-              mb: 1,
+              mb: 0.75,
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
@@ -123,69 +140,51 @@ function ModelCard({ model, onNewRequest, onOpenList }) {
             {title}
           </Typography>
 
-          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 1,
+            }}
+          >
             <Button
-              variant="solid"
               size="sm"
-              startDecorator={<AddCircleIcon />}
+              variant="solid"
+              onClick={() => onNewRequest?.(modelName)}
               sx={{
-                backgroundColor: "#3366a3",
+                textTransform: "none",
+                borderRadius: "sm",
+                px: 1.25,
+                py: 0.25,
+                fontWeight: 600,
+                width:'140px',
+                backgroundColor: "#6E4C71",
                 color: "#fff",
-                "&:hover": { backgroundColor: "#285680" },
-                height: "8px",
+                "&:hover": { backgroundColor: "#5C3F5F" },
               }}
             >
               New Request
             </Button>
-
-            <Button
+           <Button
               size="sm"
               variant="soft"
-              onClick={() => onOpenList(model)}
-              sx={{ borderRadius: "lg" }}
+              color="neutral"
+              onClick={() => onOpenList?.(modelName)}
+              sx={{
+                textTransform: "none",
+                borderRadius: "sm",
+                px: 1.25,
+                py: 0.25,
+                fontWeight: 600,
+                width:'140px',
+              }}
             >
-              To Review:{" "}
-              <Chip
-                size="sm"
-                variant="solid"
-                color={toReview > 0 ? "warning" : "neutral"}
-                sx={{ ml: 0.75 }}
-              >
-                {toReview}
-              </Chip>
+              {`To Review: ${toReview}`}
             </Button>
           </Box>
+      
         </CardContent>
-
-        {/* Kebab */}
-        <Box>
-          <IconButton
-            variant="plain"
-            color="neutral"
-            onClick={handleMenu}
-            aria-label="More"
-          >
-            <MoreVertIcon />
-          </IconButton>
-          <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>
-            <MenuItem
-              onClick={() => {
-                handleClose();
-                onOpenList(model);
-              }}
-            >
-              Open
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                handleClose();
-                onNewRequest(model);
-              }}
-            >
-              New Request
-            </MenuItem>
-          </Menu>
-        </Box>
       </Box>
     </Card>
   );
@@ -194,8 +193,17 @@ function ModelCard({ model, onNewRequest, onOpenList }) {
 export default function Approval_Dashboard() {
   const { data: getUniqueModel } = useGetUniqueModelQuery();
   const navigate = useNavigate();
-  console.log({ getUniqueModel });
-  const items = Array.isArray(getUniqueModel?.data) ? getUniqueModel?.data : [];
+
+  // raw API response
+  const raw = getUniqueModel ?? {};
+
+  // turn map into array of { name, to_review }
+  const items = Object.entries(raw).map(([name, count]) => ({
+    name,
+    slug: name,        // you can add slug if needed
+    title: prettify(name),
+    to_review: count,
+  }));
 
   const onNewRequest = (model) => {
     navigate(
@@ -214,23 +222,30 @@ export default function Approval_Dashboard() {
   return (
     <Box
       sx={{
-        ml: {
-          lg: "var(--Sidebar-width)",
-        },
+        ml: { lg: "var(--Sidebar-width)" },
         px: "0px",
         width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
       }}
     >
-      <Grid>
+      <Grid container spacing={2}>
         {items.map((m, idx) => (
-          <ModelCard
-            //   key={`${m.slug || m.name}-${idx}`}
-            model={m}
-            //   onNewRequest={onNewRequest}
-            //   onOpenList={onOpenList}
-          />
+          <Grid key={m.name} xs={12} sm={6} md={4}>
+            <ModelCard
+              model={m}
+              onNewRequest={onNewRequest}
+              onOpenList={onOpenList}
+            />
+          </Grid>
         ))}
       </Grid>
     </Box>
   );
 }
+
+function prettify(key = "") {
+  return key
+    .replace(/_/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/^\w/, (c) => c.toUpperCase());
+}
+
