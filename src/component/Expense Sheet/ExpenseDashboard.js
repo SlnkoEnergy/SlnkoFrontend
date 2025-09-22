@@ -287,11 +287,13 @@ const AllExpense = forwardRef((props, ref) => {
             onChange={(e) => handleSearch(e.target.value)}
           />
         </FormControl>
+      {(
+  user?.name === "Shruti Tripathi" ||
+  user?.department === "Accounts" ||
+  user?.department === "admin" ||
+  user?.name === "IT Team"
+) && renderFilters()}
 
-        {user?.name === "Shruti Tripathi" ||
-          user?.department === "Accounts" ||
-          user?.department === "admin" ||
-          (user?.name === "IT Team" && renderFilters())}
       </Box>
 
       {/* Table */}
