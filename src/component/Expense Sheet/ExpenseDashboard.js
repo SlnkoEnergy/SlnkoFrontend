@@ -63,6 +63,7 @@ const AllExpense = forwardRef((props, ref) => {
       "SCM",
       "IT Team",
       "Loan",
+      "BD",
     ];
 
     return (
@@ -73,6 +74,12 @@ const AllExpense = forwardRef((props, ref) => {
           onChange={(e, newValue) => {
             setSelectedDepartment(newValue);
             setCurrentPage(1);
+            // --- keep department in the URL search params ---
+            const next = new URLSearchParams(searchParams);
+            next.set("page", "1");
+            if (newValue) next.set("department", newValue);
+            else next.delete("department");
+            setSearchParams(next);
           }}
           size="sm"
           placeholder="Select Department"
@@ -201,13 +208,19 @@ const AllExpense = forwardRef((props, ref) => {
   useEffect(() => {
     const page = parseInt(searchParams.get("page")) || 1;
     setCurrentPage(page);
+    // --- read department from URL search params on load/change ---
+    const dept = searchParams.get("department") || "";
+    setSelectedDepartment(dept);
   }, [searchParams]);
 
   const paginatedExpenses = filteredAndSortedData;
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
-      setSearchParams({ page: String(page) });
+      setSearchParams({
+        page: String(page),
+        ...(selectedDepartment ? { department: selectedDepartment } : {}),
+      });
     }
   };
 
@@ -627,7 +640,8 @@ const AllExpense = forwardRef((props, ref) => {
                 ? expense.current_status
                 : expense.current_status?.status || "";
 
-                 const remarks = expense.current_status?.remarks?.trim() || "No remarks provided";
+            const remarks =
+              expense.current_status?.remarks?.trim() || "No remarks provided";
 
             const getStatusChip = () => {
               switch (status) {
