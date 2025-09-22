@@ -83,6 +83,7 @@ import ViewProjectManagement from "../pages/Projects/ViewProjectManagement";
 import ProjectTemplate from "../pages/Projects/ProjectTemplates";
 import MyApproval from "../pages/Approvals/MyApproval";
 import ApprovalDashboard from "../pages/Approvals/ApprovalDashboard";
+import MyRequest from "../pages/Approvals/MyRequest";
 
 function index() {
   return (
@@ -624,7 +625,7 @@ function index() {
           </PrivateRoute>
         }
       />
-    
+
       <Route
         path="/purchase_request"
         element={
@@ -633,7 +634,6 @@ function index() {
           </PrivateRoute>
         }
       />
-
 
       {/****** Expense Sheet */}
       <Route
@@ -779,14 +779,21 @@ function index() {
         }
       />
       <Route
-        path="/my_approval"
+        path="/my_requests"
+        element={
+          <PrivateRoute>
+            <MyRequest />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/my_approvals"
         element={
           <PrivateRoute>
             <MyApproval />
           </PrivateRoute>
         }
       />
-
     </Routes>
   );
 }

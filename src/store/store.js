@@ -28,6 +28,7 @@ import { poHistoryApi } from "../redux/poHistory";
 import { inspectionApi } from "../redux/inspectionSlice";
 import { postsApi } from "../redux/postsSlice";
 import { approvalsApi } from "../redux/ApprovalsSlice";
+import {leadsApi} from "../redux/leadsSlice"
 
 export const store = configureStore({
   reducer: {
@@ -35,6 +36,7 @@ export const store = configureStore({
     [paymentsApi.reducerPath]: paymentsApi.reducer,
     [purchasesApi.reducerPath]: purchasesApi.reducer,
     [tasksApi.reducerPath]: tasksApi.reducer,
+    [leadsApi.reducerPath]: leadsApi.reducer,
     [loginsApi.reducerPath]: loginsApi.reducer,
     [commsApi.reducerPath]: commsApi.reducer,
     [camsApi.reducerPath]: camsApi.reducer,
@@ -67,6 +69,7 @@ export const store = configureStore({
       paymentsApi.middleware,
       purchasesApi.middleware,
       tasksApi.middleware,
+      leadsApi.middleware,
       loginsApi.middleware,
       commsApi.middleware,
       camsApi.middleware,

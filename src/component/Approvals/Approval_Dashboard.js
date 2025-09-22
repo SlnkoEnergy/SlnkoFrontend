@@ -75,7 +75,9 @@ function resolveCount(model) {
 }
 
 function resolveName(model) {
-  return model?.name ?? model?.model_name ?? (typeof model === "string" ? model : "");
+  return (
+    model?.name ?? model?.model_name ?? (typeof model === "string" ? model : "")
+  );
 }
 
 function ModelCard({ model, onNewRequest, onOpenList }) {
@@ -97,9 +99,23 @@ function ModelCard({ model, onNewRequest, onOpenList }) {
         borderRadius: "md",
         boxShadow: "xs",
         p: 1.5,
+        cursor:'pointer',
+        transition:
+          "transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease",
+        willChange: "transform",
+        "&:hover": {
+          transform: "translateY(-4px)",
+          boxShadow: "lg",
+          borderColor: "neutral.outlinedHoverBorder",
+        },
+        // Respect reduced motion
+        "@media (prefers-reduced-motion: reduce)": {
+          transition: "none",
+          "&:hover": { transform: "none" },
+        },
       }}
     >
-      <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-start" }}>
+      <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-start", cursor:'pointer' }}>
         {/* Icon */}
         <Sheet
           variant="soft"
@@ -112,6 +128,11 @@ function ModelCard({ model, onNewRequest, onOpenList }) {
             placeItems: "center",
             flexShrink: 0,
             overflow: "hidden",
+            transition: "transform 220ms ease",
+            "&:hover": { transform: "scale(1.04)" },
+            "@media (prefers-reduced-motion: reduce)": {
+              transition: "none",
+            },
           }}
         >
           {imgSrc ? (
@@ -119,7 +140,17 @@ function ModelCard({ model, onNewRequest, onOpenList }) {
               component="img"
               src={imgSrc}
               alt={title}
-              sx={{ width: 32, height: 32, objectFit: "contain" }}
+              sx={{
+                width: 32,
+                height: 32,
+                objectFit: "contain",
+                transition: "transform 220ms ease",
+                // a tiny image zoom on parent hover too
+                [".MuiCard-root:hover &"]: { transform: "scale(1.06)" },
+                "@media (prefers-reduced-motion: reduce)": {
+                  transition: "none",
+                },
+              }}
             />
           ) : (
             <FactCheckIcon fontSize="small" />
@@ -127,23 +158,33 @@ function ModelCard({ model, onNewRequest, onOpenList }) {
         </Sheet>
 
         {/* Content */}
-        <CardContent sx={{ p: 0, flex: 1, minWidth: 0, display:'flex',justifyContent:'space-between' }}>
-          <Typography
-            level="title-sm"
-            sx={{
-              mb: 0.75,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {title}
-          </Typography>
+        <CardContent
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 5,
+            width: "100%",
+            flex: 1,
+            minWidth: 0,
+          }}
+        >
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              level="title-sm"
+              sx={{
+                mb: 0.75,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {title}
+            </Typography>
+          </Box>
 
           <Box
             sx={{
               display: "flex",
-              alignItems: "center",
               justifyContent: "space-between",
               gap: 1,
             }}
@@ -158,15 +199,21 @@ function ModelCard({ model, onNewRequest, onOpenList }) {
                 px: 1.25,
                 py: 0.25,
                 fontWeight: 600,
-                width:'140px',
-                backgroundColor: "#6E4C71",
+                width: "140px",
+                backgroundColor: "#3366a3",
                 color: "#fff",
-                "&:hover": { backgroundColor: "#5C3F5F" },
+                "&:hover": { backgroundColor: "#285680" },
+                transition: "transform 160ms ease, background-color 160ms ease",
+                [".MuiCard-root:hover &"]: { transform: "translateY(-1px)" },
+                "@media (prefers-reduced-motion: reduce)": {
+                  transition: "none",
+                },
               }}
             >
               New Request
             </Button>
-           <Button
+
+            <Button
               size="sm"
               variant="soft"
               color="neutral"
@@ -177,13 +224,17 @@ function ModelCard({ model, onNewRequest, onOpenList }) {
                 px: 1.25,
                 py: 0.25,
                 fontWeight: 600,
-                width:'140px',
+                width: "140px",
+                transition: "transform 160ms ease, background-color 160ms ease",
+                [".MuiCard-root:hover &"]: { transform: "translateY(-1px)" },
+                "@media (prefers-reduced-motion: reduce)": {
+                  transition: "none",
+                },
               }}
             >
               {`To Review: ${toReview}`}
             </Button>
           </Box>
-      
         </CardContent>
       </Box>
     </Card>
@@ -200,7 +251,7 @@ export default function Approval_Dashboard() {
   // turn map into array of { name, to_review }
   const items = Object.entries(raw).map(([name, count]) => ({
     name,
-    slug: name,        // you can add slug if needed
+    slug: name, // you can add slug if needed
     title: prettify(name),
     to_review: count,
   }));
@@ -248,4 +299,3 @@ function prettify(key = "") {
     .replace(/([a-z])([A-Z])/g, "$1 $2")
     .replace(/^\w/, (c) => c.toUpperCase());
 }
-

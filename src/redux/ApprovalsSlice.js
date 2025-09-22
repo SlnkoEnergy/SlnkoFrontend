@@ -21,9 +21,14 @@ export const approvalsApi = createApi({
       query: () => 'approvals/uniquemodels',
       providesTags: ["Approval"],
     }),
+    getRequests: builder.query({
+      query: () => 'approvals/requests',
+      providesTags:['Approval']
+    })
 })
 });
 
 export const{
-    useGetUniqueModelQuery
+    useGetUniqueModelQuery,
+    useGetRequestsQuery
 } = approvalsApi

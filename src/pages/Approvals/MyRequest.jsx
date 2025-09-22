@@ -4,11 +4,11 @@ import { CssVarsProvider } from "@mui/joy/styles";
 import Button from "@mui/joy/Button";
 import Sidebar from "../../component/Partials/Sidebar";
 import SubHeader from "../../component/Partials/SubHeader";
-import Dash_eng from "../../component/EngDashboard";
 import MainHeader from "../../component/Partials/MainHeader";
 import { useNavigate } from "react-router-dom";
+import My_Requests from "../../component/Approvals/My_Requests";
 
-function MyApproval() {
+function MyRequest() {
   const navigate = useNavigate();
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -81,7 +81,7 @@ function MyApproval() {
         </MainHeader>
 
         <SubHeader
-          title="My Approvals"
+          title="My Requests"
           isBackEnabled={false}
           sticky
         ></SubHeader>
@@ -98,10 +98,10 @@ function MyApproval() {
             px: "24px",
           }}
         >
-          <Dash_eng />
+          <My_Requests />
         </Box>
       </Box>
     </CssVarsProvider>
   );
 }
-export default MyApproval;
+export default MyRequest;

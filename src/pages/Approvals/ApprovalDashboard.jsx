@@ -4,7 +4,6 @@ import { CssVarsProvider } from "@mui/joy/styles";
 import Button from "@mui/joy/Button";
 import Sidebar from "../../component/Partials/Sidebar";
 import SubHeader from "../../component/Partials/SubHeader";
-import Dash_eng from "../../component/EngDashboard";
 import MainHeader from "../../component/Partials/MainHeader";
 import { useNavigate } from "react-router-dom";
 import Approval_Dashboard from "../../component/Approvals/Approval_Dashboard";
@@ -39,10 +38,10 @@ function ApprovalDashboard() {
             >
               Dashboard
             </Button>
-            
+
             <Button
               size="sm"
-              onClick={() => navigate(`/eng_dash`)}
+              onClick={() => navigate(`/my_requests`)}
               sx={{
                 color: "white",
                 bgcolor: "transparent",
@@ -62,7 +61,7 @@ function ApprovalDashboard() {
 
             <Button
               size="sm"
-              onClick={()=> navigate(`/my_approval`)}
+              onClick={() => navigate(`/my_approvals`)}
               sx={{
                 color: "white",
                 bgcolor: "transparent",
@@ -82,11 +81,7 @@ function ApprovalDashboard() {
           </Box>
         </MainHeader>
 
-        <SubHeader
-          title="Dashboard"
-          isBackEnabled={false}
-          sticky
-        ></SubHeader>
+        <SubHeader title="Dashboard" isBackEnabled={false} sticky></SubHeader>
         <Box
           component="main"
           className="MainContent"
