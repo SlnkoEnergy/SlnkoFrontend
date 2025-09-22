@@ -135,6 +135,7 @@ const HrExpense = forwardRef((props, ref) => {
       "Internal",
       "SCM",
       "IT Team",
+      "BD",
     ];
 
     const statuses = [
