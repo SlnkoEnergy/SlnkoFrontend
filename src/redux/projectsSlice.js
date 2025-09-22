@@ -213,6 +213,31 @@ export const projectsApi = createApi({
             ]
           : [{ type: "Module", id: "LIST" }],
     }),
+
+
+    // ⬇️ Name Search Activities by Project (paginated + searchable)
+nameSearchActivityByProjectId: builder.query({
+  query: ({ projectId, page = 1, limit = 7, search = "" }) => ({
+    url: "projectactivity/namesearchactivitybyprojectid",
+    params: {
+      projectId,
+      page,
+      limit,
+      search,
+    },
+  }),
+  // Optional: normalize the response so UI is predictable
+  transformResponse: (res) => ({
+    ok: !!res?.ok,
+    page: res?.page ?? 1,
+    limit: res?.limit ?? 7,
+    total: res?.total ?? 0,
+    totalPages: res?.totalPages ?? 1,
+    activities: Array.isArray(res?.activities) ? res.activities : [],
+  }),
+  providesTags: ["Project"],
+}),
+
   }),
 });
 
@@ -246,4 +271,6 @@ export const {
   useLazyGetActivitiesByNameQuery,
   useGetAllModulesQuery,
   useLazyGetAllModulesQuery,
+  useNameSearchActivityByProjectIdQuery,
+useLazyNameSearchActivityByProjectIdQuery,
 } = projectsApi;

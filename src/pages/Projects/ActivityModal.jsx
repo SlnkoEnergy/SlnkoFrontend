@@ -26,6 +26,7 @@ import {
   useLazyGetProjectSearchDropdownQuery,
   useLazyGetActivitiesByNameQuery,
   useLazyGetAllModulesQuery, // modules API hook from your slice
+  useLazyNameSearchActivityByProjectIdQuery, // ⬅️ NEW: project-scoped activities
 } from "../../redux/projectsSlice";
 import SearchPickerModal from "../../component/SearchPickerModal";
 
@@ -59,6 +60,38 @@ export default function AddActivityModal({
 
   const RS_MORE = { label: "Search more…", value: "__more__" };
 
+  /* ---------------- Helpers ---------------- */
+  const uniqBy = (arr, keyFn) => {
+    const seen = new Set();
+    return arr.filter((x) => {
+      const k = keyFn(x);
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  };
+
+  const extractEngineeringModules = (activityOrOpt) => {
+    const deps = Array.isArray(activityOrOpt?.dependency)
+      ? activityOrOpt.dependency
+      : [];
+
+    const mods = deps
+      .filter(
+        (d) =>
+          String(d?.model).toLowerCase().includes("module") &&
+          d?.model_id?._id &&
+          (d?.model_id?.name || d?.model_id?.title)
+      )
+      .map((d) => ({
+        value: String(d.model_id._id),
+        label: String(d.model_id.name || d.model_id.title),
+        raw: d.model_id,
+      }));
+
+    return uniqBy(mods, (m) => m.value);
+  };
+
   /* ---------------- Project quick list (max 7) ---------------- */
   const [quickOptions, setQuickOptions] = useState([]);
   const [fetchProjects, { isFetching }] = useLazyGetProjectSearchDropdownQuery();
@@ -79,7 +112,9 @@ export default function AddActivityModal({
       setQuickOptions([]);
     }
   };
-  useEffect(() => { if (open) loadQuickProjects(); }, [open]); // eslint-disable-line
+  useEffect(() => {
+    if (open) loadQuickProjects();
+  }, [open]); // eslint-disable-line
 
   const rsOptions = useMemo(
     () => [
@@ -93,32 +128,100 @@ export default function AddActivityModal({
     : null;
 
   /* ---------------- Activities quick list (max 7) ---------------- */
-  const [fetchActivities, { isFetching: isFetchingActs }] = useLazyGetActivitiesByNameQuery();
+  const [fetchActivitiesGlobal, { isFetching: isFetchingActsGlobal }] =
+    useLazyGetActivitiesByNameQuery();
+  const [fetchActivitiesByProject, { isFetching: isFetchingActsByProj }] =
+    useLazyNameSearchActivityByProjectIdQuery(); // ⬅️ NEW
+
   const [actQuickOptions, setActQuickOptions] = useState([]);
   const actSearchRef = useRef("");
 
+  const mapActivitiesToOptions = (list) =>
+    (list || []).slice(0, 7).map((a) => ({
+      value: a._id,
+      label: a.name,
+      name: a.name,
+      description: a.description || "",
+      type: a.type || "",
+      dependency: a.dependency || [],
+    }));
+
   const loadActivitiesQuick = async () => {
     try {
-      const { items } = await fetchActivities({ search: "", page: 1, limit: 7 }).unwrap();
-      const limited = (items || []).slice(0, 7);
-      setActQuickOptions(
-        limited.map((a) => ({
-          value: a._id,
-          label: a.name,
-          name: a.name,
-          description: a.description || "",
-          type: a.type || "",
-        }))
-      );
+      if (mode !== "existing") {
+        setActQuickOptions([]);
+        return;
+      }
+      // Scope-aware loading
+      if (scope === "project" && form.projectId) {
+        const { activities } = await fetchActivitiesByProject({
+          projectId: form.projectId,
+          page: 1,
+          limit: 7,
+          search: actSearchRef.current || "",
+        }).unwrap();
+        setActQuickOptions(mapActivitiesToOptions(activities));
+      } else {
+        const { items } = await fetchActivitiesGlobal({
+          search: actSearchRef.current || "",
+          page: 1,
+          limit: 7,
+        }).unwrap();
+        setActQuickOptions(mapActivitiesToOptions(items));
+      }
     } catch {
       setActQuickOptions([]);
     }
   };
-  useEffect(() => { if (open && mode === "existing") loadActivitiesQuick(); }, [open, mode]); // eslint-disable-line
+
+  useEffect(() => {
+    if (open && mode === "existing") loadActivitiesQuick();
+  }, [open, mode]); // eslint-disable-line
+
+  // Reload activities when project changes (for existing+project scope)
+  useEffect(() => {
+    if (mode === "existing" && scope === "project") {
+      loadActivitiesQuick();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.projectId, scope, mode]);
 
   const actRsOptions = useMemo(() => [...actQuickOptions, RS_MORE], [actQuickOptions]);
   const actRsValue =
     form.activityName ? { value: form.activityName, label: form.activityName } : null;
+
+  /* ---------------- Project-scoped modules from activities ---------------- */
+  const [projectModuleOptions, setProjectModuleOptions] = useState([]);
+
+  // When engineering is enabled for a project, build module options
+  useEffect(() => {
+    const loadProjectModules = async () => {
+      try {
+        if (scope !== "project" || !form.projectId || !form.dependencies.engineeringEnabled) {
+          setProjectModuleOptions([]);
+          return;
+        }
+        // Fetch a wider page to aggregate modules from activities
+        const { activities } = await fetchActivitiesByProject({
+          projectId: form.projectId,
+          page: 1,
+          limit: 100, // adjust if needed
+          search: "",
+        }).unwrap();
+
+        const all = (activities || []).flatMap((a) => extractEngineeringModules(a));
+        setProjectModuleOptions(uniqBy(all, (m) => m.value));
+      } catch {
+        setProjectModuleOptions([]);
+      }
+    };
+    loadProjectModules();
+  }, [
+    scope,
+    form.projectId,
+    form.dependencies.engineeringEnabled,
+    fetchActivitiesByProject,
+  ]);
 
   /* ---------------- Modules quick list (max 7) ---------------- */
   const [fetchModules, { isFetching: isFetchingModules }] = useLazyGetAllModulesQuery();
@@ -126,6 +229,11 @@ export default function AddActivityModal({
 
   const loadModulesQuick = async () => {
     try {
+      // If we have project-scoped module options, prefer those
+      if (scope === "project" && form.projectId && projectModuleOptions.length > 0) {
+        setModuleQuickOptions(projectModuleOptions.slice(0, 7));
+        return;
+      }
       const list = await fetchModules({ search: "", page: 1, limit: 7 }).unwrap();
       const limited = (Array.isArray(list) ? list : []).slice(0, 7);
       setModuleQuickOptions(
@@ -141,12 +249,22 @@ export default function AddActivityModal({
   };
   useEffect(() => {
     if (open && form.dependencies.engineeringEnabled) loadModulesQuick();
-  }, [open, form.dependencies.engineeringEnabled]); // eslint-disable-line
+  }, [
+    open,
+    form.dependencies.engineeringEnabled,
+    scope,
+    form.projectId,
+    projectModuleOptions.length,
+  ]); // eslint-disable-line
 
-  const moduleRsOptions = useMemo(
-    () => [...moduleQuickOptions, RS_MORE],
-    [moduleQuickOptions]
-  );
+  const moduleRsOptions = useMemo(() => {
+    // If project-scoped modules exist, use them; else fall back to generic list
+    const base =
+      scope === "project" && form.projectId && projectModuleOptions.length > 0
+        ? projectModuleOptions
+        : moduleQuickOptions;
+    return [...base, RS_MORE];
+  }, [moduleQuickOptions, projectModuleOptions, scope, form.projectId]);
 
   /* ---------------- Validation ---------------- */
   const needProject = scope === "project";
@@ -232,7 +350,11 @@ export default function AddActivityModal({
 
   /* ---------------- Data providers for SearchPickerModal ---------------- */
   const fetchPage = async ({ page, search, pageSize }) => {
-    const res = await fetchProjects({ search: search || "", page: page || 1, limit: pageSize || 10 }).unwrap();
+    const res = await fetchProjects({
+      search: search || "",
+      page: page || 1,
+      limit: pageSize || 10,
+    }).unwrap();
     const arr = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
     const rows = arr.map((p) => ({
       _id: p._id || p.id,
@@ -243,24 +365,68 @@ export default function AddActivityModal({
     return { rows, total };
   };
 
-  const fetchActivityPage = async ({ page, search, pageSize }) => {
-    const { items, pagination } = await fetchActivities({
-      search: search || "",
+ const fetchActivityPage = async ({ page, search, pageSize }) => {
+  // Scope-aware provider for modal
+  if (scope === "project" && form.projectId) {
+    const { activities, total } = await fetchActivitiesByProject({
+      projectId: form.projectId,
       page: page || 1,
-      limit: pageSize || 10,
+      limit: pageSize || 50,   // respect modal pageSize
+      search: search || "",
     }).unwrap();
-    const rows = (items || []).map((a) => ({
+
+    const rows = (activities || []).map((a) => ({
       _id: a._id,
       name: a.name || "",
       type: a.type || "",
       description: a.description || "",
+      dependency: a.dependency || [],
     }));
-    const total = pagination?.total ?? rows.length;
-    return { rows, total };
-  };
+    return { rows, total: total ?? rows.length };
+  }
+
+  // Global fallback
+  const { items, pagination } = await fetchActivitiesGlobal({
+    search: search || "",
+    page: page || 1,
+    limit: pageSize || 50,     // respect modal pageSize
+  }).unwrap();
+
+  const rows = (items || []).map((a) => ({
+    _id: a._id,
+    name: a.name || "",
+    type: a.type || "",
+    description: a.description || "",
+    dependency: a.dependency || [],
+  }));
+  const total = pagination?.total ?? rows.length;
+  return { rows, total };
+};
+
 
   const fetchModulePage = async ({ page, search, pageSize }) => {
-    const list = await fetchModules({ search: search || "", page: page || 1, limit: pageSize || 10 }).unwrap();
+    // If project-scoped module options exist, serve those here as the “source of truth”
+    if (scope === "project" && form.projectId && projectModuleOptions.length > 0) {
+      const filtered = (projectModuleOptions || []).filter((m) => {
+        const q = (search || "").trim().toLowerCase();
+        return !q || m.label.toLowerCase().includes(q);
+      });
+      const start = ((page || 1) - 1) * (pageSize || 10);
+      const rows = filtered.slice(start, start + (pageSize || 10)).map((m) => ({
+        _id: m.value,
+        name: m.label,
+        category: m.raw?.category || "",
+        description: m.raw?.description || "",
+      }));
+      return { rows, total: filtered.length };
+    }
+
+    // Fallback to full modules API
+    const list = await fetchModules({
+      search: search || "",
+      page: page || 1,
+      limit: pageSize || 10,
+    }).unwrap();
     const rows = (Array.isArray(list) ? list : []).map((m) => ({
       _id: m._id,
       name: m.name || "Unnamed",
@@ -298,9 +464,17 @@ export default function AddActivityModal({
           {/* Header */}
           <Box
             sx={{
-              px: 2, py: 1.5, borderBottom: "1px solid", borderColor: "divider",
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              position: "sticky", top: 0, bgcolor: "background.body", zIndex: 1,
+              px: 2,
+              py: 1.5,
+              borderBottom: "1px solid",
+              borderColor: "divider",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              position: "sticky",
+              top: 0,
+              bgcolor: "background.body",
+              zIndex: 1,
             }}
           >
             <DialogTitle id="add-activity-title" sx={{ p: 0 }}>
@@ -339,9 +513,12 @@ export default function AddActivityModal({
               onChange={(e) => {
                 const next = e.target.value;
                 setScope(next);
+                // Reset project fields error when going global
                 if (next === "global") {
                   setTouched((t) => ({ ...t, projectId: false, projectName: false }));
                 }
+                // Reload activities for new scope
+                setTimeout(loadActivitiesQuick, 0);
               }}
               sx={{ gap: 1, ml: { xs: 0, md: "auto" } }}
               disabled={isSubmitting}
@@ -381,8 +558,27 @@ export default function AddActivityModal({
                     isSearchable
                     onMenuOpen={() => loadQuickProjects()}
                     onChange={(opt) => {
+                      // Reset activity + dependencies on project change
+                      const resetActivity = {
+                        activityName: "",
+                        type: "frontend",
+                        description: "",
+                        dependencies: {
+                          ...form.dependencies,
+                          engineeringEnabled: false,
+                          engineeringModules: [],
+                        },
+                      };
+
                       if (!opt) {
-                        setForm((p) => ({ ...p, projectId: "", projectCode: "", projectName: "" }));
+                        setForm((p) => ({
+                          ...p,
+                          projectId: "",
+                          projectCode: "",
+                          projectName: "",
+                          ...resetActivity,
+                        }));
+                        setActQuickOptions([]);
                         return;
                       }
                       if (opt.value === "__more__") {
@@ -394,8 +590,11 @@ export default function AddActivityModal({
                         projectId: opt.value,
                         projectCode: opt.label,
                         projectName: opt.name || p.projectName,
+                        ...resetActivity,
                       }));
                       setTouched((t) => ({ ...t, projectId: true, projectName: true }));
+                      // Reload activities for the selected project
+                      setTimeout(loadActivitiesQuick, 0);
                     }}
                     menuPortalTarget={document.body}
                     styles={{
@@ -435,11 +634,16 @@ export default function AddActivityModal({
 
               {mode === "existing" ? (
                 <SelectRS
-                  placeholder="Search or pick activity"
+                  placeholder={
+                    scope === "project" && !form.projectId
+                      ? "Pick a project first"
+                      : "Search or pick activity"
+                  }
                   value={actRsValue}
                   options={actRsOptions}
                   isSearchable
                   isClearable
+                  isDisabled={scope === "project" && !form.projectId}
                   onMenuOpen={() => loadActivitiesQuick()}
                   onInputChange={(input, { action }) => {
                     if (action === "input-change") actSearchRef.current = input || "";
@@ -447,22 +651,46 @@ export default function AddActivityModal({
                   }}
                   onChange={(opt) => {
                     if (!opt) {
-                      setForm((p) => ({ ...p, activityName: "", type: "frontend", description: "" }));
+                      setForm((p) => ({
+                        ...p,
+                        activityName: "",
+                        type: "frontend",
+                        description: "",
+                        dependencies: {
+                          ...p.dependencies,
+                          engineeringEnabled: false,
+                          engineeringModules: [],
+                        },
+                      }));
                       return;
                     }
                     if (opt.value === "__more__") {
                       setOpenActivityPicker(true);
                       return;
                     }
+
+                    // Auto-fill from selected activity (and its modules)
+                    const pickedModules = extractEngineeringModules(opt);
                     setForm((p) => ({
                       ...p,
                       activityName: opt.name || opt.label || "",
                       type: opt.type || "frontend",
                       description: opt.description || "",
+                      dependencies: {
+                        ...p.dependencies,
+                        engineeringEnabled: pickedModules.length > 0,
+                        engineeringModules: pickedModules,
+                      },
                     }));
-                    setTouched((t) => ({ ...t, activityName: true, type: true, description: true }));
+                    setTouched((t) => ({
+                      ...t,
+                      activityName: true,
+                      type: true,
+                      description: true,
+                      dependencies: true,
+                    }));
                   }}
-                  isLoading={isFetchingActs}
+                  isLoading={isFetchingActsGlobal || isFetchingActsByProj}
                   menuPortalTarget={document.body}
                   styles={{
                     menuPortal: (base) => ({ ...base, zIndex: 2000 }),
@@ -558,24 +786,30 @@ export default function AddActivityModal({
                 />
               </Box>
 
-              {/* Engineering modules: multi-select inline with “Search more…”; keep menu open */}
+              {/* Engineering modules: limited to modules present in activities for the selected project */}
               {form.dependencies.engineeringEnabled && (
                 <FormControl size="sm" error={touched.dependencies && !!errors.dependencies}>
                   <FormLabel sx={labelRequiredSx}>Model Entry (Modules)</FormLabel>
                   <SelectRS
-                    placeholder="Pick one or more modules"
+                    placeholder={
+                      scope === "project" && !form.projectId
+                        ? "Pick a project first"
+                        : projectModuleOptions.length > 0
+                        ? "Pick modules used in this project's activities"
+                        : "Pick modules"
+                    }
                     value={form.dependencies.engineeringModules}
                     options={moduleRsOptions}
                     isMulti
                     isSearchable
-                    closeMenuOnSelect={false}  // keep open while selecting
+                    closeMenuOnSelect={false}
+                    isDisabled={scope === "project" && !form.projectId}
                     onMenuOpen={() => loadModulesQuick()}
                     onChange={(opts) => {
                       const arr = Array.isArray(opts) ? opts : [];
                       const hasMore = arr.some((o) => o?.value === "__more__");
                       if (hasMore) {
                         setOpenModulePicker(true);
-                        // remove sentinel if user clicked it
                         const filtered = arr.filter((o) => o.value !== "__more__");
                         setForm((p) => ({
                           ...p,
@@ -597,7 +831,7 @@ export default function AddActivityModal({
                       menuPortal: (base) => ({ ...base, zIndex: 2000 }),
                       control: (base) => ({ ...base, minHeight: 36 }),
                     }}
-                    isLoading={isFetchingModules}
+                    isLoading={isFetchingModules || isSubmitting}
                   />
                   {touched.dependencies && !!errors.dependencies && (
                     <Typography level="body-xs" color="danger" sx={{ mt: 0.5 }}>
@@ -609,7 +843,15 @@ export default function AddActivityModal({
             </Box>
 
             {/* Actions */}
-            <Box sx={{ gridColumn: "1 / -1", display: "flex", gap: 1, justifyContent: "flex-end", mt: 0.5 }}>
+            <Box
+              sx={{
+                gridColumn: "1 / -1",
+                display: "flex",
+                gap: 1,
+                justifyContent: "flex-end",
+                mt: 0.5,
+              }}
+            >
               <Button
                 variant="outlined"
                 color="neutral"
@@ -645,13 +887,24 @@ export default function AddActivityModal({
         searchKey="code or name"
         fetchPage={fetchPage}
         onPick={(row) => {
+          // reset activity & dependencies on pick
           setForm((prev) => ({
             ...prev,
             projectId: row?._id || "",
             projectCode: row?.code || "",
             projectName: row?.name || "",
+            activityName: "",
+            type: "frontend",
+            description: "",
+            dependencies: {
+              ...prev.dependencies,
+              engineeringEnabled: false,
+              engineeringModules: [],
+            },
           }));
           setTouched((t) => ({ ...t, projectId: true, projectName: true }));
+          setOpenProjectPicker(false);
+          setTimeout(loadActivitiesQuick, 0);
         }}
       />
 
@@ -666,13 +919,25 @@ export default function AddActivityModal({
         searchKey="name or description"
         fetchPage={fetchActivityPage}
         onPick={(row) => {
+          const pickedModules = extractEngineeringModules(row);
           setForm((prev) => ({
             ...prev,
             activityName: row?.name || "",
             type: row?.type || "frontend",
             description: row?.description || "",
+            dependencies: {
+              ...prev.dependencies,
+              engineeringEnabled: pickedModules.length > 0,
+              engineeringModules: pickedModules,
+            },
           }));
-          setTouched((t) => ({ ...t, activityName: true, type: true, description: true }));
+          setTouched((t) => ({
+            ...t,
+            activityName: true,
+            type: true,
+            description: true,
+            dependencies: true,
+          }));
           setOpenActivityPicker(false);
         }}
       />
@@ -689,10 +954,15 @@ export default function AddActivityModal({
         fetchPage={fetchModulePage}
         onPick={(row) => {
           setForm((prev) => {
-            const exists = prev.dependencies.engineeringModules.some((opt) => opt.value === row?._id);
+            const exists = prev.dependencies.engineeringModules.some(
+              (opt) => opt.value === row?._id
+            );
             const next = exists
               ? prev.dependencies.engineeringModules
-              : [...prev.dependencies.engineeringModules, { value: row?._id, label: row?.name || "Unnamed", raw: row }];
+              : [
+                  ...prev.dependencies.engineeringModules,
+                  { value: row?._id, label: row?.name || "Unnamed", raw: row },
+                ];
             return {
               ...prev,
               dependencies: { ...prev.dependencies, engineeringModules: next },
