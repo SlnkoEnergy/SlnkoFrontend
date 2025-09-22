@@ -24,7 +24,7 @@ import {
   useTheme,
 } from "@mui/joy";
 import { Calendar } from "lucide-react";
-import { useGetAllExpenseQuery } from "../../redux/Expense/expenseSlice";
+import { useGetAllExpenseQuery } from "../../redux/expenseSlice";
 
 const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
   const navigate = useNavigate();

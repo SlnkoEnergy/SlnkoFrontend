@@ -19,7 +19,7 @@ import {
   useGetExpenseByIdQuery,
   useUpdateExpenseSheetMutation,
   useUpdateExpenseStatusOverallMutation,
-} from "../../../redux/Expense/expenseSlice";
+} from "../../../redux/expenseSlice";
 import PieChartByCategory from "./Expense_Chart";
 const UpdateExpense = () => {
   const navigate = useNavigate();

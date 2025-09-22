@@ -17,13 +17,11 @@ import CommercialOffer from "../pages/BD/Comm_Offer";
 import OfferSummary from "../pages/BD/Offer_Summary";
 import AddProject from "../pages/Projects/Add_Project";
 import AllProjects from "../pages/Projects/AllProject";
-import BillHistory from "../pages/Projects/BillHistory";
 import Edit_Project from "../pages/Projects/Edit_Project";
 import POHistory from "../pages/Projects/PoHistory";
 import Add_Bill from "../pages/SCM/AddBill";
 import Add_Purchase from "../pages/SCM/AddPO";
 import Add_Vendor from "../pages/SCM/AddVendor";
-import Edit_Po from "../pages/SCM/EditPO";
 import PurchaseOrder from "../pages/SCM/POSummary";
 import VendorBill from "../pages/SCM/VendorBill";
 import AddUser from "../pages/Users/AddUser";
@@ -51,7 +49,6 @@ import Add_Expense from "../pages/ExpenseSheet/Expense_Form";
 import Hr_Expense from "../pages/ExpenseSheet/Expense_HR";
 import Expense_Table from "../pages/ExpenseSheet/Expense_Tab";
 import Edit_Expense from "../pages/ExpenseSheet/Update_Expense_Form";
-import Update_Bill from "../pages/SCM/EditBill";
 import PrivateRoute from "./PrivateRoute";
 import TempDashboard from "../pages/Eng/Template_Dashboard";
 import AddFolder from "../pages/Eng/Forms/Add_folder";
@@ -257,14 +254,6 @@ function index() {
         element={
           <PrivateRoute>
             <PurchaseOrder />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/bill_history"
-        element={
-          <PrivateRoute>
-            <BillHistory />
           </PrivateRoute>
         }
       />
@@ -584,24 +573,6 @@ function index() {
         element={
           <PrivateRoute>
             <Add_Bill />
-          </PrivateRoute>
-        }
-      />
-
-      <Route
-        path="/edit_bill"
-        element={
-          <PrivateRoute>
-            <Update_Bill />
-          </PrivateRoute>
-        }
-      />
-
-      <Route
-        path="/edit_po"
-        element={
-          <PrivateRoute>
-            <Edit_Po />
           </PrivateRoute>
         }
       />

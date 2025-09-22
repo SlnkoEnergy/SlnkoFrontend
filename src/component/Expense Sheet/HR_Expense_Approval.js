@@ -34,7 +34,7 @@ import { Calendar } from "lucide-react";
 import {
   useGetAllExpenseQuery,
   useUpdateExpenseStatusOverallMutation,
-} from "../../redux/Expense/expenseSlice";
+} from "../../redux/expenseSlice";
 
 const HrExpense = forwardRef((props, ref) => {
   const navigate = useNavigate();

@@ -2,7 +2,7 @@ import { ResponsivePie } from "@nivo/pie";
 import {
   useGetAllExpenseQuery,
   useGetExpenseByIdQuery,
-} from "../../../redux/Expense/expenseSlice"; // Replace with actual API file path
+} from "../../../redux/expenseSlice"; // Replace with actual API file path
 import React from "react";
 
 const PieChartStatic = () => {
