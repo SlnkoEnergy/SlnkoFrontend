@@ -104,6 +104,7 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
       "Internal",
       "SCM",
       "IT Team",
+      "BD",
     ];
 
     const statuses = [
