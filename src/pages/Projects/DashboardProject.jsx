@@ -1,12 +1,13 @@
 import { Box, Grid } from "@mui/joy";
 import CloudStatCard from "../../component/All_Tasks/TaskDashboardCards";
-import { useGetTaskStatsQuery, useGetUserPerformanceQuery } from "../../redux/globalTaskSlice";
+import { useGetProjectsByStateQuery, useGetTaskStatsQuery, useGetUserPerformanceQuery } from "../../redux/globalTaskSlice";
 import PendingActionsRoundedIcon from "@mui/icons-material/PendingActionsRounded";
 import PlayCircleFilledRoundedIcon from "@mui/icons-material/PlayCircleFilledRounded";
 import TaskAltRoundedIcon from "@mui/icons-material/TaskAltRounded";
 import DoNotDisturbOnRoundedIcon from "@mui/icons-material/DoNotDisturbOnRounded";
 import TeamLeaderboard from "../../component/All_Tasks/TeamLeaderboard";
 import { useMemo } from "react";
+import ProjectsWorkedCard from "../../component/All_Tasks/Charts/ProjectsDonut";
 
 
 const IconBadge = ({ color = "#2563eb", bg = "#eff6ff", icon }) => (
@@ -42,6 +43,10 @@ function Dash_project() {
     const ProjectDetailColumns = [
         {key: "code", label: "Project Code"},
         { key: "name", label: "Project Name"},
+        {key: "current_acitivity", label: "Current Activity"},
+        {key: "next_activity", label: "Upcoming Acitivity"},
+        {key: "current_acitivity_completion_date", label: "Current Activity Completion Date"},
+        {key: "project_state", label: "Project State"}
     ]
 
     const projectDetailRows = useMemo(() => {
@@ -54,9 +59,24 @@ function Dash_project() {
                 current_activity: projectData.current_activity,
                 upcoming_activity: projectData.upcoming_activity,
                 completion_date: projectData.completion_date,
+                project_state: projectData.project_state,
             }
         ];
     }, [projectData])
+
+    const {
+        data: stateRes,
+        isLoading: pbsLoading,
+        isFetching: pbsFetching,
+      } = useGetProjectsByStateQuery();
+
+      const donutData = useMemo(() =>{
+        
+        const dist = stateRes?.district || [];
+        return dist.map((d, i) =>({
+            name: d.state,
+        }))
+      }, [stateRes])
 
     const stats = data?.data || {
         completed: 0,
@@ -190,7 +210,7 @@ function Dash_project() {
                 </Grid>
             </Grid>
 
-            <Grid>
+            <Grid container spacing={2} sx={{ mt: 1 }}>
                 <Grid xs={12} md={8}>
                     <TeamLeaderboard
                         rows={
@@ -202,22 +222,24 @@ function Dash_project() {
                                     current_activity: projectDetailRows.current_activity,
                                     upcoming_activity: projectDetailRows.upcoming_activity,
                                     completion_date: projectDetailRows.completion_date,
+                                    project_state: projectDetailRows.project_state,
                                 }))
                         }
                         title="Project Detail Dashboard"
+                        columns={ProjectDetailColumns}
                     // searchValue={userSearch}
                     // onSearchChange={setUserSearch}
                     />
                 </Grid>
 
-                {/* <Grid xs={12} md={4}>
+                <Grid xs={12} md={4}>
                     <ProjectsWorkedCard
                         title="Projects worked"
                         data={pbsLoading || pbsFetching ? [] : donutData}
-                        total={pbsRes?.totalProjects ?? 0}
+                        total={stateRes?.totalProjects ?? 0}
                         totalLabel="Projects"
                     />
-                </Grid> */}
+                </Grid>
             </Grid>
         </Box>
     )
