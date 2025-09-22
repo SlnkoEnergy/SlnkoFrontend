@@ -217,15 +217,17 @@ export default function AddActivityModal({
   const [actQuickOptions, setActQuickOptions] = useState([]);
   const actSearchRef = useRef("");
 
-  const mapActivitiesToOptions = (list) =>
-    (list || []).slice(0, 7).map((a) => ({
-      value: a._id,
-      label: a.name,
-      name: a.name,
-      description: a.description || "",
-      type: a.type || "",
-      dependency: a.dependency || [],
-    }));
+ const mapActivitiesToOptions = (list, isProjectScope = false) =>
+   (list || []).slice(0, 7).map((a) => ({
+     value: isProjectScope ? (a.activity_id || a._id) : a._id,
+     activity_id: a.activity_id,   
+     embedded_id: a._id,
+     label: a.name,
+     name: a.name,
+     description: a.description || "",
+     type: a.type || "",
+     dependency: a.dependency || [],
+   }));
 
   const loadActivitiesQuick = async () => {
     try {
@@ -240,7 +242,7 @@ export default function AddActivityModal({
           limit: 7,
           search: actSearchRef.current || "",
         }).unwrap();
-        setActQuickOptions(mapActivitiesToOptions(activities));
+        setActQuickOptions(mapActivitiesToOptions(activities, true)); 
       } else {
         const { items } = await fetchActivitiesGlobal({
           search: actSearchRef.current || "",
@@ -502,7 +504,9 @@ export default function AddActivityModal({
       }).unwrap();
 
       const rows = (activities || []).map((a) => ({
-        _id: a._id,
+        _id: a.activity_id || a._id,     // ✅ return MASTER id as row key
+   activity_id: a.activity_id,      // keep master explicitly
+     embedded_id: a._id, 
         name: a.name || "",
         type: a.type || "",
         description: a.description || "",
@@ -801,7 +805,7 @@ export default function AddActivityModal({
                     if (!opt) {
                       setForm((p) => ({
                         ...p,
-                        activityId: opt.value, 
+                        activityId: "", 
                         activityName: "",
                         type: "frontend",
                         description: "",
@@ -823,7 +827,7 @@ export default function AddActivityModal({
                     const { engineering: engOpts, scm: scmOpts } = extractDepsByModel(opt);
                    setForm((p) => ({
   ...p,
-  activityId: opt.value || "",      // <-- save the chosen activity _id
+  activityId: opt.activity_id || opt.value || "",     // <-- save the chosen activity _id
   activityName: opt.name || opt.label || "",
   type: opt.type || "frontend",
   description: opt.description || "",
@@ -1179,7 +1183,7 @@ export default function AddActivityModal({
             extractDepsByModel(row);
           setForm((prev) => ({
             ...prev,
-            activityId: row?._id || "",
+            activityId: row?.activity_id || row?._id || "",
             activityName: row?.name || "",
             type: row?.type || "frontend",
             description: row?.description || "",
