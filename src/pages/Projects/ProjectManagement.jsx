@@ -10,16 +10,91 @@ import Dash_eng from "../../component/EngDashboard";
 import LibraryAddOutlined from "@mui/icons-material/LibraryAddOutlined";
 import AddActivityModal from "./ActivityModal";
 import { useState } from "react";
-import { usePushActivityToProjectMutation } from "../../redux/projectsSlice";
+import {
+  usePushActivityToProjectMutation,
+  useUpdateDependencyMutation,
+} from "../../redux/projectsSlice";
 import { toast } from "react-toastify";
 
 function ProjectManagement() {
   const navigate = useNavigate();
   const [openAdd, setOpenAdd] = useState(false);
-  const [pushActivity, { isLoading }] = usePushActivityToProjectMutation();
-    const handleCreate = async (payload) => {
-    // payload comes from modal: { project_id, project_name, name, description, type }
+
+  const [pushActivity, { isLoading: isPushing }] =
+    usePushActivityToProjectMutation();
+  const [updateDependency, { isLoading: isUpdatingDeps }] =
+    useUpdateDependencyMutation();
+
+  const isLoading = isPushing || isUpdatingDeps;
+
+  const handleCreate = async (payload) => {
+    // payload comes from AddActivityModal
+    // expected fields:
+    // - __mode: "new" | "existing"
+    // - __scope: "project" | "global"
+    // - project_id (when scope=project)
+    // - name, description, type (always present)
+    // - activityId (when mode=existing; master Activity _id)
+    // - dependencies (array of { model, model_id }) – the modal assembles this
+
     try {
+      // EXISTING activity: update dependencies
+      if (payload && payload.__mode === "existing") {
+        const id =
+          payload.activityId ||
+          payload.id ||
+          payload.activity_id ||
+          payload._id ||
+          "";
+
+        if (!id) {
+          console.error("Missing master Activity _id for dependency update. Payload:", payload);
+          toast.error("Missing activity id for existing activity.");
+          return;
+        }
+
+        // Build deps if modal didn't pass the 'dependencies' array
+        const deps = Array.isArray(payload.dependencies)
+          ? payload.dependencies
+          : [];
+
+        if (!deps.length) {
+          toast.error("Please select at least one dependency.");
+          return;
+        }
+
+        const isGlobal = payload.__scope === "global";
+        if (!isGlobal && !payload.project_id) {
+          toast.error("Missing project id for project-scoped update.");
+          return;
+        }
+
+        // Helpful debug log – remove if noisy
+        // console.log("updateDependency call:", {
+        //   id,
+        //   global: isGlobal,
+        //   projectId: isGlobal ? undefined : payload.project_id,
+        //   body: { dependencies: deps },
+        // });
+
+        await updateDependency({
+          id,
+          global: isGlobal,
+          projectId: isGlobal ? undefined : payload.project_id,
+          body: { dependencies: deps },
+        }).unwrap();
+
+        toast.success("Dependencies updated successfully");
+        setOpenAdd(false);
+        return;
+      }
+
+      // NEW activity: push into project
+      if (!payload?.project_id) {
+        toast.error("Pick a project first.");
+        return;
+      }
+
       await pushActivity({
         projectId: payload.project_id,
         name: payload.name,
@@ -30,16 +105,15 @@ function ProjectManagement() {
       toast.success("Activity added to project");
       setOpenAdd(false);
     } catch (err) {
-      console.error("pushactivity error:", err);
-      toast.error(err?.data?.message || "Failed to add activity");
+      console.error("Create/update error:", err);
+      toast.error(err?.data?.message || err?.error || "Something went wrong. Please try again.");
     }
   };
+
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
-      <Box
-        sx={{ display: "flex", minHeight: "100dvh", flexDirection: "column" }}
-      >
+      <Box sx={{ display: "flex", minHeight: "100dvh", flexDirection: "column" }}>
         <Sidebar />
         <MainHeader title="Projects" sticky>
           <Box display="flex" gap={1}>
@@ -55,9 +129,7 @@ function ProjectManagement() {
                 borderRadius: "6px",
                 px: 1.5,
                 py: 0.5,
-                "&:hover": {
-                  bgcolor: "rgba(255,255,255,0.15)",
-                },
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
               }}
             >
               Dashboard
@@ -75,9 +147,7 @@ function ProjectManagement() {
                 borderRadius: "6px",
                 px: 1.5,
                 py: 0.5,
-                "&:hover": {
-                  bgcolor: "rgba(255,255,255,0.15)",
-                },
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
               }}
             >
               All Projects
@@ -95,9 +165,7 @@ function ProjectManagement() {
                 borderRadius: "6px",
                 px: 1.5,
                 py: 0.5,
-                "&:hover": {
-                  bgcolor: "rgba(255,255,255,0.15)",
-                },
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
               }}
             >
               Templates
@@ -123,12 +191,13 @@ function ProjectManagement() {
                 height: "8px",
               }}
               startDecorator={<LibraryAddOutlined />}
-              onClick={() => setOpenAdd(true)}// or open modal
+              onClick={() => setOpenAdd(true)}
             >
               Add Activity
             </Button>
           }
         />
+
         <Box
           component="main"
           className="MainContent"
@@ -154,4 +223,5 @@ function ProjectManagement() {
     </CssVarsProvider>
   );
 }
+
 export default ProjectManagement;

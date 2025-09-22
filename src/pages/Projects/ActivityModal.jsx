@@ -26,7 +26,8 @@ import {
   useLazyGetProjectSearchDropdownQuery,
   useLazyGetActivitiesByNameQuery,
   useLazyGetAllModulesQuery, // modules API hook from your slice
-  useLazyNameSearchActivityByProjectIdQuery, // ⬅️ NEW: project-scoped activities
+  useLazyNameSearchActivityByProjectIdQuery,
+  useLazyNamesearchMaterialCategoriesQuery, // project-scoped activities
 } from "../../redux/projectsSlice";
 import SearchPickerModal from "../../component/SearchPickerModal";
 
@@ -44,12 +45,14 @@ export default function AddActivityModal({
     projectCode: "",
     projectName: "",
     activityName: "",
+    activityId: "",
     type: "frontend",
     description: "",
     dependencies: {
       engineeringEnabled: false,
-      engineeringModules: [], // [{ value: _id, label: name, raw }]
+      engineeringModules: [], // [{ value, label, raw }]
       scmEnabled: false,
+      scmItems: [], // [{ value, label, raw }]
     },
   });
 
@@ -57,6 +60,8 @@ export default function AddActivityModal({
   const [openProjectPicker, setOpenProjectPicker] = useState(false);
   const [openActivityPicker, setOpenActivityPicker] = useState(false);
   const [openModulePicker, setOpenModulePicker] = useState(false);
+  const [openScmPicker, setOpenScmPicker] = useState(false);
+  const [scmQuickOptions, setScmQuickOptions] = useState([]);
 
   const RS_MORE = { label: "Search more…", value: "__more__" };
 
@@ -71,35 +76,70 @@ export default function AddActivityModal({
     });
   };
 
-  const extractEngineeringModules = (activityOrOpt) => {
+  // Split dependencies from an activity into Engineering (moduleTemplate*) and SCM (MaterialCategory)
+  const extractDepsByModel = (activityOrOpt) => {
     const deps = Array.isArray(activityOrOpt?.dependency)
       ? activityOrOpt.dependency
       : [];
 
-    const mods = deps
-      .filter(
-        (d) =>
-          String(d?.model).toLowerCase().includes("module") &&
-          d?.model_id?._id &&
-          (d?.model_id?.name || d?.model_id?.title)
-      )
-      .map((d) => ({
-        value: String(d.model_id._id),
-        label: String(d.model_id.name || d.model_id.title),
-        raw: d.model_id,
-      }));
+    const toOption = (d) => {
+      const isObj = d?.model_id && typeof d.model_id === "object";
+      const id = isObj ? d.model_id._id : d.model_id;
+      const label =
+        d?.model_name ||
+        (isObj && (d.model_id.name || d.model_id.title)) ||
+        "Unnamed";
+      const raw = isObj
+        ? { ...d.model_id, model_name: d?.model_name }
+        : {
+            _id: id,
+            name: d?.model_name || "Unnamed",
+            model_name: d?.model_name,
+          };
+      return { value: String(id), label: String(label), raw };
+    };
 
-    return uniqBy(mods, (m) => m.value);
+    const engineering = [];
+    const scm = [];
+
+    deps.forEach((d) => {
+      const model = String(d?.model || "").toLowerCase();
+      if (
+        model === "moduletemplate" ||
+        model === "moduletemplates" ||
+        model.includes("module")
+      ) {
+        engineering.push(toOption(d));
+      } else if (model === "materialcategory") {
+        scm.push(toOption(d));
+      }
+    });
+
+    return {
+      engineering: uniqBy(engineering, (m) => m.value),
+      scm: uniqBy(scm, (m) => m.value),
+    };
   };
 
   /* ---------------- Project quick list (max 7) ---------------- */
   const [quickOptions, setQuickOptions] = useState([]);
-  const [fetchProjects, { isFetching }] = useLazyGetProjectSearchDropdownQuery();
+  const [fetchProjects, { isFetching }] =
+    useLazyGetProjectSearchDropdownQuery();
 
+  const [fetchMaterialCats, { isFetching: isFetchingScm }] =
+    useLazyNamesearchMaterialCategoriesQuery();
   const loadQuickProjects = async () => {
     try {
-      const res = await fetchProjects({ search: "", page: 1, limit: 7 }).unwrap();
-      const arr = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+      const res = await fetchProjects({
+        search: "",
+        page: 1,
+        limit: 7,
+      }).unwrap();
+      const arr = Array.isArray(res?.data)
+        ? res.data
+        : Array.isArray(res)
+        ? res
+        : [];
       const limited = arr.slice(0, 7);
       setQuickOptions(
         limited.map((p) => ({
@@ -116,22 +156,63 @@ export default function AddActivityModal({
     if (open) loadQuickProjects();
   }, [open]); // eslint-disable-line
 
+  const loadScmQuick = async (q = "") => {
+    try {
+      const res = await fetchMaterialCats({
+        search: "",
+        page: 1,
+        limit: 7,
+        pr: scope === "project",
+        project_id: scope === "project" ? form.projectId : undefined,
+      }).unwrap();
+
+      const list = Array.isArray(res?.data) ? res.data : [];
+      setScmQuickOptions(
+        list.slice(0, 7).map((m) => ({
+          value: String(m._id),
+          label: String(m.name || "Unnamed"),
+          raw: m,
+        }))
+      );
+    } catch {
+      setScmQuickOptions([]);
+    }
+  };
+
+  // refresh quick SCM if modal opens or deps toggled on
+  useEffect(() => {
+    if (open && form.dependencies.scmEnabled) loadScmQuick();
+  }, [open, form.dependencies.scmEnabled, scope, form.projectId]); // eslint-disable-line
+
   const rsOptions = useMemo(
     () => [
-      ...quickOptions.map((p) => ({ label: p.code, value: p._id, name: p.name })),
+      ...quickOptions.map((p) => ({
+        label: p.code,
+        value: p._id,
+        name: p.name,
+      })),
       RS_MORE,
     ],
     [quickOptions]
   );
   const rsValue = form.projectId
-    ? { value: form.projectId, label: form.projectCode || "", name: form.projectName }
+    ? {
+        value: form.projectId,
+        label: form.projectCode || "",
+        name: form.projectName,
+      }
     : null;
+
+  const scmRsOptions = useMemo(
+    () => [...scmQuickOptions, RS_MORE],
+    [scmQuickOptions]
+  );
 
   /* ---------------- Activities quick list (max 7) ---------------- */
   const [fetchActivitiesGlobal, { isFetching: isFetchingActsGlobal }] =
     useLazyGetActivitiesByNameQuery();
   const [fetchActivitiesByProject, { isFetching: isFetchingActsByProj }] =
-    useLazyNameSearchActivityByProjectIdQuery(); // ⬅️ NEW
+    useLazyNameSearchActivityByProjectIdQuery();
 
   const [actQuickOptions, setActQuickOptions] = useState([]);
   const actSearchRef = useRef("");
@@ -152,7 +233,6 @@ export default function AddActivityModal({
         setActQuickOptions([]);
         return;
       }
-      // Scope-aware loading
       if (scope === "project" && form.projectId) {
         const { activities } = await fetchActivitiesByProject({
           projectId: form.projectId,
@@ -178,7 +258,6 @@ export default function AddActivityModal({
     if (open && mode === "existing") loadActivitiesQuick();
   }, [open, mode]); // eslint-disable-line
 
-  // Reload activities when project changes (for existing+project scope)
   useEffect(() => {
     if (mode === "existing" && scope === "project") {
       loadActivitiesQuick();
@@ -186,30 +265,39 @@ export default function AddActivityModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.projectId, scope, mode]);
 
-  const actRsOptions = useMemo(() => [...actQuickOptions, RS_MORE], [actQuickOptions]);
-  const actRsValue =
-    form.activityName ? { value: form.activityName, label: form.activityName } : null;
+  const actRsOptions = useMemo(
+    () => [...actQuickOptions, RS_MORE],
+    [actQuickOptions]
+  );
+  const actRsValue = form.activityName
+    ? { value: form.activityName, label: form.activityName }
+    : null;
 
-  /* ---------------- Project-scoped modules from activities ---------------- */
+  /* ---------------- Project-scoped modules from activities (Engineering only) ---------------- */
   const [projectModuleOptions, setProjectModuleOptions] = useState([]);
 
-  // When engineering is enabled for a project, build module options
   useEffect(() => {
     const loadProjectModules = async () => {
       try {
-        if (scope !== "project" || !form.projectId || !form.dependencies.engineeringEnabled) {
+        if (
+          scope !== "project" ||
+          !form.projectId ||
+          !form.dependencies.engineeringEnabled
+        ) {
           setProjectModuleOptions([]);
           return;
         }
-        // Fetch a wider page to aggregate modules from activities
+        // Aggregate modules across many activities in the selected project
         const { activities } = await fetchActivitiesByProject({
           projectId: form.projectId,
           page: 1,
-          limit: 100, // adjust if needed
+          limit: 100,
           search: "",
         }).unwrap();
 
-        const all = (activities || []).flatMap((a) => extractEngineeringModules(a));
+        const all = (activities || [])
+          .map((a) => extractDepsByModel(a).engineering)
+          .flat();
         setProjectModuleOptions(uniqBy(all, (m) => m.value));
       } catch {
         setProjectModuleOptions([]);
@@ -224,22 +312,23 @@ export default function AddActivityModal({
   ]);
 
   /* ---------------- Modules quick list (max 7) ---------------- */
-  const [fetchModules, { isFetching: isFetchingModules }] = useLazyGetAllModulesQuery();
+  const [fetchModules, { isFetching: isFetchingModules }] =
+    useLazyGetAllModulesQuery();
   const [moduleQuickOptions, setModuleQuickOptions] = useState([]);
 
-  const loadModulesQuick = async () => {
+  const loadModulesQuick = async (q = "") => {
     try {
-      // If we have project-scoped module options, prefer those
-      if (scope === "project" && form.projectId && projectModuleOptions.length > 0) {
-        setModuleQuickOptions(projectModuleOptions.slice(0, 7));
-        return;
-      }
-      const list = await fetchModules({ search: "", page: 1, limit: 7 }).unwrap();
-      const limited = (Array.isArray(list) ? list : []).slice(0, 7);
+      // Always fetch from API (independent of project scope)
+      const list = await fetchModules({
+        search: q,
+        page: 1,
+        limit: 7,
+      }).unwrap();
+      const rows = Array.isArray(list) ? list : [];
       setModuleQuickOptions(
-        limited.map((m) => ({
-          value: m._id,
-          label: m.name,
+        rows.slice(0, 7).map((m) => ({
+          value: String(m._id),
+          label: String(m.name || "Unnamed"),
           raw: m,
         }))
       );
@@ -257,14 +346,10 @@ export default function AddActivityModal({
     projectModuleOptions.length,
   ]); // eslint-disable-line
 
-  const moduleRsOptions = useMemo(() => {
-    // If project-scoped modules exist, use them; else fall back to generic list
-    const base =
-      scope === "project" && form.projectId && projectModuleOptions.length > 0
-        ? projectModuleOptions
-        : moduleQuickOptions;
-    return [...base, RS_MORE];
-  }, [moduleQuickOptions, projectModuleOptions, scope, form.projectId]);
+  const moduleRsOptions = useMemo(
+    () => [...moduleQuickOptions, RS_MORE],
+    [moduleQuickOptions]
+  );
 
   /* ---------------- Validation ---------------- */
   const needProject = scope === "project";
@@ -290,7 +375,10 @@ export default function AddActivityModal({
             (!form.dependencies.engineeringModules ||
               form.dependencies.engineeringModules.length === 0),
           ...(needProject
-            ? { projectId: !form.projectId, projectName: !form.projectName.trim() }
+            ? {
+                projectId: !form.projectId,
+                projectName: !form.projectName.trim(),
+              }
             : {}),
         };
   const hasErrors = Object.values(errors).some(Boolean);
@@ -323,23 +411,32 @@ export default function AddActivityModal({
 
     // Build dependencies payload
     const dependencies = [];
-    if (form.dependencies.engineeringEnabled && form.dependencies.engineeringModules?.length) {
+    if (
+      form.dependencies.engineeringEnabled &&
+      form.dependencies.engineeringModules?.length
+    ) {
       form.dependencies.engineeringModules.forEach((opt) => {
-        dependencies.push({ model: "module", model_id: opt.value });
+        dependencies.push({ model: "moduleTemplate", model_id: opt.value });
+      });
+    }
+    if (form.dependencies.scmEnabled && form.dependencies.scmItems?.length) {
+      form.dependencies.scmItems.forEach((opt) => {
+        dependencies.push({ model: "MaterialCategory", model_id: opt.value });
       });
     }
 
     const payload = {
-      name: form.activityName.trim(),
-      description: form.description.trim(),
-      type: form.type.toLowerCase(),
-      ...(scope === "project" && form.projectId
-        ? { project_id: form.projectId, project_name: form.projectName }
-        : {}),
-      ...(dependencies.length ? { dependencies } : {}),
-      __mode: mode,
-      __scope: scope,
-    };
+  name: form.activityName.trim(),
+  description: form.description.trim(),
+  type: form.type.toLowerCase(),
+  ...(scope === "project" && form.projectId
+    ? { project_id: form.projectId, project_name: form.projectName }
+    : {}),
+  ...(dependencies.length ? { dependencies } : {}),   // already built above
+  activityId: form.activityId || "",                  // <-- add this
+  __mode: mode,
+  __scope: scope,
+};
 
     onCreate?.(payload);
   };
@@ -355,7 +452,11 @@ export default function AddActivityModal({
       page: page || 1,
       limit: pageSize || 10,
     }).unwrap();
-    const arr = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+    const arr = Array.isArray(res?.data)
+      ? res.data
+      : Array.isArray(res)
+      ? res
+      : [];
     const rows = arr.map((p) => ({
       _id: p._id || p.id,
       code: p.code || p.project_id || p.p_id || "",
@@ -364,79 +465,89 @@ export default function AddActivityModal({
     const total = res?.total ?? res?.pagination?.total ?? rows.length;
     return { rows, total };
   };
+  const fetchScmPage = async ({ page, search, pageSize }) => {
+    try {
+      const res = await fetchMaterialCats({
+        search: search || "",
+        page: page || 1,
+        limit: pageSize || 10,
+        pr: scope === "project",
+        project_id: scope === "project" ? form.projectId : undefined,
+      }).unwrap();
 
- const fetchActivityPage = async ({ page, search, pageSize }) => {
-  // Scope-aware provider for modal
-  if (scope === "project" && form.projectId) {
-    const { activities, total } = await fetchActivitiesByProject({
-      projectId: form.projectId,
-      page: page || 1,
-      limit: pageSize || 50,   // respect modal pageSize
+      const rows = (res?.data || []).map((m) => ({
+        _id: m._id,
+        name: m.name || "Unnamed",
+        description: m.description || "",
+      }));
+
+      const total =
+        res?.pagination?.total != null ? res.pagination.total : rows.length;
+
+      return { rows, total };
+    } catch (e) {
+      // Don’t let the modal crash on network/validation errors
+      console.error("SCM fetchPage failed:", e);
+      return { rows: [], total: 0 };
+    }
+  };
+
+  const fetchActivityPage = async ({ page, search, pageSize }) => {
+    if (scope === "project" && form.projectId) {
+      const { activities, total } = await fetchActivitiesByProject({
+        projectId: form.projectId,
+        page: page || 1,
+        limit: pageSize || 50,
+        search: search || "",
+      }).unwrap();
+
+      const rows = (activities || []).map((a) => ({
+        _id: a._id,
+        name: a.name || "",
+        type: a.type || "",
+        description: a.description || "",
+        dependency: a.dependency || [],
+      }));
+      return { rows, total: total ?? rows.length };
+    }
+
+    const { items, pagination } = await fetchActivitiesGlobal({
       search: search || "",
+      page: page || 1,
+      limit: pageSize || 50,
     }).unwrap();
 
-    const rows = (activities || []).map((a) => ({
+    const rows = (items || []).map((a) => ({
       _id: a._id,
       name: a.name || "",
       type: a.type || "",
       description: a.description || "",
       dependency: a.dependency || [],
     }));
-    return { rows, total: total ?? rows.length };
-  }
-
-  // Global fallback
-  const { items, pagination } = await fetchActivitiesGlobal({
-    search: search || "",
-    page: page || 1,
-    limit: pageSize || 50,     // respect modal pageSize
-  }).unwrap();
-
-  const rows = (items || []).map((a) => ({
-    _id: a._id,
-    name: a.name || "",
-    type: a.type || "",
-    description: a.description || "",
-    dependency: a.dependency || [],
-  }));
-  const total = pagination?.total ?? rows.length;
-  return { rows, total };
-};
-
-
-  const fetchModulePage = async ({ page, search, pageSize }) => {
-    // If project-scoped module options exist, serve those here as the “source of truth”
-    if (scope === "project" && form.projectId && projectModuleOptions.length > 0) {
-      const filtered = (projectModuleOptions || []).filter((m) => {
-        const q = (search || "").trim().toLowerCase();
-        return !q || m.label.toLowerCase().includes(q);
-      });
-      const start = ((page || 1) - 1) * (pageSize || 10);
-      const rows = filtered.slice(start, start + (pageSize || 10)).map((m) => ({
-        _id: m.value,
-        name: m.label,
-        category: m.raw?.category || "",
-        description: m.raw?.description || "",
-      }));
-      return { rows, total: filtered.length };
-    }
-
-    // Fallback to full modules API
-    const list = await fetchModules({
-      search: search || "",
-      page: page || 1,
-      limit: pageSize || 10,
-    }).unwrap();
-    const rows = (Array.isArray(list) ? list : []).map((m) => ({
-      _id: m._id,
-      name: m.name || "Unnamed",
-      category: m.category || "",
-      description: m.description || "",
-    }));
-    const total = rows.length; // adjust when backend paginates
+    const total = pagination?.total ?? rows.length;
     return { rows, total };
   };
 
+  const fetchModulePage = async ({ page, search, pageSize }) => {
+    try {
+      // Always fetch from API (independent of project scope), same pattern as SCM
+      const list = await fetchModules({
+        search: search || "",
+        page: page || 1,
+        limit: pageSize || 10,
+      }).unwrap();
+      const rows = (Array.isArray(list) ? list : []).map((m) => ({
+        _id: m._id,
+        name: m.name || "Unnamed",
+
+        description: m.description || "",
+      }));
+      return { rows, total: rows.length };
+    } catch (e) {
+      console.error("Modules fetchPage failed:", e);
+      return { rows: [], total: 0 };
+    }
+  };
   /* ---------------- Columns for pickers ---------------- */
   const projectPickerColumns = [
     { key: "code", label: "Project Id", width: 220 },
@@ -449,7 +560,7 @@ export default function AddActivityModal({
   ];
   const modulePickerColumns = [
     { key: "name", label: "Module Name", width: 260 },
-    { key: "category", label: "Category", width: 160 },
+
     { key: "description", label: "Description" },
   ];
 
@@ -459,7 +570,13 @@ export default function AddActivityModal({
         <ModalDialog
           aria-labelledby="add-activity-title"
           variant="outlined"
-          sx={{ width: 720, maxWidth: "95vw", borderRadius: "lg", boxShadow: "lg", p: 0 }}
+          sx={{
+            width: 720,
+            maxWidth: "95vw",
+            borderRadius: "lg",
+            boxShadow: "lg",
+            p: 0,
+          }}
         >
           {/* Header */}
           <Box
@@ -484,14 +601,25 @@ export default function AddActivityModal({
               variant="plain"
               sx={{ borderRadius: "sm" }}
               slots={{ root: Button }}
-              slotProps={{ root: { size: "sm", variant: "plain", color: "neutral" } }}
+              slotProps={{
+                root: { size: "sm", variant: "plain", color: "neutral" },
+              }}
             >
               <CloseRoundedIcon fontSize="small" />
             </ModalClose>
           </Box>
 
           {/* Toggles: Mode + Scope */}
-          <Box sx={{ px: 2, pt: 1, pb: 0, display: "flex", gap: 2, flexWrap: "wrap" }}>
+          <Box
+            sx={{
+              px: 2,
+              pt: 1,
+              pb: 0,
+              display: "flex",
+              gap: 2,
+              flexWrap: "wrap",
+            }}
+          >
             <RadioGroup
               orientation="horizontal"
               value={mode}
@@ -513,11 +641,13 @@ export default function AddActivityModal({
               onChange={(e) => {
                 const next = e.target.value;
                 setScope(next);
-                // Reset project fields error when going global
                 if (next === "global") {
-                  setTouched((t) => ({ ...t, projectId: false, projectName: false }));
+                  setTouched((t) => ({
+                    ...t,
+                    projectId: false,
+                    projectName: false,
+                  }));
                 }
-                // Reload activities for new scope
                 setTimeout(loadActivitiesQuick, 0);
               }}
               sx={{ gap: 1, ml: { xs: 0, md: "auto" } }}
@@ -547,7 +677,10 @@ export default function AddActivityModal({
                 <FormControl
                   size="sm"
                   error={touched.projectId && !!errors.projectId}
-                  sx={{ overflow: "visible", gridColumn: { xs: "1 / -1", md: "1 / 2" } }}
+                  sx={{
+                    overflow: "visible",
+                    gridColumn: { xs: "1 / -1", md: "1 / 2" },
+                  }}
                 >
                   <FormLabel sx={labelRequiredSx}>Project Id</FormLabel>
                   <SelectRS
@@ -558,7 +691,6 @@ export default function AddActivityModal({
                     isSearchable
                     onMenuOpen={() => loadQuickProjects()}
                     onChange={(opt) => {
-                      // Reset activity + dependencies on project change
                       const resetActivity = {
                         activityName: "",
                         type: "frontend",
@@ -567,6 +699,8 @@ export default function AddActivityModal({
                           ...form.dependencies,
                           engineeringEnabled: false,
                           engineeringModules: [],
+                          scmEnabled: false,
+                          scmItems: [],
                         },
                       };
 
@@ -575,6 +709,8 @@ export default function AddActivityModal({
                           ...p,
                           projectId: "",
                           projectCode: "",
+                          activityId: "",           
+                          activityName: "",
                           projectName: "",
                           ...resetActivity,
                         }));
@@ -592,8 +728,11 @@ export default function AddActivityModal({
                         projectName: opt.name || p.projectName,
                         ...resetActivity,
                       }));
-                      setTouched((t) => ({ ...t, projectId: true, projectName: true }));
-                      // Reload activities for the selected project
+                      setTouched((t) => ({
+                        ...t,
+                        projectId: true,
+                        projectName: true,
+                      }));
                       setTimeout(loadActivitiesQuick, 0);
                     }}
                     menuPortalTarget={document.body}
@@ -610,14 +749,19 @@ export default function AddActivityModal({
                   )}
                 </FormControl>
 
-                <FormControl size="sm" error={touched.projectName && !!errors.projectName}>
+                <FormControl
+                  size="sm"
+                  error={touched.projectName && !!errors.projectName}
+                >
                   <FormLabel sx={labelRequiredSx}>Project Name</FormLabel>
                   <Input
                     size="sm"
                     readOnly
                     value={form.projectName}
                     placeholder="Auto-filled after picking Project Id"
-                    onBlur={() => setTouched((t) => ({ ...t, projectName: true }))}
+                    onBlur={() =>
+                      setTouched((t) => ({ ...t, projectName: true }))
+                    }
                   />
                   {touched.projectName && !!errors.projectName && (
                     <Typography level="body-xs" color="danger" sx={{ mt: 0.5 }}>
@@ -629,7 +773,10 @@ export default function AddActivityModal({
             )}
 
             {/* Activity Name */}
-            <FormControl size="sm" error={touched.activityName && !!errors.activityName}>
+            <FormControl
+              size="sm"
+              error={touched.activityName && !!errors.activityName}
+            >
               <FormLabel sx={labelRequiredSx}>Activity Name</FormLabel>
 
               {mode === "existing" ? (
@@ -646,13 +793,15 @@ export default function AddActivityModal({
                   isDisabled={scope === "project" && !form.projectId}
                   onMenuOpen={() => loadActivitiesQuick()}
                   onInputChange={(input, { action }) => {
-                    if (action === "input-change") actSearchRef.current = input || "";
+                    if (action === "input-change")
+                      actSearchRef.current = input || "";
                     return input;
                   }}
                   onChange={(opt) => {
                     if (!opt) {
                       setForm((p) => ({
                         ...p,
+                        activityId: opt.value, 
                         activityName: "",
                         type: "frontend",
                         description: "",
@@ -660,6 +809,8 @@ export default function AddActivityModal({
                           ...p.dependencies,
                           engineeringEnabled: false,
                           engineeringModules: [],
+                          scmEnabled: false,
+                          scmItems: [],
                         },
                       }));
                       return;
@@ -669,19 +820,21 @@ export default function AddActivityModal({
                       return;
                     }
 
-                    // Auto-fill from selected activity (and its modules)
-                    const pickedModules = extractEngineeringModules(opt);
-                    setForm((p) => ({
-                      ...p,
-                      activityName: opt.name || opt.label || "",
-                      type: opt.type || "frontend",
-                      description: opt.description || "",
-                      dependencies: {
-                        ...p.dependencies,
-                        engineeringEnabled: pickedModules.length > 0,
-                        engineeringModules: pickedModules,
-                      },
-                    }));
+                    const { engineering: engOpts, scm: scmOpts } = extractDepsByModel(opt);
+                   setForm((p) => ({
+  ...p,
+  activityId: opt.value || "",      // <-- save the chosen activity _id
+  activityName: opt.name || opt.label || "",
+  type: opt.type || "frontend",
+  description: opt.description || "",
+  dependencies: {
+    ...p.dependencies,
+    engineeringEnabled: engOpts.length > 0,
+    engineeringModules: engOpts,
+    scmEnabled: scmOpts.length > 0,
+    scmItems: scmOpts,
+  },
+}));
                     setTouched((t) => ({
                       ...t,
                       activityName: true,
@@ -702,8 +855,12 @@ export default function AddActivityModal({
                   size="sm"
                   placeholder="Enter activity name"
                   value={form.activityName}
-                  onChange={(e) => setForm((p) => ({ ...p, activityName: e.target.value }))}
-                  onBlur={() => setTouched((t) => ({ ...t, activityName: true }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, activityName: e.target.value }))
+                  }
+                  onBlur={() =>
+                    setTouched((t) => ({ ...t, activityName: true }))
+                  }
                 />
               )}
 
@@ -744,7 +901,9 @@ export default function AddActivityModal({
                 minRows={3}
                 placeholder="Describe the activity"
                 value={form.description}
-                onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, description: e.target.value }))
+                }
                 onBlur={() => setTouched((t) => ({ ...t, description: true }))}
               />
               {touched.description && !!errors.description && (
@@ -758,7 +917,14 @@ export default function AddActivityModal({
             <Box sx={{ gridColumn: "1 / -1", display: "grid", gap: 1 }}>
               <Typography level="title-sm">Dependencies</Typography>
 
-              <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 2,
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
                 <Checkbox
                   label="Engineering"
                   checked={form.dependencies.engineeringEnabled}
@@ -779,17 +945,25 @@ export default function AddActivityModal({
                   onChange={(e) =>
                     setForm((p) => ({
                       ...p,
-                      dependencies: { ...p.dependencies, scmEnabled: e.target.checked },
+                      dependencies: {
+                        ...p.dependencies,
+                        scmEnabled: e.target.checked,
+                      },
                     }))
                   }
                   disabled={isSubmitting}
                 />
               </Box>
 
-              {/* Engineering modules: limited to modules present in activities for the selected project */}
+              {/* Engineering modules */}
               {form.dependencies.engineeringEnabled && (
-                <FormControl size="sm" error={touched.dependencies && !!errors.dependencies}>
-                  <FormLabel sx={labelRequiredSx}>Model Entry (Modules)</FormLabel>
+                <FormControl
+                  size="sm"
+                  error={touched.dependencies && !!errors.dependencies}
+                >
+                  <FormLabel sx={labelRequiredSx}>
+                    Model Entry (Modules)
+                  </FormLabel>
                   <SelectRS
                     placeholder={
                       scope === "project" && !form.projectId
@@ -804,13 +978,20 @@ export default function AddActivityModal({
                     isSearchable
                     closeMenuOnSelect={false}
                     isDisabled={scope === "project" && !form.projectId}
-                    onMenuOpen={() => loadModulesQuick()}
+                    onMenuOpen={() => loadModulesQuick("")}
+                    onInputChange={(input, meta) => {
+                      if (meta.action === "input-change")
+                        loadModulesQuick(input || "");
+                      return input;
+                    }}
                     onChange={(opts) => {
                       const arr = Array.isArray(opts) ? opts : [];
                       const hasMore = arr.some((o) => o?.value === "__more__");
                       if (hasMore) {
                         setOpenModulePicker(true);
-                        const filtered = arr.filter((o) => o.value !== "__more__");
+                        const filtered = arr.filter(
+                          (o) => o.value !== "__more__"
+                        );
                         setForm((p) => ({
                           ...p,
                           dependencies: {
@@ -822,10 +1003,15 @@ export default function AddActivityModal({
                       }
                       setForm((p) => ({
                         ...p,
-                        dependencies: { ...p.dependencies, engineeringModules: arr },
+                        dependencies: {
+                          ...p.dependencies,
+                          engineeringModules: arr,
+                        },
                       }));
                     }}
-                    onBlur={() => setTouched((t) => ({ ...t, dependencies: true }))}
+                    onBlur={() =>
+                      setTouched((t) => ({ ...t, dependencies: true }))
+                    }
                     menuPortalTarget={document.body}
                     styles={{
                       menuPortal: (base) => ({ ...base, zIndex: 2000 }),
@@ -838,6 +1024,74 @@ export default function AddActivityModal({
                       Please pick at least one module.
                     </Typography>
                   )}
+                </FormControl>
+              )}
+
+              {/* SCM (Material Categories) */}
+              {form.dependencies.scmEnabled && (
+                <FormControl size="sm">
+                  <FormLabel sx={labelRequiredSx}>
+                    SCM (Material Categories)
+                  </FormLabel>
+                  <SelectRS
+                    placeholder={
+                      form.dependencies.scmItems?.length
+                        ? "Pick SCM categories"
+                        : "Search or pick SCM category"
+                    }
+                    value={form.dependencies.scmItems}
+                    options={[...scmQuickOptions, RS_MORE]}
+                    isMulti
+                    isSearchable
+                    closeMenuOnSelect={false}
+                    // ✅ Allow independent use in global scope. Only block in project scope without projectId
+                    isDisabled={scope === "project" && !form.projectId}
+                    onMenuOpen={() => loadScmQuick("")} // ✅ fetch initial page
+                    onInputChange={(input, meta) => {
+                      // ✅ remote search
+                      if (meta.action === "input-change")
+                        loadScmQuick(input || "");
+                      return input;
+                    }}
+                    onChange={(opts) => {
+                      const arr = Array.isArray(opts) ? opts : [];
+                      const hasMore = arr.some((o) => o?.value === "__more__");
+                      if (hasMore) {
+                        setOpenScmPicker(true);
+                        const filtered = arr.filter(
+                          (o) => o.value !== "__more__"
+                        );
+                        setForm((p) => ({
+                          ...p,
+                          dependencies: {
+                            ...p.dependencies,
+                            scmItems: filtered,
+                            scmEnabled:
+                              filtered.length > 0 || p.dependencies.scmEnabled,
+                          },
+                        }));
+                        return;
+                      }
+                      setForm((p) => ({
+                        ...p,
+                        dependencies: {
+                          ...p.dependencies,
+                          scmItems: arr,
+                          scmEnabled:
+                            arr.length > 0 || p.dependencies.scmEnabled,
+                        },
+                      }));
+                    }}
+                    onBlur={() =>
+                      setTouched((t) => ({ ...t, dependencies: true }))
+                    }
+                    menuPortalTarget={document.body}
+                    styles={{
+                      menuPortal: (base) => ({ ...base, zIndex: 2000 }),
+                      control: (base) => ({ ...base, minHeight: 36 }),
+                    }}
+                    isLoading={isFetchingScm || isSubmitting}
+                  />
                 </FormControl>
               )}
             </Box>
@@ -900,6 +1154,8 @@ export default function AddActivityModal({
               ...prev.dependencies,
               engineeringEnabled: false,
               engineeringModules: [],
+              scmEnabled: false,
+              scmItems: [],
             },
           }));
           setTouched((t) => ({ ...t, projectId: true, projectName: true }));
@@ -919,16 +1175,20 @@ export default function AddActivityModal({
         searchKey="name or description"
         fetchPage={fetchActivityPage}
         onPick={(row) => {
-          const pickedModules = extractEngineeringModules(row);
+          const { engineering: engOpts, scm: scmOpts } =
+            extractDepsByModel(row);
           setForm((prev) => ({
             ...prev,
+            activityId: row?._id || "",
             activityName: row?.name || "",
             type: row?.type || "frontend",
             description: row?.description || "",
             dependencies: {
               ...prev.dependencies,
-              engineeringEnabled: pickedModules.length > 0,
-              engineeringModules: pickedModules,
+              engineeringEnabled: engOpts.length > 0,
+              engineeringModules: engOpts,
+              scmEnabled: scmOpts.length > 0,
+              scmItems: scmOpts,
             },
           }));
           setTouched((t) => ({
@@ -966,6 +1226,43 @@ export default function AddActivityModal({
             return {
               ...prev,
               dependencies: { ...prev.dependencies, engineeringModules: next },
+            };
+          });
+        }}
+        allowMultiple
+      />
+
+      {/* SCM picker (opened by selecting “Search more…”) */}
+      <SearchPickerModal
+        open={openScmPicker}
+        onClose={() => setOpenScmPicker(false)}
+        title="Select Material Categories"
+        columns={[
+          { key: "name", label: "Category Name", width: 260 },
+          { key: "description", label: "Description" },
+        ]}
+        rowKey="_id"
+        pageSize={10}
+        searchKey="name or description"
+        fetchPage={fetchScmPage}
+        onPick={(row) => {
+          setForm((prev) => {
+            const exists = prev.dependencies.scmItems.some(
+              (opt) => opt.value === row?._id
+            );
+            const next = exists
+              ? prev.dependencies.scmItems
+              : [
+                  ...prev.dependencies.scmItems,
+                  { value: row?._id, label: row?.name || "Unnamed", raw: row },
+                ];
+            return {
+              ...prev,
+              dependencies: {
+                ...prev.dependencies,
+                scmItems: next,
+                scmEnabled: true,
+              },
             };
           });
         }}

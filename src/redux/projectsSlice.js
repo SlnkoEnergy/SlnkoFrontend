@@ -214,30 +214,73 @@ export const projectsApi = createApi({
           : [{ type: "Module", id: "LIST" }],
     }),
 
-
     // ⬇️ Name Search Activities by Project (paginated + searchable)
-nameSearchActivityByProjectId: builder.query({
-  query: ({ projectId, page = 1, limit = 7, search = "" }) => ({
-    url: "projectactivity/namesearchactivitybyprojectid",
-    params: {
-      projectId,
-      page,
-      limit,
-      search,
-    },
-  }),
-  // Optional: normalize the response so UI is predictable
-  transformResponse: (res) => ({
-    ok: !!res?.ok,
-    page: res?.page ?? 1,
-    limit: res?.limit ?? 7,
-    total: res?.total ?? 0,
-    totalPages: res?.totalPages ?? 1,
-    activities: Array.isArray(res?.activities) ? res.activities : [],
-  }),
-  providesTags: ["Project"],
-}),
+    nameSearchActivityByProjectId: builder.query({
+      query: ({ projectId, page = 1, limit = 7, search = "" }) => ({
+        url: "projectactivity/namesearchactivitybyprojectid",
+        params: {
+          projectId,
+          page,
+          limit,
+          search,
+        },
+      }),
+      // Optional: normalize the response so UI is predictable
+      transformResponse: (res) => ({
+        ok: !!res?.ok,
+        page: res?.page ?? 1,
+        limit: res?.limit ?? 7,
+        total: res?.total ?? 0,
+        totalPages: res?.totalPages ?? 1,
+        activities: Array.isArray(res?.activities) ? res.activities : [],
+      }),
+      providesTags: ["Project"],
+    }),
 
+    // ⬇️ Name Search Material Categories (paginated + searchable)
+    namesearchMaterialCategories: builder.query({
+      query: ({ search = "", page = 1, limit = 7 } = {}) => ({
+        url: "products/category",
+        params: { search, page, limit }, // ← no pr / project_id
+      }),
+      transformResponse: (res) => ({
+        data: Array.isArray(res?.data) ? res.data : [],
+        pagination: res?.pagination ?? {
+          search: "",
+          page: 1,
+          pageSize: 7,
+          total: 0,
+          totalPages: 1,
+          hasMore: false,
+          nextPage: null,
+        },
+        meta: res?.meta ?? {},
+      }),
+      providesTags: (result) =>
+        result?.data
+          ? [
+              ...result.data.map((m) => ({
+                type: "MaterialCategory",
+                id: m._id,
+              })),
+              { type: "MaterialCategory", id: "LIST" },
+            ]
+          : [{ type: "MaterialCategory", id: "LIST" }],
+    }),
+
+    updateDependency: builder.mutation({
+      query: ({ id, global = true, projectId, body }) => ({
+        url: `activities/${id}/updatedependency`,
+        method: "PUT",
+        params: {
+          global: String(Boolean(global)),
+          ...(global ? {} : { projectId }),
+        },
+        body,
+      }),
+
+      invalidatesTags: ["Project"],
+    }),
   }),
 });
 
@@ -272,5 +315,8 @@ export const {
   useGetAllModulesQuery,
   useLazyGetAllModulesQuery,
   useNameSearchActivityByProjectIdQuery,
-useLazyNameSearchActivityByProjectIdQuery,
+  useLazyNameSearchActivityByProjectIdQuery,
+  useNamesearchMaterialCategoriesQuery,
+  useLazyNamesearchMaterialCategoriesQuery,
+  useUpdateDependencyMutation,
 } = projectsApi;
