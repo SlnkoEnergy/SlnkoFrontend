@@ -8,6 +8,7 @@ import DoNotDisturbOnRoundedIcon from "@mui/icons-material/DoNotDisturbOnRounded
 import TeamLeaderboard from "../../component/All_Tasks/TeamLeaderboard";
 import { useMemo } from "react";
 import ProjectsWorkedCard from "../../component/All_Tasks/Charts/ProjectsDonut";
+import { useGetProjectStatusFilterQuery } from "../../redux/projectsSlice";
 
 
 const IconBadge = ({ color = "#2563eb", bg = "#eff6ff", icon }) => (
@@ -32,7 +33,15 @@ const IconBadge = ({ color = "#2563eb", bg = "#eff6ff", icon }) => (
 
 function Dash_project() {
 
-    const { data, isLoading, isFetching } = useGetTaskStatsQuery();
+    const { data, isLoading, isFetching } = useGetProjectStatusFilterQuery();
+
+    const stats = data?.data || {
+        "completed": 0,
+        "cancelled": 0,
+        "to be started" : 0,
+        "delayed" : 0,
+        "pending" : 0,
+    }
 
     const {
         data: projectData,
@@ -78,13 +87,6 @@ function Dash_project() {
         }))
       }, [stateRes])
 
-    const stats = data?.data || {
-        completed: 0,
-        cancelled: 0,
-        delayed: 0,
-        in_progress: 0,
-        pending: 0,
-    }
 
     return (
         <Box
@@ -121,7 +123,7 @@ function Dash_project() {
                 <Grid xs={15} md={3}>
                     <CloudStatCard
                         loading={isLoading || isFetching}
-                        value={stats.in_progress ?? 0}
+                        value={stats["to be started"] ?? 0}
                         title="In Progress Projects"
                         subtitle="Projects that is still ongoing"
                         accent="#60a5fa"

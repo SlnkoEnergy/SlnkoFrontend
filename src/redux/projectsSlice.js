@@ -61,6 +61,10 @@ export const projectsApi = createApi({
         `project-search?search=${search}&page=${page}&limit=${limit}`,
       providesTags: ["Project"],
     }),
+    getProjectStatusFilter: builder.query({
+      query: () => `/project-status-filter`,
+      providesTags: ["Project"]
+    }),
 
     //Activiy
     createActivity: builder.mutation({
@@ -158,6 +162,7 @@ export const {
   //Project Activity
   useCreateProjectActivityMutation,
   useGetAllProjectActivityQuery,
+  useGetProjectStatusFilterQuery,
   useUpdateProjectActivityMutation,
   usePushActivityToProjectMutation,
   useGetProjectActivityByProjectIdQuery,
