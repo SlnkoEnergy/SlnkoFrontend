@@ -4,9 +4,9 @@ import { CssVarsProvider } from "@mui/joy/styles";
 import Button from "@mui/joy/Button";
 import Sidebar from "../../component/Partials/Sidebar";
 import SubHeader from "../../component/Partials/SubHeader";
-import Dash_eng from "../../component/EngDashboard";
 import MainHeader from "../../component/Partials/MainHeader";
 import { useNavigate } from "react-router-dom";
+import My_Approvals from "../../component/Approvals/My_Approvals";
 
 function MyApproval() {
   const navigate = useNavigate();
@@ -60,7 +60,7 @@ function MyApproval() {
 
             <Button
               size="sm"
-              onClick={()=> navigate(`/my_approvals`)}
+              onClick={() => navigate(`/my_approvals`)}
               sx={{
                 color: "white",
                 bgcolor: "transparent",
@@ -98,7 +98,7 @@ function MyApproval() {
             px: "24px",
           }}
         >
-          <Dash_eng />
+          <My_Approvals />
         </Box>
       </Box>
     </CssVarsProvider>
