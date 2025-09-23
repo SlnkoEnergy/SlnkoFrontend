@@ -116,10 +116,10 @@ export const projectsApi = createApi({
     }),
 
     pushActivityToProject: builder.mutation({
-      query: ({ projectId, name, description, type }) => ({
+      query: ({ projectId, name, description, type, dependencies = [] }) => ({
         url: `projectactivity/pushactivity/${encodeURIComponent(projectId)}`,
         method: "PUT",
-        body: { name, description, type },
+        body: { name, description, type, dependencies  },
       }),
       invalidatesTags: ["Project"],
     }),

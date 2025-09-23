@@ -12,16 +12,22 @@ import {
   Tabs,
   TabList,
   Tab,
+  RadioGroup,
+  Radio,
 } from "@mui/joy";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useGetProjectDropdownQuery } from "../../redux/projectsSlice";
 import {
   useCreateTaskMutation,
   useGetAllDeptQuery,
   useGetAllUserQuery,
+  useGetAllowedModuleQuery, // Engineering modules
+  useLazyNamesearchMaterialCategoriesQuery, // SCM categories (allowed-only)
 } from "../../redux/globalTaskSlice";
 import { toast } from "react-toastify";
 import Select, { components } from "react-select";
+import SelectRS from "react-select";
+import SearchPickerModal from "../../component/SearchPickerModal";
 
 /* ---------------------------------------------------
    Shared react-select styles (Joy-like blue border)
@@ -49,6 +55,12 @@ const joySelectStyles = {
   menuPortal: (b) => ({ ...b, zIndex: 1301 }),
 };
 
+const RS_MORE = { label: "Search more…", value: "__more__" };
+
+// Safely get an array whether the API returns [] or { data: [] }
+const toArray = (res) =>
+  Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
+
 const AddTask = () => {
   const [tab, setTab] = useState("project");
   const [priority, setPriority] = useState(0);
@@ -58,15 +70,109 @@ const AddTask = () => {
   const [title, setTitle] = useState("");
   const [deadlineDT, setDeadlineDT] = useState(null);
   const [note, setNote] = useState("");
-  const [assignedTo, setAssignedTo] = useState([]);
+  const [assignedTo, setAssignedTo] = useState([]); // array for individuals; string for team
   const [subtype, setSubType] = useState("");
+
+  // Category + pickers
+  const [category, setCategory] = useState("Engineering");
+  const [openModulePicker, setOpenModulePicker] = useState(false); // Engineering
+  const [openScmPicker, setOpenScmPicker] = useState(false); // SCM
 
   const { data: getProjectDropdown, isLoading } = useGetProjectDropdownQuery();
   const [createTask, { isLoading: isSubmitting }] = useCreateTaskMutation();
-  const { data: getAllUser } = useGetAllUserQuery({ department: "" });
-  const { data: getAllDept } = useGetAllDeptQuery();
 
-  const buildISO = (d) => (d && d.isValid() ? d.toDate().toISOString() : null);
+  /* ---------------- Department-based user filtering ---------------- */
+  // Use title case; many backends are case-sensitive here.
+  const deptFilter = useMemo(() => {
+    if (category === "Engineering") return "Engineering";
+    if (category === "SCM") return "SCM";
+    return ""; // Other -> all users
+  }, [category]);
+
+  const {
+    data: usersResp,
+    isFetching: isFetchingUsers,
+    isLoading: isLoadingUsers,
+  } = useGetAllUserQuery({ department: deptFilter });
+
+  const {
+    data: deptsResp,
+    isFetching: isFetchingDepts,
+    isLoading: isLoadingDepts,
+  } = useGetAllDeptQuery();
+
+  const usersList = useMemo(() => toArray(usersResp), [usersResp]);
+  const deptsList = useMemo(
+    () =>
+      toArray(deptsResp).filter(
+        (d) => typeof d === "string" && d.trim() !== ""
+      ),
+    [deptsResp]
+  );
+
+  /* ---------------- First selected project id ---------------- */
+  const projectId = selectedProject?.[0]?._id || "";
+
+  /* ---------------- Engineering: allowed modules ---------------- */
+  const {
+    data: allowedModulesResp,
+    isLoading: isLoadingModules,
+    isFetching: isFetchingModules,
+  } = useGetAllowedModuleQuery(projectId, {
+    skip: tab !== "project" || category !== "Engineering" || !projectId,
+  });
+
+  const allowedModules = useMemo(() => {
+    const arr = toArray(allowedModulesResp);
+    return arr.map((m) => ({
+      _id: m._id,
+      name: m.name || m.module_name || "Untitled",
+      code: m.code || "",
+      description: m.description || "",
+    }));
+  }, [allowedModulesResp]);
+
+  // Quick list (first 7) + “Search more…”
+  const moduleQuickOptions = useMemo(() => {
+    const quick = allowedModules.slice(0, 7).map((m) => ({
+      value: String(m._id),
+      label: m.name,
+      raw: m,
+    }));
+    return [...quick, RS_MORE];
+  }, [allowedModules]);
+
+  /* ---------------- SCM: allowed material categories (lazy search) ---------------- */
+  const [triggerScmSearch, { isFetching: isFetchingScm }] =
+    useLazyNamesearchMaterialCategoriesQuery();
+  const [scmQuickOptions, setScmQuickOptions] = useState([]);
+
+  const loadScmQuick = async (q = "") => {
+    try {
+      const res = await triggerScmSearch(
+        {
+          search: q,
+          page: 1,
+          limit: 7,
+          pr: true, // project-scoped & allowed-only (backend enforces allowed ids)
+          project_id: projectId,
+        },
+        true
+      ).unwrap();
+      const list = toArray(res);
+      setScmQuickOptions([
+        ...list.slice(0, 7).map((m) => ({
+          value: String(m._id),
+          label: String(m.name || "Unnamed"),
+          raw: m,
+        })),
+        RS_MORE,
+      ]);
+    } catch {
+      setScmQuickOptions([RS_MORE]);
+    }
+  };
+
   /* ---------------- Submit ---------------- */
   const handleSubmit = async () => {
     const isProjectTab = tab === "project";
@@ -95,6 +201,7 @@ const AddTask = () => {
       priority: String(priority),
       type: tab,
       sub_type: isHelpdeskTab ? subtype : null,
+      // category, // uncomment if backend expects it
     };
 
     try {
@@ -116,44 +223,50 @@ const AddTask = () => {
       setTitle("");
       setNote("");
       setAssignedTo([]);
+      setSubType("");
+      setCategory("Engineering");
     } catch (error) {
       toast.error("Error creating task");
     }
   };
 
   /* ---------------- Project options ---------------- */
-  const optionsProject = (getProjectDropdown?.data || []).map((project) => ({
+  const optionsProject = (toArray(getProjectDropdown) || []).map((project) => ({
     value: project.code,
     label: project.code,
   }));
 
   /* ---------------- Assign To (users/teams) ---------------- */
-  const rawOptions = assignToTeam
-    ? Array.isArray(getAllDept?.data)
-      ? getAllDept.data.filter((dept) => dept.trim() !== "")
-      : []
-    : Array.isArray(getAllUser?.data)
-    ? getAllUser.data
-    : [];
-
-  const selectOptions = rawOptions.map((item) =>
-    assignToTeam
-      ? { value: item, label: item }
-      : { value: item._id, label: item.name }
+  // Build options robustly for either individuals (filtered by department) or teams (departments list)
+  const userOptions = useMemo(
+    () =>
+      usersList
+        .map((u) => {
+          const id = u._id || u.id;
+          const name =
+            u.name || u.fullName || u.full_name || u.email || "Unnamed";
+          return id ? { value: id, label: name } : null;
+        })
+        .filter(Boolean),
+    [usersList]
   );
 
-  const assignValue = assignToTeam
-    ? assignedTo
-      ? { value: assignedTo, label: assignedTo }
-      : null
-    : Array.isArray(assignedTo)
-    ? assignedTo
-        .map((userId) => {
-          const user = rawOptions.find((u) => u._id === userId);
-          return user ? { value: user._id, label: user.name } : null;
-        })
-        .filter(Boolean)
-    : [];
+  const teamOptions = useMemo(
+    () => deptsList.map((d) => ({ value: d, label: d })),
+    [deptsList]
+  );
+
+  const currentOptions = assignToTeam ? teamOptions : userOptions;
+
+  const assignValue = useMemo(() => {
+    if (assignToTeam) {
+      return assignedTo ? { value: assignedTo, label: assignedTo } : null;
+    }
+    // individuals: assignedTo is an array of ids
+    if (!Array.isArray(assignedTo) || assignedTo.length === 0) return [];
+    const map = new Map(currentOptions.map((o) => [String(o.value), o]));
+    return assignedTo.map((id) => map.get(String(id)) || null).filter(Boolean);
+  }, [assignToTeam, assignedTo, currentOptions]);
 
   /* ---------------- Priority react-select ---------------- */
   const priorityMeta = {
@@ -209,10 +322,49 @@ const AddTask = () => {
     );
   };
 
+  /* ---------------- Modal fetchers ---------------- */
+  // Engineering: client-side page/search over allowedModules already in memory
+  const fetchAllowedModulePage = async ({
+    page = 1,
+    search = "",
+    pageSize = 10,
+  }) => {
+    const norm = search.trim().toLowerCase();
+    const filtered = norm
+      ? allowedModules.filter(
+          (m) =>
+            m.name.toLowerCase().includes(norm) ||
+            (m.code && m.code.toLowerCase().includes(norm)) ||
+            (m.description && m.description.toLowerCase().includes(norm))
+        )
+      : allowedModules;
+
+    const start = (page - 1) * pageSize;
+    const rows = filtered.slice(start, start + pageSize);
+    return { rows, total: filtered.length };
+  };
+
+  // SCM: server-side page/search via namesearch endpoint
+  const fetchScmPage = async ({ page = 1, search = "", pageSize = 10 }) => {
+    const res = await triggerScmSearch(
+      {
+        search,
+        page,
+        limit: pageSize,
+        pr: true,
+        project_id: projectId,
+      },
+      true
+    ).unwrap();
+    const rows = toArray(res);
+    const total = res?.pagination?.total ?? rows.length;
+    return { rows, total };
+  };
+
   return (
     <Card
       sx={{
-        maxWidth: 700,
+        maxWidth: 820,
         mx: "auto",
         p: 3,
         borderRadius: "lg",
@@ -231,62 +383,167 @@ const AddTask = () => {
       </Tabs>
 
       <Grid container spacing={2}>
+        {tab === "project" && (
+          <>
+            {/* Category selector above Project Id */}
+            <Grid xs={12}>
+              <FormControl fullWidth>
+                <FormLabel>Category</FormLabel>
+                <RadioGroup
+                  orientation="horizontal"
+                  name="task-category"
+                  value={category}
+                  onChange={(e, v) => {
+                    const next = v ?? e?.target?.value; // Joy versions fallback
+                    setCategory(next);
+                    setTitle(""); // reset dependent title
+                    setAssignedTo([]); // reset users to match new category filter
+                  }}
+                  sx={{ gap: 2 }}
+                >
+                  <Radio value="Engineering" label="Engineering" />
+                  <Radio value="SCM" label="SCM" />
+                  <Radio value="Other" label="Other" />
+                </RadioGroup>
+              </FormControl>
+            </Grid>
+
+            <Grid xs={12}>
+              <FormControl fullWidth>
+                <FormLabel>Project Id</FormLabel>
+                <Select
+                  isMulti
+                  isLoading={isLoading}
+                  isClearable
+                  isSearchable
+                  placeholder="Search project..."
+                  value={
+                    selectedProject?.length
+                      ? selectedProject.map((proj) => ({
+                          value: proj.code,
+                          label: proj.code,
+                        }))
+                      : []
+                  }
+                  onChange={(selectedOptions) => {
+                    if (Array.isArray(selectedOptions)) {
+                      const selectedProjects = selectedOptions
+                        .map((opt) =>
+                          toArray(getProjectDropdown).find(
+                            (proj) => proj.code === opt.value
+                          )
+                        )
+                        .filter(Boolean);
+                      setSelectedProject(selectedProjects);
+                    } else {
+                      setSelectedProject([]);
+                    }
+                    setSearchText("");
+                    // Clear Title for Engineering/SCM when switching project
+                    if (category === "Engineering" || category === "SCM")
+                      setTitle("");
+                  }}
+                  onInputChange={(inputValue, { action }) => {
+                    if (action === "input-change") setSearchText(inputValue);
+                  }}
+                  options={toArray(getProjectDropdown)
+                    .map((p) => ({ value: p.code, label: p.code }))
+                    .filter((p) =>
+                      p.label.toLowerCase().includes(searchText.toLowerCase())
+                    )}
+                  styles={joySelectStyles}
+                  menuPortalTarget={document.body}
+                />
+              </FormControl>
+            </Grid>
+          </>
+        )}
+
+        {/* Title field */}
         <Grid xs={12}>
           <FormControl fullWidth>
             <FormLabel>Title</FormLabel>
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter Title of task..."
-            />
-          </FormControl>
-        </Grid>
 
-        {tab === "project" && (
-          <Grid xs={12}>
-            <FormControl fullWidth>
-              <FormLabel>Project Id</FormLabel>
-              <Select
-                isMulti
-                isLoading={isLoading}
+            {/* Engineering: allowed modules */}
+            {tab === "project" && category === "Engineering" ? (
+              <SelectRS
+                placeholder={
+                  projectId
+                    ? isLoadingModules || isFetchingModules
+                      ? "Loading modules…"
+                      : "Search or pick module"
+                    : "Select a Project first"
+                }
+                isDisabled={!projectId || isLoadingModules || isFetchingModules}
+                value={title ? { value: "__title__", label: title } : null}
+                options={moduleQuickOptions}
                 isClearable
                 isSearchable
-                placeholder="Search project..."
-                value={
-                  selectedProject?.length
-                    ? selectedProject.map((proj) => ({
-                        value: proj.code,
-                        label: proj.code,
-                      }))
-                    : []
-                }
-                onChange={(selectedOptions) => {
-                  if (Array.isArray(selectedOptions)) {
-                    const selectedProjects = selectedOptions
-                      .map((opt) =>
-                        getProjectDropdown?.data?.find(
-                          (proj) => proj.code === opt.value
-                        )
-                      )
-                      .filter(Boolean);
-                    setSelectedProject(selectedProjects);
-                  } else {
-                    setSelectedProject([]);
+                onChange={(opt) => {
+                  if (!opt) {
+                    setTitle("");
+                    return;
                   }
-                  setSearchText("");
+                  if (opt.value === "__more__") {
+                    setOpenModulePicker(true);
+                    return;
+                  }
+                  setTitle(opt.label || "");
                 }}
-                onInputChange={(inputValue, { action }) => {
-                  if (action === "input-change") setSearchText(inputValue);
-                }}
-                options={optionsProject.filter((p) =>
-                  p.label.toLowerCase().includes(searchText.toLowerCase())
-                )}
-                styles={joySelectStyles}
                 menuPortalTarget={document.body}
+                styles={{
+                  menuPortal: (base) => ({ ...base, zIndex: 2000 }),
+                  control: (base) => ({ ...base, minHeight: 40 }),
+                }}
               />
-            </FormControl>
-          </Grid>
-        )}
+            ) : tab === "project" && category === "SCM" ? (
+              // SCM: allowed material categories (server search + modal)
+              <SelectRS
+                placeholder={
+                  projectId
+                    ? isFetchingScm
+                      ? "Loading categories…"
+                      : "Search or pick material category"
+                    : "Select a Project first"
+                }
+                isDisabled={!projectId}
+                value={title ? { value: "__title__", label: title } : null}
+                options={scmQuickOptions}
+                isClearable
+                isSearchable
+                onMenuOpen={() => loadScmQuick("")}
+                onInputChange={(input, meta) => {
+                  if (meta.action === "input-change") loadScmQuick(input || "");
+                  return input;
+                }}
+                onChange={(opt) => {
+                  if (!opt) {
+                    setTitle("");
+                    return;
+                  }
+                  if (opt.value === "__more__") {
+                    setOpenScmPicker(true);
+                    return;
+                  }
+                  setTitle(opt.label || "");
+                }}
+                menuPortalTarget={document.body}
+                styles={{
+                  menuPortal: (base) => ({ ...base, zIndex: 2000 }),
+                  control: (base) => ({ ...base, minHeight: 40 }),
+                }}
+                isLoading={isFetchingScm}
+              />
+            ) : (
+              // Other/internal/helpdesk
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Enter Title of task..."
+              />
+            )}
+          </FormControl>
+        </Grid>
 
         <Grid xs={6}>
           <FormControl fullWidth>
@@ -355,7 +612,12 @@ const AddTask = () => {
 
         <Grid xs={12}>
           <FormControl fullWidth>
-            <FormLabel>Assigned To</FormLabel>
+            <FormLabel>
+              Assigned To
+              {!assignToTeam && category !== "Other"
+                ? ` (${category} only)`
+                : ""}
+            </FormLabel>
 
             {tab !== "helpdesk" ? (
               <>
@@ -370,7 +632,7 @@ const AddTask = () => {
                     checked={assignToTeam}
                     onChange={(e) => {
                       setAssignToTeam(e.target.checked);
-                      setAssignedTo(null);
+                      setAssignedTo(e.target.checked ? null : []); // normalize state
                     }}
                   />
                   <Typography level="body-sm">Assign to Team</Typography>
@@ -378,14 +640,36 @@ const AddTask = () => {
 
                 <Select
                   isMulti={!assignToTeam}
-                  placeholder={assignToTeam ? "Select a team" : "Select Users"}
-                  options={selectOptions}
+                  placeholder={
+                    assignToTeam
+                      ? "Select a team"
+                      : category === "Engineering"
+                      ? "Select Users (Engineering)"
+                      : category === "SCM"
+                      ? "Select Users (SCM)"
+                      : "Select Users"
+                  }
+                  options={currentOptions}
                   value={assignValue}
+                  isLoading={
+                    assignToTeam
+                      ? isLoadingDepts || isFetchingDepts
+                      : isLoadingUsers || isFetchingUsers
+                  }
+                  noOptionsMessage={() =>
+                    assignToTeam
+                      ? "No teams found"
+                      : category === "Other"
+                      ? "No users found"
+                      : `No users found in ${category}`
+                  }
                   onChange={(selected) => {
                     if (assignToTeam) {
                       setAssignedTo(selected?.value || null);
                     } else {
-                      const ids = selected ? selected.map((o) => o.value) : [];
+                      const ids = Array.isArray(selected)
+                        ? selected.map((o) => o.value)
+                        : [];
                       setAssignedTo(ids);
                     }
                   }}
@@ -428,6 +712,8 @@ const AddTask = () => {
                 setDeadlineDT("");
                 setNote("");
                 setAssignedTo([]);
+                setSubType("");
+                setCategory("Engineering");
               }
             }}
             sx={{
@@ -459,6 +745,46 @@ const AddTask = () => {
           </Button>
         </Grid>
       </Grid>
+
+      {/* Engineering Module picker (client-side over allowedModules) */}
+      <SearchPickerModal
+        open={openModulePicker}
+        onClose={() => setOpenModulePicker(false)}
+        title="Select Module"
+        columns={[
+          { key: "name", label: "Module", width: 260 },
+          { key: "code", label: "Code", width: 140 },
+          { key: "description", label: "Description" },
+        ]}
+        rowKey="_id"
+        pageSize={10}
+        searchKey="name or code"
+        fetchPage={fetchAllowedModulePage}
+        onPick={(row) => {
+          if (row?.name)
+            setTitle(row.code ? `${row.name} (${row.code})` : row.name);
+          setOpenModulePicker(false);
+        }}
+      />
+
+      {/* SCM picker (server-side search/pagination) */}
+      <SearchPickerModal
+        open={openScmPicker}
+        onClose={() => setOpenScmPicker(false)}
+        title="Select Material Category"
+        columns={[
+          { key: "name", label: "Category", width: 260 },
+          { key: "description", label: "Description" },
+        ]}
+        rowKey="_id"
+        pageSize={10}
+        searchKey="name"
+        fetchPage={fetchScmPage}
+        onPick={(row) => {
+          if (row?.name) setTitle(row.name);
+          setOpenScmPicker(false);
+        }}
+      />
     </Card>
   );
 };

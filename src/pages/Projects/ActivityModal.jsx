@@ -105,7 +105,6 @@ export default function AddActivityModal({
     deps.forEach((d) => {
       const model = String(d?.model || "").toLowerCase();
       if (
-        model === "moduletemplate" ||
         model === "moduletemplates" ||
         model.includes("module")
       ) {
@@ -413,15 +412,12 @@ export default function AddActivityModal({
 
     // Build dependencies payload
     const dependencies = [];
-    if (
-      form.dependencies.engineeringEnabled &&
-      form.dependencies.engineeringModules?.length
-    ) {
+    if (form.dependencies.engineeringModules?.length) {
       form.dependencies.engineeringModules.forEach((opt) => {
-        dependencies.push({ model: "moduleTemplate", model_id: opt.value });
+        dependencies.push({ model: "moduleTemplates", model_id: opt.value });
       });
     }
-    if (form.dependencies.scmEnabled && form.dependencies.scmItems?.length) {
+    if (form.dependencies.scmItems?.length) {
       form.dependencies.scmItems.forEach((opt) => {
         dependencies.push({ model: "MaterialCategory", model_id: opt.value });
       });
@@ -1010,6 +1006,7 @@ export default function AddActivityModal({
                         dependencies: {
                           ...p.dependencies,
                           engineeringModules: arr,
+                          engineeringEnabled: arr.length > 0 || p.dependencies.engineeringEnabled,
                         },
                       }));
                     }}

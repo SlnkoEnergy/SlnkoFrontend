@@ -100,6 +100,7 @@ function ProjectManagement() {
         name: payload.name,
         description: payload.description,
         type: payload.type,
+        dependencies: payload.dependencies ?? payload.dependency ?? [],
       }).unwrap();
 
       toast.success("Activity added to project");
