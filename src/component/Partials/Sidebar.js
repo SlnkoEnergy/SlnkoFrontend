@@ -27,7 +27,7 @@ import Stack from "@mui/joy/Stack";
 import Typography from "@mui/joy/Typography";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import Main_Logo from "../../assets/protrac_logo.png";
+import Main_Logo from "../../assets/durgapuja_logoprotrac.png";
 import { closeSidebar } from "../../utils/utils";
 
 import DatabaseIcon from "@mui/icons-material/Storage";
@@ -160,7 +160,7 @@ function Sidebar() {
             <img
               src={Main_Logo}
               alt="Protrac"
-              style={{ width: "70px", height: "60px" }}
+              style={{ width: "70px", height: "64px" }}
             />
           </IconButton>
         </Box>
