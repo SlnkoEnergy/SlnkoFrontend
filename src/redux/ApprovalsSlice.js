@@ -22,7 +22,7 @@ export const approvalsApi = createApi({
       providesTags: ["Approval"],
     }),
     getRequests: builder.query({
-      query: () => 'approvals/requests',
+      query: ({page, limit, search}) => `approvals/requests?page=${page}&limit=${limit}&search=${search}`,
       providesTags:['Approval']
     })
 })

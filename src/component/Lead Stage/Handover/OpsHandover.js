@@ -121,9 +121,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
       project_status: "incomplete",
       remark: "",
       remarks_for_slnko: "",
-      submitted_by_BD: "",
     },
-    submitted_by: "",
     status_of_handoversheet: "draft",
   });
 

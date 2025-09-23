@@ -518,9 +518,9 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-             <ListItem sx={{ mt: 0.5 }}>
+            <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/approval_dashboard")}>
-                <FactCheckIcon  />
+                <FactCheckIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Approvals</Typography>
                 </ListItemContent>

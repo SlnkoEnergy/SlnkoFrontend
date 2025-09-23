@@ -152,10 +152,8 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
       invoicing_GST_no: "",
       invoicing_GST_status: "",
       invoicing_address: "",
-
       msme_reg: "",
     },
-    submitted_by: "",
     status_of_handoversheet: "submitted",
     is_locked: "locked",
   });
@@ -234,9 +232,7 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
         ...prev,
         other_details: {
           ...prev.other_details,
-          submitted_by_BD: userData.name,
         },
-        submitted_by: userData.name,
       }));
     }
     setUser(userData);
@@ -470,7 +466,6 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
 
         msme_reg: handoverData?.invoice_detail?.msme_reg || "",
       },
-      submitted_by: handoverData?.submitted_by || "-",
       status_of_handoversheet: handoverData?.status_of_handoversheet,
       is_locked: handoverData?.is_locked,
     }));
@@ -588,7 +583,6 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
         invoice_detail: { ...formData.invoice_detail },
         // status_of_handoversheet: "Approved",
         is_locked: "locked",
-        submitted_by: user?.name,
       };
 
       const statusPayload = {
