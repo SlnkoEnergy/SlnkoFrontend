@@ -12,7 +12,7 @@ import "slick-carousel/slick/slick-theme.css";
 import "slick-carousel/slick/slick.css";
 import * as Yup from "yup";
 import Img1 from "../../../assets/New_Solar3.png";
-import Img5 from "../../../assets/Protrac_blue.png";
+import Img5 from "../../../assets/durgapuja_logoprotrac.png";
 import ImgX from "../../../assets/slnko_white_logo.png";
 import axios from "axios";
 import { useAddLoginsMutation } from "../../../redux/loginSlice";
