@@ -327,7 +327,7 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
             const inputDate = new Date(value);
             if (isNaN(inputDate)) return true;
             const today = new Date();
-            today.setHours(0,0,0,0);
+            today.setHours(0, 0, 0, 0);
             const diffMs = inputDate - today;
             const diffDays = diffMs / (1000 * 60 * 60 * 24);
             return diffDays <= 90;
@@ -1215,7 +1215,7 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
-                Project Completion Date (Slnko) {" "}
+                Project Completion Date (Slnko){" "}
                 <span style={{ color: "red" }}>*</span>
               </Typography>
               <Input

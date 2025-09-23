@@ -1,4 +1,4 @@
-// src/pages/Approvals/My_Requests.jsx
+// src/pages/Approvals/My_Approvals.jsx
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import SearchIcon from "@mui/icons-material/Search";
@@ -12,18 +12,30 @@ import Sheet from "@mui/joy/Sheet";
 import Tooltip from "@mui/joy/Tooltip";
 import Typography from "@mui/joy/Typography";
 import Avatar from "@mui/joy/Avatar";
+import Modal from "@mui/joy/Modal";
+import ModalDialog from "@mui/joy/ModalDialog";
+import DialogTitle from "@mui/joy/DialogTitle";
+import DialogContent from "@mui/joy/DialogContent";
+import DialogActions from "@mui/joy/DialogActions";
+import RadioGroup from "@mui/joy/RadioGroup";
+import Radio from "@mui/joy/Radio";
+import Textarea from "@mui/joy/Textarea";
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Chip, CircularProgress, Option, Select } from "@mui/joy";
 import { useTheme } from "@emotion/react";
 import NoData from "../../assets/alert-bell.svg";
-import { useGetRequestsQuery } from "../../redux/ApprovalsSlice";
+import {
+  useGetReviewsQuery,
+  useUpdateRequestStatusMutation,
+} from "../../redux/ApprovalsSlice";
 
-function My_Requests() {
+function My_Approvals() {
   const navigate = useNavigate();
   const theme = useTheme();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // --- read from URL ---
   const currentPage = Math.max(
     parseInt(searchParams.get("page") || "1", 10),
     1
@@ -38,6 +50,16 @@ function My_Requests() {
 
   const [selected, setSelected] = useState([]);
 
+  // --- logged-in user id (adjust to your auth source if needed) ---
+  const loggedInUserId = useMemo(() => {
+    try {
+      const fromObj = JSON.parse(localStorage.getItem("user") || "{}")?._id;
+      return fromObj || localStorage.getItem("user_id") || "";
+    } catch {
+      return localStorage.getItem("user_id") || "";
+    }
+  }, []);
+
   const patchParams = (patchObj) => {
     const params = new URLSearchParams(searchParams);
     Object.entries(patchObj).forEach(([k, v]) => {
@@ -47,9 +69,6 @@ function My_Requests() {
     setSearchParams(params);
   };
 
-  // =========================================================
-  // FILTERS
-  // =========================================================
   const getStatusFilter = (tab) => {
     switch (tab) {
       case "Scope Pending":
@@ -64,39 +83,40 @@ function My_Requests() {
     [selectedTab]
   );
 
-  const { data: getRequests = {}, isLoading } = useGetRequestsQuery({
+  const {
+    data: getRequests = {},
+    isLoading,
+    refetch,
+  } = useGetReviewsQuery({
     page: currentPage,
     status: statusFilter,
     search: searchQuery.toLowerCase(),
     limit: rowsPerPage,
   });
 
-  const requests = getRequests?.requests || [];
-  const totalPages = Math.ceil(getRequests?.total / getRequests?.limit) || 1;
+  const [actOnApproval, { isLoading: isActing }] =
+    useUpdateRequestStatusMutation();
 
-  const handleSearch = (value) => {
-    // update q and reset to page 1
-    patchParams({ q: value, page: 1 });
-  };
+  const reviews = getRequests?.reviews || [];
+  const totalPages =
+    Math.ceil(
+      (getRequests?.total || 0) / (getRequests?.limit || rowsPerPage)
+    ) || 1;
 
+  const handleSearch = (value) => patchParams({ q: value, page: 1 });
   const handlePageChange = (page) => {
     const max = Math.max(1, Number(totalPages) || 1);
     const next = Math.min(Math.max(1, Number(page) || 1), max);
     patchParams({ page: next });
   };
-
   const handleRowsChange = (newValue) => {
-    if (newValue !== null) {
-      // change pageSize and reset page to 1
-      patchParams({ pageSize: newValue, page: 1 });
-    }
+    if (newValue !== null) patchParams({ pageSize: newValue, page: 1 });
   };
 
   const handleSelectAll = (event) => {
-    if (event.target.checked) setSelected(requests.map((row) => row._id));
+    if (event.target.checked) setSelected(reviews.map((row) => row._id));
     else setSelected([]);
   };
-
   const handleRowSelect = (_id) =>
     setSelected((prev) =>
       prev.includes(_id) ? prev.filter((x) => x !== _id) : [...prev, _id]
@@ -123,7 +143,6 @@ function My_Requests() {
         </Chip>
       );
     }
-
     return (
       <Chip
         onClick={() =>
@@ -152,10 +171,8 @@ function My_Requests() {
     const users =
       approvers?.filter((a) => a?.user_id).map((a) => a.user_id) || [];
     if (!users.length) return <span>-</span>;
-
     const visible = users.slice(0, max);
     const extra = users.length - max;
-
     return (
       <Box sx={{ display: "flex", alignItems: "center" }}>
         {visible.map((u, idx) => (
@@ -172,10 +189,7 @@ function My_Requests() {
                 zIndex: visible.length - idx,
                 backgroundColor: "#ccc",
                 transition: "transform 0.3s cubic-bezier(.68,-0.55,.27,1.55)",
-                "&:hover": {
-                  transform: "translateY(-3px)",
-                  zIndex: 100,
-                },
+                "&:hover": { transform: "translateY(-3px)", zIndex: 100 },
                 cursor: "pointer",
               }}
               onClick={() => navigate(`/user_profile?user_id=${u._id}`)}
@@ -257,7 +271,6 @@ function My_Requests() {
       warning: "#ffe0b2",
       neutral: "#e0e0e0",
     }[color];
-
     return (
       <Box
         sx={{
@@ -293,7 +306,7 @@ function My_Requests() {
     return "pending";
   };
 
-  // ---------- Stage Timeline (SOOTHING, WHITE) ----------
+  // ---------- Stage Timeline ----------
   const StageTimeline = ({ approvers = [], current_approver }) => {
     const soft = {
       textPrimary: "#2f3a4a",
@@ -306,14 +319,11 @@ function My_Requests() {
       dotGreen: "#34c759",
       dotRed: "#ef4444",
     };
-
     const statusOf = (v) => (v ? String(v).toLowerCase().trim() : "pending");
-
     const norm = approvers.map((a) => ({ ...a, _s: statusOf(a.status) }));
     const total = norm.length || 1;
     const approved = norm.filter((a) => a._s === "approved").length;
     const pct = Math.round((approved / total) * 100);
-
     const fmt = (d) => {
       if (!d) return "";
       const date = new Date(d);
@@ -326,7 +336,6 @@ function My_Requests() {
         minute: "2-digit",
       });
     };
-
     const duration = (start, end) => {
       if (!start || !end) return "";
       const s = new Date(start);
@@ -342,24 +351,21 @@ function My_Requests() {
       const rh = h % 24;
       return `(${d}d ${rh}h)`;
     };
-
     const dotColorFor = (a, isCurrent) => {
-      if (isCurrent) return soft.dotBlue; // current = blue
+      if (isCurrent) return soft.dotBlue;
       if (a._s === "approved") return soft.dotGreen;
       if (a._s === "rejected") return soft.dotRed;
       if (a._s === "pending") return soft.dotBlue;
       return soft.dotDefault;
     };
-
     return (
-      <Box sx={{ minWidth: 320, p: 1, bgcolor: "#fff", borderRadius: 2 }}>
+      <Box sx={{ minWidth: 300, p: 1, bgcolor: "#fff", borderRadius: 2 }}>
         <Typography
           level="body-sm"
           sx={{ fontWeight: 700, mb: 1, color: soft.textPrimary }}
         >
           Stage timeline
         </Typography>
-
         <Box
           sx={{
             width: "100%",
@@ -380,7 +386,6 @@ function My_Requests() {
             }}
           />
         </Box>
-
         {norm.map((a, idx) => {
           const isCurrent =
             current_approver && a.sequence === current_approver.sequence;
@@ -391,7 +396,6 @@ function My_Requests() {
             fmt(start) ||
             fmt(end) ||
             "";
-
           return (
             <Box
               key={a._id || idx}
@@ -441,9 +445,36 @@ function My_Requests() {
     );
   };
 
-  // =========================================================
-  // RENDER
-  // =========================================================
+  // ------- Modal state for acting on approval -------
+  const [modalOpen, setModalOpen] = useState(false);
+  const [activeApproval, setActiveApproval] = useState(null);
+  const [actionStatus, setActionStatus] = useState("approved"); // 'approved' | 'rejected'
+  const [remarks, setRemarks] = useState("");
+
+  const openActModal = (approval) => {
+    setActiveApproval(approval);
+    setActionStatus("approved");
+    setRemarks("");
+    setModalOpen(true);
+  };
+  const closeActModal = () => setModalOpen(false);
+
+  const submitAction = async () => {
+    if (!activeApproval?._id) return;
+    try {
+      await actOnApproval({
+        id: activeApproval._id,
+        status: actionStatus,
+        remarks: remarks?.trim() || undefined,
+      }).unwrap();
+      closeActModal();
+      refetch();
+    } catch (e) {
+      // optional: show a toast/snackbar
+      console.error("Failed to act on approval:", e);
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -514,11 +545,11 @@ function My_Requests() {
                 <Checkbox
                   size="sm"
                   checked={
-                    selected?.length === requests?.length && !!requests.length
+                    selected?.length === reviews?.length && !!reviews.length
                   }
                   onChange={handleSelectAll}
                   indeterminate={
-                    selected?.length > 0 && selected?.length < requests?.length
+                    selected?.length > 0 && selected?.length < reviews?.length
                   }
                 />
               </th>
@@ -570,8 +601,8 @@ function My_Requests() {
                   </Box>
                 </td>
               </tr>
-            ) : requests.length > 0 ? (
-              requests.map((request, index) => {
+            ) : reviews.length > 0 ? (
+              reviews.map((request, index) => {
                 const agg = getAggregateStatus(request.approvers);
                 const statusChip =
                   agg === "approved" ? (
@@ -594,6 +625,10 @@ function My_Requests() {
                         minute: "2-digit",
                       });
                 })();
+
+                const canAct =
+                  String(request?.current_approver?.user_id?._id || "") ===
+                  String(loggedInUserId || "");
 
                 return (
                   <tr key={request._id || index}>
@@ -658,6 +693,7 @@ function My_Requests() {
                         : "-"}
                     </td>
 
+                    {/* Item name */}
                     <td
                       style={{
                         borderBottom: "1px solid #ddd",
@@ -693,7 +729,7 @@ function My_Requests() {
                       <AvatarProfile current={request.current_approver} />
                     </td>
 
-                    {/* Status + timeline tooltip */}
+                    {/* Status + timeline tooltip (clickable if canAct) */}
                     <td
                       style={{
                         borderBottom: "1px solid #ddd",
@@ -729,7 +765,25 @@ function My_Requests() {
                           )
                         }
                       >
-                        <Box sx={{ display: "inline-block" }}>{statusChip}</Box>
+                        <Box
+                          sx={{
+                            display: "inline-block",
+                            cursor: "pointer",
+                            ...(canAct
+                              ? {
+                                  cursor: "pointer",
+                                  transform: "translateZ(0)",
+                                  "&:hover": { filter: "brightness(0.98)" },
+                                  "&:active": { transform: "scale(0.98)" },
+                                }
+                              : {}),
+                          }}
+                          onClick={() => {
+                            if (canAct) openActModal(request);
+                          }}
+                        >
+                          {statusChip}
+                        </Box>
                       </Tooltip>
                     </td>
 
@@ -774,9 +828,7 @@ function My_Requests() {
                       alt="No data"
                       style={{ width: 50, height: 50, marginBottom: 8 }}
                     />
-                    <Typography fontStyle="italic">
-                      No requests found
-                    </Typography>
+                    <Typography fontStyle="italic">No reviews found</Typography>
                   </Box>
                 </td>
               </tr>
@@ -808,12 +860,11 @@ function My_Requests() {
           Previous
         </Button>
 
-        <Box>Showing {requests?.length} results</Box>
+        <Box>Showing {reviews?.length} results</Box>
 
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
-          {/* show previous page number if exists */}
           {currentPage > 1 && (
             <IconButton
               size="sm"
@@ -824,13 +875,9 @@ function My_Requests() {
               {currentPage - 1}
             </IconButton>
           )}
-
-          {/* current page */}
           <IconButton size="sm" variant="contained" color="neutral">
             {currentPage}
           </IconButton>
-
-          {/* next page number if exists */}
           {currentPage + 1 <= totalPages && (
             <IconButton
               size="sm"
@@ -870,8 +917,55 @@ function My_Requests() {
           Next
         </Button>
       </Box>
+
+      {/* Action Modal */}
+      <Modal open={modalOpen} onClose={closeActModal}>
+        <ModalDialog sx={{ width: 480, maxWidth: "90vw" }}>
+          <DialogTitle>Update approval status</DialogTitle>
+          <DialogContent>
+            <Typography level="body-sm" sx={{ mb: 1 }}>
+              {activeApproval?.approval_code
+                ? `For: ${activeApproval.approval_code}`
+                : ""}
+            </Typography>
+            <RadioGroup
+              orientation="horizontal"
+              value={actionStatus}
+              onChange={(e) => setActionStatus(e.target.value)}
+              sx={{ gap: 2, mb: 1 }}
+            >
+              <Radio value="approved" label="Approve" />
+              <Radio value="rejected" label="Reject" color="danger" />
+            </RadioGroup>
+            <Textarea
+              minRows={3}
+              placeholder="Add remarks (optional)"
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button
+              variant="plain"
+              color="neutral"
+              onClick={closeActModal}
+              disabled={isActing}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="solid"
+              color={actionStatus === "rejected" ? "danger" : "primary"}
+              loading={isActing}
+              onClick={submitAction}
+            >
+              Submit
+            </Button>
+          </DialogActions>
+        </ModalDialog>
+      </Modal>
     </Box>
   );
 }
 
-export default My_Requests;
+export default My_Approvals;
