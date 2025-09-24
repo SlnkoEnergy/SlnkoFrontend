@@ -281,6 +281,26 @@ export const projectsApi = createApi({
 
       invalidatesTags: ["Project"],
     }),
+
+
+getRejectedOrNotAllowedDependencies: builder.query({
+  query: (projectId) => `projectactivity/dependencies/${projectId}`,
+  providesTags: (result, error, projectId) => [
+    { type: "ProjectActivityDependencies", id: projectId },
+  ],
+}),
+
+
+createApproval: builder.mutation({
+  // UPDATE the URL below if your route differs (e.g. "approval/create" or "approval")
+  query: (payload) => ({
+    url: "approvals/approval",
+    method: "POST",
+    body: payload,
+  }),
+  invalidatesTags: ["Approval"],
+}),
+
   }),
 });
 
@@ -319,4 +339,7 @@ export const {
   useNamesearchMaterialCategoriesQuery,
   useLazyNamesearchMaterialCategoriesQuery,
   useUpdateDependencyMutation,
+  useGetRejectedOrNotAllowedDependenciesQuery,
+useLazyGetRejectedOrNotAllowedDependenciesQuery,
+useCreateApprovalMutation,
 } = projectsApi;
