@@ -322,8 +322,7 @@ const AddTask = () => {
     );
   };
 
-  /* ---------------- Modal fetchers ---------------- */
-  // Engineering: client-side page/search over allowedModules already in memory
+
   const fetchAllowedModulePage = async ({
     page = 1,
     search = "",
@@ -344,7 +343,7 @@ const AddTask = () => {
     return { rows, total: filtered.length };
   };
 
-  // SCM: server-side page/search via namesearch endpoint
+
   const fetchScmPage = async ({ page = 1, search = "", pageSize = 10 }) => {
     const res = await triggerScmSearch(
       {
