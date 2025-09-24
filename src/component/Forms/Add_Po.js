@@ -48,6 +48,7 @@ import {
   useLazyGetAllProdcutPOQuery,
   useLazyGetProductsQuery,
   useGetAllCategoriesQuery,
+  useLazyGetPurchaseOrderPdfQuery,
 } from "../../redux/productsSlice";
 import ProductForm from "./Product_Form";
 import POUpdateFeed from "../PoUpdateForm";
@@ -1285,6 +1286,30 @@ const AddPurchaseOrder = ({
     }
   };
 
+  const [fetchPdf, { isFetching }] = useLazyGetPurchaseOrderPdfQuery();
+
+  const exportPdf = async () => {
+
+    console.log(poNumberQ);
+    console.log(_id);
+    if (!poNumberQ && !_id) {
+      // show a toast or fallback
+      console.warn("Missing po_number or _id in URL");
+      return;
+    }
+    const po_number = poNumberQ || undefined
+    const payload = po_number ? { po_number } : { _id };
+    const blob = await fetchPdf(payload).unwrap();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Purchase_Order_${po_number? po_number: ""}.pdf`; // filename with .pdf
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
   const handleApprove = async () => {
     try {
       const token = localStorage.getItem("authToken");
@@ -1705,6 +1730,17 @@ const AddPurchaseOrder = ({
                     >
                       Refuse
                     </Button>
+
+                    <Button
+                      color="primary"
+                      size="sm"
+                      variant="solid"
+                      onClick={exportPdf}              // <- call it
+                      disabled={isFetching}
+                    >
+                      {isFetching ? "Generating..." : "Pdf"}
+                    </Button>
+
                   </Box>
                 )}
 
@@ -1965,6 +2001,20 @@ const AddPurchaseOrder = ({
                     Add Bill
                   </Button>
                 </Box>
+
+                <Box>
+                  <Button
+                    color="primary"
+                    size="sm"
+                    variant="solid"
+                    onClick={exportPdf}              // <- call it
+                    disabled={isFetching}
+                  >
+                    {isFetching ? "Generating..." : "Pdf"}
+                  </Button>
+                </Box>
+
+
 
                 {poNumberQ && (
                   <Box
@@ -2640,7 +2690,7 @@ const AddPurchaseOrder = ({
           pageSize={VENDOR_LIMIT}
           backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
         />
-        
+
         <Modal open={createProdOpen} onClose={() => setCreateProdOpen(false)}>
           <ModalDialog
             sx={{ maxWidth: 1000, width: "95vw", p: 0, overflow: "hidden" }}
