@@ -45,21 +45,20 @@ const getUserData = () => {
   }
 };
 
-const VALID_TABS = new Set(["handover", "scope", "po", "eng", "notes"]);
+const VALID_TABS = new Set(["notes", "handover", "scope", "po", "eng"]);
 const NUM_TO_KEY = {
-  0: "handover",
-  1: "scope",
-  2: "po",
-  3: "eng",
-  4: "notes",
+  0: "notes",
+  1: "handover",
+  2: "scope",
+  3: "po",
+  4: "eng",
 };
 
-// Sanitize ?tab=... (supports legacy numbers and new string keys)
 const sanitizeTabFromQuery = (raw) => {
-  if (!raw) return "handover";
+  if (!raw) return "notes";
   if (NUM_TO_KEY[raw]) return NUM_TO_KEY[raw];
   if (VALID_TABS.has(raw)) return raw;
-  return "handover";
+  return "notes";
 };
 
 const canUserSeePO = (user) => {
@@ -68,9 +67,17 @@ const canUserSeePO = (user) => {
   const dept = user.department || "";
   const special = user.emp_id === "SE-013";
   const privileged = special || role === "admin" || role === "superadmin";
-  // PO hidden for Engineering, unless privileged
   return privileged || dept !== "Engineering";
 };
+
+const canUserSeeHandover = (user) => {
+  if (!user) return false;
+  const role = String(user.role || "").toLowerCase();
+  const dept = user.department || "";
+  const special = user.emp_id === "SE-013";
+  const privileged = special || role === "admin" || role === "superadmin";
+  return privileged || dept !== "SCM";
+}
 
 export default function Project_Detail() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -91,13 +98,12 @@ export default function Project_Detail() {
   const initialTab = sanitizeTabFromQuery(searchParams.get("tab"));
   const [tabValue, setTabValue] = useState(initialTab);
   const allowedPO = canUserSeePO(currentUser);
+  const allowedHandover = canUserSeeHandover(currentUser);
 
-  // keep state in sync with URL, and guard `po` if not allowed
   useEffect(() => {
     const requested = sanitizeTabFromQuery(searchParams.get("tab"));
     const isPORequested = requested === "po";
     if (isPORequested && !allowedPO) {
-      // redirect to a safe tab
       setTabValue("handover");
       const params = new URLSearchParams(searchParams);
       params.set("tab", "handover");
@@ -105,7 +111,6 @@ export default function Project_Detail() {
     } else {
       setTabValue(requested);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, allowedPO]);
 
   const handleTabChange = (_e, newValue) => {
@@ -127,7 +132,6 @@ export default function Project_Detail() {
     color: "success",
   });
 
-  // Determine following from server data
   useEffect(() => {
     try {
       const posts = postsResp?.data || [];
@@ -159,7 +163,7 @@ export default function Project_Detail() {
         await follow(payload).unwrap();
         setToast({
           open: true,
-          msg: "You’re now following this project.",
+          msg: "You're now following this project.",
           color: "success",
         });
       } else {
@@ -181,12 +185,7 @@ export default function Project_Detail() {
   };
 
   const headerOffset = 72;
-  const tabsBar = 48;
-  const verticalGaps = 32;
- 
   const p_id = projectDetails?.p_id;
-
-  console.log({p_id})
 
   return (
     <Box
@@ -221,11 +220,10 @@ export default function Project_Detail() {
             variant="outlined"
             sx={{
               position: { xs: "static", md: "sticky" },
-              top: { md: headerOffset + 16 }, // header + small gap
+              top: { md: headerOffset + 16 }, 
               borderRadius: "lg",
               width: "100%",
               flexShrink: 0,
-              // make sure it doesn't overflow the viewport height
               height: "100%",
               overflow: { md: "auto" },
             }}
@@ -341,10 +339,15 @@ export default function Project_Detail() {
               <Typography level="body-sm">
                 <b>Tariff:</b> {projectDetails?.tarrif}
               </Typography>
-              <Divider sx={{ my: 1 }} />
-              <Typography level="body-sm">
-                <b>Slnko Service Charges:</b> ₹ {projectDetails?.service}
-              </Typography>
+              {currentUser?.department !== "Engineering" &&
+                currentUser?.department !== "SCM" && (
+                  <>
+                    <Divider sx={{ my: 1 }} />
+                    <Typography level="body-sm">
+                      <b>Slnko Service Charges:</b> ₹ {projectDetails?.service}
+                    </Typography>
+                  </>
+                )}
             </Stack>
           </Card>
 
@@ -372,15 +375,14 @@ export default function Project_Detail() {
               }}
             >
               <TabList>
-                <Tab value="handover">Handover Sheet</Tab>
+                <Tab value="notes">Notes</Tab>
+                {allowedHandover && <Tab value="handover">Handover Sheet</Tab>}
                 <Tab value="scope">Scope</Tab>
                 {allowedPO && <Tab value="po">Purchase Order</Tab>}
                 <Tab value="eng">Engineering</Tab>
-                <Tab value="notes">Notes</Tab>
               </TabList>
-
-              <TabPanel
-                value="handover"
+               <TabPanel
+                value="notes"
                 sx={{
                   p: { xs: 1, md: 1.5 },
                   height: {
@@ -390,18 +392,32 @@ export default function Project_Detail() {
                   overflowY: { md: "auto" },
                 }}
               >
-                <Box
+                <Posts projectId={project_id} />
+              </TabPanel>
+              {allowedHandover && (
+                <TabPanel
+                  value="handover"
                   sx={{
-                    minHeight: { md: "100%" },
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
+                    p: { xs: 1, md: 1.5 },
+                    height: {
+                      xs: "auto",
+                      md: `100%`,
+                    },
+                    overflowY: { md: "auto" },
                   }}
                 >
-                  <CamHandoverSheetForm p_id={p_id} />
-                </Box>
-              </TabPanel>
-
+                  <Box
+                    sx={{
+                      minHeight: { md: "100%" },
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <CamHandoverSheetForm p_id={p_id} />
+                  </Box>
+                </TabPanel>
+              )}
               <TabPanel
                 value="scope"
                 sx={{
@@ -431,7 +447,7 @@ export default function Project_Detail() {
                     overflowY: { md: "auto" },
                   }}
                 >
-                  {/* Use full width; avoid fixed vw so it’s good on big screens */}
+                  {/* Use full width; avoid fixed vw so it's good on big screens */}
                   <Box sx={{ width: "100%" }}>
                     <PurchaseRequestCard project_code={projectDetails?.code} />
                   </Box>
@@ -452,20 +468,6 @@ export default function Project_Detail() {
                 <Box sx={{ display: "flex", alignItems: "flex-start" }}>
                   <Overview />
                 </Box>
-              </TabPanel>
-
-              <TabPanel
-                value="notes"
-                sx={{
-                  p: { xs: 1, md: 1.5 },
-                  height: {
-                    xs: "auto",
-                    md: `100%`,
-                  },
-                  overflowY: { md: "auto" },
-                }}
-              >
-                <Posts projectId={project_id} />
               </TabPanel>
             </Tabs>
           </Card>
