@@ -302,7 +302,7 @@ const Expense_Form = () => {
       // console.log(userRole);
 
       const statusToUse =
-        userRole === "manager" ? "manager approval" : "submitted";
+        userRole === "manager" ? "submitted" : "submitted";
 
       const items = rows.flatMap((row) =>
         (row.items || []).map((item) => ({

@@ -48,6 +48,16 @@ const HrExpense = forwardRef((props, ref) => {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
+  // --- NEW: helper to merge into URL params without wiping others ---
+  const updateParams = (patch) => {
+    const next = new URLSearchParams(searchParams);
+    Object.entries(patch).forEach(([k, v]) => {
+      if (v == null || v === "") next.delete(k);
+      else next.set(k, String(v));
+    });
+    setSearchParams(next);
+  };
+
   const searchParam = searchQuery;
 
   const { data: getExpense = [], isLoading } = useGetAllExpenseQuery({
@@ -125,6 +135,7 @@ const HrExpense = forwardRef((props, ref) => {
       "Internal",
       "SCM",
       "IT Team",
+      "BD",
     ];
 
     const statuses = [
@@ -154,6 +165,8 @@ const HrExpense = forwardRef((props, ref) => {
             onChange={(e, newValue) => {
               setSelectedDepartment(newValue);
               setCurrentPage(1);
+              // --- NEW: push to URL ---
+              updateParams({ department: newValue ?? "", page: 1 });
             }}
             size="sm"
             placeholder="Select Department"
@@ -173,6 +186,8 @@ const HrExpense = forwardRef((props, ref) => {
             onChange={(e, newValue) => {
               setSelectedstatus(newValue);
               setCurrentPage(1);
+              // --- NEW: push to URL ---
+              updateParams({ status: newValue ?? "", page: 1 });
             }}
             size="sm"
             placeholder="Select Status"
@@ -194,6 +209,8 @@ const HrExpense = forwardRef((props, ref) => {
             onChange={(e) => {
               setFrom(e.target.value);
               setCurrentPage(1);
+              // --- NEW: push to URL ---
+              updateParams({ from: e.target.value, page: 1 });
             }}
           />
         </FormControl>
@@ -206,6 +223,8 @@ const HrExpense = forwardRef((props, ref) => {
             onChange={(e) => {
               setTo(e.target.value);
               setCurrentPage(1);
+              // --- NEW: push to URL ---
+              updateParams({ to: e.target.value, page: 1 });
             }}
           />
         </FormControl>
@@ -218,9 +237,14 @@ const HrExpense = forwardRef((props, ref) => {
       prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
     );
   };
+
   const handleSearch = (query) => {
-    setSearchQuery(query.toLowerCase());
+    const q = query.toLowerCase();
+    setSearchQuery(q);
+    // --- NEW: push to URL + reset to first page ---
+    updateParams({ q, page: 1 });
   };
+
   const expenses = useMemo(
     () => (Array.isArray(getExpense?.data) ? getExpense.data : []),
     [getExpense]
@@ -327,10 +351,26 @@ const HrExpense = forwardRef((props, ref) => {
     );
   };
 
+  // --- UPDATED: read all filters from URL and sync local state ---
   useEffect(() => {
-    const page = parseInt(searchParams.get("page")) || 1;
-    setCurrentPage(page);
-  }, [searchParams]);
+    const pageParam = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    if (pageParam !== currentPage) setCurrentPage(pageParam);
+
+    const qParam = searchParams.get("q") || "";
+    if (qParam !== searchQuery) setSearchQuery(qParam);
+
+    const deptParam = searchParams.get("department") || "";
+    if (deptParam !== selectedDepartment) setSelectedDepartment(deptParam);
+
+    const statusParam = searchParams.get("status") || "";
+    if (statusParam !== selectedstatus) setSelectedstatus(statusParam);
+
+    const fromParam = searchParams.get("from") || "";
+    if (fromParam !== from) setFrom(fromParam);
+
+    const toParam = searchParams.get("to") || "";
+    if (toParam !== to) setTo(toParam);
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const paginatedExpenses = expenses;
 
@@ -338,7 +378,8 @@ const HrExpense = forwardRef((props, ref) => {
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
-      setSearchParams({ page: String(page) });
+      // --- UPDATED: merge, don't replace ---
+      updateParams({ page: String(page) });
     }
   };
 

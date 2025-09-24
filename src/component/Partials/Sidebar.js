@@ -27,7 +27,7 @@ import Stack from "@mui/joy/Stack";
 import Typography from "@mui/joy/Typography";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import Main_Logo from "../../assets/protrac_logo.png";
+import Main_Logo from "../../assets/durgapuja_logoprotrac.png";
 import { closeSidebar } from "../../utils/utils";
 import DatabaseIcon from "@mui/icons-material/Storage";
 import FactCheckIcon from "@mui/icons-material/FactCheck";
@@ -164,7 +164,7 @@ function Sidebar() {
             <img
               src={Main_Logo}
               alt="Protrac"
-              style={{ width: "70px", height: "60px" }}
+              style={{ width: "70px", height: "64px" }}
             />
           </IconButton>
         </Box>
@@ -790,7 +790,7 @@ function Sidebar() {
                       User Dashboard
                     </ListItemButton>
                   </ListItem>
-                  {user?.department === "BD" && user?.emp_id === "SE-277" && (
+                  {user?.department === "BD" && (user?.emp_id === "SE-277" || user?.emp_id === "SE-099") && (
                     <ListItem>
                       <ListItemButton
                         onClick={() => navigate("/expense_approval")}
@@ -1391,6 +1391,13 @@ function Sidebar() {
                 )}
               >
                 <List sx={{ gap: 0.5 }}>
+                   <ListItem>
+                    <ListItemButton
+                      onClick={() => navigate("/cam_dash")}
+                    >
+                      Dashboard
+                    </ListItemButton>
+                  </ListItem>
                   <ListItem>
                     <ListItemButton
                       onClick={() => navigate("/purchase_request")}
@@ -1478,6 +1485,7 @@ function Sidebar() {
                 </List>
               </Toggler>
             </ListItem>
+
             <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/task_dashboard")}>
                 <TaskIcon />
@@ -1827,13 +1835,6 @@ function Sidebar() {
                       Dashboard
                     </ListItemButton>
                   </ListItem>
-                  <ListItem>
-                    <ListItemButton
-                      onClick={() => navigate("/purchase_request")}
-                    >
-                      Purchase Request
-                    </ListItemButton>
-                  </ListItem>
                 </List>
               </Toggler>
             </ListItem>
@@ -1887,40 +1888,9 @@ function Sidebar() {
                 </ListItemContent>
               </ListItemButton>
             </ListItem>
-
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <DatabaseIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">My Databases</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/products")}>
-                      Products
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
-            </ListItem>
           </List>
-        ) : user?.department === "CAM" && user?.name !== "Shantanu Sameer" ? (
+        ) : user?.department === "CAM" && user?.name!== "Shantanu Sameer"
+           ? (
           <List
             size="sm"
             sx={{
@@ -2036,13 +2006,6 @@ function Sidebar() {
                       Dashboard
                     </ListItemButton>
                   </ListItem>
-                  <ListItem>
-                    <ListItemButton
-                      onClick={() => navigate("/purchase_request")}
-                    >
-                      Purchase Request
-                    </ListItemButton>
-                  </ListItem>
                 </List>
               </Toggler>
             </ListItem>
@@ -2088,38 +2051,6 @@ function Sidebar() {
                   <Typography level="title-sm">Task</Typography>
                 </ListItemContent>
               </ListItemButton>
-            </ListItem>
-
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <DatabaseIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">My Databases</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/products")}>
-                      Products
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
             </ListItem>
           </List>
         ) : user?.role === "manager" && user?.name === "Ranvijay Singh" ? (
@@ -2637,13 +2568,6 @@ function Sidebar() {
                   <ListItem sx={{ mt: 0.5 }}>
                     <ListItemButton onClick={() => navigate("/cam_dash")}>
                       Dashboard
-                    </ListItemButton>
-                  </ListItem>
-                  <ListItem>
-                    <ListItemButton
-                      onClick={() => navigate("/purchase_request")}
-                    >
-                      Purchase Request
                     </ListItemButton>
                   </ListItem>
                 </List>
