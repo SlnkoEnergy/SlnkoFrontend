@@ -1,7 +1,7 @@
 // src/pages/Expense/Expense_Chart.jsx (aka PieChartStatic.jsx)
 import React, { useMemo } from "react";
 import { ResponsivePie, ResponsivePieCanvas } from "@nivo/pie";
-import { useGetExpenseByIdQuery } from "../../../redux/Expense/expenseSlice";
+import { useGetExpenseByIdQuery } from "../../../redux/expenseSlice";
 
 const isDev = process.env.NODE_ENV !== "production";
 

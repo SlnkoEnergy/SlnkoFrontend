@@ -50,14 +50,30 @@ function My_Approvals() {
 
   const [selected, setSelected] = useState([]);
 
-  // --- logged-in user id (adjust to your auth source if needed) ---
-  const loggedInUserId = useMemo(() => {
+  const parseJwt = (rawToken = "") => {
     try {
-      const fromObj = JSON.parse(localStorage.getItem("user") || "{}")?._id;
-      return fromObj || localStorage.getItem("user_id") || "";
+      const token = rawToken.includes(" ") ? rawToken.split(" ")[1] : rawToken;
+      const base64Url = token.split(".")[1];
+      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+      const json = decodeURIComponent(
+        atob(base64)
+          .split("")
+          .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+          .join("")
+      );
+      return JSON.parse(json);
     } catch {
-      return localStorage.getItem("user_id") || "";
+      return null;
     }
+  };
+
+  const loggedInUserId = useMemo(() => {
+    const raw = localStorage.getItem("authToken") || "";
+    const payload = raw ? parseJwt(raw) : null;
+
+    const idFromToken = payload?.userId;
+
+    if (idFromToken) return String(idFromToken);
   }, []);
 
   const patchParams = (patchObj) => {
@@ -69,27 +85,20 @@ function My_Approvals() {
     setSearchParams(params);
   };
 
-  const getStatusFilter = (tab) => {
-    switch (tab) {
-      case "Scope Pending":
-        return "scopepending";
-      default:
-        return "Approved";
-    }
-  };
-
-  const statusFilter = useMemo(
-    () => getStatusFilter(selectedTab),
-    [selectedTab]
-  );
-
+  const status = searchParams.get("status") || "";
+  const from = searchParams.get("from") || "";
+  const to = searchParams.get("to") || "";
+  const dependency_model = searchParams.get("dependency_model") || "";
   const {
     data: getRequests = {},
     isLoading,
     refetch,
   } = useGetReviewsQuery({
     page: currentPage,
-    status: statusFilter,
+    status: status,
+    dependency_model: dependency_model,
+    createdAtFrom: from, 
+    createdAtTo: to,
     search: searchQuery.toLowerCase(),
     limit: rowsPerPage,
   });
@@ -448,9 +457,8 @@ function My_Approvals() {
   // ------- Modal state for acting on approval -------
   const [modalOpen, setModalOpen] = useState(false);
   const [activeApproval, setActiveApproval] = useState(null);
-  const [actionStatus, setActionStatus] = useState("approved"); // 'approved' | 'rejected'
+  const [actionStatus, setActionStatus] = useState("approved");
   const [remarks, setRemarks] = useState("");
-
   const openActModal = (approval) => {
     setActiveApproval(approval);
     setActionStatus("approved");
@@ -463,17 +471,20 @@ function My_Approvals() {
     if (!activeApproval?._id) return;
     try {
       await actOnApproval({
-        id: activeApproval._id,
+        approvalId: activeApproval._id,
         status: actionStatus,
         remarks: remarks?.trim() || undefined,
       }).unwrap();
       closeActModal();
       refetch();
     } catch (e) {
-      // optional: show a toast/snackbar
       console.error("Failed to act on approval:", e);
     }
   };
+
+  const canActForActive =
+    String(activeApproval?.current_approver?.user_id?._id || "") ===
+    String(loggedInUserId || "");
 
   return (
     <Box
@@ -626,10 +637,6 @@ function My_Approvals() {
                       });
                 })();
 
-                const canAct =
-                  String(request?.current_approver?.user_id?._id || "") ===
-                  String(loggedInUserId || "");
-
                 return (
                   <tr key={request._id || index}>
                     {/* select */}
@@ -729,62 +736,18 @@ function My_Approvals() {
                       <AvatarProfile current={request.current_approver} />
                     </td>
 
-                    {/* Status + timeline tooltip (clickable if canAct) */}
+                    {/* Status + timeline tooltip (cell handles click) */}
                     <td
                       style={{
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
                         textAlign: "left",
+                        cursor: "pointer",
                       }}
+                      onClick={() => openActModal(request)}
+                      title="Click to view status & act (if you're the current approver)"
                     >
-                      <Tooltip
-                        disablePortal
-                        arrow
-                        placement="right"
-                        variant="soft"
-                        slotProps={{
-                          tooltip: {
-                            sx: {
-                              bgcolor: "#fff",
-                              borderRadius: "12px",
-                              border: "1px solid #eef2f7",
-                              p: 0,
-                              maxWidth: 380,
-                            },
-                          },
-                          arrow: { sx: { color: "#fff" } },
-                        }}
-                        title={
-                          request.approvers?.length ? (
-                            <StageTimeline
-                              approvers={request.approvers}
-                              current_approver={request.current_approver}
-                            />
-                          ) : (
-                            "No timeline"
-                          )
-                        }
-                      >
-                        <Box
-                          sx={{
-                            display: "inline-block",
-                            cursor: "pointer",
-                            ...(canAct
-                              ? {
-                                  cursor: "pointer",
-                                  transform: "translateZ(0)",
-                                  "&:hover": { filter: "brightness(0.98)" },
-                                  "&:active": { transform: "scale(0.98)" },
-                                }
-                              : {}),
-                          }}
-                          onClick={() => {
-                            if (canAct) openActModal(request);
-                          }}
-                        >
-                          {statusChip}
-                        </Box>
-                      </Tooltip>
+                      <Box sx={{ display: "inline-block" }}>{statusChip}</Box>
                     </td>
 
                     {/* Created by */}
@@ -928,6 +891,25 @@ function My_Approvals() {
                 ? `For: ${activeApproval.approval_code}`
                 : ""}
             </Typography>
+
+            {!canActForActive && (
+              <Typography
+                level="body-sm"
+                sx={{
+                  mb: 1,
+                  p: 1,
+                  borderRadius: 8,
+                  bgcolor: "#fff5f5",
+                  color: "#c53030",
+                  border: "1px solid #fed7d7",
+                  fontWeight: 600,
+                }}
+              >
+                You’re not the current approver for this request. You can view
+                details, but only the current approver can submit an action.
+              </Typography>
+            )}
+
             <RadioGroup
               orientation="horizontal"
               value={actionStatus}
@@ -937,19 +919,39 @@ function My_Approvals() {
               <Radio value="approved" label="Approve" />
               <Radio value="rejected" label="Reject" color="danger" />
             </RadioGroup>
+
             <Textarea
               minRows={3}
               placeholder="Add remarks (optional)"
               value={remarks}
               onChange={(e) => setRemarks(e.target.value)}
             />
+
+            {activeApproval?.approvers?.length ? (
+              <Box sx={{ mt: 1.5 }}>
+                <StageTimeline
+                  approvers={activeApproval.approvers}
+                  current_approver={activeApproval.current_approver}
+                />
+              </Box>
+            ) : null}
           </DialogContent>
+
           <DialogActions>
             <Button
-              variant="plain"
+              variant="outlined"
               color="neutral"
               onClick={closeActModal}
               disabled={isActing}
+              sx={{
+                color: "#3366a3",
+                borderColor: "#3366a3",
+                backgroundColor: "transparent",
+                "--Button-hoverBg": "#e0e0e0",
+                "--Button-hoverBorderColor": "#3366a3",
+                "&:hover": { color: "#3366a3" },
+                height: "8px",
+              }}
             >
               Cancel
             </Button>
@@ -958,8 +960,15 @@ function My_Approvals() {
               color={actionStatus === "rejected" ? "danger" : "primary"}
               loading={isActing}
               onClick={submitAction}
+              disabled={!canActForActive}
+              sx={{
+                backgroundColor: "#3366a3",
+                color: "#fff",
+                "&:hover": { backgroundColor: "#285680" },
+                height: "8px",
+              }}
             >
-              Submit
+              {canActForActive ? "Submit" : "Only current approver can submit"}
             </Button>
           </DialogActions>
         </ModalDialog>
