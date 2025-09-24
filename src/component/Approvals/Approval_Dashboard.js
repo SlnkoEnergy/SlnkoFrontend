@@ -5,17 +5,10 @@ import {
   Button,
   Card,
   CardContent,
-  Chip,
-  Divider,
-  IconButton,
-  Menu,
-  MenuItem,
   Sheet,
   Typography,
   Skeleton,
 } from "@mui/joy";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
-import AddCircleIcon from "@mui/icons-material/AddCircle";
 import FactCheckIcon from "@mui/icons-material/FactCheck";
 import { useGetUniqueModelQuery } from "../../redux/ApprovalsSlice";
 import { useNavigate } from "react-router-dom";
@@ -35,29 +28,6 @@ const Grid = ({ children }) => (
   >
     {children}
   </Box>
-);
-
-const CardSkeleton = () => (
-  <Card
-    variant="outlined"
-    sx={{
-      borderRadius: "xl",
-      boxShadow: "sm",
-      p: 1.5,
-    }}
-  >
-    <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-start" }}>
-      <Skeleton variant="circular" width={56} height={56} />
-      <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Skeleton variant="text" level="title-md" width="60%" />
-        <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
-          <Skeleton variant="rectangular" width={120} height={32} />
-          <Skeleton variant="rectangular" width={120} height={32} />
-        </Box>
-      </Box>
-      <Skeleton variant="circular" width={28} height={28} />
-    </Box>
-  </Card>
 );
 
 function resolveTitle(model) {
@@ -83,15 +53,12 @@ function resolveName(model) {
 function ModelCard({ model, onNewRequest, onOpenList }) {
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
-
-  const handleMenu = (e) => setAnchorEl(e.currentTarget);
-  const handleClose = () => setAnchorEl(null);
-
+  const navigate = useNavigate();
   const title = resolveTitle(model);
   const toReview = resolveCount(model);
   const modelName = resolveName(model);
   const imgSrc = model?.icon;
-
+  console.log({ model });
   return (
     <Card
       variant="outlined"
@@ -99,7 +66,7 @@ function ModelCard({ model, onNewRequest, onOpenList }) {
         borderRadius: "md",
         boxShadow: "xs",
         p: 1.5,
-        cursor:'pointer',
+        cursor: "pointer",
         transition:
           "transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease",
         willChange: "transform",
@@ -114,8 +81,16 @@ function ModelCard({ model, onNewRequest, onOpenList }) {
           "&:hover": { transform: "none" },
         },
       }}
+      // onClick={() => navigate(`/my_requests?dependency_model=${model?.name}`)}
     >
-      <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-start", cursor:'pointer' }}>
+      <Box
+        sx={{
+          display: "flex",
+          gap: 1.5,
+          alignItems: "flex-start",
+          cursor: "pointer",
+        }}
+      >
         {/* Icon */}
         <Sheet
           variant="soft"
@@ -251,7 +226,7 @@ export default function Approval_Dashboard() {
   // turn map into array of { name, to_review }
   const items = Object.entries(raw).map(([name, count]) => ({
     name,
-    slug: name, // you can add slug if needed
+    slug: name,
     title: prettify(name),
     to_review: count,
   }));
@@ -263,11 +238,7 @@ export default function Approval_Dashboard() {
   };
 
   const onOpenList = (model) => {
-    navigate(
-      `/approvals?model=${encodeURIComponent(
-        model?.slug || model?.name
-      )}&filter=to_review`
-    );
+    navigate(`/my_approvals?dependency_model=${model}&status=pending`);
   };
 
   return (

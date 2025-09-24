@@ -12,7 +12,7 @@ import Sheet from "@mui/joy/Sheet";
 import Tooltip from "@mui/joy/Tooltip";
 import Typography from "@mui/joy/Typography";
 import Avatar from "@mui/joy/Avatar";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Chip, CircularProgress, Option, Select } from "@mui/joy";
 import { useTheme } from "@emotion/react";
@@ -33,7 +33,6 @@ function My_Requests() {
     1
   );
   const searchQuery = (searchParams.get("q") || "").trim();
-  const selectedTab = searchParams.get("tab") || "All";
   const options = [5, 10, 25, 50, 100];
 
   const [selected, setSelected] = useState([]);
@@ -47,26 +46,16 @@ function My_Requests() {
     setSearchParams(params);
   };
 
-  // =========================================================
-  // FILTERS
-  // =========================================================
-  const getStatusFilter = (tab) => {
-    switch (tab) {
-      case "Scope Pending":
-        return "scopepending";
-      default:
-        return "Approved";
-    }
-  };
-
-  const statusFilter = useMemo(
-    () => getStatusFilter(selectedTab),
-    [selectedTab]
-  );
-
+  const status = searchParams.get("status") || "";
+  const from = searchParams.get("from") || "";
+  const to = searchParams.get("to") || "";
+  const dependency_model = searchParams.get("dependency_model") || "";
   const { data: getRequests = {}, isLoading } = useGetRequestsQuery({
     page: currentPage,
-    status: statusFilter,
+    status: status,
+    createdAtFrom: from,
+    createdAtTo: to,
+    dependency_model: dependency_model,
     search: searchQuery.toLowerCase(),
     limit: rowsPerPage,
   });
@@ -75,7 +64,6 @@ function My_Requests() {
   const totalPages = Math.ceil(getRequests?.total / getRequests?.limit) || 1;
 
   const handleSearch = (value) => {
-    // update q and reset to page 1
     patchParams({ q: value, page: 1 });
   };
 
@@ -87,7 +75,6 @@ function My_Requests() {
 
   const handleRowsChange = (newValue) => {
     if (newValue !== null) {
-      // change pageSize and reset page to 1
       patchParams({ pageSize: newValue, page: 1 });
     }
   };
@@ -344,7 +331,7 @@ function My_Requests() {
     };
 
     const dotColorFor = (a, isCurrent) => {
-      if (isCurrent) return soft.dotBlue; // current = blue
+      if (isCurrent) return soft.dotBlue; 
       if (a._s === "approved") return soft.dotGreen;
       if (a._s === "rejected") return soft.dotRed;
       if (a._s === "pending") return soft.dotBlue;
@@ -441,9 +428,6 @@ function My_Requests() {
     );
   };
 
-  // =========================================================
-  // RENDER
-  // =========================================================
   return (
     <Box
       sx={{

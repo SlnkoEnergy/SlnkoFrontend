@@ -13,7 +13,12 @@ const baseQuery = fetchBaseQuery({
 export const approvalsApi = createApi({
   reducerPath: "approvalsApi",
   baseQuery,
-  tagTypes: ["Approval", "ApprovalModels", "ApprovalRequests", "ApprovalReviews"],
+  tagTypes: [
+    "Approval",
+    "ApprovalModels",
+    "ApprovalRequests",
+    "ApprovalReviews",
+  ],
   endpoints: (builder) => ({
     getUniqueModel: builder.query({
       query: () => "approvals/uniquemodels",
@@ -24,26 +29,48 @@ export const approvalsApi = createApi({
     }),
 
     getRequests: builder.query({
-      query: ({ page, limit, search }) =>
-        `approvals/requests?page=${page}&limit=${limit}&search=${encodeURIComponent(
+      query: ({
+        page,
+        limit,
+        search,
+        dependency_model,
+        status,
+        createdAtFrom,
+        createdAtTo,
+      }) =>
+        `approvals/requests?page=${page}&limit=${limit}&dependency_model=${dependency_model}&status=${status}&createdAtFrom=${createdAtFrom}&createdAtTo=${createdAtTo}&search=${encodeURIComponent(
           search ?? ""
         )}`,
       providesTags: (result, error, args) => [
         "Approval",
         { type: "ApprovalRequests", id: "LIST" },
-        { type: "ApprovalRequests", id: `${args.page}|${args.limit}|${args.search ?? ""}` },
+        {
+          type: "ApprovalRequests",
+          id: `${args.page}|${args.limit}|${args.search ?? ""}`,
+        },
       ],
     }),
 
     getReviews: builder.query({
-      query: ({ page, limit, search }) =>
-        `approvals/reviews?page=${page}&limit=${limit}&search=${encodeURIComponent(
+      query: ({
+        page,
+        limit,
+        search,
+        dependency_model,
+        status,
+        createdAtFrom,
+        createdAtTo,
+      }) =>
+        `approvals/reviews?page=${page}&limit=${limit}&dependency_model=${dependency_model}&status=${status}&createdAtFrom=${createdAtFrom}&createdAtTo=${createdAtTo}&search=${encodeURIComponent(
           search ?? ""
         )}`,
       providesTags: (result, error, args) => [
         "Approval",
         { type: "ApprovalReviews", id: "LIST" },
-        { type: "ApprovalReviews", id: `${args.page}|${args.limit}|${args.search ?? ""}` },
+        {
+          type: "ApprovalReviews",
+          id: `${args.page}|${args.limit}|${args.search ?? ""}`,
+        },
       ],
     }),
 

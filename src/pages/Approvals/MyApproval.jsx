@@ -6,10 +6,10 @@ import Button from "@mui/joy/Button";
 import Sidebar from "../../component/Partials/Sidebar";
 import SubHeader from "../../component/Partials/SubHeader";
 import MainHeader from "../../component/Partials/MainHeader";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import My_Approvals from "../../component/Approvals/My_Approvals";
 import { LibraryAddOutlined } from "@mui/icons-material";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 
 import Modal from "@mui/joy/Modal";
 import Sheet from "@mui/joy/Sheet";
@@ -21,19 +21,16 @@ import FormLabel from "@mui/joy/FormLabel";
 import Input from "@mui/joy/Input";
 import Select from "@mui/joy/Select";
 import Option from "@mui/joy/Option";
-import CircularProgress from "@mui/joy/CircularProgress";
-
-// ⤵️ hooks from your RTK slice
 import {
   useGetProjectDropdownQuery,
   useGetRejectedOrNotAllowedDependenciesQuery,
-  useCreateApprovalMutation, // <-- NEW: post approval
+  useCreateApprovalMutation, 
 } from "../../redux/projectsSlice";
-
-// ⤵️ react-select for searchable dropdowns
 import SelectRS from "react-select";
+import Filter from "../../component/Partials/Filter";
+import { useState } from "react";
 
-/* ---------- Slide-over row style ---------- */
+
 const rowSx = {
   px: 1,
   py: 1,
@@ -364,12 +361,32 @@ function NewRequestPanel({ open, onOpenChange, onCreate }) {
   );
 }
 
+
 function MyApproval() {
   const [openAdd, setOpenAdd] = useState(false);
   const navigate = useNavigate();
 
   // ⤵️ mutation to create approval
   const [createApproval, { isLoading: creating }] = useCreateApprovalMutation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [open, setOpen] = useState(false);
+  const fields = [
+    {
+      key: "status",
+      label: "Filter By Status",
+      type: "select",
+      options: [
+        { label: "Pending", value: "pending" },
+        { label: "Approved", value: "approved" },
+        { label: "Rejected", value: "rejected" },
+      ],
+    },
+    {
+      key: "createdAt",
+      label: "Filter by Created Date",
+      type: "daterange",
+    },
+  ];
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -432,12 +449,7 @@ function MyApproval() {
             </Button>
           </Box>
         </MainHeader>
-
-        <SubHeader
-          title="My Approvals"
-          isBackEnabled={false}
-          sticky
-          rightSlot={
+        <SubHeader title="My Approvals" isBackEnabled={false} sticky  rightSlot={
             <Button
               size="sm"
               variant="outlined"
@@ -455,8 +467,65 @@ function MyApproval() {
             >
               {creating ? "Creating…" : "New Request"}
             </Button>
-          }
-        ></SubHeader>
+          }>
+          <Box display="flex" gap={1} alignItems="center">
+            <Filter
+              open={open}
+              onOpenChange={setOpen}
+              fields={fields}
+              title="Filters"
+              onApply={(values) => {
+                setSearchParams((prev) => {
+                  const merged = Object.fromEntries(prev.entries());
+                  delete merged.status;
+                  delete merged.from;
+                  delete merged.to;
+                  delete merged.matchMode;
+
+                  const next = {
+                    ...merged,
+                    page: "1",
+                    ...(values.status && {
+                      status: String(values.status),
+                    }),
+                  };
+
+                  // matcher -> matchMode
+                  if (values.matcher) {
+                    next.matchMode = values.matcher === "OR" ? "any" : "all";
+                  }
+
+                  // createdAt range
+                  if (values.createdAt?.from)
+                    next.from = String(values.createdAt.from);
+                  if (values.createdAt?.to)
+                    next.to = String(values.createdAt.to);
+
+                  return next;
+                });
+                setOpen(false);
+              }}
+              onReset={() => {
+                setSearchParams((prev) => {
+                  const merged = Object.fromEntries(prev.entries());
+                  delete merged.priorityFilter;
+                  delete merged.status;
+                  delete merged.department;
+                  delete merged.assigned_to;
+                  delete merged.createdBy;
+                  delete merged.from;
+                  delete merged.to;
+                  delete merged.deadlineFrom;
+                  delete merged.deadlineTo;
+                  delete merged.matchMode;
+                  return { ...merged, page: "1" };
+                });
+              }}
+            />
+          </Box>
+        </SubHeader>
+
+
 
         <Box
           component="main"
