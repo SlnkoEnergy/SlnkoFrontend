@@ -24,12 +24,11 @@ import Option from "@mui/joy/Option";
 import {
   useGetProjectDropdownQuery,
   useGetRejectedOrNotAllowedDependenciesQuery,
-  useCreateApprovalMutation, 
+  useCreateApprovalMutation,
 } from "../../redux/projectsSlice";
 import SelectRS from "react-select";
 import Filter from "../../component/Partials/Filter";
 import { useState } from "react";
-
 
 const rowSx = {
   px: 1,
@@ -44,7 +43,8 @@ function NewRequestPanel({ open, onOpenChange, onCreate }) {
   const theme = useTheme();
 
   // Projects for Project Id dropdown
-  const { data: projResp, isFetching: loadingProjects } = useGetProjectDropdownQuery();
+  const { data: projResp, isFetching: loadingProjects } =
+    useGetProjectDropdownQuery();
 
   // Normalize options: prefer `code` as label, send `_id` as value
   const projectOptions = useMemo(() => {
@@ -93,8 +93,14 @@ function NewRequestPanel({ open, onOpenChange, onCreate }) {
       fontSize: 14,
     }),
     valueContainer: (base) => ({ ...base, padding: "2px 8px" }),
-    placeholder: (base) => ({ ...base, color: theme.vars.palette.text.tertiary }),
-    singleValue: (base) => ({ ...base, color: theme.vars.palette.text.primary }),
+    placeholder: (base) => ({
+      ...base,
+      color: theme.vars.palette.text.tertiary,
+    }),
+    singleValue: (base) => ({
+      ...base,
+      color: theme.vars.palette.text.primary,
+    }),
     menu: (base) => ({
       ...base,
       zIndex: 2000,
@@ -150,10 +156,7 @@ function NewRequestPanel({ open, onOpenChange, onCreate }) {
         const m = String(d?.model || "").toLowerCase();
         if (!desiredModels.has(m)) continue;
 
-        const name =
-          d?.ref_name ||
-          String(d?.model_id || "") ||
-          "Unnamed";
+        const name = d?.ref_name || String(d?.model_id || "") || "Unnamed";
 
         const modelId = String(d?.model_id || "");
         const depId = String(d?._id || ""); // subdoc _id (if present)
@@ -164,10 +167,10 @@ function NewRequestPanel({ open, onOpenChange, onCreate }) {
         seen.add(key);
 
         out.push({
-          value: modelId,         // we store the referenced doc id here
-          label: name,            // shown to the user
+          value: modelId, // we store the referenced doc id here
+          label: name, // shown to the user
           meta: {
-            model: d?.model,      // original model string
+            model: d?.model, // original model string
             dependency_id: depId, // may be empty if not projected by backend
             activity_id: actId,
             ref_name: name,
@@ -187,7 +190,9 @@ function NewRequestPanel({ open, onOpenChange, onCreate }) {
     if (!values.projectId || !selectedItemOption) return null;
 
     const model_name =
-      values.module === "ModuleTemplates" ? "moduleTemplates" : "MaterialCategory";
+      values.module === "ModuleTemplates"
+        ? "moduleTemplates"
+        : "MaterialCategory";
 
     return {
       model_name,
@@ -267,7 +272,9 @@ function NewRequestPanel({ open, onOpenChange, onCreate }) {
                   setField("projectId", o?.value || "");
                   setField("projectName", o?.name || "");
                 }}
-                menuPortalTarget={typeof document !== "undefined" ? document.body : null}
+                menuPortalTarget={
+                  typeof document !== "undefined" ? document.body : null
+                }
                 styles={rsStyles}
                 filterOption={filterOption}
                 menuPlacement="auto"
@@ -325,13 +332,19 @@ function NewRequestPanel({ open, onOpenChange, onCreate }) {
                   const o = opt || null;
                   setField("item", o?.value || ""); // store the model_id
                 }}
-                isDisabled={!values.projectId || itemLoading || itemOptions.length === 0}
-                menuPortalTarget={typeof document !== "undefined" ? document.body : null}
+                isDisabled={
+                  !values.projectId || itemLoading || itemOptions.length === 0
+                }
+                menuPortalTarget={
+                  typeof document !== "undefined" ? document.body : null
+                }
                 styles={rsStyles}
                 // default filtering works on label/value; you can reuse filterOption if you want
                 menuPlacement="auto"
                 noOptionsMessage={() =>
-                  !values.projectId ? "Select a project first" : "No blocked items found"
+                  !values.projectId
+                    ? "Select a project first"
+                    : "No blocked items found"
                 }
               />
             </FormControl>
@@ -340,7 +353,9 @@ function NewRequestPanel({ open, onOpenChange, onCreate }) {
 
         <Divider />
         {/* Footer actions */}
-        <Box sx={{ display: "flex", gap: 1, p: 1.5, justifyContent: "flex-end" }}>
+        <Box
+          sx={{ display: "flex", gap: 1, p: 1.5, justifyContent: "flex-end" }}
+        >
           <Button variant="outlined" size="sm" onClick={resetAll}>
             Reset
           </Button>
@@ -360,7 +375,6 @@ function NewRequestPanel({ open, onOpenChange, onCreate }) {
     </Modal>
   );
 }
-
 
 function MyApproval() {
   const [openAdd, setOpenAdd] = useState(false);
@@ -391,7 +405,9 @@ function MyApproval() {
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
-      <Box sx={{ display: "flex", minHeight: "100dvh", flexDirection: "column" }}>
+      <Box
+        sx={{ display: "flex", minHeight: "100dvh", flexDirection: "column" }}
+      >
         <Sidebar />
         <MainHeader title="Approvals" sticky>
           <Box display="flex" gap={1}>
@@ -449,83 +465,85 @@ function MyApproval() {
             </Button>
           </Box>
         </MainHeader>
-        <SubHeader title="My Approvals" isBackEnabled={false} sticky  rightSlot={
-            <Button
-              size="sm"
-              variant="outlined"
-              sx={{
-                color: "#3366a3",
-                borderColor: "#3366a3",
-                backgroundColor: "transparent",
-                "--Button-hoverBg": "#e0e0e0",
-                "--Button-hoverBorderColor": "#3366a3",
-                "&:hover": { color: "#3366a3" },
-                height: "8px",
-              }}
-              startDecorator={<LibraryAddOutlined />}
-              onClick={() => setOpenAdd(true)}
-            >
-              {creating ? "Creating…" : "New Request"}
-            </Button>
-          }>
-          <Box display="flex" gap={1} alignItems="center">
-            <Filter
-              open={open}
-              onOpenChange={setOpen}
-              fields={fields}
-              title="Filters"
-              onApply={(values) => {
-                setSearchParams((prev) => {
-                  const merged = Object.fromEntries(prev.entries());
-                  delete merged.status;
-                  delete merged.from;
-                  delete merged.to;
-                  delete merged.matchMode;
+        <SubHeader
+          title="My Approvals"
+          isBackEnabled={false}
+          sticky
+          rightSlot={
+            <Box display="flex" gap={1} alignItems="center">
+              <Button
+                size="sm"
+                variant="outlined"
+                sx={{
+                  color: "#3366a3",
+                  borderColor: "#3366a3",
+                  backgroundColor: "transparent",
+                  "--Button-hoverBg": "#e0e0e0",
+                  "--Button-hoverBorderColor": "#3366a3",
+                  "&:hover": { color: "#3366a3" },
+                  height: "8px",
+                }}
+                startDecorator={<LibraryAddOutlined />}
+                onClick={() => setOpenAdd(true)}
+              >
+                {creating ? "Creating…" : "New Request"}
+              </Button>
+              <Filter
+                open={open}
+                onOpenChange={setOpen}
+                fields={fields}
+                title="Filters"
+                onApply={(values) => {
+                  setSearchParams((prev) => {
+                    const merged = Object.fromEntries(prev.entries());
+                    delete merged.status;
+                    delete merged.from;
+                    delete merged.to;
+                    delete merged.matchMode;
 
-                  const next = {
-                    ...merged,
-                    page: "1",
-                    ...(values.status && {
-                      status: String(values.status),
-                    }),
-                  };
+                    const next = {
+                      ...merged,
+                      page: "1",
+                      ...(values.status && {
+                        status: String(values.status),
+                      }),
+                    };
 
-                  // matcher -> matchMode
-                  if (values.matcher) {
-                    next.matchMode = values.matcher === "OR" ? "any" : "all";
-                  }
+                    // matcher -> matchMode
+                    if (values.matcher) {
+                      next.matchMode = values.matcher === "OR" ? "any" : "all";
+                    }
 
-                  // createdAt range
-                  if (values.createdAt?.from)
-                    next.from = String(values.createdAt.from);
-                  if (values.createdAt?.to)
-                    next.to = String(values.createdAt.to);
+                    // createdAt range
+                    if (values.createdAt?.from)
+                      next.from = String(values.createdAt.from);
+                    if (values.createdAt?.to)
+                      next.to = String(values.createdAt.to);
 
-                  return next;
-                });
-                setOpen(false);
-              }}
-              onReset={() => {
-                setSearchParams((prev) => {
-                  const merged = Object.fromEntries(prev.entries());
-                  delete merged.priorityFilter;
-                  delete merged.status;
-                  delete merged.department;
-                  delete merged.assigned_to;
-                  delete merged.createdBy;
-                  delete merged.from;
-                  delete merged.to;
-                  delete merged.deadlineFrom;
-                  delete merged.deadlineTo;
-                  delete merged.matchMode;
-                  return { ...merged, page: "1" };
-                });
-              }}
-            />
-          </Box>
-        </SubHeader>
-
-
+                    return next;
+                  });
+                  setOpen(false);
+                }}
+                onReset={() => {
+                  setSearchParams((prev) => {
+                    const merged = Object.fromEntries(prev.entries());
+                    delete merged.priorityFilter;
+                    delete merged.status;
+                    delete merged.department;
+                    delete merged.assigned_to;
+                    delete merged.createdBy;
+                    delete merged.from;
+                    delete merged.to;
+                    delete merged.deadlineFrom;
+                    delete merged.deadlineTo;
+                    delete merged.matchMode;
+                    return { ...merged, page: "1" };
+                  });
+                }}
+              />
+            </Box>
+          }
+        ></SubHeader>
 
         <Box
           component="main"
@@ -543,7 +561,6 @@ function MyApproval() {
           <My_Approvals />
         </Box>
 
-        {/* Slide-over panel for New Request */}
         <NewRequestPanel
           open={openAdd}
           onOpenChange={setOpenAdd}
@@ -551,12 +568,8 @@ function MyApproval() {
             try {
               await createApproval(approvalPayload).unwrap();
               setOpenAdd(false);
-              // Navigate wherever makes sense after creating an approval:
-              // - to approvals list
-              // - or stay and refresh
               navigate("/my_approvals");
             } catch (e) {
-              // handle error UI as you like
               console.error("Failed to create approval:", e);
             }
           }}
