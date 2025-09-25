@@ -1290,10 +1290,7 @@ const AddPurchaseOrder = ({
 
   const exportPdf = async () => {
 
-    console.log(poNumberQ);
-    console.log(_id);
     if (!poNumberQ && !_id) {
-      // show a toast or fallback
       console.warn("Missing po_number or _id in URL");
       return;
     }
@@ -1303,7 +1300,7 @@ const AddPurchaseOrder = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `Purchase_Order_${po_number? po_number: ""}.pdf`; // filename with .pdf
+    a.download = `Purchase_Order_${po_number ? po_number : ""}.pdf`; // filename with .pdf
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -1730,19 +1727,17 @@ const AddPurchaseOrder = ({
                     >
                       Refuse
                     </Button>
-
-                    <Button
-                      color="primary"
-                      size="sm"
-                      variant="solid"
-                      onClick={exportPdf}              // <- call it
-                      disabled={isFetching}
-                    >
-                      {isFetching ? "Generating..." : "Pdf"}
-                    </Button>
-
                   </Box>
                 )}
+              <Button
+                color="danger"
+                size="sm"
+                variant="outlined"
+                onClick={exportPdf}
+                disabled={isFetching}
+              >
+                {isFetching ? "Generating..." : "Pdf"}
+              </Button>
 
               {((effectiveMode === "edit" && user?.department === "SCM") ||
                 user?.department === "superadmin" ||
@@ -2001,21 +1996,6 @@ const AddPurchaseOrder = ({
                     Add Bill
                   </Button>
                 </Box>
-
-                <Box>
-                  <Button
-                    color="primary"
-                    size="sm"
-                    variant="solid"
-                    onClick={exportPdf}              // <- call it
-                    disabled={isFetching}
-                  >
-                    {isFetching ? "Generating..." : "Pdf"}
-                  </Button>
-                </Box>
-
-
-
                 {poNumberQ && (
                   <Box
                     display={"flex"}
@@ -2775,13 +2755,11 @@ const AddPurchaseOrder = ({
               onSubmit={async (payload) => {
                 try {
                   const body = mapInspectionPayload(payload);
-                  console.log("Final inspection payload:", body);
                   await addInspection(body).unwrap();
                   toast.success("Inspection request submitted.");
                   setInspectionModalOpen(false);
                   clearInspectionSelection();
                 } catch (e) {
-                  console.error(e);
                   toast.error(
                     e?.data?.message ||
                     e?.error ||
