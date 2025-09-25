@@ -25,9 +25,9 @@ import SelectRS from "react-select";
 import {
   useLazyGetProjectSearchDropdownQuery,
   useLazyGetActivitiesByNameQuery,
-  useLazyGetAllModulesQuery, // modules API hook from your slice
+  useLazyGetAllModulesQuery,
   useLazyNameSearchActivityByProjectIdQuery,
-  useLazyNamesearchMaterialCategoriesQuery, // project-scoped activities
+  useLazyNamesearchMaterialCategoriesQuery,
 } from "../../redux/projectsSlice";
 import SearchPickerModal from "../../component/SearchPickerModal";
 
@@ -37,8 +37,8 @@ export default function AddActivityModal({
   onCreate,
   isSubmitting = false,
 }) {
-  const [mode, setMode] = useState("new"); // 'new' | 'existing'
-  const [scope, setScope] = useState("project"); // 'project' | 'global'
+  const [mode, setMode] = useState("new");
+  const [scope, setScope] = useState("project");
 
   const [form, setForm] = useState({
     projectId: "",
@@ -50,9 +50,9 @@ export default function AddActivityModal({
     description: "",
     dependencies: {
       engineeringEnabled: false,
-      engineeringModules: [], // [{ value, label, raw }]
+      engineeringModules: [],
       scmEnabled: false,
-      scmItems: [], // [{ value, label, raw }]
+      scmItems: [],
     },
   });
 
@@ -76,7 +76,6 @@ export default function AddActivityModal({
     });
   };
 
-  // Split dependencies from an activity into Engineering (moduleTemplate*) and SCM (MaterialCategory)
   const extractDepsByModel = (activityOrOpt) => {
     const deps = Array.isArray(activityOrOpt?.dependency)
       ? activityOrOpt.dependency
@@ -104,10 +103,7 @@ export default function AddActivityModal({
 
     deps.forEach((d) => {
       const model = String(d?.model || "").toLowerCase();
-      if (
-        model === "moduletemplates" ||
-        model.includes("module")
-      ) {
+      if (model === "moduletemplates" || model.includes("module")) {
         engineering.push(toOption(d));
       } else if (model === "materialcategory") {
         scm.push(toOption(d));
@@ -216,17 +212,17 @@ export default function AddActivityModal({
   const [actQuickOptions, setActQuickOptions] = useState([]);
   const actSearchRef = useRef("");
 
- const mapActivitiesToOptions = (list, isProjectScope = false) =>
-   (list || []).slice(0, 7).map((a) => ({
-     value: isProjectScope ? (a.activity_id || a._id) : a._id,
-     activity_id: a.activity_id,   
-     embedded_id: a._id,
-     label: a.name,
-     name: a.name,
-     description: a.description || "",
-     type: a.type || "",
-     dependency: a.dependency || [],
-   }));
+  const mapActivitiesToOptions = (list, isProjectScope = false) =>
+    (list || []).slice(0, 7).map((a) => ({
+      value: isProjectScope ? a.activity_id || a._id : a._id,
+      activity_id: a.activity_id,
+      embedded_id: a._id,
+      label: a.name,
+      name: a.name,
+      description: a.description || "",
+      type: a.type || "",
+      dependency: a.dependency || [],
+    }));
 
   const loadActivitiesQuick = async () => {
     try {
@@ -241,7 +237,7 @@ export default function AddActivityModal({
           limit: 7,
           search: actSearchRef.current || "",
         }).unwrap();
-        setActQuickOptions(mapActivitiesToOptions(activities, true)); 
+        setActQuickOptions(mapActivitiesToOptions(activities, true));
       } else {
         const { items } = await fetchActivitiesGlobal({
           search: actSearchRef.current || "",
@@ -414,27 +410,35 @@ export default function AddActivityModal({
     const dependencies = [];
     if (form.dependencies.engineeringModules?.length) {
       form.dependencies.engineeringModules.forEach((opt) => {
-        dependencies.push({ model: "moduleTemplates", model_id: opt.value });
+        dependencies.push({
+          model: "moduleTemplates",
+          model_id: opt.value,
+          model_id_name: opt.label,
+        });
       });
     }
     if (form.dependencies.scmItems?.length) {
       form.dependencies.scmItems.forEach((opt) => {
-        dependencies.push({ model: "MaterialCategory", model_id: opt.value });
+        dependencies.push({
+          model: "MaterialCategory",
+          model_id: opt.value,
+          model_id_name: opt.label,
+        });
       });
     }
 
     const payload = {
-  name: form.activityName.trim(),
-  description: form.description.trim(),
-  type: form.type.toLowerCase(),
-  ...(scope === "project" && form.projectId
-    ? { project_id: form.projectId, project_name: form.projectName }
-    : {}),
-  ...(dependencies.length ? { dependencies } : {}),   // already built above
-  activityId: form.activityId || "",                  // <-- add this
-  __mode: mode,
-  __scope: scope,
-};
+      name: form.activityName.trim(),
+      description: form.description.trim(),
+      type: form.type.toLowerCase(),
+      ...(scope === "project" && form.projectId
+        ? { project_id: form.projectId, project_name: form.projectName }
+        : {}),
+      ...(dependencies.length ? { dependencies } : {}),
+      activityId: form.activityId || "",
+      __mode: mode,
+      __scope: scope,
+    };
 
     onCreate?.(payload);
   };
@@ -500,9 +504,9 @@ export default function AddActivityModal({
       }).unwrap();
 
       const rows = (activities || []).map((a) => ({
-        _id: a.activity_id || a._id,     // ✅ return MASTER id as row key
-   activity_id: a.activity_id,      // keep master explicitly
-     embedded_id: a._id, 
+        _id: a.activity_id || a._id, // ✅ return MASTER id as row key
+        activity_id: a.activity_id, // keep master explicitly
+        embedded_id: a._id,
         name: a.name || "",
         type: a.type || "",
         description: a.description || "",
@@ -709,7 +713,7 @@ export default function AddActivityModal({
                           ...p,
                           projectId: "",
                           projectCode: "",
-                          activityId: "",           
+                          activityId: "",
                           activityName: "",
                           projectName: "",
                           ...resetActivity,
@@ -801,7 +805,7 @@ export default function AddActivityModal({
                     if (!opt) {
                       setForm((p) => ({
                         ...p,
-                        activityId: "", 
+                        activityId: "",
                         activityName: "",
                         type: "frontend",
                         description: "",
@@ -820,21 +824,22 @@ export default function AddActivityModal({
                       return;
                     }
 
-                    const { engineering: engOpts, scm: scmOpts } = extractDepsByModel(opt);
-                   setForm((p) => ({
-  ...p,
-  activityId: opt.activity_id || opt.value || "",     // <-- save the chosen activity _id
-  activityName: opt.name || opt.label || "",
-  type: opt.type || "frontend",
-  description: opt.description || "",
-  dependencies: {
-    ...p.dependencies,
-    engineeringEnabled: engOpts.length > 0,
-    engineeringModules: engOpts,
-    scmEnabled: scmOpts.length > 0,
-    scmItems: scmOpts,
-  },
-}));
+                    const { engineering: engOpts, scm: scmOpts } =
+                      extractDepsByModel(opt);
+                    setForm((p) => ({
+                      ...p,
+                      activityId: opt.activity_id || opt.value || "", // <-- save the chosen activity _id
+                      activityName: opt.name || opt.label || "",
+                      type: opt.type || "frontend",
+                      description: opt.description || "",
+                      dependencies: {
+                        ...p.dependencies,
+                        engineeringEnabled: engOpts.length > 0,
+                        engineeringModules: engOpts,
+                        scmEnabled: scmOpts.length > 0,
+                        scmItems: scmOpts,
+                      },
+                    }));
                     setTouched((t) => ({
                       ...t,
                       activityName: true,
@@ -1006,7 +1011,8 @@ export default function AddActivityModal({
                         dependencies: {
                           ...p.dependencies,
                           engineeringModules: arr,
-                          engineeringEnabled: arr.length > 0 || p.dependencies.engineeringEnabled,
+                          engineeringEnabled:
+                            arr.length > 0 || p.dependencies.engineeringEnabled,
                         },
                       }));
                     }}

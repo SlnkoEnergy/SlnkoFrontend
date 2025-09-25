@@ -28,17 +28,7 @@ function ProjectManagement() {
   const isLoading = isPushing || isUpdatingDeps;
 
   const handleCreate = async (payload) => {
-    // payload comes from AddActivityModal
-    // expected fields:
-    // - __mode: "new" | "existing"
-    // - __scope: "project" | "global"
-    // - project_id (when scope=project)
-    // - name, description, type (always present)
-    // - activityId (when mode=existing; master Activity _id)
-    // - dependencies (array of { model, model_id }) – the modal assembles this
-
     try {
-      // EXISTING activity: update dependencies
       if (payload && payload.__mode === "existing") {
         const id =
           payload.activityId ||
@@ -52,8 +42,6 @@ function ProjectManagement() {
           toast.error("Missing activity id for existing activity.");
           return;
         }
-
-        // Build deps if modal didn't pass the 'dependencies' array
         const deps = Array.isArray(payload.dependencies)
           ? payload.dependencies
           : [];
@@ -68,14 +56,6 @@ function ProjectManagement() {
           toast.error("Missing project id for project-scoped update.");
           return;
         }
-
-        // Helpful debug log – remove if noisy
-        // console.log("updateDependency call:", {
-        //   id,
-        //   global: isGlobal,
-        //   projectId: isGlobal ? undefined : payload.project_id,
-        //   body: { dependencies: deps },
-        // });
 
         await updateDependency({
           id,

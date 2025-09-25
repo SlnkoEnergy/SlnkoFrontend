@@ -9,6 +9,7 @@ import {
 } from "react";
 import "dhtmlx-gantt/codebase/dhtmlxgantt.css";
 import gantt from "dhtmlx-gantt/codebase/dhtmlxgantt";
+
 import {
   Box,
   Chip,
@@ -29,15 +30,15 @@ import {
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import EventOutlinedIcon from "@mui/icons-material/EventOutlined";
 import { Timelapse, Add, Delete } from "@mui/icons-material";
+
 import {
   useGetProjectActivityByProjectIdQuery,
   useUpdateActivityInProjectMutation,
   useCreateProjectActivityMutation,
   useGetActivityInProjectQuery,
 } from "../redux/projectsSlice";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import AppSnackbar from "./AppSnackbar";
-import { useNavigate } from "react-router-dom";
 
 /* ---------------- helpers ---------------- */
 const labelToType = { FS: "0", SS: "1", FF: "2", SF: "3" };
@@ -101,7 +102,6 @@ const predecessorTemplate = (task) => {
     .join(", ");
 };
 
-// backend error -> pretty msg
 const extractBackendError = (err) => {
   const data = err?.data || err?.response?.data || {};
   const msg = String(
@@ -117,30 +117,24 @@ const extractBackendError = (err) => {
     const reqFinish = details.required_min_finish
       ? new Date(details.required_min_finish)
       : null;
-
     const tips = [
       reqStart ? `Min Start: ${toDMY(reqStart)}` : null,
       reqFinish ? `Min Finish: ${toDMY(reqFinish)}` : null,
     ]
       .filter(Boolean)
       .join(" • ");
-
     if (tips) parts.push(tips);
   }
-
   if (Array.isArray(details.rules) && details.rules.length) {
     parts.push(details.rules.map(String).join(" | "));
   }
-
   return parts.filter(Boolean).join(" — ");
 };
 
-/* ---------- pick a target deadline from project/activity ---------- */
+/* ---------- pick a target deadline ---------- */
 function pickCountdownTarget(paWrapper, paList) {
-  // Try on project payload first (project_id)
   const project = paWrapper?.project_id || paWrapper?.project || {};
   const candidates = [];
-
   const addCand = (obj, label) => {
     if (!obj) return;
     const vals = [
@@ -154,43 +148,35 @@ function pickCountdownTarget(paWrapper, paList) {
       if (!isNaN(d)) candidates.push({ key, label: label || key, date: d });
     });
   };
-
-  // project-level
   addCand(project, "project");
-
-  // also check inside activity.activity_id if present (as you mentioned)
   if (Array.isArray(paList)) {
-    paList.forEach((pa) => addCand(pa?.activity_id, pa?.activity_id?.name || "activity"));
+    paList.forEach((pa) =>
+      addCand(pa?.activity_id, pa?.activity_id?.name || "activity")
+    );
   }
-
   if (candidates.length === 0) return { target: null, usedKey: null };
-
-  // Prefer project_completion_date > ppa_expiry_date > bd_commitment_date if future
-  const prefOrder = ["project_completion_date", "ppa_expiry_date", "bd_commitment_date"];
+  const prefOrder = [
+    "project_completion_date",
+    "ppa_expiry_date",
+    "bd_commitment_date",
+  ];
   const now = Date.now();
-
   for (const k of prefOrder) {
     const hit = candidates.find((c) => c.key === k && c.date.getTime() > now);
     if (hit) return { target: hit.date, usedKey: hit.key };
   }
-
-  // Otherwise pick the *soonest* future among all, or the last past if all are past
   const futures = candidates.filter((c) => c.date.getTime() > now);
   if (futures.length) {
     const soonest = futures.reduce((a, b) => (a.date < b.date ? a : b));
     return { target: soonest.date, usedKey: soonest.key };
   }
-
-  // all are past; choose the most recent past just to show "Expired"
   const latestPast = candidates.reduce((a, b) => (a.date > b.date ? a : b));
   return { target: latestPast.date, usedKey: latestPast.key };
 }
 
-/* ---------- live countdown chip ---------- */
 function RemainingDaysChip({ target, usedKey }) {
   const [text, setText] = useState("—");
-  const [color, setColor] = useState("neutral"); // success / warning / danger / neutral
-
+  const [color, setColor] = useState("neutral");
   useEffect(() => {
     if (!target) {
       setText("—");
@@ -198,12 +184,10 @@ function RemainingDaysChip({ target, usedKey }) {
       return;
     }
     let cancelled = false;
-
     const tick = () => {
       const now = new Date().getTime();
       const end = new Date(target).getTime();
       const diff = end - now;
-
       if (diff <= 0) {
         if (!cancelled) {
           setText("Expired");
@@ -211,29 +195,22 @@ function RemainingDaysChip({ target, usedKey }) {
         }
         return;
       }
-
-      // compute D:H:M:S
       const seconds = Math.floor(diff / 1000);
       const d = Math.floor(seconds / (24 * 3600));
       const h = Math.floor((seconds % (24 * 3600)) / 3600);
       const m = Math.floor((seconds % 3600) / 60);
       const s = seconds % 60;
-
       const parts = [];
       if (d > 0) parts.push(`${d}d`);
       parts.push(`${h}h`, `${m}m`, `${s}s`);
-
-
       let c = "success";
       if (d < 10) c = "danger";
       else if (d < 30) c = "warning";
-
       if (!cancelled) {
         setText(parts.join(" "));
         setColor(c);
       }
     };
-
     tick();
     const id = setInterval(tick, 1000);
     return () => {
@@ -260,9 +237,7 @@ function RemainingDaysChip({ target, usedKey }) {
   );
 }
 
-/* ---------------- right panel row ---------------- */
 function DepRow({ title, options, row, onChange, onRemove }) {
-  
   return (
     <Stack direction="row" alignItems="center" spacing={1} sx={{ width: "100%" }}>
       <Autocomplete
@@ -321,16 +296,13 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
   const [selectedId, setSelectedId] = useState(null);
   const [activeDbId, setActiveDbId] = useState(null);
 
-  // GET ALL
   const { data: apiData, refetch: refetchAll } =
     useGetProjectActivityByProjectIdQuery(projectId, { skip: !projectId });
 
-  // UPDATE + CREATE
   const [updateActivityInProject, { isLoading: isSaving }] =
     useUpdateActivityInProjectMutation();
   const [createProjectActivity] = useCreateProjectActivityMutation();
 
-  // GET SINGLE (when modal opens)
   const {
     data: activityFetch,
     isFetching: isFetchingActivity,
@@ -340,14 +312,14 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
     { skip: !activeDbId || !projectId }
   );
 
-    const paWrapper = apiData?.projectactivity || apiData || {};
-    const paList = Array.isArray(paWrapper.activities)
-      ? paWrapper.activities
-      : Array.isArray(paWrapper)
-      ? paWrapper
-      : [];
-    const projectMeta = paWrapper.project_id || apiData?.project || {};
-    const projectDbId = projectMeta?._id || projectId;
+  const paWrapper = apiData?.projectactivity || apiData || {};
+  const paList = Array.isArray(paWrapper.activities)
+    ? paWrapper.activities
+    : Array.isArray(paWrapper)
+    ? paWrapper
+    : [];
+  const projectMeta = paWrapper.project_id || apiData?.project || {};
+  const projectDbId = projectMeta?._id || projectId;
 
   const { target: countdownTarget, usedKey: countdownKey } = useMemo(
     () => pickCountdownTarget(paWrapper, paList),
@@ -367,14 +339,15 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
 
       const text = master?.name || pa.name || pa.activity_name || "—";
 
-      // Use backend dates only; if missing, leave null (grid shows empty, no bar).
       const sISO = pa.planned_start || pa.start_date || null;
       const eISO = pa.planned_finish || pa.end_date || null;
 
       const startDateObj = sISO ? parseISOAsLocalDate(sISO) : null;
       const endDateObj = eISO ? parseISOAsLocalDate(eISO) : null;
 
-      const duration = Number.isFinite(Number(pa.duration)) ? Number(pa.duration) : 0;
+      const duration = Number.isFinite(Number(pa.duration))
+        ? Number(pa.duration)
+        : 0;
       const status = pa.current_status?.status || "not started";
 
       return {
@@ -386,7 +359,9 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
         _end_dmy: endDateObj ? toDMY(endDateObj) : "",
         duration,
         progress:
-          typeof pa.percent_complete === "number" ? pa.percent_complete / 100 : 0,
+          typeof pa.percent_complete === "number"
+            ? pa.percent_complete / 100
+            : 0,
         open: true,
         _hadStart: !!startDateObj,
         _unscheduled: !startDateObj && !duration,
@@ -396,7 +371,6 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
       };
     });
 
-    // links strictly from backend predecessors
     let lid = 1;
     const links = [];
     paList.forEach((pa, idx) => {
@@ -453,7 +427,9 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
       }
       return null;
     });
-    const nums = ends.map((d) => d?.getTime()).filter((n) => Number.isFinite(n));
+    const nums = ends
+      .map((d) => d?.getTime())
+      .filter((n) => Number.isFinite(n));
     if (!nums.length) return "—";
     return toDMY(new Date(Math.max(...nums)));
   }, [ganttData]);
@@ -470,13 +446,12 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
   const activityOptions = useMemo(
     () =>
       (ganttData || []).map((t) => ({
-        value: String(t.id), // SI id
+        value: String(t.id),
         label: t.text,
       })),
     [ganttData]
   );
 
-  // open modal & fetch single activity
   const onOpenModalForTask = (siId) => {
     const task = gantt.getTask(siId);
     setSelectedId(String(siId));
@@ -485,7 +460,6 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
 
   useEffect(() => {
     if (!activityFetch || !selectedId) return;
-
     const act = activityFetch.activity || activityFetch.data || activityFetch;
 
     const preds = Array.isArray(act?.predecessors) ? act.predecessors : [];
@@ -526,7 +500,6 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
     const dur = Number.isFinite(Number(act?.duration))
       ? String(Number(act.duration))
       : "";
-
     const toYMD = (iso) =>
       iso ? gantt.date.date_to_str("%Y-%m-%d")(parseISOAsLocalDate(iso)) : "";
 
@@ -552,7 +525,6 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
     const dbActivityId = task?._dbId;
     if (!projectId || !dbActivityId) return;
 
-    // Build payload
     const predsPayload = (form.predecessors || [])
       .map((r) => {
         const si = String(r.activityId || "");
@@ -581,9 +553,8 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
         data: payload,
       }).unwrap();
 
-      if (result?.error || result?.data?.error) {
+      if (result?.error || result?.data?.error)
         throw result.error || result.data.error;
-      }
 
       await (refetchAll().unwrap?.() ?? refetchAll());
       setSnack({ open: true, msg: "Activity updated." });
@@ -611,126 +582,23 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
     return ms < 0 ? 0 : Math.floor(ms / 86400000) + 1;
   };
 
-  /* ---------- SAVE AS TEMPLATE: exposed via ref ---------- */
-  useImperativeHandle(ref, () => ({
-    saveAsTemplate: async (meta = {}) => {
-      const { name, description } = meta || {};
-
-      // gather tasks
-      const tasks = [];
-      gantt.eachTask((t) => {
-        const start = t.start_date instanceof Date ? t.start_date : null;
-        const end = t._end_dmy
-          ? parseDMY(t._end_dmy)
-          : start && Number(t.duration) > 0
-          ? gantt.calculateEndDate({
-              start_date: start,
-              duration: t.duration,
-              task: t,
-            })
-          : null;
-
-        tasks.push({
-          si: String(t.id),
-          dbId: String(t._dbId || ""),
-          start,
-          end,
-          duration: Number(t.duration || 0),
-          percent: Math.round(Number(t.progress || 0) * 100),
-        });
-      });
-
-      // index by SI
-      const bySi = new Map(tasks.map((x) => [x.si, x]));
-
-      // build predecessors/successors from links
-      const predsBySi = new Map();
-      const succsBySi = new Map();
-      gantt.getLinks().forEach((l) => {
-        const src = String(l.source);
-        const trg = String(l.target);
-        const type = typeToLabel[String(l.type)] || "FS";
-        const lag = Number(l.lag || 0);
-
-        if (!predsBySi.has(trg)) predsBySi.set(trg, []);
-        predsBySi.get(trg).push({ activityIdSi: src, type, lag });
-
-        if (!succsBySi.has(src)) succsBySi.set(src, []);
-        succsBySi.get(src).push({ activityIdSi: trg, type, lag });
-      });
-
-      const activities = tasks
-        .filter((t) => t.dbId)
-        .map((t) => {
-          const preds = (predsBySi.get(t.si) || [])
-            .map((p) => {
-              const src = bySi.get(p.activityIdSi);
-              if (!src?.dbId) return null;
-              return {
-                activity_id: src.dbId,
-                type: p.type,
-                lag: p.lag,
-              };
-            })
-            .filter(Boolean);
-
-          const succs = (succsBySi.get(t.si) || [])
-            .map((s) => {
-              const trg = bySi.get(s.activityIdSi);
-              if (!trg?.dbId) return null;
-              return {
-                activity_id: trg.dbId,
-                type: s.type,
-                lag: s.lag,
-              };
-            })
-            .filter(Boolean);
-
-          return {
-            activity_id: t.dbId,
-            planned_start: t.start ? t.start.toISOString() : null,
-            planned_finish: t.end ? t.end.toISOString() : null,
-            duration:
-              t.duration ||
-              (t.start && t.end ? diffDaysInclusive(t.start, t.end) : 0),
-            percent_complete: t.percent || 0,
-            predecessors: preds,
-            successors: succs,
-          };
-        });
-
-      const payload = {
-        status: "template",
-        ...(name ? { name } : {}),
-        ...(description ? { description } : {}),
-        activities,
-      };
-
-      try {
-        await createProjectActivity(payload).unwrap();
-        setSnack({ open: true, msg: "Template saved successfully" });
-      } catch (e) {
-        setSnack({ open: true, msg: "Failed to save template" });
-      }
-    },
-  }));
-
-  /* ---------- init gantt ---------- */
+  /* ---------- init gantt ONCE ---------- */
   useEffect(() => {
     gantt.config.date_format = "%d-%m-%Y";
     gantt.locale.date.day_short = ["S", "M", "T", "W", "T", "F", "S"];
+
+    // IMPORTANT: with custom scrollbars, keep smart_rendering off to avoid blank rows
+    gantt.config.smart_rendering = false;
+
     gantt.config.scroll_on_click = true;
     gantt.config.autoscroll = true;
     gantt.config.preserve_scroll = true;
-    gantt.config.show_chart_scroll = true;
-    gantt.config.show_grid_scroll = true;
-    gantt.config.smart_rendering = true;
     gantt.config.start_on_monday = false;
     gantt.config.limit_view = false;
     gantt.config.fit_tasks = false;
     gantt.config.lightbox = false;
+    gantt.config.show_unscheduled = true;
 
-    // lock dragging/linking
     gantt.config.readonly = false;
     gantt.config.drag_move = false;
     gantt.config.drag_resize = false;
@@ -740,65 +608,89 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
     gantt.attachEvent("onBeforeLinkUpdate", () => false);
     gantt.attachEvent("onBeforeLinkDelete", () => false);
     gantt.attachEvent("onBeforeTaskDrag", () => false);
+    gantt.showLightbox = () => false;
 
-    gantt.showLightbox = function () {
-      return false;
+    // split: grid (X) | resizer | timeline (X) | shared Y
+    gantt.config.show_grid_scroll = false;
+    gantt.config.show_chart_scroll = false;
+    gantt.config.layout = {
+      css: "gantt_layout",
+      rows: [{
+        cols: [
+          { // LEFT grid 50%
+            gravity: 1,
+            rows: [
+              { view: "grid", scrollX: "h_grid", scrollY: "v_scroll" },
+              { view: "scrollbar", id: "h_grid", height: 18 },
+            ],
+          },
+          { resizer: true },
+          { // RIGHT timeline 50%
+            gravity: 1,
+            rows: [
+              { view: "timeline", scrollX: "h_timeline", scrollY: "v_scroll" },
+              { view: "scrollbar", id: "h_timeline", height: 18 },
+            ],
+          },
+          { view: "scrollbar", id: "v_scroll", dir: "vertical", width: 18 },
+        ],
+      }],
     };
 
-    gantt.config.show_unscheduled = true;
-
-    gantt.config.columns = [
-      { name: "text", label: "Activity", tree: true, width: 260, resize: true },
-      {
-        name: "duration",
-        label: "Duration",
-        width: 90,
-        align: "left",
-        resize: true,
-        template: durationTemplate,
-      },
-      {
-        name: "start",
-        label: "Start",
-        width: 120,
-        align: "left",
-        resize: true,
-        template: startCellTemplate,
-      },
-      {
-        name: "end",
-        label: "End",
-        width: 120,
-        align: "left",
-        resize: true,
-        template: endCellTemplate,
-      },
-      {
-        name: "pred",
-        label: "Predecessors",
-        width: 180,
-        align: "left",
-        resize: true,
-        template: predecessorTemplate,
-      },
-    ];
-
+    // hide bars for unscheduled tasks
     gantt.templates.task_class = (_, __, task) =>
       task._unscheduled ? "gantt-task-unscheduled" : "";
 
-    gantt.attachEvent("onTaskClick", function (id) {
+    gantt.attachEvent("onTaskClick", (id) => {
       onOpenModalForTask(String(id));
       return true;
     });
 
+    // init FIRST, then we will parse in a separate effect
     gantt.init(ganttContainer.current);
-    return () => gantt.clearAll();
+
+    const ro = new ResizeObserver(() => gantt.setSizes());
+    if (ganttContainer.current) ro.observe(ganttContainer.current);
+
+    return () => {
+      ro.disconnect();
+      gantt.clearAll();
+    };
   }, []);
 
-  // feed data from backend “get all”
+  /* ---------- feed data + columns after init ---------- */
   useEffect(() => {
+    // make Activity wide enough to avoid ellipsis; clamp to sensible range
+    const longestTextPx = Math.max(
+      600,
+      Math.min(
+        2200,
+        (ganttData || []).reduce((max, t) => {
+          const s = String(t.text || "");
+          return Math.max(max, Math.round(s.length * 8.2) + 160);
+        }, 0)
+      )
+    );
+
+    gantt.config.grid_elastic_columns = false;
+    gantt.config.columns = [
+      {
+        name: "text",
+        label: "Activity",
+        tree: true,
+        min_width: longestTextPx,
+        resize: true,
+        
+      },
+      { name: "duration", label: "Duration", min_width: 420, align: "left", template: durationTemplate },
+      { name: "start",    label: "Start",    min_width: 420, align: "left", template: startCellTemplate },
+      { name: "end",      label: "End",      min_width: 420, align: "left", template: endCellTemplate },
+      { name: "pred",     label: "Predecessors", min_width: 420, align: "left", template: predecessorTemplate },
+    ];
+
     gantt.clearAll();
     gantt.parse({ data: ganttData, links: ganttLinks });
+    requestAnimationFrame(() => gantt.setSizes());
   }, [ganttData, ganttLinks]);
 
   /* ---------- scales ---------- */
@@ -836,7 +728,22 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
 
   return (
     <Box sx={{ ml: "0px", width: "100%", p: 0 }}>
-      <style>{`.gantt_task_line.gantt-task-unscheduled{display:none!important;}`}</style>
+      {/* Remove ellipses; allow per-cell X scroll for long names */}
+      <style>{`
+        .gantt_grid_scale .gantt_grid_head_cell,
+        .gantt_grid_data .gantt_cell,
+        .gantt_tree_content {
+          white-space: nowrap;
+          text-overflow: clip;
+        }
+        .cell-xscroll {
+          display: inline-block;
+          overflow-x: auto;
+          overflow-y: hidden;
+          max-width: 100%;
+          vertical-align: middle;
+        }
+      `}</style>
 
       {/* Header chips */}
       <Box
@@ -850,53 +757,68 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
           mt: 1,
         }}
       >
-        
-          <Sheet
-            variant="outlined"
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 2,
-              borderRadius: "lg",
-              px: 1.5,
-              py: 1,
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-  <DescriptionOutlinedIcon fontSize="small" color="primary" />
-  <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-    Project Code:
-  </Typography>
-  <Chip
-    color="primary"
-    size="sm"
-    variant="solid"
-    sx={{ fontWeight: 700, cursor: "pointer" }}
-    onClick={() => projectDbId && navigate(`/project_detail?project_id=${projectDbId}`)}
-    aria-label="Open project detail"
-  >
-    {projectMeta?.code || "—"}
-  </Chip>
-</Box>
-          </Sheet>
+        <Sheet
+          variant="outlined"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            borderRadius: "lg",
+            px: 1.5,
+            py: 1,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+            <DescriptionOutlinedIcon fontSize="small" color="primary" />
+            <Typography level="body-sm" sx={{ color: "text.secondary" }}>
+              Project Code:
+            </Typography>
+            <Chip
+              color="primary"
+              size="sm"
+              variant="solid"
+              sx={{ fontWeight: 700, cursor: "pointer" }}
+              onClick={() =>
+                projectDbId &&
+                navigate(`/project_detail?project_id=${projectDbId}`)
+              }
+              aria-label="Open project detail"
+            >
+              {projectMeta?.code || "—"}
+            </Chip>
+          </Box>
+        </Sheet>
 
         <Sheet
           variant="outlined"
-          sx={{ display: "flex", alignItems: "center", gap: 2, borderRadius: "lg", px: 1, py: 1 }}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            borderRadius: "lg",
+            px: 1,
+            py: 1,
+          }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
             <Timelapse fontSize="small" color="primary" />
             <Typography level="body-sm" sx={{ color: "text.secondary" }}>
               Remaining:
             </Typography>
-            {/* Live countdown chip */}
             <RemainingDaysChip target={countdownTarget} usedKey={countdownKey} />
           </Box>
         </Sheet>
 
         <Sheet
           variant="outlined"
-          sx={{ display: "flex", alignItems: "center", gap: 2, borderRadius: "lg", px: 1, py: 1 }}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            borderRadius: "lg",
+            px: 1,
+            py: 1,
+          }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
             <EventOutlinedIcon fontSize="small" color="success" />
@@ -937,7 +859,7 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
         />
       </Box>
 
-      {/* Right panel (form structure unchanged) */}
+      {/* Right panel */}
       {selectedId && (
         <>
           <Box
@@ -955,7 +877,6 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
               animation: "fadeIn 140ms ease-out",
             }}
           />
-
           <Sheet
             variant="outlined"
             sx={{
@@ -983,7 +904,9 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
                 <Select
                   size="sm"
                   value={form.status}
-                  onChange={(_, v) => setForm((f) => ({ ...f, status: v || "not started" }))}
+                  onChange={(_, v) =>
+                    setForm((f) => ({ ...f, status: v || "not started" }))
+                  }
                   slotProps={{ listbox: { sx: { zIndex: 1401 } } }}
                 >
                   <Option value="not started">Not started</Option>
@@ -1053,7 +976,6 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
 
               <Divider />
 
-              {/* Predecessors (editable) */}
               <Stack spacing={1}>
                 <Stack direction="row" alignItems="center" justifyContent="space-between">
                   <Typography level="title-sm">Predecessors</Typography>
@@ -1107,7 +1029,6 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
 
               <Divider />
 
-              {/* Successors (kept in form; backend still builds from predecessors) */}
               <Stack spacing={1}>
                 <Stack direction="row" alignItems="center" justifyContent="space-between">
                   <Typography level="title-sm">Successors</Typography>

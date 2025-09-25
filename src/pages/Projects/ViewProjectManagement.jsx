@@ -28,7 +28,7 @@ import SearchPickerModal from "../../component/SearchPickerModal";
 
 import {
   useLazyGetAllTemplateNameSearchQuery,
-  useUpdateProjectActivityFromTemplateMutation, // <-- add this hook in your slice
+  useUpdateProjectActivityFromTemplateMutation,
 } from "../../redux/projectsSlice";
 
 function ViewProjectManagement() {
@@ -392,24 +392,23 @@ function ViewProjectManagement() {
           </DialogContent>
 
           <DialogActions sx={{ pt: 1 }}>
-  <Button
-    variant="plain"
-    color="neutral"
-    onClick={() => setTplOpen(false)}
-    disabled={tplSubmitting}
-  >
-    Cancel
-  </Button>
-  <Button
-    startDecorator={<Save />}
-    onClick={handleSubmitTemplate}
-    loading={tplSubmitting}
-    disabled={tplSubmitting || !tplConfirm} // ✅ disable until checkbox ticked
-  >
-    Submit
-  </Button>
-</DialogActions>
-
+            <Button
+              variant="plain"
+              color="neutral"
+              onClick={() => setTplOpen(false)}
+              disabled={tplSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              startDecorator={<Save />}
+              onClick={handleSubmitTemplate}
+              loading={tplSubmitting}
+              disabled={tplSubmitting || !tplConfirm} // ✅ disable until checkbox ticked
+            >
+              Submit
+            </Button>
+          </DialogActions>
         </ModalDialog>
       </Modal>
 
