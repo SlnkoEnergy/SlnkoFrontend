@@ -142,6 +142,17 @@ getAllProjectActivities: builder.query({
       }),
       invalidatesTags: ["Project"],
     }),
+
+    getProjectStatesFilter: builder.query({
+      query:() => `project-state-detail`,
+      providesTags: ["Project"]
+    }),
+
+    getProjectDetail: builder.query({
+      query: () => `project-detail`,
+      providesTags : ["Project"]
+    }),
+    
   }),
 });
 
@@ -172,4 +183,6 @@ export const {
   useUpdateProjectActivityFromTemplateMutation,
   useGetAllProjectActivitiesQuery,
   useLazyGetAllProjectActivitiesQuery,
+  useGetProjectStatesFilterQuery,
+  useGetProjectDetailQuery
 } = projectsApi;

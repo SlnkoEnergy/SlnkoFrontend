@@ -8,7 +8,7 @@ import DoNotDisturbOnRoundedIcon from "@mui/icons-material/DoNotDisturbOnRounded
 import TeamLeaderboard from "../../component/All_Tasks/TeamLeaderboard";
 import { useMemo } from "react";
 import ProjectsWorkedCard from "../../component/All_Tasks/Charts/ProjectsDonut";
-import { useGetProjectStatusFilterQuery } from "../../redux/projectsSlice";
+import { useGetProjectDetailQuery, useGetProjectStatesFilterQuery, useGetProjectStatusFilterQuery } from "../../redux/projectsSlice";
 
 
 const IconBadge = ({ color = "#2563eb", bg = "#eff6ff", icon }) => (
@@ -31,6 +31,42 @@ const IconBadge = ({ color = "#2563eb", bg = "#eff6ff", icon }) => (
     </div>
 );
 
+const DONUT_COLORS = [
+    "#f59e0b", // amber
+    "#22c55e", // green
+    "#ef4444", // red
+    "#3b82f6", // blue
+    "#8b5cf6", // violet
+    "#14b8a6", // teal
+    "#e11d48", // rose
+    "#84cc16", // lime
+    "#f97316", // orange
+    "#06b6d4", // cyan
+
+    "#d946ef", // fuchsia
+    "#0ea5e9", // sky
+    "#65a30d", // olive green
+    "#dc2626", // deep red
+    "#7c3aed", // purple
+    "#10b981", // emerald
+    "#ca8a04", // yellow dark
+    "#2563eb", // indigo
+    "#f43f5e", // pinkish red
+    "#0891b2", // teal dark
+
+    "#a16207", // mustard
+    "#15803d", // forest green
+    "#4f46e5", // indigo dark
+    "#ea580c", // burnt orange
+    "#db2777", // magenta
+    "#047857", // green deep
+    "#1d4ed8", // royal blue
+    "#9333ea", // deep violet
+    "#b91c1c", // dark red
+    "#0d9488", // aqua teal
+];
+
+
 function Dash_project() {
 
     const { data, isLoading, isFetching } = useGetProjectStatusFilterQuery();
@@ -38,24 +74,25 @@ function Dash_project() {
     const stats = data?.data || {
         "completed": 0,
         "cancelled": 0,
-        "to be started" : 0,
-        "delayed" : 0,
-        "pending" : 0,
+        "to be started": 0,
+        "delayed": 0,
+        "pending": 0,
     }
 
     const {
         data: projectData,
         isLoading: perfLoading,
         isFetching: perfFetching,
-    } = useGetUserPerformanceQuery();
+    } = useGetProjectDetailQuery();
+
 
     const ProjectDetailColumns = [
-        {key: "code", label: "Project Code"},
-        { key: "name", label: "Project Name"},
-        {key: "current_acitivity", label: "Current Activity"},
-        {key: "next_activity", label: "Upcoming Acitivity"},
-        {key: "current_acitivity_completion_date", label: "Current Activity Completion Date"},
-        {key: "project_state", label: "Project State"}
+        { key: "code", label: "Project Code" },
+        { key: "name", label: "Project Name" },
+        { key: "current_acitivity", label: "Current Activity" },
+        { key: "next_activity", label: "Upcoming Acitivity" },
+        { key: "current_acitivity_completion_date", label: "Current Activity Completion Date" },
+        { key: "project_state", label: "Project State" }
     ]
 
     const projectDetailRows = useMemo(() => {
@@ -77,15 +114,17 @@ function Dash_project() {
         data: stateRes,
         isLoading: pbsLoading,
         isFetching: pbsFetching,
-      } = useGetProjectsByStateQuery();
+    } = useGetProjectStatesFilterQuery();
 
-      const donutData = useMemo(() =>{
-        
-        const dist = stateRes?.district || [];
-        return dist.map((d, i) =>({
-            name: d.state,
+    const donutData = useMemo(() => {
+
+        const dist = stateRes?.data || [];
+        return dist.map((d, i) => ({
+            name: d._id,
+            value: Number(((d.count / stateRes?.total) * 100).toFixed(2)),
+            color: DONUT_COLORS[i % DONUT_COLORS.length],
         }))
-      }, [stateRes])
+    }, [stateRes])
 
 
     return (
@@ -238,7 +277,7 @@ function Dash_project() {
                     <ProjectsWorkedCard
                         title="Projects worked"
                         data={pbsLoading || pbsFetching ? [] : donutData}
-                        total={stateRes?.totalProjects ?? 0}
+                        total={stateRes?.total ?? 0}
                         totalLabel="Projects"
                     />
                 </Grid>
