@@ -282,15 +282,6 @@ export const projectsApi = createApi({
       invalidatesTags: ["Project"],
     }),
 
-
-getRejectedOrNotAllowedDependencies: builder.query({
-  query: (projectId) => `projectactivity/dependencies/${projectId}`,
-  providesTags: (result, error, projectId) => [
-    { type: "ProjectActivityDependencies", id: projectId },
-  ],
-}),
-
-
 createApproval: builder.mutation({
   // UPDATE the URL below if your route differs (e.g. "approval/create" or "approval")
   query: (payload) => ({
@@ -299,6 +290,22 @@ createApproval: builder.mutation({
     body: payload,
   }),
   invalidatesTags: ["Approval"],
+}),
+
+getRejectedOrNotAllowedDependencies: builder.query({
+  // usage: useGetRejectedOrNotAllowedDependenciesQuery({ projectId, activityId })
+  query: ({ projectId, activityId }) => ({
+    url: `projectactivity/${encodeURIComponent(projectId)}/dependencies/${encodeURIComponent(activityId)}`,
+    method: "GET",
+  }),
+  // tag by project+activity so caches are distinct per pair
+  providesTags: (result, error, args) => {
+    const key =
+      args && args.projectId && args.activityId
+        ? `${args.projectId}:${args.activityId}`
+        : "UNKNOWN";
+    return [{ type: "ProjectActivityDependencies", id: key }];
+  },
 }),
 
   }),
@@ -340,6 +347,6 @@ export const {
   useLazyNamesearchMaterialCategoriesQuery,
   useUpdateDependencyMutation,
   useGetRejectedOrNotAllowedDependenciesQuery,
-useLazyGetRejectedOrNotAllowedDependenciesQuery,
-useCreateApprovalMutation,
+  useLazyGetRejectedOrNotAllowedDependenciesQuery,
+  useCreateApprovalMutation,
 } = projectsApi;

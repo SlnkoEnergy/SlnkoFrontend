@@ -9,7 +9,7 @@ import MainHeader from "../../component/Partials/MainHeader";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import My_Approvals from "../../component/Approvals/My_Approvals";
 import { LibraryAddOutlined } from "@mui/icons-material";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import Modal from "@mui/joy/Modal";
 import Sheet from "@mui/joy/Sheet";
@@ -19,16 +19,15 @@ import Divider from "@mui/joy/Divider";
 import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
 import Input from "@mui/joy/Input";
-import Select from "@mui/joy/Select";
-import Option from "@mui/joy/Option";
-import {
-  useGetProjectDropdownQuery,
-  useGetRejectedOrNotAllowedDependenciesQuery,
-  useCreateApprovalMutation,
-} from "../../redux/projectsSlice";
 import SelectRS from "react-select";
 import Filter from "../../component/Partials/Filter";
-import { useState } from "react";
+
+import {
+  useGetProjectDropdownQuery,
+  useGetProjectActivityByProjectIdQuery,
+  useGetRejectedOrNotAllowedDependenciesQuery, // ⬅️ dependencies API
+  useCreateApprovalMutation,
+} from "../../redux/projectsSlice";
 
 const rowSx = {
   px: 1,
@@ -60,9 +59,8 @@ function NewRequestPanel({ open, onOpenChange, onCreate }) {
   const [values, setValues] = useState({
     projectId: "",
     projectName: "",
-    // must match your backend token for Engineering
-    module: "ModuleTemplates",
-    item: "", // will hold selected dependency's model_id (string)
+    item: "", // activity_id
+    dependency: "", // dependency model_id
   });
 
   const setField = (k, v) => setValues((p) => ({ ...p, [k]: v }));
@@ -71,8 +69,8 @@ function NewRequestPanel({ open, onOpenChange, onCreate }) {
     setValues({
       projectId: "",
       projectName: "",
-      module: "ModuleTemplates",
       item: "",
+      dependency: "",
     });
 
   // Joy-like styles for react-select
@@ -124,85 +122,171 @@ function NewRequestPanel({ open, onOpenChange, onCreate }) {
   const selectedProjOption =
     projectOptions.find((o) => o.value === values.projectId) || null;
 
-  /* ========== fetch blocked dependencies by projectId ========== */
+  /* ========== fetch all activities by projectId ========== */
+  const {
+    data: actsResp,
+    isFetching: loadingActs,
+    isUninitialized: actsUninit,
+    isError: actsError,
+    isSuccess: actsOk,
+    refetch: refetchActs,
+  } = useGetProjectActivityByProjectIdQuery(values.projectId, {
+    skip: !values.projectId || !open,
+    refetchOnMountOrArgChange: true,
+  });
+
+  // Clear activity + dependency when project changes
+  useEffect(() => {
+    setField("item", "");
+    setField("dependency", "");
+    if (open && values.projectId) refetchActs?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [values.projectId]);
+
+  // Build Activity options (guard against errors/404)
+  const activityOptions = useMemo(() => {
+    if (actsError || !actsOk) return [];
+    const activities =
+      actsResp?.activities ??
+      actsResp?.data?.activities ??
+      actsResp?.projectactivity?.activities ??
+      [];
+    if (!Array.isArray(activities) || activities.length === 0) return [];
+    return activities
+      .map((a) => {
+        const actId = String(a?.activity_id?._id ?? a?.activity_id ?? "");
+        if (!actId) return null;
+        const label =
+          a?.name ?? a?.activity_id?.name ?? `Activity ${actId.slice(-6)}`;
+        return {
+          value: actId,
+          label,
+          meta: {
+            description: a?.description ?? a?.activity_id?.description ?? "",
+            type: a?.type ?? a?.activity_id?.type ?? "",
+            activityIdToPost: String(a?._id) ?? "",
+          },
+        };
+      })
+      .filter(Boolean);
+  }, [actsResp, actsError, actsOk]);
+
+  const activityLoading =
+    !!values.projectId && !actsUninit && loadingActs;
+  const selectedActivityOption =
+    activityOptions.find((o) => o.value === values.item) || null;
+  console.log({selectedActivityOption})
+  /* ========== fetch blocked dependencies for selected project+activity ========== */
   const {
     data: depsResp,
     isFetching: loadingDeps,
     isUninitialized: depsUninit,
-  } = useGetRejectedOrNotAllowedDependenciesQuery(values.projectId, {
-    skip: !values.projectId || !open,
-  });
-
-  // Clear item when project or module changes
-  useEffect(() => {
-    setField("item", "");
-  }, [values.projectId, values.module]);
-
-  // Build Item options from deps, filtered by module, and KEEP meta:
-  // - Engineering (ModuleTemplates) -> model is moduleTemplate(s)
-  // - SCM (scm) -> model is MaterialCategory
-  const itemOptions = useMemo(() => {
-    const acts = depsResp?.activities || [];
-    const desiredModels =
-      values.module === "ModuleTemplates"
-        ? new Set(["moduletemplate", "moduletemplates"])
-        : new Set(["materialcategory"]);
-
-    const seen = new Set(); // dedupe by model+model_id
-    const out = [];
-
-    for (const a of acts) {
-      for (const d of a?.dependency || []) {
-        const m = String(d?.model || "").toLowerCase();
-        if (!desiredModels.has(m)) continue;
-
-        const name = d?.ref_name || String(d?.model_id || "") || "Unnamed";
-
-        const modelId = String(d?.model_id || "");
-        const depId = String(d?._id || ""); // subdoc _id (if present)
-        const actId = String(a?.activity_id || "");
-
-        const key = `${m}:${modelId}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-
-        out.push({
-          value: modelId, // we store the referenced doc id here
-          label: name, // shown to the user
-          meta: {
-            model: d?.model, // original model string
-            dependency_id: depId, // may be empty if not projected by backend
-            activity_id: actId,
-            ref_name: name,
-          },
-        });
-      }
+    isError: depsError,
+    isSuccess: depsOk,
+    refetch: refetchDeps,
+  } = useGetRejectedOrNotAllowedDependenciesQuery(
+    { projectId: values.projectId, activityId: values.item },
+    {
+      skip: !values.projectId || !values.item || !open,
+      refetchOnMountOrArgChange: true,
     }
-    return out;
-  }, [depsResp, values.module]);
+  );
 
-  const itemLoading = !!values.projectId && !depsUninit && loadingDeps;
-  const selectedItemOption =
-    itemOptions.find((o) => o.value === values.item) || null;
+  // Clear dependency when activity changes
+  useEffect(() => {
+    setField("dependency", "");
+    if (open && values.projectId && values.item) refetchDeps?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [values.item]);
+
+  // Build Dependency options from deps API (show model_id_name)
+  const dependencyOptions = useMemo(() => {
+    if (depsError || !depsOk) return [];
+    const deps = Array.isArray(depsResp?.dependencies)
+      ? depsResp.dependencies
+      : [];
+    if (deps.length === 0) return [];
+
+    return deps.map((d) => {
+      const model = String(d?.model || "Unknown");
+      const mid = String(d?.model_id || "");
+      const name = d?.model_id_name ? String(d.model_id_name).trim() : "";
+
+      const label =
+        name || (mid ? `${model} (${mid.slice(0, 6)}…${mid.slice(-4)})` : model);
+
+      return {
+        value: mid, // referenced doc id
+        label,
+        meta: {
+          model,
+          status: d?.current_status?.status || "",
+          model_id_name: name,
+          dependencyIdToPost: String(d?._id) || "",
+        },
+      };
+    });
+  }, [depsResp, depsError, depsOk]);
+
+  const dependencyLoading =
+    !!values.projectId && !!values.item && !depsUninit && loadingDeps;
+  const selectedDependencyOption =
+    dependencyOptions.find((o) => o.value === values.dependency) || null;
+  console.log({selectedDependencyOption})
+  // True when API succeeded but returned zero deps
+  const noDeps =
+    depsOk &&
+    !depsError &&
+    Array.isArray(depsResp?.dependencies) &&
+    depsResp.dependencies.length === 0;
 
   // Compose approval payload from current selections
-  const buildApprovalPayload = () => {
-    if (!values.projectId || !selectedItemOption) return null;
+const buildApprovalPayload = () => {
+  if (!values.projectId || !selectedActivityOption) return null;
 
-    const model_name =
-      values.module === "ModuleTemplates"
-        ? "moduleTemplates"
-        : "MaterialCategory";
-
-    return {
-      model_name,
-      model_id: selectedItemOption.value,
-      activity_id: selectedItemOption?.meta?.activity_id || undefined,
-      dependency_id: selectedItemOption?.meta?.dependency_id || undefined,
-      // approvers: [...]  // optional if you want to pre-seed
-      // you do NOT send approval_code/created_by; backend sets those
-    };
+  return {
+    data: {
+      model_name: "projectActivities",
+      project_id: values.projectId,
+      activity_id: selectedActivityOption.meta.activityIdToPost,
+      ...(selectedDependencyOption?.value
+        ? { dependency_id: selectedDependencyOption?.meta?.dependencyIdToPost } // uses the current dependency dropdown value
+        : {}
+      ),
+    },
   };
+};
+
+  // Placeholders & disabled states
+  const activityPlaceholder = !values.projectId
+    ? "Select a project first…"
+    : actsError
+    ? "No project activities found for this project"
+    : "Search activity…";
+
+  const activityDisabled =
+    !values.projectId ||
+    activityLoading ||
+    actsError ||
+    activityOptions.length === 0;
+
+  const dependencyPlaceholder = !values.projectId
+    ? "Select a project first…"
+    : !values.item
+    ? "Select an activity first…"
+    : depsError
+    ? "No blocked dependencies found for this activity"
+    : noDeps
+    ? "No dependencies"
+    : "Search dependency…";
+
+  const dependencyDisabled =
+    !values.projectId ||
+    !values.item ||
+    dependencyLoading ||
+    depsError ||
+    noDeps ||
+    dependencyOptions.length === 0;
 
   return (
     <Modal
@@ -256,7 +340,7 @@ function NewRequestPanel({ open, onOpenChange, onCreate }) {
 
         {/* Fields */}
         <Box sx={{ flex: 1, overflow: "auto" }}>
-          {/* Project Id (react-select, searchable) */}
+          {/* Project Id */}
           <Box sx={rowSx}>
             <FormControl size="sm">
               <FormLabel>Project Id</FormLabel>
@@ -282,7 +366,7 @@ function NewRequestPanel({ open, onOpenChange, onCreate }) {
             </FormControl>
           </Box>
 
-          {/* Project Name auto-filled (read-only) */}
+          {/* Project Name (read-only) */}
           <Box sx={rowSx}>
             <FormControl size="sm">
               <FormLabel>Project Name</FormLabel>
@@ -295,58 +379,83 @@ function NewRequestPanel({ open, onOpenChange, onCreate }) {
             </FormControl>
           </Box>
 
-          {/* Module (Joy Select) */}
+          {/* Activity */}
           <Box sx={rowSx}>
             <FormControl size="sm">
-              <FormLabel>Module</FormLabel>
-              <Select
-                size="sm"
-                value={values.module}
-                onChange={(_, v) => setField("module", v || "")}
-              >
-                {/* Value is the backend token; label is what user sees */}
-                <Option value="ModuleTemplates">Engineering</Option>
-                <Option value="scm">SCM</Option>
-              </Select>
-            </FormControl>
-          </Box>
-
-          {/* Item (react-select) — populated by getRejectedOrNotAllowedDependencies */}
-          <Box sx={rowSx}>
-            <FormControl size="sm">
-              <FormLabel>Item</FormLabel>
+              <FormLabel>Activity</FormLabel>
               <SelectRS
-                options={itemOptions}
-                value={selectedItemOption}
-                isLoading={itemLoading}
+                options={activityOptions}
+                value={selectedActivityOption}
+                isLoading={activityLoading}
                 isClearable
                 isSearchable
-                placeholder={
-                  !values.projectId
-                    ? "Select a project first…"
-                    : values.module === "ModuleTemplates"
-                    ? "Search blocked template…"
-                    : "Search blocked material category…"
-                }
+                placeholder={activityPlaceholder}
                 onChange={(opt) => {
                   const o = opt || null;
-                  setField("item", o?.value || ""); // store the model_id
+                  setField("item", o?.value || ""); // activity_id
                 }}
-                isDisabled={
-                  !values.projectId || itemLoading || itemOptions.length === 0
-                }
+                isDisabled={activityDisabled}
                 menuPortalTarget={
                   typeof document !== "undefined" ? document.body : null
                 }
                 styles={rsStyles}
-                // default filtering works on label/value; you can reuse filterOption if you want
                 menuPlacement="auto"
                 noOptionsMessage={() =>
                   !values.projectId
                     ? "Select a project first"
-                    : "No blocked items found"
+                    : actsError
+                    ? "No project activities found"
+                    : "No activities found"
                 }
               />
+              {actsError && values.projectId ? (
+                <Typography level="body-xs" color="danger" sx={{ mt: 0.5 }}>
+                  No project activities were found for the selected project.
+                </Typography>
+              ) : null}
+            </FormControl>
+          </Box>
+
+          {/* Dependencies */}
+          <Box sx={rowSx}>
+            <FormControl size="sm">
+              <FormLabel>Dependencies</FormLabel>
+              <SelectRS
+                options={dependencyOptions}
+                value={selectedDependencyOption}
+                isLoading={dependencyLoading}
+                isClearable
+                isSearchable
+                placeholder={dependencyPlaceholder}
+                onChange={(opt) => {
+                  const o = opt || null;
+                  setField("dependency", o?.value || ""); // dependency model_id
+                }}
+                isDisabled={dependencyDisabled}
+                menuPortalTarget={
+                  typeof document !== "undefined" ? document.body : null
+                }
+                styles={rsStyles}
+                menuPlacement="auto"
+                noOptionsMessage={() =>
+                  !values.projectId
+                    ? "Select a project first"
+                    : !values.item
+                    ? "Select an activity first"
+                    : depsError
+                    ? "No blocked dependencies found"
+                    : "No dependencies"
+                }
+              />
+              {depsError && values.projectId && values.item ? (
+                <Typography level="body-xs" color="danger" sx={{ mt: 0.5 }}>
+                  No blocked dependencies were found for this activity.
+                </Typography>
+              ) : noDeps ? (
+                <Typography level="body-xs" sx={{ mt: 0.5 }}>
+                  No dependencies
+                </Typography>
+              ) : null}
             </FormControl>
           </Box>
         </Box>
@@ -384,6 +493,7 @@ function MyApproval() {
   const [createApproval, { isLoading: creating }] = useCreateApprovalMutation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [open, setOpen] = useState(false);
+
   const fields = [
     {
       key: "status",
@@ -509,12 +619,10 @@ function MyApproval() {
                       }),
                     };
 
-                    // matcher -> matchMode
                     if (values.matcher) {
                       next.matchMode = values.matcher === "OR" ? "any" : "all";
                     }
 
-                    // createdAt range
                     if (values.createdAt?.from)
                       next.from = String(values.createdAt.from);
                     if (values.createdAt?.to)
