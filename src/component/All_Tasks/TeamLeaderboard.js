@@ -44,6 +44,7 @@ export default function TeamLeaderboard({
       completion: pct(r.completed ?? 0, r.assigned ?? 0),
     }));
 
+
     const sorted = [...withPct].sort((a, b) => {
       const sortCol = columns.find((c) => c.key === sort.key);
       if (!sortCol) return 0;
@@ -213,32 +214,39 @@ export default function TeamLeaderboard({
             </thead>
 
             <tbody>
-              {data.map((r) => (
-                <tr key={r.id || r._id || r.name}>
-                  <td style={{ padding: "12px 16px", color: "#334155" }}>
-                    {r.rank}
-                  </td>
+              {data.map((r) => {
 
-                  {columns.map((col) => (
-                    <td
-                      key={col.key}
-                      style={{
-                        padding: "12px 16px",
-                        textAlign: col.align ?? "left",
-                        width: col.width,
-                      }}
-                    >
-                      {typeof col.render === "function" ? (
-                        col.render(r)
-                      ) : (
-                        <Typography level="body-sm">
-                          {getValue(r, col) ?? "-"}
-                        </Typography>
-                      )}
+                console.log("hello ", r);
+                return (
+                  <tr key={r.id || r._id || r.name}>
+                    <td style={{ padding: "12px 16px", color: "#334155" }}>
+                      {r.rank}
                     </td>
-                  ))}
-                </tr>
-              ))}
+
+                    {columns.map((col) => {
+                      console.log(col);
+                      return (
+                        <td
+                          key={col.key}
+                          style={{
+                            padding: "12px 16px",
+                            textAlign: col.align ?? "left",
+                            width: col.width,
+                          }}
+                        >
+                          {typeof col.render === "function" ? (
+                            col.render(r)
+                          ) : (
+                            <Typography level="body-sm">
+                              {getValue(r, col) ?? "-"}
+                            </Typography>
+                          )}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                )
+              })}
             </tbody>
           </Table>
         </Sheet>

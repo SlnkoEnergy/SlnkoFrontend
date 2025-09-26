@@ -85,30 +85,82 @@ function Dash_project() {
         isFetching: perfFetching,
     } = useGetProjectDetailQuery();
 
+    const fmtDate = (d) => {
+        if (!d) return "-";
+        const dt = new Date(d);
+        if (Number.isNaN(dt.getTime())) return "-";
+        const yyyy = dt.getFullYear();
+        const mm = String(dt.getMonth() + 1).padStart(2, "0");
+        const dd = String(dt.getDate()).padStart(2, "0");
+        return `${yyyy}-${mm}-${dd}`;
+    };
+
+    console.log(projectData);
 
     const ProjectDetailColumns = [
         { key: "code", label: "Project Code" },
         { key: "name", label: "Project Name" },
-        { key: "current_acitivity", label: "Current Activity" },
-        { key: "next_activity", label: "Upcoming Acitivity" },
-        { key: "current_acitivity_completion_date", label: "Current Activity Completion Date" },
-        { key: "project_state", label: "Project State" }
-    ]
+        { key: "current_activity", label: "Current Activity" },
+        { key: "upcoming_activity", label: "Upcoming Activity" },
+        { key: "completion_date", label: "Current Activity Completion Date" },
+        { key: "project_state", label: "Project State" },
+    ];
+
 
     const projectDetailRows = useMemo(() => {
-        if (!projectData) return [];
+        const list = projectData?.data ?? []; // ← your array of 48
+        return list.map((p) => {
+            const acts = Array.isArray(p.activities) ? p.activities : [];
+            console.log(acts);
+            // Heuristic:
+            // - current = first activity that isn't completed (or missing actual_end_date)
+            // - fallback to last activity if all completed or no obvious current
+            const current =
+                acts.find(
+                    (a) =>
+                        a?.current_status === "in_progress" ||
+                        a?.status === "in_progress" ||
+                        !a?.actual_end_date
+                ) || acts[acts.length - 1] || null;
 
-        return [
-            {
-                id: projectData.code,
-                name: projectData.name,
-                current_activity: projectData.current_activity,
-                upcoming_activity: projectData.upcoming_activity,
-                completion_date: projectData.completion_date,
-                project_state: projectData.project_state,
+            let upcoming = [];
+            acts.map((activity) => {
+
+            })
+
+            // upcoming = a declared successor of current if present, else the first not-started activity
+            // let upcoming = null;
+
+            if (current?.successors?.length) {
+                // sometimes successors are just IDs; sometimes objects—handle both
+                const s = current.successors[0];
+                upcoming =
+                    typeof s === "object" && s !== null
+                        ? s
+                        : acts.find((a) => a?.activity_id === s) || null;
             }
-        ];
-    }, [projectData])
+            if (!upcoming) {
+                upcoming =
+                    acts.find((a) => !a?.actual_start_date && a?.activity_id !== current?.activity_id) ||
+                    null;
+            }
+
+            const completion_date = current?.actual_end_date
+                ? fmtDate(current.actual_end_date)
+                : "-";
+            console.log(p.project_code)
+            return {
+                id: p._id, // stable unique id for the row
+                code: p.project_code ?? "NA",
+                name: p.project_name ?? "-",
+                current_activity: current?.activity_name ?? "-",
+                upcoming_activity: upcoming?.activity_name ?? "-",
+                completion_date,
+                project_state: p.state ?? "-",
+            };
+        });
+    }, [projectData]);
+
 
     const {
         data: stateRes,
@@ -254,18 +306,7 @@ function Dash_project() {
             <Grid container spacing={2} sx={{ mt: 1 }}>
                 <Grid xs={12} md={8}>
                     <TeamLeaderboard
-                        rows={
-                            perfLoading || perfFetching
-                                ? []
-                                : projectDetailRows.map((u) => ({
-                                    id: projectDetailRows.code,
-                                    name: projectDetailRows.name,
-                                    current_activity: projectDetailRows.current_activity,
-                                    upcoming_activity: projectDetailRows.upcoming_activity,
-                                    completion_date: projectDetailRows.completion_date,
-                                    project_state: projectDetailRows.project_state,
-                                }))
-                        }
+                        rows={perfLoading || perfFetching ? [] : projectDetailRows}
                         title="Project Detail Dashboard"
                         columns={ProjectDetailColumns}
                     // searchValue={userSearch}
