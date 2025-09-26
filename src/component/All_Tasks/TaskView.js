@@ -138,6 +138,7 @@ export default function Dash_task({
 
   const statusFromTab =
     {
+      "Auto Tasks": "system",
       Pending: "pending",
       "In Progress": "in progress",
       Completed: "completed",
@@ -395,26 +396,26 @@ export default function Dash_task({
           }}
         >
           <TabList sx={{ gap: 1 }}>
-            {["Pending", "In Progress", "Completed", "Cancelled", "All"].map(
-              (label) => (
-                <Tab
-                  key={label}
-                  value={label}
-                  disableIndicator
-                  sx={{
-                    borderRadius: "xl",
-                    fontWeight: "md",
-                    "&.Mui-selected": {
-                      bgcolor: "background.surface",
-                      boxShadow: "sm",
-                    },
-                  }}
-                >
-                  {label}
-                </Tab>
-              )
-            )}
-          </TabList>
+  {["Auto Tasks", "Pending", "In Progress", "Completed", "Cancelled", "All"].map(
+    (label) => (
+      <Tab
+        key={label}
+        value={label}
+        disableIndicator
+        sx={{
+          borderRadius: "xl",
+          fontWeight: "md",
+          "&.Mui-selected": {
+            bgcolor: "background.surface",
+            boxShadow: "sm",
+          },
+        }}
+      >
+        {label}
+      </Tab>
+    )
+  )}
+</TabList>
         </Tabs>
 
         <Box
