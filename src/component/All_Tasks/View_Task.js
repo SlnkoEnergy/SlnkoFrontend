@@ -189,7 +189,7 @@ const PeopleAvatars = ({
                 onKeyDown={
                   onPersonClick
                     ? (e) =>
-                        (e.key === "Enter" || e.key === " ") && onPersonClick(p)
+                      (e.key === "Enter" || e.key === " ") && onPersonClick(p)
                     : undefined
                 }
                 size={size}
@@ -240,11 +240,11 @@ const PeopleAvatars = ({
                       onKeyDown={
                         onPersonClick
                           ? (e) => {
-                              if (e.key === "Enter" || e.key === " ") {
-                                e.preventDefault();
-                                onPersonClick(p);
-                              }
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              onPersonClick(p);
                             }
+                          }
                           : undefined
                       }
                       sx={{ cursor: onPersonClick ? "pointer" : "default" }}
@@ -388,7 +388,7 @@ const StatusTimeline = ({ history = [], current }) => {
     current?.status &&
     (!last ||
       (last.status || "").toLowerCase() !==
-        (current.status || "").toLowerCase())
+      (current.status || "").toLowerCase())
   ) {
     steps.push({
       status: current.status,
@@ -462,7 +462,7 @@ const StatusTimeline = ({ history = [], current }) => {
             <Connector
               durationLabel={formatDuration(
                 Date.now() -
-                  (nodes[nodes.length - 1]?.at?.getTime?.() ?? Date.now())
+                (nodes[nodes.length - 1]?.at?.getTime?.() ?? Date.now())
               )}
             />
             <Box
@@ -729,8 +729,8 @@ export default function ViewTaskPage() {
     const apiUsers = Array.isArray(allUsersResp)
       ? allUsersResp
       : Array.isArray(allUsersResp?.data)
-      ? allUsersResp.data
-      : [];
+        ? allUsersResp.data
+        : [];
 
     const followerSet = new Set(
       (task?.followers || []).map((u) => idOf(u)).filter(Boolean)
@@ -816,8 +816,8 @@ export default function ViewTaskPage() {
         const arr = Array.isArray(s?.assigned_to)
           ? s.assigned_to
           : s?.assigned_to
-          ? [s.assigned_to]
-          : [];
+            ? [s.assigned_to]
+            : [];
         return arr.some((u) => idOf(u) === meId);
       }) || null
     );
@@ -994,8 +994,8 @@ export default function ViewTaskPage() {
     const apiUsers = Array.isArray(allUsersResp)
       ? allUsersResp
       : Array.isArray(allUsersResp?.data)
-      ? allUsersResp.data
-      : [];
+        ? allUsersResp.data
+        : [];
 
     const assignedIds = new Set(
       (task?.assigned_to || []).map((u) => idOf(u)).filter(Boolean)
@@ -1077,8 +1077,8 @@ export default function ViewTaskPage() {
       const arr = Array.isArray(st?.assigned_to)
         ? st.assigned_to
         : st?.assigned_to
-        ? [st.assigned_to]
-        : [];
+          ? [st.assigned_to]
+          : [];
       arr.forEach(addId);
     });
 
@@ -1249,9 +1249,9 @@ export default function ViewTaskPage() {
               >
                 {effectiveCurrentStatus?.status
                   ? effectiveCurrentStatus.status
-                      .split(" ")
-                      .map((w) => w[0]?.toUpperCase() + w.slice(1))
-                      .join(" ")
+                    .split(" ")
+                    .map((w) => w[0]?.toUpperCase() + w.slice(1))
+                    .join(" ")
                   : "—"}
               </Chip>
               {typeMeta(task?.type).icon}
@@ -1369,8 +1369,8 @@ export default function ViewTaskPage() {
                               const arr = Array.isArray(s?.assigned_to)
                                 ? s.assigned_to
                                 : s?.assigned_to
-                                ? [s.assigned_to]
-                                : [];
+                                  ? [s.assigned_to]
+                                  : [];
                               arr.forEach((u) => {
                                 const k = idOf(u);
                                 if (k && !uniq.has(k)) uniq.set(k, u);
@@ -1389,8 +1389,8 @@ export default function ViewTaskPage() {
                       mySubtask?.deadline
                         ? new Date(mySubtask.deadline).toLocaleString()
                         : subtasks.length === 1 && subtasks[0]?.deadline
-                        ? new Date(subtasks[0].deadline).toLocaleString()
-                        : "-"
+                          ? new Date(subtasks[0].deadline).toLocaleString()
+                          : "-"
                     }
                   />
                 </>
@@ -1519,9 +1519,9 @@ export default function ViewTaskPage() {
                   >
                     {effectiveCurrentStatus?.status
                       ? effectiveCurrentStatus.status
-                          .split(" ")
-                          .map((w) => w[0]?.toUpperCase() + w.slice(1))
-                          .join(" ")
+                        .split(" ")
+                        .map((w) => w[0]?.toUpperCase() + w.slice(1))
+                        .join(" ")
                       : "—"}
                   </Chip>
                 }
@@ -1578,8 +1578,7 @@ export default function ViewTaskPage() {
                     }}
                     onClick={() =>
                       navigate(
-                        `/project_detail?page=1&project_id=${
-                          p?._id || p?.projectId
+                        `/project_detail?page=1&project_id=${p?._id || p?.projectId
                         }`
                       )
                     }
@@ -1672,12 +1671,12 @@ export default function ViewTaskPage() {
                   const when = it.at ? new Date(it.at) : null;
                   const whenLabel = when
                     ? when.toLocaleString("en-GB", {
-                        day: "2-digit",
-                        month: "short",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        hour12: true,
-                      })
+                      day: "2-digit",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: true,
+                    })
                     : "—";
 
                   const isStatus = it._type === "status";
@@ -1758,9 +1757,8 @@ export default function ViewTaskPage() {
                             </Stack>
                           ) : it._type === "file" ? (
                             <Typography level="body-sm" sx={{ mt: 0.25 }}>
-                              {`Uploaded file: ${
-                                it?.attachment?.name || "Attachment"
-                              }`}
+                              {`Uploaded file: ${it?.attachment?.name || "Attachment"
+                                }`}
                             </Typography>
                           ) : null}
 
@@ -2176,20 +2174,26 @@ export default function ViewTaskPage() {
                 (v?._id || v?.id || v?.email || v?.name)
               }
               renderOption={(liProps, option) => (
-                <li {...liProps} key={option._id}>
+                <li
+                  {...liProps}
+                  key={option._id}
+                  style={{
+                    padding: "6px 10px",
+                    borderRadius: "6px",
+                    transition: "background 0.2s ease",
+                  }}
+                >
                   <Stack
-                    sx={{ cursor: "pointer" }}
                     direction="row"
                     alignItems="center"
                     gap={1}
+                    sx={{ cursor: "pointer" }}
                   >
                     <Avatar
                       size="sm"
                       src={option.avatar || undefined}
                       variant={option.avatar ? "soft" : "solid"}
-                      color={
-                        option.avatar ? "neutral" : colorFromName(option.name)
-                      }
+                      color={option.avatar ? "neutral" : colorFromName(option.name)}
                     >
                       {!option.avatar && initialsOf(option.name)}
                     </Avatar>
@@ -2197,7 +2201,20 @@ export default function ViewTaskPage() {
                   </Stack>
                 </li>
               )}
-              sx={{ "--Listbox-maxHeight": "260px", cursor: "pointer" }}
+              sx={{
+                "--Listbox-maxHeight": "260px",
+                cursor: "pointer",
+                mt: 1,
+                borderRadius: "md",
+                bgcolor: "background.surface",
+                "& .MuiAutocomplete-inputRoot": {
+                  borderRadius: "8px",
+                  padding: "4px 6px",
+                },
+                "& .MuiAutocomplete-option:hover": {
+                  backgroundColor: "var(--joy-palette-neutral-softBg)", // subtle hover
+                },
+              }}
             />
           </Stack>
 
