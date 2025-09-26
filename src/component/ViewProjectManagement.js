@@ -35,9 +35,8 @@ import {
   useCreateProjectActivityMutation,
   useGetActivityInProjectQuery,
 } from "../redux/projectsSlice";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import AppSnackbar from "./AppSnackbar";
-import { useNavigate } from "react-router-dom";
 
 /* ---------------- helpers ---------------- */
 const labelToType = { FS: "0", SS: "1", FF: "2", SF: "3" };
@@ -52,7 +51,6 @@ const toDMY = (d) => {
   const yyyy = dt.getFullYear();
   return `${dd}-${mm}-${yyyy}`;
 };
-
 function parseISOAsLocalDate(v) {
   if (!v) return null;
   if (v instanceof Date && !isNaN(v))
@@ -64,12 +62,10 @@ function parseISOAsLocalDate(v) {
   if (m) return new Date(+m[1], +m[2] - 1, +m[3], 0, 0, 0);
   return null;
 }
-
 const startCellTemplate = (task) =>
   task.start_date instanceof Date
     ? gantt.date.date_to_str("%d-%m-%Y")(task.start_date)
     : "";
-
 const endCellTemplate = (task) => {
   if (task._end_dmy) return task._end_dmy;
   if (task.start_date instanceof Date && Number(task.duration) > 0) {
@@ -82,10 +78,8 @@ const endCellTemplate = (task) => {
   }
   return "";
 };
-
 const durationTemplate = (task) =>
   Number(task.duration) > 0 ? String(task.duration) : "";
-
 const predecessorTemplate = (task) => {
   const incoming = gantt
     .getLinks()
@@ -100,8 +94,6 @@ const predecessorTemplate = (task) => {
     })
     .join(", ");
 };
-
-// backend error -> pretty msg
 const extractBackendError = (err) => {
   const data = err?.data || err?.response?.data || {};
   const msg = String(
@@ -109,7 +101,6 @@ const extractBackendError = (err) => {
   );
   const details = data.details || {};
   const parts = [msg];
-
   if (details.required_min_start || details.required_min_finish) {
     const reqStart = details.required_min_start
       ? new Date(details.required_min_start)
@@ -117,30 +108,217 @@ const extractBackendError = (err) => {
     const reqFinish = details.required_min_finish
       ? new Date(details.required_min_finish)
       : null;
-
     const tips = [
       reqStart ? `Min Start: ${toDMY(reqStart)}` : null,
       reqFinish ? `Min Finish: ${toDMY(reqFinish)}` : null,
     ]
       .filter(Boolean)
       .join(" • ");
-
     if (tips) parts.push(tips);
   }
-
   if (Array.isArray(details.rules) && details.rules.length) {
     parts.push(details.rules.map(String).join(" | "));
   }
-
   return parts.filter(Boolean).join(" — ");
 };
 
-/* ---------- pick a target deadline from project/activity ---------- */
+/* ---------- date math helpers (inclusive) ---------- */
+function addDays(date, days) {
+  if (!date) return null;
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + (Number(days) || 0));
+  return d;
+}
+function isAfter(a, b) {
+  return a && b && new Date(a).getTime() > new Date(b).getTime();
+}
+function finishFromStartAndDuration(start, duration) {
+  const d = Math.max(1, Number(duration) || 0);
+  return addDays(start, d - 1);
+}
+function durationFromStartFinish(start, finish) {
+  if (!start || !finish) return 0;
+  const s = new Date(start);
+  const f = new Date(finish);
+  s.setHours(0, 0, 0, 0);
+  f.setHours(0, 0, 0, 0);
+  const ms = f.getTime() - s.getTime();
+  return ms < 0 ? 0 : Math.floor(ms / 86400000) + 1;
+}
+function earliestStartGivenConstraints(dur, minStart, minFinish) {
+  const d = Math.max(1, Number(dur) || 0);
+  const needFromFinish = minFinish ? addDays(minFinish, -(d - 1)) : null;
+  if (minStart && needFromFinish) {
+    return isAfter(minStart, needFromFinish)
+      ? new Date(minStart)
+      : new Date(needFromFinish);
+  }
+  if (minStart) return new Date(minStart);
+  if (needFromFinish) return new Date(needFromFinish);
+  return null;
+}
+
+/* ---------- topo order from predecessors ---------- */
+function topoOrder(paList) {
+  const ids = new Set();
+  const indeg = new Map();
+  const adj = new Map();
+  const gid = (x) =>
+    String(
+      x?.activity_id?._id ||
+        x?.activity_id ||
+        x?.master_activity_id?._id ||
+        x?.master_activity_id ||
+        ""
+    );
+
+  paList.forEach((a) => {
+    const id = gid(a);
+    if (!id) return;
+    ids.add(id);
+    indeg.set(id, 0);
+    adj.set(id, []);
+  });
+  paList.forEach((a) => {
+    const v = gid(a);
+    if (!v) return;
+    (a.predecessors || []).forEach((p) => {
+      const u = String(p.activity_id?._id || p.activity_id || "");
+      if (!ids.has(u)) return;
+      adj.get(u).push(v);
+      indeg.set(v, (indeg.get(v) || 0) + 1);
+    });
+  });
+  const q = [];
+  indeg.forEach((deg, node) => deg === 0 && q.push(node));
+  const order = [];
+  while (q.length) {
+    const u = q.shift();
+    order.push(u);
+    (adj.get(u) || []).forEach((v) => {
+      indeg.set(v, indeg.get(v) - 1);
+      if (indeg.get(v) === 0) q.push(v);
+    });
+  }
+  // If cycle, we still return partial order; projection will do best-effort
+  return order.length ? order : Array.from(ids);
+}
+
+/* ---------- client-only "Actual" projection (recursive) ---------- */
+function projectClientActuals(paList) {
+  const norm = paList.map((pa, idx) => {
+    const master = pa.activity_id || pa.master_activity_id || {};
+    const dbId = String(master?._id || pa.activity_id || "");
+
+    const planned_start =
+      pa.planned_start || pa.start_date || pa.planned_start_date || null;
+    const planned_finish =
+      pa.planned_finish || pa.end_date || pa.planned_end_date || null;
+
+    const actual_start =
+      pa.actual_start_date || pa.actual_start || pa.actual_start_dt || null;
+    const actual_finish =
+      pa.actual_finish_date || pa.actual_finish || pa.actual_end_dt || null;
+
+    let duration = Number.isFinite(Number(pa.duration)) ? Number(pa.duration) : 0;
+    if (!duration && planned_start && planned_finish) {
+      duration = durationFromStartFinish(planned_start, planned_finish);
+    }
+    if (!duration) duration = 1;
+
+    return {
+      _dbId: dbId,
+      planned_start: parseISOAsLocalDate(planned_start),
+      planned_finish: parseISOAsLocalDate(planned_finish),
+      actual_start: parseISOAsLocalDate(actual_start),
+      actual_finish: parseISOAsLocalDate(actual_finish),
+      duration,
+      preds: Array.isArray(pa.predecessors) ? pa.predecessors : [],
+    };
+  });
+
+  const map = new Map(norm.map((n) => [n._dbId, n]));
+  const order = topoOrder(paList);
+
+  order.forEach((id) => {
+    const node = map.get(id);
+    if (!node) return;
+
+    // If truly completed, keep the real window.
+    if (node.actual_start && node.actual_finish) return;
+
+    let minStart = null;
+    let minFinish = null;
+    (node.preds || []).forEach((link) => {
+      const pred = map.get(String(link.activity_id?._id || link.activity_id || ""));
+      if (!pred) return;
+
+      const type = String(link.type || "FS").toUpperCase();
+      const lag = Number(link.lag || 0);
+
+      const pStart = pred.actual_start || pred._client_start || pred.planned_start;
+      const pFinish =
+        pred.actual_finish || pred._client_finish || pred.planned_finish;
+
+      if (type === "FS" && pFinish) {
+        const req = addDays(pFinish, lag);
+        if (!minStart || isAfter(req, minStart)) minStart = req;
+      } else if (type === "SS" && pStart) {
+        const req = addDays(pStart, lag);
+        if (!minStart || isAfter(req, minStart)) minStart = req;
+      } else if (type === "FF" && pFinish) {
+        const req = addDays(pFinish, lag);
+        if (!minFinish || isAfter(req, minFinish)) minFinish = req;
+      }
+    });
+
+    // Running task? keep actual_start and project finish
+    if (node.actual_start && !node.actual_finish) {
+      node._client_start = node.actual_start;
+      node._client_finish = finishFromStartAndDuration(
+        node.actual_start,
+        node.duration
+      );
+      return;
+    }
+
+    // No actuals yet, project from constraints/planned
+    const desiredStart =
+      earliestStartGivenConstraints(node.duration, minStart, minFinish) ||
+      node.planned_start ||
+      null;
+    const desiredFinish =
+      desiredStart && node.duration
+        ? finishFromStartAndDuration(desiredStart, node.duration)
+        : node.planned_finish || null;
+
+    node._client_start = desiredStart || null;
+    node._client_finish = desiredFinish || null;
+  });
+
+  // Build output for quick lookup
+  const out = new Map();
+  map.forEach((n, id) => {
+    const start = n.actual_start || n._client_start || n.planned_start || null;
+    const finish =
+      n.actual_finish || n._client_finish || n.planned_finish || null;
+
+    const isCompleted = !!n.actual_finish;
+    const onTime =
+      isCompleted && n.planned_finish
+        ? !isAfter(n.actual_finish, n.planned_finish)
+        : null;
+
+    out.set(id, { start, finish, isCompleted, onTime });
+  });
+  return out;
+}
+
+/* ---------- countdown helpers ---------- */
 function pickCountdownTarget(paWrapper, paList) {
-  // Try on project payload first (project_id)
   const project = paWrapper?.project_id || paWrapper?.project || {};
   const candidates = [];
-
   const addCand = (obj, label) => {
     if (!obj) return;
     const vals = [
@@ -154,34 +332,28 @@ function pickCountdownTarget(paWrapper, paList) {
       if (!isNaN(d)) candidates.push({ key, label: label || key, date: d });
     });
   };
-
-  // project-level
   addCand(project, "project");
-
-  // also check inside activity.activity_id if present (as you mentioned)
   if (Array.isArray(paList)) {
-    paList.forEach((pa) => addCand(pa?.activity_id, pa?.activity_id?.name || "activity"));
+    paList.forEach((pa) =>
+      addCand(pa?.activity_id, pa?.activity_id?.name || "activity")
+    );
   }
-
-  if (candidates.length === 0) return { target: null, usedKey: null };
-
-  // Prefer project_completion_date > ppa_expiry_date > bd_commitment_date if future
-  const prefOrder = ["project_completion_date", "ppa_expiry_date", "bd_commitment_date"];
+  if (!candidates.length) return { target: null, usedKey: null };
+  const prefOrder = [
+    "project_completion_date",
+    "ppa_expiry_date",
+    "bd_commitment_date",
+  ];
   const now = Date.now();
-
   for (const k of prefOrder) {
     const hit = candidates.find((c) => c.key === k && c.date.getTime() > now);
     if (hit) return { target: hit.date, usedKey: hit.key };
   }
-
-  // Otherwise pick the *soonest* future among all, or the last past if all are past
   const futures = candidates.filter((c) => c.date.getTime() > now);
   if (futures.length) {
     const soonest = futures.reduce((a, b) => (a.date < b.date ? a : b));
     return { target: soonest.date, usedKey: soonest.key };
   }
-
-  // all are past; choose the most recent past just to show "Expired"
   const latestPast = candidates.reduce((a, b) => (a.date > b.date ? a : b));
   return { target: latestPast.date, usedKey: latestPast.key };
 }
@@ -189,8 +361,7 @@ function pickCountdownTarget(paWrapper, paList) {
 /* ---------- live countdown chip ---------- */
 function RemainingDaysChip({ target, usedKey }) {
   const [text, setText] = useState("—");
-  const [color, setColor] = useState("neutral"); // success / warning / danger / neutral
-
+  const [color, setColor] = useState("neutral");
   useEffect(() => {
     if (!target) {
       setText("—");
@@ -198,12 +369,10 @@ function RemainingDaysChip({ target, usedKey }) {
       return;
     }
     let cancelled = false;
-
     const tick = () => {
       const now = new Date().getTime();
       const end = new Date(target).getTime();
       const diff = end - now;
-
       if (diff <= 0) {
         if (!cancelled) {
           setText("Expired");
@@ -211,29 +380,22 @@ function RemainingDaysChip({ target, usedKey }) {
         }
         return;
       }
-
-      // compute D:H:M:S
       const seconds = Math.floor(diff / 1000);
       const d = Math.floor(seconds / (24 * 3600));
       const h = Math.floor((seconds % (24 * 3600)) / 3600);
       const m = Math.floor((seconds % 3600) / 60);
       const s = seconds % 60;
-
       const parts = [];
       if (d > 0) parts.push(`${d}d`);
       parts.push(`${h}h`, `${m}m`, `${s}s`);
-
-
       let c = "success";
       if (d < 10) c = "danger";
       else if (d < 30) c = "warning";
-
       if (!cancelled) {
         setText(parts.join(" "));
         setColor(c);
       }
     };
-
     tick();
     const id = setInterval(tick, 1000);
     return () => {
@@ -260,9 +422,8 @@ function RemainingDaysChip({ target, usedKey }) {
   );
 }
 
-/* ---------------- right panel row ---------------- */
+/* ---------- row for predecessors/successors ---------- */
 function DepRow({ title, options, row, onChange, onRemove }) {
-  
   return (
     <Stack direction="row" alignItems="center" spacing={1} sx={{ width: "100%" }}>
       <Autocomplete
@@ -313,6 +474,8 @@ function DepRow({ title, options, row, onChange, onRemove }) {
 const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => {
   const ganttContainer = useRef(null);
   const [viewMode, setViewMode] = useState(viewModeParam);
+  const [timelineMode, setTimelineMode] = useState("baseline"); // "baseline" | "actual"
+
   const [searchParams] = useSearchParams();
   const projectId = searchParams.get("project_id");
   const navigate = useNavigate();
@@ -340,42 +503,80 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
     { skip: !activeDbId || !projectId }
   );
 
-    const paWrapper = apiData?.projectactivity || apiData || {};
-    const paList = Array.isArray(paWrapper.activities)
-      ? paWrapper.activities
-      : Array.isArray(paWrapper)
-      ? paWrapper
-      : [];
-    const projectMeta = paWrapper.project_id || apiData?.project || {};
-    const projectDbId = projectMeta?._id || projectId;
+  const paWrapper = apiData?.projectactivity || apiData || {};
+  const paList = Array.isArray(paWrapper.activities)
+    ? paWrapper.activities
+    : Array.isArray(paWrapper)
+    ? paWrapper
+    : [];
+  const projectMeta = paWrapper.project_id || apiData?.project || {};
+  const projectDbId = projectMeta?._id || projectId;
 
   const { target: countdownTarget, usedKey: countdownKey } = useMemo(
     () => pickCountdownTarget(paWrapper, paList),
     [paWrapper, paList]
   );
 
-  const { ganttData, ganttLinks, siToDbId, dbIdToSi } = useMemo(() => {
+  /* ---------- build data (mode-aware) ---------- */
+  const buildTasksAndLinks = (mode) => {
     const byMasterToSI = new Map();
     const _siToDbId = new Map();
 
-    const data = paList.map((pa, idx) => {
+    // When Actual: compute client-side recursive projection first
+    const actualLookup = mode === "actual" ? projectClientActuals(paList) : null;
+
+    const data = (paList || []).map((pa, idx) => {
       const si = String(idx + 1);
       const master = pa.activity_id || pa.master_activity_id || {};
-      const masterId = String(master?._id || "");
+      const masterId = String(master?._id || pa.activity_id || "");
       if (masterId) byMasterToSI.set(masterId, si);
       if (masterId) _siToDbId.set(si, masterId);
 
       const text = master?.name || pa.name || pa.activity_name || "—";
 
-      // Use backend dates only; if missing, leave null (grid shows empty, no bar).
-      const sISO = pa.planned_start || pa.start_date || null;
-      const eISO = pa.planned_finish || pa.end_date || null;
+      let startDateObj = null;
+      let endDateObj = null;
 
-      const startDateObj = sISO ? parseISOAsLocalDate(sISO) : null;
-      const endDateObj = eISO ? parseISOAsLocalDate(eISO) : null;
+      if (mode === "actual") {
+        const proj = actualLookup?.get(masterId);
+        startDateObj = proj?.start || null;
+        endDateObj = proj?.finish || null;
+      } else {
+        const sISO = pa.planned_start || pa.start_date || null;
+        const eISO = pa.planned_finish || pa.end_date || null;
+        startDateObj = sISO ? parseISOAsLocalDate(sISO) : null;
+        endDateObj = eISO ? parseISOAsLocalDate(eISO) : null;
+      }
 
-      const duration = Number.isFinite(Number(pa.duration)) ? Number(pa.duration) : 0;
-      const status = pa.current_status?.status || "not started";
+      let duration = 0;
+      if (startDateObj && endDateObj) {
+        duration = durationFromStartFinish(startDateObj, endDateObj);
+      } else {
+        duration = Number.isFinite(Number(pa.duration)) ? Number(pa.duration) : 0;
+      }
+
+      // status / progress
+      const isCompletedActual =
+        mode === "actual" ? !!pa.actual_finish : pa?.current_status?.status === "completed";
+
+      const status =
+        pa.current_status?.status ||
+        (mode === "actual" && (pa.actual_finish || endDateObj) ? "completed" : "not started");
+
+      // Resources
+      const resources =
+        pa.resources ?? pa.activity_resources ?? pa.activity_id?.resources ?? null;
+
+      // Actual on-time?
+      let onTime = null;
+      if (mode === "actual") {
+        const plannedFinish =
+          pa.planned_finish || pa.end_date ? parseISOAsLocalDate(pa.planned_finish || pa.end_date) : null;
+        const realFinish = pa.actual_finish ? parseISOAsLocalDate(pa.actual_finish) : null;
+        if (realFinish && plannedFinish) {
+          onTime = !isAfter(realFinish, plannedFinish);
+        }
+      }
 
       return {
         id: si,
@@ -386,20 +587,25 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
         _end_dmy: endDateObj ? toDMY(endDateObj) : "",
         duration,
         progress:
-          typeof pa.percent_complete === "number" ? pa.percent_complete / 100 : 0,
+          typeof pa.percent_complete === "number"
+            ? pa.percent_complete / 100
+            : mode === "actual" && isCompletedActual
+            ? 1
+            : 0,
         open: true,
-        _hadStart: !!startDateObj,
         _unscheduled: !startDateObj && !duration,
         _status: status,
-        $no_start: !startDateObj,
-        $no_end: !endDateObj && !(startDateObj && duration > 0),
+        _mode: mode,
+        _resources: resources,
+        _actual_completed: mode === "actual" ? !!pa.actual_finish : false,
+        _actual_on_time: mode === "actual" ? onTime : null,
       };
     });
 
-    // links strictly from backend predecessors
+    // Links
     let lid = 1;
     const links = [];
-    paList.forEach((pa, idx) => {
+    (paList || []).forEach((pa, idx) => {
       const targetSI = String(idx + 1);
       const preds = Array.isArray(pa.predecessors) ? pa.predecessors : [];
       preds.forEach((p) => {
@@ -421,15 +627,20 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
     const _dbIdToSi = new Map(
       Array.from(_siToDbId.entries()).map(([si, db]) => [db, si])
     );
-    return {
-      ganttData: data,
-      ganttLinks: links,
-      siToDbId: _siToDbId,
-      dbIdToSi: _dbIdToSi,
-    };
-  }, [paList]);
 
-  // header chips
+    return { data, links, siToDbId: _siToDbId, dbIdToSi: _dbIdToSi };
+  };
+
+  const { ganttData, ganttLinks, siToDbId, dbIdToSi } = useMemo(() => {
+    const result = buildTasksAndLinks(timelineMode);
+    return {
+      ganttData: Array.isArray(result?.data) ? result.data : [],
+      ganttLinks: Array.isArray(result?.links) ? result.links : [],
+      siToDbId: result?.siToDbId ?? new Map(),
+      dbIdToSi: result?.dbIdToSi ?? new Map(),
+    };
+  }, [paList, timelineMode]);
+
   const minStartDMY = useMemo(() => {
     const nums = (ganttData || [])
       .filter((t) => t.start_date instanceof Date && !Number.isNaN(t.start_date))
@@ -437,7 +648,6 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
     if (!nums.length) return "—";
     return toDMY(new Date(Math.min(...nums)));
   }, [ganttData]);
-
   const maxEndDMY = useMemo(() => {
     const ends = (ganttData || []).map((t) => {
       if (t._end_dmy) {
@@ -465,19 +675,20 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
     duration: "",
     predecessors: [],
     successors: [],
+    resources: "",
   });
 
   const activityOptions = useMemo(
     () =>
       (ganttData || []).map((t) => ({
-        value: String(t.id), // SI id
+        value: String(t.id),
         label: t.text,
       })),
     [ganttData]
   );
 
-  // open modal & fetch single activity
   const onOpenModalForTask = (siId) => {
+    if (timelineMode === "actual") return; // read-only in actual view
     const task = gantt.getTask(siId);
     setSelectedId(String(siId));
     setActiveDbId(task?._dbId || null);
@@ -485,9 +696,7 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
 
   useEffect(() => {
     if (!activityFetch || !selectedId) return;
-
     const act = activityFetch.activity || activityFetch.data || activityFetch;
-
     const preds = Array.isArray(act?.predecessors) ? act.predecessors : [];
     const succs = Array.isArray(act?.successors) ? act.successors : [];
 
@@ -537,6 +746,10 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
       duration: dur,
       predecessors: uiPreds,
       successors: uiSuccs,
+      resources:
+        act?.resources !== undefined && act?.resources !== null
+          ? String(act.resources)
+          : "",
     });
   }, [activityFetch, selectedId, dbIdToSi]);
 
@@ -552,7 +765,6 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
     const dbActivityId = task?._dbId;
     if (!projectId || !dbActivityId) return;
 
-    // Build payload
     const predsPayload = (form.predecessors || [])
       .map((r) => {
         const si = String(r.activityId || "");
@@ -572,6 +784,12 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
       duration: Number(form.duration || 0),
       status: form.status,
       predecessors: predsPayload,
+      resources:
+        form.resources === "" || form.resources === null
+          ? null
+          : Number.isNaN(Number(form.resources))
+          ? form.resources
+          : Number(form.resources),
     };
 
     try {
@@ -594,30 +812,17 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
     }
   };
 
-  const parseDMY = (s) => {
-    if (!s) return null;
-    const [dd, mm, yyyy] = String(s).split("-").map(Number);
-    if (!dd || !mm || !yyyy) return null;
-    return new Date(yyyy, mm - 1, dd);
-  };
-
-  const diffDaysInclusive = (sIn, eIn) => {
-    const s = sIn instanceof Date ? sIn : parseISOAsLocalDate(sIn);
-    const e = eIn instanceof Date ? eIn : parseISOAsLocalDate(eIn);
-    if (!s || !e) return 0;
-    const s0 = new Date(s.getFullYear(), s.getMonth(), s.getDate());
-    const e0 = new Date(e.getFullYear(), e.getMonth(), e.getDate());
-    const ms = e0 - s0;
-    return ms < 0 ? 0 : Math.floor(ms / 86400000) + 1;
-  };
-
-  /* ---------- SAVE AS TEMPLATE: exposed via ref ---------- */
+  /* ---------- expose saveAsTemplate ---------- */
   useImperativeHandle(ref, () => ({
     saveAsTemplate: async (meta = {}) => {
       const { name, description } = meta || {};
-
-      // gather tasks
       const tasks = [];
+      const parseDMY = (s) => {
+        if (!s) return null;
+        const [dd, mm, yyyy] = String(s).split("-").map(Number);
+        if (!dd || !mm || !yyyy) return null;
+        return new Date(yyyy, mm - 1, dd);
+      };
       gantt.eachTask((t) => {
         const start = t.start_date instanceof Date ? t.start_date : null;
         const end = t._end_dmy
@@ -640,10 +845,7 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
         });
       });
 
-      // index by SI
       const bySi = new Map(tasks.map((x) => [x.si, x]));
-
-      // build predecessors/successors from links
       const predsBySi = new Map();
       const succsBySi = new Map();
       gantt.getLinks().forEach((l) => {
@@ -692,7 +894,9 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
             planned_finish: t.end ? t.end.toISOString() : null,
             duration:
               t.duration ||
-              (t.start && t.end ? diffDaysInclusive(t.start, t.end) : 0),
+              (t.start && t.end
+                ? durationFromStartFinish(t.start, t.end)
+                : 0),
             percent_complete: t.percent || 0,
             predecessors: preds,
             successors: succs,
@@ -715,7 +919,7 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
     },
   }));
 
-  /* ---------- init gantt ---------- */
+  /* ---------- init gantt (once) ---------- */
   useEffect(() => {
     gantt.config.date_format = "%d-%m-%Y";
     gantt.locale.date.day_short = ["S", "M", "T", "W", "T", "F", "S"];
@@ -730,7 +934,7 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
     gantt.config.fit_tasks = false;
     gantt.config.lightbox = false;
 
-    // lock dragging/linking
+    // disable drag interactions
     gantt.config.readonly = false;
     gantt.config.drag_move = false;
     gantt.config.drag_resize = false;
@@ -744,9 +948,9 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
     gantt.showLightbox = function () {
       return false;
     };
-
     gantt.config.show_unscheduled = true;
 
+    // grid (with resources)
     gantt.config.columns = [
       { name: "text", label: "Activity", tree: true, width: 260, resize: true },
       {
@@ -756,6 +960,19 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
         align: "left",
         resize: true,
         template: durationTemplate,
+      },
+      {
+        name: "resources",
+        label: "Res.",
+        width: 80,
+        align: "left",
+        resize: true,
+        template: (task) =>
+          task._resources === 0
+            ? "0"
+            : task._resources
+            ? String(task._resources)
+            : "",
       },
       {
         name: "start",
@@ -783,23 +1000,58 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
       },
     ];
 
-    gantt.templates.task_class = (_, __, task) =>
-      task._unscheduled ? "gantt-task-unscheduled" : "";
+    gantt.templates.task_class = (_, __, task) => {
+      const classes = [];
+      if (task._unscheduled) classes.push("gantt-task-unscheduled");
+
+      if (task._mode === "actual") {
+        // color by on-time/late/completing
+        if (task._actual_completed) {
+          classes.push(task._actual_on_time ? "gantt-task-ontime" : "gantt-task-late");
+        } else {
+          classes.push("gantt-task-running");
+        }
+      } else {
+        classes.push("gantt-task-baseline");
+      }
+      return classes.join(" ");
+    };
 
     gantt.attachEvent("onTaskClick", function (id) {
       onOpenModalForTask(String(id));
       return true;
     });
 
-    gantt.init(ganttContainer.current);
+    if (ganttContainer.current) gantt.init(ganttContainer.current);
     return () => gantt.clearAll();
-  }, []);
+  }, []); // init once
 
-  // feed data from backend “get all”
+  /* ---------- defensively parse data ---------- */
+  const parseSafe = (payload) => {
+    const ok = payload && Array.isArray(payload.data) && Array.isArray(payload.links);
+    if (!ok) {
+      console.error("Invalid gantt.parse payload", payload);
+      gantt.parse({ data: [], links: [] });
+      return;
+    }
+    gantt.parse(payload);
+  };
+
+  // feed data whenever dataset or mode changes
   useEffect(() => {
+    if (!ganttContainer.current || !gantt.$container) return;
+
+    if (timelineMode === "actual") {
+      setSelectedId(null);
+      setActiveDbId(null);
+    }
+
+    const dataArr = Array.isArray(ganttData) ? ganttData : [];
+    const linksArr = Array.isArray(ganttLinks) ? ganttLinks : [];
+
     gantt.clearAll();
-    gantt.parse({ data: ganttData, links: ganttLinks });
-  }, [ganttData, ganttLinks]);
+    parseSafe({ data: dataArr, links: linksArr });
+  }, [ganttData, ganttLinks, timelineMode]);
 
   /* ---------- scales ---------- */
   useEffect(() => setViewMode(viewModeParam), [viewModeParam]);
@@ -836,9 +1088,18 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
 
   return (
     <Box sx={{ ml: "0px", width: "100%", p: 0 }}>
-      <style>{`.gantt_task_line.gantt-task-unscheduled{display:none!important;}`}</style>
+      <style>{`
+        .gantt_task_line.gantt-task-unscheduled{display:none!important;}
+        /* Baseline (grey) */
+        .gantt_task_line.gantt-task-baseline { background:#9aa3b2; border-color:#9aa3b2; }
+        /* Actual: on-time (green), late (red), running (blue) */
+        .gantt_task_line.gantt-task-ontime { background:#22c55e; border-color:#22c55e; }
+        .gantt_task_line.gantt-task-late { background:#ef4444; border-color:#ef4444; }
+        .gantt_task_line.gantt-task-running { background:#3b82f6; border-color:#3b82f6; }
+        .gantt_grid_scale, .gantt_task_scale { height: 28px; line-height: 28px; }
+      `}</style>
 
-      {/* Header chips */}
+      {/* Header row */}
       <Box
         sx={{
           display: "flex",
@@ -850,58 +1111,97 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
           mt: 1,
         }}
       >
-        
-          <Sheet
-            variant="outlined"
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 2,
-              borderRadius: "lg",
-              px: 1.5,
-              py: 1,
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-  <DescriptionOutlinedIcon fontSize="small" color="primary" />
-  <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-    Project Code:
-  </Typography>
-  <Chip
-    color="primary"
-    size="sm"
-    variant="solid"
-    sx={{ fontWeight: 700, cursor: "pointer" }}
-    onClick={() => projectDbId && navigate(`/project_detail?project_id=${projectDbId}`)}
-    aria-label="Open project detail"
-  >
-    {projectMeta?.code || "—"}
-  </Chip>
-</Box>
-          </Sheet>
-
+        {/* Left: project code + nav */}
         <Sheet
           variant="outlined"
-          sx={{ display: "flex", alignItems: "center", gap: 2, borderRadius: "lg", px: 1, py: 1 }}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            borderRadius: "lg",
+            px: 1.5,
+            py: 1,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+            <DescriptionOutlinedIcon fontSize="small" color="primary" />
+            <Typography level="body-sm" sx={{ color: "text.secondary" }}>
+              Project Code:
+            </Typography>
+            <Chip
+              color="primary"
+              size="sm"
+              variant="solid"
+              sx={{ fontWeight: 700, cursor: "pointer" }}
+              onClick={() =>
+                projectDbId && navigate(`/project_detail?project_id=${projectDbId}`)
+              }
+              aria-label="Open project detail"
+            >
+              {projectMeta?.code || "—"}
+            </Chip>
+          </Box>
+        </Sheet>
+
+        {/* Center: Baseline / Actual Toggle */}
+        <Sheet
+          variant="outlined"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            borderRadius: "lg",
+            px: 1,
+            py: 0.75,
+          }}
+        >
+          <Typography level="body-sm" sx={{ mr: 1, color: "text.secondary" }}>
+            Timeline:
+          </Typography>
+          <Chip
+            variant={timelineMode === "baseline" ? "solid" : "soft"}
+            color={timelineMode === "baseline" ? "primary" : "neutral"}
+            size="sm"
+            sx={{ fontWeight: 700, cursor: "pointer" }}
+            onClick={() => setTimelineMode("baseline")}
+          >
+            Baseline
+          </Chip>
+          <Chip
+            variant={timelineMode === "actual" ? "solid" : "soft"}
+            color={timelineMode === "actual" ? "primary" : "neutral"}
+            size="sm"
+            sx={{ fontWeight: 700, cursor: "pointer" }}
+            onClick={() => setTimelineMode("actual")}
+          >
+            Actual
+          </Chip>
+        </Sheet>
+
+        {/* Right: countdown + range chips */}
+        <Sheet
+          variant="outlined"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            borderRadius: "lg",
+            px: 1,
+            py: 1,
+          }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
             <Timelapse fontSize="small" color="primary" />
             <Typography level="body-sm" sx={{ color: "text.secondary" }}>
               Remaining:
             </Typography>
-            {/* Live countdown chip */}
             <RemainingDaysChip target={countdownTarget} usedKey={countdownKey} />
           </Box>
-        </Sheet>
-
-        <Sheet
-          variant="outlined"
-          sx={{ display: "flex", alignItems: "center", gap: 2, borderRadius: "lg", px: 1, py: 1 }}
-        >
+          <Divider orientation="vertical" />
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
             <EventOutlinedIcon fontSize="small" color="success" />
             <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-              Start Date:
+              Start:
             </Typography>
             <Chip color="success" size="sm" variant="soft" sx={{ fontWeight: 600 }}>
               {minStartDMY}
@@ -910,7 +1210,7 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
             <EventOutlinedIcon fontSize="small" color="danger" />
             <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-              End Date:
+              End:
             </Typography>
             <Chip color="danger" size="sm" variant="soft" sx={{ fontWeight: 600 }}>
               {maxEndDMY}
@@ -937,8 +1237,8 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
         />
       </Box>
 
-      {/* Right panel (form structure unchanged) */}
-      {selectedId && (
+      {/* Right panel: only in baseline mode */}
+      {selectedId && timelineMode === "baseline" && (
         <>
           <Box
             onClick={() => {
@@ -955,7 +1255,6 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
               animation: "fadeIn 140ms ease-out",
             }}
           />
-
           <Sheet
             variant="outlined"
             sx={{
@@ -983,7 +1282,9 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
                 <Select
                   size="sm"
                   value={form.status}
-                  onChange={(_, v) => setForm((f) => ({ ...f, status: v || "not started" }))}
+                  onChange={(_, v) =>
+                    setForm((f) => ({ ...f, status: v || "not started" }))
+                  }
                   slotProps={{ listbox: { sx: { zIndex: 1401 } } }}
                 >
                   <Option value="not started">Not started</Option>
@@ -1016,6 +1317,20 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
                         return { ...f, start: startISO, end: endISO };
                       });
                     }}
+                  />
+                </FormControl>
+
+                <FormControl sx={{ flex: 1 }}>
+                  <FormLabel>Resources</FormLabel>
+                  <Input
+                    size="sm"
+                    type="number"
+                    inputMode="numeric"
+                    placeholder="e.g., 3"
+                    value={form.resources}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, resources: e.target.value }))
+                    }
                   />
                 </FormControl>
 
@@ -1053,7 +1368,7 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
 
               <Divider />
 
-              {/* Predecessors (editable) */}
+              {/* Predecessors */}
               <Stack spacing={1}>
                 <Stack direction="row" alignItems="center" justifyContent="space-between">
                   <Typography level="title-sm">Predecessors</Typography>
@@ -1107,7 +1422,7 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
 
               <Divider />
 
-              {/* Successors (kept in form; backend still builds from predecessors) */}
+              {/* Successors (UI only) */}
               <Stack spacing={1}>
                 <Stack direction="row" alignItems="center" justifyContent="space-between">
                   <Typography level="title-sm">Successors</Typography>
