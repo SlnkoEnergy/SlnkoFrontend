@@ -60,7 +60,7 @@ const Customer_Payment_Summary = () => {
 
   const [searchParams] = useSearchParams();
   const p_id = searchParams.get("p_id");
-
+  const _id = searchParams.get("_id");
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
   const [tabIndex, setTabIndex] = useState(0);
@@ -82,13 +82,14 @@ const Customer_Payment_Summary = () => {
   } = useGetCustomerSummaryQuery(
     {
       p_id,
+      _id,
       start: startDate,
       end: endDate,
       searchClient,
       searchDebit,
       searchAdjustment,
     },
-    { skip: !p_id }
+    { skip: !_id }
   );
 
   const {
@@ -221,60 +222,60 @@ const Customer_Payment_Summary = () => {
 
   const [isExporting, setIsExporting] = useState(false);
 
-const handleExportAll = async () => {
-  try {
-    setIsExporting(true);
+  const handleExportAll = async () => {
+    try {
+      setIsExporting(true);
 
-    const token = localStorage.getItem("authToken");
-    if (!token) {
-      toast.error("Authentication token not found.");
-      setIsExporting(false);
-      return;
-    }
-
-
-    const params = new URLSearchParams();
-    if (p_id) params.set("p_id", p_id);
-    if (startDate) params.set("start", startDate);
-    if (endDate) params.set("end", endDate);
-    if (searchClient) params.set("searchClient", searchClient);
-    if (searchDebit) params.set("searchDebit", searchDebit);
-    if (searchAdjustment) params.set("searchAdjustment", searchAdjustment);
-    params.set("export", "csv");
-
-    const resp = await Axios.get(
-      `/accounting/customer-payment-summary?${params.toString()}`,
-      {
-        headers: { "x-auth-token": token },
-        responseType: "blob",
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        toast.error("Authentication token not found.");
+        setIsExporting(false);
+        return;
       }
-    );
 
-    // Try to read filename from header; fallback to something sensible
-    const cd = resp.headers["content-disposition"] || "";
-    const match = cd.match(/filename\*=UTF-8''([^;]+)|filename="?([^"]+)"?/i);
-    const headerFileName =
-      decodeURIComponent(match?.[1] || match?.[2] || "").trim();
+      const params = new URLSearchParams();
+      if (p_id) params.set("p_id", p_id);
+      if (_id) params.set("_id", _id);
+      if (startDate) params.set("start", startDate);
+      if (endDate) params.set("end", endDate);
+      if (searchClient) params.set("searchClient", searchClient);
+      if (searchDebit) params.set("searchDebit", searchDebit);
+      if (searchAdjustment) params.set("searchAdjustment", searchAdjustment);
+      params.set("export", "csv");
 
-    const fileName =
-      headerFileName ||
-      `customer_payment_summary_${p_id || "export"}.csv`;
+      const resp = await Axios.get(
+        `/accounting/customer-payment-summary?${params.toString()}`,
+        {
+          headers: { "x-auth-token": token },
+          responseType: "blob",
+        }
+      );
 
-    const url = window.URL.createObjectURL(new Blob([resp.data]));
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", fileName);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
-  } catch (err) {
-    console.error("CSV export failed:", err);
-    toast.error("Failed to download CSV.");
-  } finally {
-    setIsExporting(false);
-  }
-};
+      // Try to read filename from header; fallback to something sensible
+      const cd = resp.headers["content-disposition"] || "";
+      const match = cd.match(/filename\*=UTF-8''([^;]+)|filename="?([^"]+)"?/i);
+      const headerFileName = decodeURIComponent(
+        match?.[1] || match?.[2] || ""
+      ).trim();
+
+      const fileName =
+        headerFileName || `customer_payment_summary_${p_id || "export"}.csv`;
+
+      const url = window.URL.createObjectURL(new Blob([resp.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("CSV export failed:", err);
+      toast.error("Failed to download CSV.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const handleDeleteDebit = async () => {
     if (selectedDebits.length === 0) {
@@ -589,8 +590,8 @@ const handleExportAll = async () => {
         billing_type === "Composite"
           ? "GST (13.8%)"
           : billing_type === "Individual"
-            ? "GST (18%)"
-            : "GST (Type - N/A)",
+          ? "GST (18%)"
+          : "GST (Type - N/A)",
         gst_with_type_percentage,
       ],
       ["10", "Total Billed Value", total_billed_value],
@@ -1827,7 +1828,6 @@ const handleExportAll = async () => {
                 onChange={(e) => setSearchSales(e.target.value)}
                 sx={{ width: { xs: "100%", md: 300 } }}
               />
-
             </Box>
 
             <Sheet
@@ -2063,8 +2063,12 @@ const handleExportAll = async () => {
                       <td colSpan={4} style={{ textAlign: "right" }}>
                         Total:
                       </td>
-                      <td>₹ {Math.round(saleTotalsFiltered?.total_sale)?.toLocaleString(
-                          "en-IN")}</td>
+                      <td>
+                        ₹{" "}
+                        {Math.round(
+                          saleTotalsFiltered?.total_sale
+                        )?.toLocaleString("en-IN")}
+                      </td>
                     </tr>
                   )}
                 </tfoot>
