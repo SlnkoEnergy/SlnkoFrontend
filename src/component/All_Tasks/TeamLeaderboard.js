@@ -1,3 +1,4 @@
+// TeamLeaderboard.jsx
 import * as React from "react";
 import {
   Card,
@@ -19,10 +20,10 @@ const pct = (completed, assigned) =>
 const SortIcon = ({ dir }) =>
   dir === "asc" ? <ChevronUp size={16} /> : <ChevronDown size={16} />;
 
-
 export default function TeamLeaderboard({
   rows = [],
   title = "Team Leaderboard",
+  columns = [], // <-- column-driven
   initialSort = { key: "completion", dir: "desc" },
   searchValue = "",
   onSearchChange,
@@ -31,25 +32,37 @@ export default function TeamLeaderboard({
 }) {
   const [sort, setSort] = React.useState(initialSort);
 
+  // normalize getValue (supports optional accessor)
+  const getValue = React.useCallback((row, col) => {
+    if (typeof col.accessor === "function") return col.accessor(row);
+    return row?.[col.key];
+  }, []);
+
   const data = React.useMemo(() => {
     const withPct = rows.map((r) => ({
       ...r,
       completion: pct(r.completed ?? 0, r.assigned ?? 0),
     }));
 
-    const sorted = [...withPct].sort((a, b) => {
-      const { key, dir } = sort;
-      let va = a[key];
-      let vb = b[key];
 
-      // case-insensitive sort for names
-      if (key === "name") {
-        va = (va || "").toString().toLowerCase();
-        vb = (vb || "").toString().toLowerCase();
+    const sorted = [...withPct].sort((a, b) => {
+      const sortCol = columns.find((c) => c.key === sort.key);
+      if (!sortCol) return 0;
+
+      // custom comparator if provided
+      if (typeof sortCol.compare === "function") {
+        return sort.dir === "asc" ? sortCol.compare(a, b) : -sortCol.compare(a, b);
       }
 
-      if (va < vb) return dir === "asc" ? -1 : 1;
-      if (va > vb) return dir === "asc" ? 1 : -1;
+      let va = getValue(a, sortCol);
+      let vb = getValue(b, sortCol);
+
+      // case-insensitive for strings
+      if (typeof va === "string") va = va.toLowerCase();
+      if (typeof vb === "string") vb = vb.toLowerCase();
+
+      if (va < vb) return sort.dir === "asc" ? -1 : 1;
+      if (va > vb) return sort.dir === "asc" ? 1 : -1;
 
       // stable tie-breaker by name
       const na = (a.name || "").toLowerCase();
@@ -60,35 +73,41 @@ export default function TeamLeaderboard({
     });
 
     return sorted.map((r, i) => ({ ...r, rank: i + 1 }));
-  }, [rows, sort]);
+  }, [rows, columns, sort, getValue]);
 
   const handleSort = (key) => {
     setSort((prev) =>
       prev.key === key
         ? { key, dir: prev.dir === "asc" ? "desc" : "asc" }
-        : { key, dir: key === "name" ? "asc" : "desc" }
+        : { key, dir: "desc" }
     );
   };
 
-  const headerCell = (label, key) => (
-    <th
-      onClick={() => handleSort(key)}
-      style={{
-        cursor: "pointer",
-        userSelect: "none",
-        whiteSpace: "nowrap",
-        textAlign: "left",
-        padding: "12px 16px",
-        fontWeight: 700,
-        color: "#0f172a",
-      }}
-    >
-      <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}>
-        {label}
-        {sort.key === key && <SortIcon dir={sort.dir} />}
-      </Box>
-    </th>
-  );
+  const headerCell = (col) => {
+    const sortable = col.sortable !== false;
+    const isSorted = sort.key === col.key;
+    return (
+      <th
+        key={col.key}
+        onClick={() => sortable && handleSort(col.key)}
+        style={{
+          cursor: sortable ? "pointer" : "default",
+          userSelect: "none",
+          whiteSpace: "nowrap",
+          textAlign: col.align ?? "left",
+          padding: "12px 16px",
+          fontWeight: 700,
+          color: "#0f172a",
+          width: col.width,
+        }}
+      >
+        <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}>
+          {col.label}
+          {sortable && isSorted && <SortIcon dir={sort.dir} />}
+        </Box>
+      </th>
+    );
+  };
 
   return (
     <Card
@@ -109,7 +128,7 @@ export default function TeamLeaderboard({
           boxShadow:
             "0 6px 16px rgba(15,23,42,0.10), 0 20px 36px rgba(15,23,42,0.08)",
         },
-        height:'500px',
+        height: "500px",
         ...sx,
       }}
     >
@@ -149,10 +168,10 @@ export default function TeamLeaderboard({
         />
       </Box>
 
-      {/* Make THIS the scroll container so sticky headers work + scrollbar appears */}
+      {/* Scroll container for sticky headers */}
       <Box
         sx={{
-          maxHeight: 420, // adjust as you like
+          maxHeight: 420,
           overflowY: "auto",
           borderRadius: 12,
           border: "1px solid rgba(15,23,42,0.06)",
@@ -190,54 +209,44 @@ export default function TeamLeaderboard({
                 >
                   #
                 </th>
-                {headerCell("Name", "name")}
-                {headerCell("Assigned Tasks", "assigned")}
-                {headerCell("Completed Tasks", "completed")}
-                {headerCell("Delayed Tasks", "delayed")}
-                {headerCell("Completion %", "completion")}
+                {columns.map(headerCell)}
               </tr>
             </thead>
 
             <tbody>
-              {data.map((r) => (
-                <tr key={r.name}>
-                  <td style={{ padding: "12px 16px", color: "#334155" }}>
-                    {r.rank}
-                  </td>
+              {data.map((r) => {
 
-                  <td style={{ padding: "12px 16px" }}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Avatar src={r.avatar} size="sm">
-                        {r.name?.[0]}
-                      </Avatar>
-                      <Typography
-                        level="body-sm"
-                        sx={{ color: "#0f172a", fontWeight: 600 }}
-                      >
-                        {r.name}
-                      </Typography>
-                    </Box>
-                  </td>
+                console.log("hello ", r);
+                return (
+                  <tr key={r.id || r._id || r.name}>
+                    <td style={{ padding: "12px 16px", color: "#334155" }}>
+                      {r.rank}
+                    </td>
 
-                  <td style={{ padding: "12px 16px" }}>
-                    <Typography level="body-sm">{r.assigned ?? 0}</Typography>
-                  </td>
-
-                  <td style={{ padding: "12px 16px" }}>
-                    <Typography level="body-sm">{r.completed ?? 0}</Typography>
-                  </td>
-
-                  <td style={{ padding: "12px 16px" }}>
-                    <Typography level="body-sm">{r.delayed ?? 0}</Typography>
-                  </td>
-
-                  <td style={{ padding: "12px 16px" }}>
-                    <Typography level="body-sm" sx={{ fontWeight: 700 }}>
-                      {r.completion}%
-                    </Typography>
-                  </td>
-                </tr>
-              ))}
+                    {columns.map((col) => {
+                      console.log(col);
+                      return (
+                        <td
+                          key={col.key}
+                          style={{
+                            padding: "12px 16px",
+                            textAlign: col.align ?? "left",
+                            width: col.width,
+                          }}
+                        >
+                          {typeof col.render === "function" ? (
+                            col.render(r)
+                          ) : (
+                            <Typography level="body-sm">
+                              {getValue(r, col) ?? "-"}
+                            </Typography>
+                          )}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                )
+              })}
             </tbody>
           </Table>
         </Sheet>

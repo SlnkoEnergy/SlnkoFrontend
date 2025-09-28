@@ -69,6 +69,10 @@ export const projectsApi = createApi({
         `project-search?search=${search}&page=${page}&limit=${limit}`,
       providesTags: ["Project"],
     }),
+    getProjectStatusFilter: builder.query({
+      query: () => `/project-status-filter`,
+      providesTags: ["Project"],
+    }),
 
     //Activiy
     createActivity: builder.mutation({
@@ -119,7 +123,7 @@ export const projectsApi = createApi({
       query: ({ projectId, name, description, type, dependencies = [] }) => ({
         url: `projectactivity/pushactivity/${encodeURIComponent(projectId)}`,
         method: "PUT",
-        body: { name, description, type, dependencies  },
+        body: { name, description, type, dependencies },
       }),
       invalidatesTags: ["Project"],
     }),
@@ -282,32 +286,43 @@ export const projectsApi = createApi({
       invalidatesTags: ["Project"],
     }),
 
-createApproval: builder.mutation({
-  // UPDATE the URL below if your route differs (e.g. "approval/create" or "approval")
-  query: (payload) => ({
-    url: "approvals/approval",
-    method: "POST",
-    body: payload,
-  }),
-  invalidatesTags: ["Approval"],
-}),
+    createApproval: builder.mutation({
+      // UPDATE the URL below if your route differs (e.g. "approval/create" or "approval")
+      query: (payload) => ({
+        url: "approvals/approval",
+        method: "POST",
+        body: payload,
+      }),
+      invalidatesTags: ["Approval"],
+    }),
 
-getRejectedOrNotAllowedDependencies: builder.query({
-  // usage: useGetRejectedOrNotAllowedDependenciesQuery({ projectId, activityId })
-  query: ({ projectId, activityId }) => ({
-    url: `projectactivity/${encodeURIComponent(projectId)}/dependencies/${encodeURIComponent(activityId)}`,
-    method: "GET",
-  }),
-  // tag by project+activity so caches are distinct per pair
-  providesTags: (result, error, args) => {
-    const key =
-      args && args.projectId && args.activityId
-        ? `${args.projectId}:${args.activityId}`
-        : "UNKNOWN";
-    return [{ type: "ProjectActivityDependencies", id: key }];
-  },
-}),
+    getRejectedOrNotAllowedDependencies: builder.query({
+      // usage: useGetRejectedOrNotAllowedDependenciesQuery({ projectId, activityId })
+      query: ({ projectId, activityId }) => ({
+        url: `projectactivity/${encodeURIComponent(
+          projectId
+        )}/dependencies/${encodeURIComponent(activityId)}`,
+        method: "GET",
+      }),
+      // tag by project+activity so caches are distinct per pair
+      providesTags: (result, error, args) => {
+        const key =
+          args && args.projectId && args.activityId
+            ? `${args.projectId}:${args.activityId}`
+            : "UNKNOWN";
+        return [{ type: "ProjectActivityDependencies", id: key }];
+      },
+    }),
 
+    getProjectStatesFilter: builder.query({
+      query: () => `project-state-detail`,
+      providesTags: ["Project"],
+    }),
+
+    getProjectDetail: builder.query({
+      query: () => `project-detail`,
+      providesTags: ["Project"],
+    }),
   }),
 });
 
@@ -328,6 +343,7 @@ export const {
   //Project Activity
   useCreateProjectActivityMutation,
   useGetAllProjectActivityQuery,
+  useGetProjectStatusFilterQuery,
   useUpdateProjectActivityMutation,
   usePushActivityToProjectMutation,
   useGetProjectActivityByProjectIdQuery,
@@ -349,4 +365,6 @@ export const {
   useGetRejectedOrNotAllowedDependenciesQuery,
   useLazyGetRejectedOrNotAllowedDependenciesQuery,
   useCreateApprovalMutation,
+  useGetProjectStatesFilterQuery,
+  useGetProjectDetailQuery,
 } = projectsApi;

@@ -84,6 +84,7 @@ import ProjectTemplate from "../pages/Projects/ProjectTemplates";
 import MyApproval from "../pages/Approvals/MyApproval";
 import ApprovalDashboard from "../pages/Approvals/ApprovalDashboard";
 import MyRequest from "../pages/Approvals/MyRequest";
+import ProjectDashBoard from "../pages/Projects/ProjectDashboard";
 
 function index() {
   return (
@@ -313,6 +314,14 @@ function index() {
         element={
           <PrivateRoute>
             <ProjectManagement />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/project_dash"
+        element={
+          <PrivateRoute>
+            <ProjectDashBoard />
           </PrivateRoute>
         }
       />
