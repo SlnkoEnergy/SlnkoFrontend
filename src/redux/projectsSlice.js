@@ -182,37 +182,31 @@ export const projectsApi = createApi({
           : [{ type: "Activity", id: "LIST" }],
     }),
 
+    // in projectsSlice
     getAllModules: builder.query({
-      query: ({ search = "", page = 1, limit = 50 } = {}) => ({
-        url: "engineering/get-module", // <--- UPDATE to your real endpoint
+      query: ({ search = "", page = 1, limit = 10 } = {}) => ({
+        url: "engineering/get-module-paginated",
         method: "GET",
-        params: { search, page, limit }, // safe even if backend ignores
+        params: { search, page, limit },
       }),
-      transformResponse: (res) => {
-        const arr = Array.isArray(res?.data)
-          ? res.data
-          : Array.isArray(res)
-          ? res
-          : [];
-        // Normalize to a flat list the modal can use
-        return arr.map((m) => ({
-          _id: m._id,
-          name:
-            m.name ||
-            m.title ||
-            m.module_name ||
-            m.template_name ||
-            m?.boq?.template_category?.name ||
-            "Unnamed",
-          description: m.description || "",
-          category:
-            (m?.boq && m?.boq?.template_category?.name) || m.category || "",
-        }));
-      },
+      // preserve backend { data, pagination } so callers can see totals
+      transformResponse: (res) => ({
+        data: Array.isArray(res?.data) ? res.data : [],
+        pagination: res?.pagination ?? {
+          page: 1,
+          limit: 10,
+          totalDocs: 0,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false,
+          nextPage: null,
+          prevPage: null,
+        },
+      }),
       providesTags: (result) =>
-        result && Array.isArray(result)
+        result?.data
           ? [
-              ...result.map((m) => ({ type: "Module", id: m._id })),
+              ...result.data.map((m) => ({ type: "Module", id: m._id })),
               { type: "Module", id: "LIST" },
             ]
           : [{ type: "Module", id: "LIST" }],
