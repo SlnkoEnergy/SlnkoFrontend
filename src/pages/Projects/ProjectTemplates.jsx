@@ -18,14 +18,67 @@ function ProjectTemplate() {
         sx={{ display: "flex", minHeight: "100dvh", flexDirection: "column" }}
       >
         <Sidebar />
-        <MainHeader title="Templates" sticky>
+        <MainHeader title="Projects" sticky>
           <Box display="flex" gap={1}>
+            <Button
+              size="sm"
+              onClick={() => navigate(`/eng_dash`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              Dashboard
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => navigate(`/project_management`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              All Projects
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => navigate(`/project_template`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              Templates
+            </Button>
           </Box>
         </MainHeader>
 
         <SubHeader
-          title="All Templates"
-          isBackEnabled={true}
+          title="Templates"
+          isBackEnabled={false}
           sticky
         ></SubHeader>
         <Box

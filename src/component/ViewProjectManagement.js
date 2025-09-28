@@ -201,13 +201,12 @@ function topoOrder(paList) {
       if (indeg.get(v) === 0) q.push(v);
     });
   }
-  // If cycle, we still return partial order; projection will do best-effort
   return order.length ? order : Array.from(ids);
 }
 
 /* ---------- client-only "Actual" projection (recursive) ---------- */
 function projectClientActuals(paList) {
-  const norm = paList.map((pa, idx) => {
+  const norm = paList.map((pa) => {
     const master = pa.activity_id || pa.master_activity_id || {};
     const dbId = String(master?._id || pa.activity_id || "");
 
@@ -221,7 +220,9 @@ function projectClientActuals(paList) {
     const actual_finish =
       pa.actual_finish_date || pa.actual_finish || pa.actual_end_dt || null;
 
-    let duration = Number.isFinite(Number(pa.duration)) ? Number(pa.duration) : 0;
+    let duration = Number.isFinite(Number(pa.duration))
+      ? Number(pa.duration)
+      : 0;
     if (!duration && planned_start && planned_finish) {
       duration = durationFromStartFinish(planned_start, planned_finish);
     }
@@ -245,19 +246,21 @@ function projectClientActuals(paList) {
     const node = map.get(id);
     if (!node) return;
 
-    // If truly completed, keep the real window.
     if (node.actual_start && node.actual_finish) return;
 
     let minStart = null;
     let minFinish = null;
     (node.preds || []).forEach((link) => {
-      const pred = map.get(String(link.activity_id?._id || link.activity_id || ""));
+      const pred = map.get(
+        String(link.activity_id?._id || link.activity_id || "")
+      );
       if (!pred) return;
 
       const type = String(link.type || "FS").toUpperCase();
       const lag = Number(link.lag || 0);
 
-      const pStart = pred.actual_start || pred._client_start || pred.planned_start;
+      const pStart =
+        pred.actual_start || pred._client_start || pred.planned_start;
       const pFinish =
         pred.actual_finish || pred._client_finish || pred.planned_finish;
 
@@ -273,7 +276,6 @@ function projectClientActuals(paList) {
       }
     });
 
-    // Running task? keep actual_start and project finish
     if (node.actual_start && !node.actual_finish) {
       node._client_start = node.actual_start;
       node._client_finish = finishFromStartAndDuration(
@@ -283,7 +285,6 @@ function projectClientActuals(paList) {
       return;
     }
 
-    // No actuals yet, project from constraints/planned
     const desiredStart =
       earliestStartGivenConstraints(node.duration, minStart, minFinish) ||
       node.planned_start ||
@@ -297,7 +298,6 @@ function projectClientActuals(paList) {
     node._client_finish = desiredFinish || null;
   });
 
-  // Build output for quick lookup
   const out = new Map();
   map.forEach((n, id) => {
     const start = n.actual_start || n._client_start || n.planned_start || null;
@@ -425,7 +425,12 @@ function RemainingDaysChip({ target, usedKey }) {
 /* ---------- row for predecessors/successors ---------- */
 function DepRow({ title, options, row, onChange, onRemove }) {
   return (
-    <Stack direction="row" alignItems="center" spacing={1} sx={{ width: "100%" }}>
+    <Stack
+      direction="row"
+      alignItems="center"
+      spacing={1}
+      sx={{ width: "100%" }}
+    >
       <Autocomplete
         placeholder={`${title} activity…`}
         size="sm"
@@ -471,624 +476,696 @@ function DepRow({ title, options, row, onChange, onRemove }) {
 }
 
 /* ---------------- main component ---------------- */
-const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => {
-  const ganttContainer = useRef(null);
-  const [viewMode, setViewMode] = useState(viewModeParam);
-  const [timelineMode, setTimelineMode] = useState("baseline"); // "baseline" | "actual"
+const View_Project_Management = forwardRef(
+  ({ viewModeParam = "week" }, ref) => {
+    const ganttContainer = useRef(null);
+    const [viewMode, setViewMode] = useState(viewModeParam);
+    const [timelineMode, setTimelineMode] = useState("baseline"); // "baseline" | "actual"
 
-  const [searchParams] = useSearchParams();
-  const projectId = searchParams.get("project_id");
-  const navigate = useNavigate();
+    // NEW: Activity type tab: 'site' -> frontend, 'backend' -> backend, 'all' -> both
+    const [actView, setActView] = useState("site");
 
-  const [snack, setSnack] = useState({ open: false, msg: "" });
-  const [selectedId, setSelectedId] = useState(null);
-  const [activeDbId, setActiveDbId] = useState(null);
+    const [searchParams] = useSearchParams();
+    const projectId = searchParams.get("project_id");
+    const navigate = useNavigate();
 
-  // GET ALL
-  const { data: apiData, refetch: refetchAll } =
-    useGetProjectActivityByProjectIdQuery(projectId, { skip: !projectId });
+    const [snack, setSnack] = useState({ open: false, msg: "" });
+    const [selectedId, setSelectedId] = useState(null);
+    const [activeDbId, setActiveDbId] = useState(null);
 
-  // UPDATE + CREATE
-  const [updateActivityInProject, { isLoading: isSaving }] =
-    useUpdateActivityInProjectMutation();
-  const [createProjectActivity] = useCreateProjectActivityMutation();
+    // GET ALL
+    const { data: apiData, refetch: refetchAll } =
+      useGetProjectActivityByProjectIdQuery(projectId, { skip: !projectId });
 
-  // GET SINGLE (when modal opens)
-  const {
-    data: activityFetch,
-    isFetching: isFetchingActivity,
-    error: activityFetchError,
-  } = useGetActivityInProjectQuery(
-    activeDbId && projectId ? { projectId, activityId: activeDbId } : { skip: true },
-    { skip: !activeDbId || !projectId }
-  );
+    // UPDATE + CREATE
+    const [updateActivityInProject, { isLoading: isSaving }] =
+      useUpdateActivityInProjectMutation();
+    const [createProjectActivity] = useCreateProjectActivityMutation();
 
-  const paWrapper = apiData?.projectactivity || apiData || {};
-  const paList = Array.isArray(paWrapper.activities)
-    ? paWrapper.activities
-    : Array.isArray(paWrapper)
-    ? paWrapper
-    : [];
-  const projectMeta = paWrapper.project_id || apiData?.project || {};
-  const projectDbId = projectMeta?._id || projectId;
-
-  const { target: countdownTarget, usedKey: countdownKey } = useMemo(
-    () => pickCountdownTarget(paWrapper, paList),
-    [paWrapper, paList]
-  );
-
-  /* ---------- build data (mode-aware) ---------- */
-  const buildTasksAndLinks = (mode) => {
-    const byMasterToSI = new Map();
-    const _siToDbId = new Map();
-
-    // When Actual: compute client-side recursive projection first
-    const actualLookup = mode === "actual" ? projectClientActuals(paList) : null;
-
-    const data = (paList || []).map((pa, idx) => {
-      const si = String(idx + 1);
-      const master = pa.activity_id || pa.master_activity_id || {};
-      const masterId = String(master?._id || pa.activity_id || "");
-      if (masterId) byMasterToSI.set(masterId, si);
-      if (masterId) _siToDbId.set(si, masterId);
-
-      const text = master?.name || pa.name || pa.activity_name || "—";
-
-      let startDateObj = null;
-      let endDateObj = null;
-
-      if (mode === "actual") {
-        const proj = actualLookup?.get(masterId);
-        startDateObj = proj?.start || null;
-        endDateObj = proj?.finish || null;
-      } else {
-        const sISO = pa.planned_start || pa.start_date || null;
-        const eISO = pa.planned_finish || pa.end_date || null;
-        startDateObj = sISO ? parseISOAsLocalDate(sISO) : null;
-        endDateObj = eISO ? parseISOAsLocalDate(eISO) : null;
-      }
-
-      let duration = 0;
-      if (startDateObj && endDateObj) {
-        duration = durationFromStartFinish(startDateObj, endDateObj);
-      } else {
-        duration = Number.isFinite(Number(pa.duration)) ? Number(pa.duration) : 0;
-      }
-
-      // status / progress
-      const isCompletedActual =
-        mode === "actual" ? !!pa.actual_finish : pa?.current_status?.status === "completed";
-
-      const status =
-        pa.current_status?.status ||
-        (mode === "actual" && (pa.actual_finish || endDateObj) ? "completed" : "not started");
-
-      // Resources
-      const resources =
-        pa.resources ?? pa.activity_resources ?? pa.activity_id?.resources ?? null;
-
-      // Actual on-time?
-      let onTime = null;
-      if (mode === "actual") {
-        const plannedFinish =
-          pa.planned_finish || pa.end_date ? parseISOAsLocalDate(pa.planned_finish || pa.end_date) : null;
-        const realFinish = pa.actual_finish ? parseISOAsLocalDate(pa.actual_finish) : null;
-        if (realFinish && plannedFinish) {
-          onTime = !isAfter(realFinish, plannedFinish);
-        }
-      }
-
-      return {
-        id: si,
-        _si: si,
-        _dbId: masterId,
-        text,
-        start_date: startDateObj || null,
-        _end_dmy: endDateObj ? toDMY(endDateObj) : "",
-        duration,
-        progress:
-          typeof pa.percent_complete === "number"
-            ? pa.percent_complete / 100
-            : mode === "actual" && isCompletedActual
-            ? 1
-            : 0,
-        open: true,
-        _unscheduled: !startDateObj && !duration,
-        _status: status,
-        _mode: mode,
-        _resources: resources,
-        _actual_completed: mode === "actual" ? !!pa.actual_finish : false,
-        _actual_on_time: mode === "actual" ? onTime : null,
-      };
-    });
-
-    // Links
-    let lid = 1;
-    const links = [];
-    (paList || []).forEach((pa, idx) => {
-      const targetSI = String(idx + 1);
-      const preds = Array.isArray(pa.predecessors) ? pa.predecessors : [];
-      preds.forEach((p) => {
-        const srcMaster = String(p.activity_id || p.master_activity_id || "");
-        const srcSI = byMasterToSI.get(srcMaster);
-        if (srcSI) {
-          const typeCode = labelToType[(p.type || "FS").toUpperCase()] ?? "0";
-          links.push({
-            id: lid++,
-            source: String(srcSI),
-            target: String(targetSI),
-            type: typeCode,
-            lag: Number(p.lag || 0),
-          });
-        }
-      });
-    });
-
-    const _dbIdToSi = new Map(
-      Array.from(_siToDbId.entries()).map(([si, db]) => [db, si])
+    // GET SINGLE (when modal opens)
+    const {
+      data: activityFetch,
+      isFetching: isFetchingActivity,
+      error: activityFetchError,
+    } = useGetActivityInProjectQuery(
+      activeDbId && projectId
+        ? { projectId, activityId: activeDbId }
+        : { skip: true },
+      { skip: !activeDbId || !projectId }
     );
 
-    return { data, links, siToDbId: _siToDbId, dbIdToSi: _dbIdToSi };
-  };
+    const paWrapper = apiData?.projectactivity || apiData || {};
+    const paListRaw = Array.isArray(paWrapper.activities)
+      ? paWrapper.activities
+      : Array.isArray(paWrapper)
+      ? paWrapper
+      : [];
+    const projectMeta = paWrapper.project_id || apiData?.project || {};
+    const projectDbId = projectMeta?._id || projectId;
 
-  const { ganttData, ganttLinks, siToDbId, dbIdToSi } = useMemo(() => {
-    const result = buildTasksAndLinks(timelineMode);
-    return {
-      ganttData: Array.isArray(result?.data) ? result.data : [],
-      ganttLinks: Array.isArray(result?.links) ? result.links : [],
-      siToDbId: result?.siToDbId ?? new Map(),
-      dbIdToSi: result?.dbIdToSi ?? new Map(),
-    };
-  }, [paList, timelineMode]);
-
-  const minStartDMY = useMemo(() => {
-    const nums = (ganttData || [])
-      .filter((t) => t.start_date instanceof Date && !Number.isNaN(t.start_date))
-      .map((t) => t.start_date.getTime());
-    if (!nums.length) return "—";
-    return toDMY(new Date(Math.min(...nums)));
-  }, [ganttData]);
-  const maxEndDMY = useMemo(() => {
-    const ends = (ganttData || []).map((t) => {
-      if (t._end_dmy) {
-        const [dd, mm, yyyy] = t._end_dmy.split("-").map(Number);
-        return new Date(yyyy, mm - 1, dd);
+    // FILTER by tab
+    const paList = useMemo(() => {
+      const mapType = (pa) =>
+        (pa?.activity_id?.type || pa?.type || "").toLowerCase();
+      if (actView === "site") {
+        return paListRaw.filter((pa) => mapType(pa) === "frontend");
       }
-      if (t.start_date instanceof Date && Number(t.duration) > 0) {
-        return gantt.calculateEndDate({
-          start_date: t.start_date,
-          duration: t.duration,
-          task: t,
+      if (actView === "backend") {
+        return paListRaw.filter((pa) => mapType(pa) === "backend");
+      }
+      // all
+      return paListRaw;
+    }, [paListRaw, actView]);
+
+    const { target: countdownTarget, usedKey: countdownKey } = useMemo(
+      () => pickCountdownTarget(paWrapper, paList),
+      [paWrapper, paList]
+    );
+
+    /* ---------- build data (mode-aware) ---------- */
+    const buildTasksAndLinks = (mode, list) => {
+      const byMasterToSI = new Map();
+      const _siToDbId = new Map();
+
+      const actualLookup =
+        mode === "actual" ? projectClientActuals(list) : null;
+
+      const data = (list || []).map((pa, idx) => {
+        const si = String(idx + 1);
+        const master = pa.activity_id || pa.master_activity_id || {};
+        const masterId = String(master?._id || pa.activity_id || "");
+        if (masterId) byMasterToSI.set(masterId, si);
+        if (masterId) _siToDbId.set(si, masterId);
+
+        const text = master?.name || pa.name || pa.activity_name || "—";
+
+        const typeLower = String(master?.type || pa?.type || "")
+          .toLowerCase()
+          .trim(); // "frontend" | "backend" | ""
+
+        let startDateObj = null;
+        let endDateObj = null;
+
+        if (mode === "actual") {
+          const proj = actualLookup?.get(masterId);
+          startDateObj = proj?.start || null;
+          endDateObj = proj?.finish || null;
+        } else {
+          const sISO = pa.planned_start || pa.start_date || null;
+          const eISO = pa.planned_finish || pa.end_date || null;
+          startDateObj = sISO ? parseISOAsLocalDate(sISO) : null;
+          endDateObj = eISO ? parseISOAsLocalDate(eISO) : null;
+        }
+
+        let duration = 0;
+        if (startDateObj && endDateObj) {
+          duration = durationFromStartFinish(startDateObj, endDateObj);
+        } else {
+          duration = Number.isFinite(Number(pa.duration))
+            ? Number(pa.duration)
+            : 0;
+        }
+
+        const isCompletedActual =
+          mode === "actual"
+            ? !!pa.actual_finish
+            : pa?.current_status?.status === "completed";
+
+        const status =
+          pa.current_status?.status ||
+          (mode === "actual" && (pa.actual_finish || endDateObj)
+            ? "completed"
+            : "not started");
+
+        const resources =
+          pa.resources ??
+          pa.activity_resources ??
+          pa.activity_id?.resources ??
+          null;
+
+        let onTime = null;
+        if (mode === "actual") {
+          const plannedFinish =
+            pa.planned_finish || pa.end_date
+              ? parseISOAsLocalDate(pa.planned_finish || pa.end_date)
+              : null;
+          const realFinish = pa.actual_finish
+            ? parseISOAsLocalDate(pa.actual_finish)
+            : null;
+          if (realFinish && plannedFinish) {
+            onTime = !isAfter(realFinish, plannedFinish);
+          }
+        }
+
+        return {
+          id: si,
+          _si: si,
+          _dbId: masterId,
+          text,
+          start_date: startDateObj || null,
+          _end_dmy: endDateObj ? toDMY(endDateObj) : "",
+          duration,
+          progress:
+            typeof pa.percent_complete === "number"
+              ? pa.percent_complete / 100
+              : mode === "actual" && isCompletedActual
+              ? 1
+              : 0,
+          open: true,
+          _unscheduled: !startDateObj && !duration,
+          _status: status,
+          _mode: mode,
+          _resources: resources,
+          _actual_completed: mode === "actual" ? !!pa.actual_finish : false,
+          _actual_on_time: mode === "actual" ? onTime : null,
+          _type: typeLower, // <-- keep type for dimming
+        };
+      });
+
+      // Links
+      let lid = 1;
+      const links = [];
+      (list || []).forEach((pa, idx) => {
+        const targetSI = String(idx + 1);
+        const preds = Array.isArray(pa.predecessors) ? pa.predecessors : [];
+        preds.forEach((p) => {
+          const srcMaster = String(p.activity_id || p.master_activity_id || "");
+          const srcIndex = (list || []).findIndex((x) => {
+            const mid = String(
+              x?.activity_id?._id ||
+                x?.activity_id ||
+                x?.master_activity_id ||
+                ""
+            );
+            return mid === srcMaster;
+          });
+          const srcSI = srcIndex >= 0 ? String(srcIndex + 1) : null;
+          if (srcSI) {
+            const typeCode = labelToType[(p.type || "FS").toUpperCase()] ?? "0";
+            links.push({
+              id: lid++,
+              source: String(srcSI),
+              target: String(targetSI),
+              type: typeCode,
+              lag: Number(p.lag || 0),
+            });
+          }
         });
-      }
-      return null;
-    });
-    const nums = ends.map((d) => d?.getTime()).filter((n) => Number.isFinite(n));
-    if (!nums.length) return "—";
-    return toDMY(new Date(Math.max(...nums)));
-  }, [ganttData]);
+      });
 
-  const [form, setForm] = useState({
-    status: "not started",
-    start: "",
-    end: "",
-    duration: "",
-    predecessors: [],
-    successors: [],
-    resources: "",
-  });
+      const _dbIdToSi = new Map(
+        Array.from(_siToDbId.entries()).map(([si, db]) => [db, si])
+      );
 
-  const activityOptions = useMemo(
-    () =>
-      (ganttData || []).map((t) => ({
-        value: String(t.id),
-        label: t.text,
-      })),
-    [ganttData]
-  );
-
-  const onOpenModalForTask = (siId) => {
-    if (timelineMode === "actual") return; // read-only in actual view
-    const task = gantt.getTask(siId);
-    setSelectedId(String(siId));
-    setActiveDbId(task?._dbId || null);
-  };
-
-  useEffect(() => {
-    if (!activityFetch || !selectedId) return;
-    const act = activityFetch.activity || activityFetch.data || activityFetch;
-    const preds = Array.isArray(act?.predecessors) ? act.predecessors : [];
-    const succs = Array.isArray(act?.successors) ? act.successors : [];
-
-    const uiPreds = preds
-      .map((p) => {
-        const db = String(p.activity_id || "");
-        const si = dbIdToSi.get(db);
-        if (!si) return null;
-        const task = gantt.getTask(si);
-        return {
-          activityId: si,
-          activityName: task?.text || "",
-          type: String(p.type || "FS").toUpperCase(),
-          lag: Number(p.lag || 0),
-        };
-      })
-      .filter(Boolean);
-
-    const uiSuccs = succs
-      .map((s) => {
-        const db = String(s.activity_id || "");
-        const si = dbIdToSi.get(db);
-        if (!si) return null;
-        const task = gantt.getTask(si);
-        return {
-          activityId: si,
-          activityName: task?.text || "",
-          type: String(s.type || "FS").toUpperCase(),
-          lag: Number(s.lag || 0),
-        };
-      })
-      .filter(Boolean);
-
-    const startISO = act?.planned_start || act?.start || null;
-    const finishISO = act?.planned_finish || act?.end || null;
-    const dur = Number.isFinite(Number(act?.duration))
-      ? String(Number(act.duration))
-      : "";
-
-    const toYMD = (iso) =>
-      iso ? gantt.date.date_to_str("%Y-%m-%d")(parseISOAsLocalDate(iso)) : "";
-
-    setForm({
-      status: act?.current_status?.status || "not started",
-      start: toYMD(startISO),
-      end: toYMD(finishISO),
-      duration: dur,
-      predecessors: uiPreds,
-      successors: uiSuccs,
-      resources:
-        act?.resources !== undefined && act?.resources !== null
-          ? String(act.resources)
-          : "",
-    });
-  }, [activityFetch, selectedId, dbIdToSi]);
-
-  useEffect(() => {
-    if (activityFetchError) {
-      setSnack({ open: true, msg: extractBackendError(activityFetchError) });
-    }
-  }, [activityFetchError]);
-
-  const saveFromModal = async () => {
-    if (!selectedId) return;
-    const task = gantt.getTask(selectedId);
-    const dbActivityId = task?._dbId;
-    if (!projectId || !dbActivityId) return;
-
-    const predsPayload = (form.predecessors || [])
-      .map((r) => {
-        const si = String(r.activityId || "");
-        const dbId = siToDbId.get(si);
-        if (!dbId) return null;
-        return {
-          activity_id: dbId,
-          type: String(r.type || "FS").toUpperCase(),
-          lag: Number(r.lag || 0),
-        };
-      })
-      .filter(Boolean);
-
-    const payload = {
-      planned_start: form.start || null,
-      planned_finish: form.end || null,
-      duration: Number(form.duration || 0),
-      status: form.status,
-      predecessors: predsPayload,
-      resources:
-        form.resources === "" || form.resources === null
-          ? null
-          : Number.isNaN(Number(form.resources))
-          ? form.resources
-          : Number(form.resources),
+      return { data, links, siToDbId: _siToDbId, dbIdToSi: _dbIdToSi };
     };
 
-    try {
-      const result = await updateActivityInProject({
-        projectId,
-        activityId: dbActivityId,
-        data: payload,
-      }).unwrap();
-
-      if (result?.error || result?.data?.error) {
-        throw result.error || result.data.error;
-      }
-
-      await (refetchAll().unwrap?.() ?? refetchAll());
-      setSnack({ open: true, msg: "Activity updated." });
-      setSelectedId(null);
-      setActiveDbId(null);
-    } catch (e) {
-      setSnack({ open: true, msg: extractBackendError(e) });
-    }
-  };
-
-  /* ---------- expose saveAsTemplate ---------- */
-  useImperativeHandle(ref, () => ({
-    saveAsTemplate: async (meta = {}) => {
-      const { name, description } = meta || {};
-      const tasks = [];
-      const parseDMY = (s) => {
-        if (!s) return null;
-        const [dd, mm, yyyy] = String(s).split("-").map(Number);
-        if (!dd || !mm || !yyyy) return null;
-        return new Date(yyyy, mm - 1, dd);
+    const { ganttData, ganttLinks, siToDbId, dbIdToSi } = useMemo(() => {
+      const result = buildTasksAndLinks(timelineMode, paList);
+      return {
+        ganttData: Array.isArray(result?.data) ? result.data : [],
+        ganttLinks: Array.isArray(result?.links) ? result.links : [],
+        siToDbId: result?.siToDbId ?? new Map(),
+        dbIdToSi: result?.dbIdToSi ?? new Map(),
       };
-      gantt.eachTask((t) => {
-        const start = t.start_date instanceof Date ? t.start_date : null;
-        const end = t._end_dmy
-          ? parseDMY(t._end_dmy)
-          : start && Number(t.duration) > 0
-          ? gantt.calculateEndDate({
-              start_date: start,
-              duration: t.duration,
-              task: t,
-            })
-          : null;
+    }, [paList, timelineMode]);
 
-        tasks.push({
-          si: String(t.id),
-          dbId: String(t._dbId || ""),
-          start,
-          end,
-          duration: Number(t.duration || 0),
-          percent: Math.round(Number(t.progress || 0) * 100),
-        });
+    const minStartDMY = useMemo(() => {
+      const nums = (ganttData || [])
+        .filter(
+          (t) => t.start_date instanceof Date && !Number.isNaN(t.start_date)
+        )
+        .map((t) => t.start_date.getTime());
+      if (!nums.length) return "—";
+      return toDMY(new Date(Math.min(...nums)));
+    }, [ganttData]);
+    const maxEndDMY = useMemo(() => {
+      const ends = (ganttData || []).map((t) => {
+        if (t._end_dmy) {
+          const [dd, mm, yyyy] = t._end_dmy.split("-").map(Number);
+          return new Date(yyyy, mm - 1, dd);
+        }
+        if (t.start_date instanceof Date && Number(t.duration) > 0) {
+          return gantt.calculateEndDate({
+            start_date: t.start_date,
+            duration: t.duration,
+            task: t,
+          });
+        }
+        return null;
       });
+      const nums = ends
+        .map((d) => d?.getTime())
+        .filter((n) => Number.isFinite(n));
+      if (!nums.length) return "—";
+      return toDMY(new Date(Math.max(...nums)));
+    }, [ganttData]);
 
-      const bySi = new Map(tasks.map((x) => [x.si, x]));
-      const predsBySi = new Map();
-      const succsBySi = new Map();
-      gantt.getLinks().forEach((l) => {
-        const src = String(l.source);
-        const trg = String(l.target);
-        const type = typeToLabel[String(l.type)] || "FS";
-        const lag = Number(l.lag || 0);
+    const [form, setForm] = useState({
+      status: "not started",
+      start: "",
+      end: "",
+      duration: "",
+      predecessors: [],
+      successors: [],
+      resources: "",
+    });
 
-        if (!predsBySi.has(trg)) predsBySi.set(trg, []);
-        predsBySi.get(trg).push({ activityIdSi: src, type, lag });
+    const activityOptions = useMemo(
+      () =>
+        (ganttData || []).map((t) => ({
+          value: String(t.id),
+          label: t.text,
+        })),
+      [ganttData]
+    );
 
-        if (!succsBySi.has(src)) succsBySi.set(src, []);
-        succsBySi.get(src).push({ activityIdSi: trg, type, lag });
-      });
+    const onOpenModalForTask = (siId) => {
+      if (timelineMode === "actual") return; // read-only in actual view
+      const task = gantt.getTask(siId);
+      setSelectedId(String(siId));
+      setActiveDbId(task?._dbId || null);
+    };
 
-      const activities = tasks
-        .filter((t) => t.dbId)
-        .map((t) => {
-          const preds = (predsBySi.get(t.si) || [])
-            .map((p) => {
-              const src = bySi.get(p.activityIdSi);
-              if (!src?.dbId) return null;
-              return {
-                activity_id: src.dbId,
-                type: p.type,
-                lag: p.lag,
-              };
-            })
-            .filter(Boolean);
+    useEffect(() => {
+      if (!activityFetch || !selectedId) return;
+      const act = activityFetch.activity || activityFetch.data || activityFetch;
+      const preds = Array.isArray(act?.predecessors) ? act.predecessors : [];
+      const succs = Array.isArray(act?.successors) ? act.successors : [];
 
-          const succs = (succsBySi.get(t.si) || [])
-            .map((s) => {
-              const trg = bySi.get(s.activityIdSi);
-              if (!trg?.dbId) return null;
-              return {
-                activity_id: trg.dbId,
-                type: s.type,
-                lag: s.lag,
-              };
-            })
-            .filter(Boolean);
-
+      const uiPreds = preds
+        .map((p) => {
+          const db = String(p.activity_id || "");
+          const si = dbIdToSi.get(db);
+          if (!si) return null;
+          const task = gantt.getTask(si);
           return {
-            activity_id: t.dbId,
-            planned_start: t.start ? t.start.toISOString() : null,
-            planned_finish: t.end ? t.end.toISOString() : null,
-            duration:
-              t.duration ||
-              (t.start && t.end
-                ? durationFromStartFinish(t.start, t.end)
-                : 0),
-            percent_complete: t.percent || 0,
-            predecessors: preds,
-            successors: succs,
+            activityId: si,
+            activityName: task?.text || "",
+            type: String(p.type || "FS").toUpperCase(),
+            lag: Number(p.lag || 0),
           };
-        });
+        })
+        .filter(Boolean);
+
+      const uiSuccs = succs
+        .map((s) => {
+          const db = String(s.activity_id || "");
+          const si = dbIdToSi.get(db);
+          if (!si) return null;
+          const task = gantt.getTask(si);
+          return {
+            activityId: si,
+            activityName: task?.text || "",
+            type: String(s.type || "FS").toUpperCase(),
+            lag: Number(s.lag || 0),
+          };
+        })
+        .filter(Boolean);
+
+      const startISO = act?.planned_start || act?.start || null;
+      const finishISO = act?.planned_finish || act?.end || null;
+      const dur = Number.isFinite(Number(act?.duration))
+        ? String(Number(act.duration))
+        : "";
+
+      const toYMD = (iso) =>
+        iso ? gantt.date.date_to_str("%Y-%m-%d")(parseISOAsLocalDate(iso)) : "";
+
+      setForm({
+        status: act?.current_status?.status || "not started",
+        start: toYMD(startISO),
+        end: toYMD(finishISO),
+        duration: dur,
+        predecessors: uiPreds,
+        successors: uiSuccs,
+        resources:
+          act?.resources !== undefined && act?.resources !== null
+            ? String(act.resources)
+            : "",
+      });
+    }, [activityFetch, selectedId, dbIdToSi]);
+
+    useEffect(() => {
+      if (activityFetchError) {
+        setSnack({ open: true, msg: extractBackendError(activityFetchError) });
+      }
+    }, [activityFetchError]);
+
+    const saveFromModal = async () => {
+      if (!selectedId) return;
+      const task = gantt.getTask(selectedId);
+      const dbActivityId = task?._dbId;
+      if (!projectId || !dbActivityId) return;
+
+      const predsPayload = (form.predecessors || [])
+        .map((r) => {
+          const si = String(r.activityId || "");
+          const dbId = siToDbId.get(si);
+          if (!dbId) return null;
+          return {
+            activity_id: dbId,
+            type: String(r.type || "FS").toUpperCase(),
+            lag: Number(r.lag || 0),
+          };
+        })
+        .filter(Boolean);
 
       const payload = {
-        status: "template",
-        ...(name ? { name } : {}),
-        ...(description ? { description } : {}),
-        activities,
+        planned_start: form.start || null,
+        planned_finish: form.end || null,
+        duration: Number(form.duration || 0),
+        status: form.status,
+        predecessors: predsPayload,
+        resources:
+          form.resources === "" || form.resources === null
+            ? null
+            : Number.isNaN(Number(form.resources))
+            ? form.resources
+            : Number(form.resources),
       };
 
       try {
-        await createProjectActivity(payload).unwrap();
-        setSnack({ open: true, msg: "Template saved successfully" });
-      } catch (e) {
-        setSnack({ open: true, msg: "Failed to save template" });
-      }
-    },
-  }));
+        const result = await updateActivityInProject({
+          projectId,
+          activityId: dbActivityId,
+          data: payload,
+        }).unwrap();
 
-  /* ---------- init gantt (once) ---------- */
-  useEffect(() => {
-    gantt.config.date_format = "%d-%m-%Y";
-    gantt.locale.date.day_short = ["S", "M", "T", "W", "T", "F", "S"];
-    gantt.config.scroll_on_click = true;
-    gantt.config.autoscroll = true;
-    gantt.config.preserve_scroll = true;
-    gantt.config.show_chart_scroll = true;
-    gantt.config.show_grid_scroll = true;
-    gantt.config.smart_rendering = true;
-    gantt.config.start_on_monday = false;
-    gantt.config.limit_view = false;
-    gantt.config.fit_tasks = false;
-    gantt.config.lightbox = false;
-
-    // disable drag interactions
-    gantt.config.readonly = false;
-    gantt.config.drag_move = false;
-    gantt.config.drag_resize = false;
-    gantt.config.drag_progress = false;
-    gantt.config.drag_links = false;
-    gantt.attachEvent("onBeforeLinkAdd", () => false);
-    gantt.attachEvent("onBeforeLinkUpdate", () => false);
-    gantt.attachEvent("onBeforeLinkDelete", () => false);
-    gantt.attachEvent("onBeforeTaskDrag", () => false);
-
-    gantt.showLightbox = function () {
-      return false;
-    };
-    gantt.config.show_unscheduled = true;
-
-    // grid (with resources)
-    gantt.config.columns = [
-      { name: "text", label: "Activity", tree: true, width: 260, resize: true },
-      {
-        name: "duration",
-        label: "Duration",
-        width: 90,
-        align: "left",
-        resize: true,
-        template: durationTemplate,
-      },
-      {
-        name: "resources",
-        label: "Res.",
-        width: 80,
-        align: "left",
-        resize: true,
-        template: (task) =>
-          task._resources === 0
-            ? "0"
-            : task._resources
-            ? String(task._resources)
-            : "",
-      },
-      {
-        name: "start",
-        label: "Start",
-        width: 120,
-        align: "left",
-        resize: true,
-        template: startCellTemplate,
-      },
-      {
-        name: "end",
-        label: "End",
-        width: 120,
-        align: "left",
-        resize: true,
-        template: endCellTemplate,
-      },
-      {
-        name: "pred",
-        label: "Predecessors",
-        width: 180,
-        align: "left",
-        resize: true,
-        template: predecessorTemplate,
-      },
-    ];
-
-    gantt.templates.task_class = (_, __, task) => {
-      const classes = [];
-      if (task._unscheduled) classes.push("gantt-task-unscheduled");
-
-      if (task._mode === "actual") {
-        // color by on-time/late/completing
-        if (task._actual_completed) {
-          classes.push(task._actual_on_time ? "gantt-task-ontime" : "gantt-task-late");
-        } else {
-          classes.push("gantt-task-running");
+        if (result?.error || result?.data?.error) {
+          throw result.error || result.data.error;
         }
-      } else {
-        classes.push("gantt-task-baseline");
+
+        await (refetchAll().unwrap?.() ?? refetchAll());
+        setSnack({ open: true, msg: "Activity updated." });
+        setSelectedId(null);
+        setActiveDbId(null);
+      } catch (e) {
+        setSnack({ open: true, msg: extractBackendError(e) });
       }
-      return classes.join(" ");
     };
 
-    gantt.attachEvent("onTaskClick", function (id) {
-      onOpenModalForTask(String(id));
-      return true;
-    });
+    /* ---------- expose saveAsTemplate ---------- */
+    useImperativeHandle(ref, () => ({
+      saveAsTemplate: async (meta = {}) => {
+        const { name, description } = meta || {};
+        const tasks = [];
+        const parseDMY = (s) => {
+          if (!s) return null;
+          const [dd, mm, yyyy] = String(s).split("-").map(Number);
+          if (!dd || !mm || !yyyy) return null;
+          return new Date(yyyy, mm - 1, dd);
+        };
+        gantt.eachTask((t) => {
+          const start = t.start_date instanceof Date ? t.start_date : null;
+          const end = t._end_dmy
+            ? parseDMY(t._end_dmy)
+            : start && Number(t.duration) > 0
+            ? gantt.calculateEndDate({
+                start_date: start,
+                duration: t.duration,
+                task: t,
+              })
+            : null;
 
-    if (ganttContainer.current) gantt.init(ganttContainer.current);
-    return () => gantt.clearAll();
-  }, []); // init once
+          tasks.push({
+            si: String(t.id),
+            dbId: String(t._dbId || ""),
+            start,
+            end,
+            duration: Number(t.duration || 0),
+            percent: Math.round(Number(t.progress || 0) * 100),
+          });
+        });
 
-  /* ---------- defensively parse data ---------- */
-  const parseSafe = (payload) => {
-    const ok = payload && Array.isArray(payload.data) && Array.isArray(payload.links);
-    if (!ok) {
-      console.error("Invalid gantt.parse payload", payload);
-      gantt.parse({ data: [], links: [] });
-      return;
-    }
-    gantt.parse(payload);
-  };
+        const bySi = new Map(tasks.map((x) => [x.si, x]));
+        const predsBySi = new Map();
+        const succsBySi = new Map();
+        gantt.getLinks().forEach((l) => {
+          const src = String(l.source);
+          const trg = String(l.target);
+          const type = typeToLabel[String(l.type)] || "FS";
+          const lag = Number(l.lag || 0);
 
-  // feed data whenever dataset or mode changes
-  useEffect(() => {
-    if (!ganttContainer.current || !gantt.$container) return;
+          if (!predsBySi.has(trg)) predsBySi.set(trg, []);
+          predsBySi.get(trg).push({ activityIdSi: src, type, lag });
 
-    if (timelineMode === "actual") {
+          if (!succsBySi.has(src)) succsBySi.set(src, []);
+          succsBySi.get(src).push({ activityIdSi: trg, type, lag });
+        });
+
+        const activities = tasks
+          .filter((t) => t.dbId)
+          .map((t) => {
+            const preds = (predsBySi.get(t.si) || [])
+              .map((p) => {
+                const src = bySi.get(p.activityIdSi);
+                if (!src?.dbId) return null;
+                return { activity_id: src.dbId, type: p.type, lag: p.lag };
+              })
+              .filter(Boolean);
+
+            const succs = (succsBySi.get(t.si) || [])
+              .map((s) => {
+                const trg = bySi.get(s.activityIdSi);
+                if (!trg?.dbId) return null;
+                return { activity_id: trg.dbId, type: s.type, lag: s.lag };
+              })
+              .filter(Boolean);
+
+            return {
+              activity_id: t.dbId,
+              planned_start: t.start ? t.start.toISOString() : null,
+              planned_finish: t.end ? t.end.toISOString() : null,
+              duration:
+                t.duration ||
+                (t.start && t.end
+                  ? durationFromStartFinish(t.start, t.end)
+                  : 0),
+              percent_complete: t.percent || 0,
+              predecessors: preds,
+              successors: succs,
+            };
+          });
+
+        const payload = {
+          status: "template",
+          ...(name ? { name } : {}),
+          ...(description ? { description } : {}),
+          activities,
+        };
+
+        try {
+          await createProjectActivity(payload).unwrap();
+          setSnack({ open: true, msg: "Template saved successfully" });
+        } catch {
+          setSnack({ open: true, msg: "Failed to save template" });
+        }
+      },
+    }));
+
+    /* ---------- init gantt (once) ---------- */
+    useEffect(() => {
+      gantt.config.date_format = "%d-%m-%Y";
+      gantt.locale.date.day_short = ["S", "M", "T", "W", "T", "F", "S"];
+      gantt.config.scroll_on_click = true;
+      gantt.config.autoscroll = true;
+      gantt.config.preserve_scroll = true;
+      gantt.config.show_chart_scroll = true;
+      gantt.config.show_grid_scroll = true;
+      gantt.config.smart_rendering = true;
+      gantt.config.start_on_monday = false;
+      gantt.config.limit_view = false;
+      gantt.config.fit_tasks = false;
+      gantt.config.lightbox = false;
+
+      gantt.config.readonly = false;
+      gantt.config.drag_move = false;
+      gantt.config.drag_resize = false;
+      gantt.config.drag_progress = false;
+      gantt.config.drag_links = false;
+      gantt.attachEvent("onBeforeLinkAdd", () => false);
+      gantt.attachEvent("onBeforeLinkUpdate", () => false);
+      gantt.attachEvent("onBeforeLinkDelete", () => false);
+      gantt.attachEvent("onBeforeTaskDrag", () => false);
+
+      gantt.showLightbox = function () {
+        return false;
+      };
+      gantt.config.show_unscheduled = true;
+
+      // grid (with resources)
+      gantt.config.columns = [
+        {
+          name: "text",
+          label: "Activity",
+          tree: true,
+          width: 260,
+          resize: true,
+        },
+        {
+          name: "duration",
+          label: "Duration",
+          width: 90,
+          align: "left",
+          resize: true,
+          template: durationTemplate,
+        },
+        {
+          name: "resources",
+          label: "Res.",
+          width: 80,
+          align: "left",
+          resize: true,
+          template: (task) =>
+            task._resources === 0
+              ? "0"
+              : task._resources
+              ? String(task._resources)
+              : "",
+        },
+        {
+          name: "start",
+          label: "Start",
+          width: 120,
+          align: "left",
+          resize: true,
+          template: startCellTemplate,
+        },
+        {
+          name: "end",
+          label: "End",
+          width: 120,
+          align: "left",
+          resize: true,
+          template: endCellTemplate,
+        },
+        {
+          name: "pred",
+          label: "Predecessors",
+          width: 180,
+          align: "left",
+          resize: true,
+          template: predecessorTemplate,
+        },
+      ];
+
+      // initial class templates (will be replaced by effect below)
+      gantt.templates.task_class = () => "";
+      gantt.templates.grid_row_class = () => "";
+
+      gantt.attachEvent("onTaskClick", function (id) {
+        onOpenModalForTask(String(id));
+        return true;
+      });
+
+      if (ganttContainer.current) gantt.init(ganttContainer.current);
+      return () => gantt.clearAll();
+    }, []); // init once
+
+    /* ---------- dim backend when actView === 'all' ---------- */
+    useEffect(() => {
+      gantt.templates.task_class = (_, __, task) => {
+        const classes = [];
+        if (task._unscheduled) classes.push("gantt-task-unscheduled");
+
+        if (task._mode === "actual") {
+          if (task._actual_completed) {
+            classes.push(
+              task._actual_on_time ? "gantt-task-ontime" : "gantt-task-late"
+            );
+          } else {
+            classes.push("gantt-task-running");
+          }
+        } else {
+          classes.push("gantt-task-baseline");
+        }
+
+        if (actView === "all" && task._type === "backend") {
+          classes.push("gantt-task-dim");
+        }
+        return classes.join(" ");
+      };
+
+      gantt.templates.grid_row_class = (start, end, task) => {
+        if (actView === "all" && task._type === "backend")
+          return "gantt-grid-dim";
+        return "";
+      };
+
+      gantt.render();
+    }, [actView, timelineMode]);
+
+    /* ---------- defensively parse data ---------- */
+    const parseSafe = (payload) => {
+      const ok =
+        payload && Array.isArray(payload.data) && Array.isArray(payload.links);
+      if (!ok) {
+        console.error("Invalid gantt.parse payload", payload);
+        gantt.parse({ data: [], links: [] });
+        return;
+      }
+      gantt.parse(payload);
+    };
+
+    // feed data whenever dataset or mode changes
+    useEffect(() => {
+      if (!ganttContainer.current || !gantt.$container) return;
+
+      if (timelineMode === "actual") {
+        setSelectedId(null);
+        setActiveDbId(null);
+      }
+
+      const dataArr = Array.isArray(ganttData) ? ganttData : [];
+      const linksArr = Array.isArray(ganttLinks) ? ganttLinks : [];
+
+      gantt.clearAll();
+      parseSafe({ data: dataArr, links: linksArr });
+    }, [ganttData, ganttLinks, timelineMode]);
+
+    /* ---------- reset selection when switching tabs ---------- */
+    useEffect(() => {
       setSelectedId(null);
       setActiveDbId(null);
-    }
+    }, [actView]);
 
-    const dataArr = Array.isArray(ganttData) ? ganttData : [];
-    const linksArr = Array.isArray(ganttLinks) ? ganttLinks : [];
+    /* ---------- scales ---------- */
+    useEffect(() => setViewMode(viewModeParam), [viewModeParam]);
+    useEffect(() => {
+      const currentYear = new Date().getFullYear();
+      gantt.templates.date_scale = null;
 
-    gantt.clearAll();
-    parseSafe({ data: dataArr, links: linksArr });
-  }, [ganttData, ganttLinks, timelineMode]);
+      if (viewMode === "day" || viewMode === "week") {
+        gantt.config.scale_unit = viewMode;
+        gantt.config.date_scale = "%d %M %Y";
+        const fmtFull = gantt.date.date_to_str("%d %M %Y");
+        const fmtNoY = gantt.date.date_to_str("%d %M");
+        gantt.templates.date_scale = (date) =>
+          date.getFullYear() === currentYear ? fmtNoY(date) : fmtFull(date);
+        gantt.config.subscales = [{ unit: "day", step: 1, date: "%D" }];
+      } else if (viewMode === "month") {
+        gantt.config.scale_unit = "month";
+        gantt.config.date_scale = "%F %Y";
+        const fmtM = gantt.date.date_to_str("%F");
+        const fmtMY = gantt.date.date_to_str("%F %Y");
+        gantt.templates.date_scale = (date) =>
+          date.getFullYear() === currentYear ? fmtM(date) : fmtMY(date);
+        gantt.config.subscales = [{ unit: "week", step: 1, date: "Week #%W" }];
+      } else {
+        gantt.config.scale_unit = "year";
+        gantt.config.date_scale = "%Y";
+        gantt.config.subscales = [{ unit: "month", step: 1, date: "%M" }];
+      }
+      gantt.render();
+    }, [viewMode]);
 
-  /* ---------- scales ---------- */
-  useEffect(() => setViewMode(viewModeParam), [viewModeParam]);
-  useEffect(() => {
-    const currentYear = new Date().getFullYear();
-    gantt.templates.date_scale = null;
+    const safeMsg = String(snack?.msg ?? "");
+    const isError = /^(failed|invalid|error|server)/i.test(safeMsg);
 
-    if (viewMode === "day" || viewMode === "week") {
-      gantt.config.scale_unit = viewMode;
-      gantt.config.date_scale = "%d %M %Y";
-      const fmtFull = gantt.date.date_to_str("%d %M %Y");
-      const fmtNoY = gantt.date.date_to_str("%d %M");
-      gantt.templates.date_scale = (date) =>
-        date.getFullYear() === currentYear ? fmtNoY(date) : fmtFull(date);
-      gantt.config.subscales = [{ unit: "day", step: 1, date: "%D" }];
-    } else if (viewMode === "month") {
-      gantt.config.scale_unit = "month";
-      gantt.config.date_scale = "%F %Y";
-      const fmtM = gantt.date.date_to_str("%F");
-      const fmtMY = gantt.date.date_to_str("%F %Y");
-      gantt.templates.date_scale = (date) =>
-        date.getFullYear() === currentYear ? fmtM(date) : fmtMY(date);
-      gantt.config.subscales = [{ unit: "week", step: 1, date: "Week #%W" }];
-    } else {
-      gantt.config.scale_unit = "year";
-      gantt.config.date_scale = "%Y";
-      gantt.config.subscales = [{ unit: "month", step: 1, date: "%M" }];
-    }
-    gantt.render();
-  }, [viewMode]);
-
-  const safeMsg = String(snack?.msg ?? "");
-  const isError = /^(failed|invalid|error|server)/i.test(safeMsg);
-
-  return (
-    <Box sx={{ ml: "0px", width: "100%", p: 0 }}>
-      <style>{`
+    return (
+      <Box sx={{ ml: "0px", width: "100%", p: 0 }}>
+        <style>{`
         .gantt_task_line.gantt-task-unscheduled{display:none!important;}
         /* Baseline (grey) */
         .gantt_task_line.gantt-task-baseline { background:#9aa3b2; border-color:#9aa3b2; }
@@ -1097,414 +1174,511 @@ const View_Project_Management = forwardRef(({ viewModeParam = "week" }, ref) => 
         .gantt_task_line.gantt-task-late { background:#ef4444; border-color:#ef4444; }
         .gantt_task_line.gantt-task-running { background:#3b82f6; border-color:#3b82f6; }
         .gantt_grid_scale, .gantt_task_scale { height: 28px; line-height: 28px; }
+
+        /* NEW: dim backend in "All" */
+        .gantt_task_line.gantt-task-dim { opacity: 0.45; }
+        .gantt_grid_data .gantt_row.gantt-grid-dim { opacity: 0.6; }
       `}</style>
 
-      {/* Header row */}
-      <Box
-        sx={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1.5,
-          alignItems: "center",
-          justifyContent: "space-between",
-          mb: 0.5,
-          mt: 1,
-        }}
-      >
-        {/* Left: project code + nav */}
-        <Sheet
-          variant="outlined"
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 2,
-            borderRadius: "lg",
-            px: 1.5,
-            py: 1,
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-            <DescriptionOutlinedIcon fontSize="small" color="primary" />
-            <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-              Project Code:
-            </Typography>
-            <Chip
-              color="primary"
-              size="sm"
-              variant="solid"
-              sx={{ fontWeight: 700, cursor: "pointer" }}
-              onClick={() =>
-                projectDbId && navigate(`/project_detail?project_id=${projectDbId}`)
-              }
-              aria-label="Open project detail"
-            >
-              {projectMeta?.code || "—"}
-            </Chip>
-          </Box>
-        </Sheet>
-
-        {/* Center: Baseline / Actual Toggle */}
-        <Sheet
-          variant="outlined"
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1,
-            borderRadius: "lg",
-            px: 1,
-            py: 0.75,
-          }}
-        >
-          <Typography level="body-sm" sx={{ mr: 1, color: "text.secondary" }}>
-            Timeline:
-          </Typography>
-          <Chip
-            variant={timelineMode === "baseline" ? "solid" : "soft"}
-            color={timelineMode === "baseline" ? "primary" : "neutral"}
-            size="sm"
-            sx={{ fontWeight: 700, cursor: "pointer" }}
-            onClick={() => setTimelineMode("baseline")}
-          >
-            Baseline
-          </Chip>
-          <Chip
-            variant={timelineMode === "actual" ? "solid" : "soft"}
-            color={timelineMode === "actual" ? "primary" : "neutral"}
-            size="sm"
-            sx={{ fontWeight: 700, cursor: "pointer" }}
-            onClick={() => setTimelineMode("actual")}
-          >
-            Actual
-          </Chip>
-        </Sheet>
-
-        {/* Right: countdown + range chips */}
-        <Sheet
-          variant="outlined"
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 2,
-            borderRadius: "lg",
-            px: 1,
-            py: 1,
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-            <Timelapse fontSize="small" color="primary" />
-            <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-              Remaining:
-            </Typography>
-            <RemainingDaysChip target={countdownTarget} usedKey={countdownKey} />
-          </Box>
-          <Divider orientation="vertical" />
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-            <EventOutlinedIcon fontSize="small" color="success" />
-            <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-              Start:
-            </Typography>
-            <Chip color="success" size="sm" variant="soft" sx={{ fontWeight: 600 }}>
-              {minStartDMY}
-            </Chip>
-          </Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-            <EventOutlinedIcon fontSize="small" color="danger" />
-            <Typography level="body-sm" sx={{ color: "text.secondary" }}>
-              End:
-            </Typography>
-            <Chip color="danger" size="sm" variant="soft" sx={{ fontWeight: 600 }}>
-              {maxEndDMY}
-            </Chip>
-          </Box>
-        </Sheet>
-      </Box>
-
-      {/* Gantt area */}
-      <Box style={{ position: "relative", width: "100%", minWidth: 600, height: "80vh" }}>
+        {/* Header row */}
         <Box
-          ref={ganttContainer}
-          style={{
-            width: "100%",
-            height: "100%",
-            background: "#fff",
-            borderRadius: 8,
-            boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
-            zIndex: 1,
-            position: "relative",
-            top: 12,
-            transition: "box-shadow 0.2s, top 0.2s",
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 1.5,
+            alignItems: "center",
+            justifyContent: "space-between",
+            mb: 0.5,
+            mt: 1,
           }}
-        />
-      </Box>
-
-      {/* Right panel: only in baseline mode */}
-      {selectedId && timelineMode === "baseline" && (
-        <>
-          <Box
-            onClick={() => {
-              setSelectedId(null);
-              setActiveDbId(null);
-            }}
-            sx={{
-              position: "fixed",
-              inset: 0,
-              zIndex: 1399,
-              backgroundColor: "rgba(0,0,0,0.10)",
-              backdropFilter: "blur(8px)",
-              WebkitBackdropFilter: "blur(8px)",
-              animation: "fadeIn 140ms ease-out",
-            }}
-          />
+        >
+          {/* LEFT: Tabs (Site/Backend/All) + Project Code */}
           <Sheet
             variant="outlined"
             sx={{
-              position: "fixed",
-              overflow: "auto",
-              height: "100%",
-              p: 2,
-              transition: "width 0.2s",
-              zIndex: 1400,
-              right: 0,
-              top: 0,
-              width: "40%",
-              animation: "slideInRight 230ms ease-out",
-              willChange: "transform, opacity",
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              borderRadius: "lg",
+              px: 1.5,
+              py: 1,
             }}
           >
-            <Stack spacing={1.5}>
-              <Typography level="title-sm">
-                Edit Activity {isFetchingActivity ? "(loading…)" : ""}
+            {/* Project code */}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+              <DescriptionOutlinedIcon fontSize="small" color="primary" />
+              <Typography level="body-sm" sx={{ color: "text.secondary" }}>
+                Project Code:
               </Typography>
-              <Divider />
-
-              <FormControl>
-                <FormLabel>Status</FormLabel>
-                <Select
-                  size="sm"
-                  value={form.status}
-                  onChange={(_, v) =>
-                    setForm((f) => ({ ...f, status: v || "not started" }))
-                  }
-                  slotProps={{ listbox: { sx: { zIndex: 1401 } } }}
-                >
-                  <Option value="not started">Not started</Option>
-                  <Option value="in progress">In progress</Option>
-                  <Option value="completed">Completed</Option>
-                </Select>
-              </FormControl>
-
-              <Stack direction="row" spacing={1}>
-                <FormControl sx={{ flex: 1 }}>
-                  <FormLabel>Start date</FormLabel>
-                  <Input
-                    size="sm"
-                    type="date"
-                    value={form.start}
-                    onChange={(e) => {
-                      const startISO = e.target.value;
-                      setForm((f) => {
-                        let endISO = f.end;
-                        if (startISO && f.duration) {
-                          const s = parseISOAsLocalDate(startISO);
-                          if (!isNaN(s)) {
-                            const eDate = gantt.calculateEndDate({
-                              start_date: s,
-                              duration: Number(f.duration),
-                            });
-                            endISO = gantt.date.date_to_str("%Y-%m-%d")(eDate);
-                          }
-                        }
-                        return { ...f, start: startISO, end: endISO };
-                      });
-                    }}
-                  />
-                </FormControl>
-
-                <FormControl sx={{ flex: 1 }}>
-                  <FormLabel>Resources</FormLabel>
-                  <Input
-                    size="sm"
-                    type="number"
-                    inputMode="numeric"
-                    placeholder="e.g., 3"
-                    value={form.resources}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, resources: e.target.value }))
-                    }
-                  />
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel>Duration (days)</FormLabel>
-                  <Input
-                    size="sm"
-                    type="number"
-                    value={form.duration}
-                    onChange={(e) => {
-                      const duration = Number(e.target.value) || 0;
-                      setForm((f) => {
-                        let endISO = f.end;
-                        if (f.start && duration > 0) {
-                          const s = parseISOAsLocalDate(f.start);
-                          if (!isNaN(s)) {
-                            const eDate = gantt.calculateEndDate({
-                              start_date: s,
-                              duration,
-                            });
-                            endISO = gantt.date.date_to_str("%Y-%m-%d")(eDate);
-                          }
-                        }
-                        return { ...f, duration, end: endISO };
-                      });
-                    }}
-                  />
-                </FormControl>
-              </Stack>
-
-              <FormControl sx={{ flex: 1 }}>
-                <FormLabel>End date</FormLabel>
-                <Input size="sm" type="date" value={form.end} disabled />
-              </FormControl>
-
-              <Divider />
-
-              {/* Predecessors */}
-              <Stack spacing={1}>
-                <Stack direction="row" alignItems="center" justifyContent="space-between">
-                  <Typography level="title-sm">Predecessors</Typography>
-                  <Button
-                    size="sm"
-                    variant="soft"
-                    startDecorator={<Add />}
-                    onClick={() =>
-                      setForm((f) => ({
-                        ...f,
-                        predecessors: [
-                          ...f.predecessors,
-                          { activityId: "", activityName: "", type: "FS", lag: 0 },
-                        ],
-                      }))
-                    }
-                  >
-                    Add
-                  </Button>
-                </Stack>
-                <Stack spacing={1}>
-                  {form.predecessors.length === 0 && (
-                    <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
-                      No predecessors
-                    </Typography>
-                  )}
-                  {form.predecessors.map((r, idx) => (
-                    <DepRow
-                      key={`pred-${idx}`}
-                      title="Predecessor"
-                      options={activityOptions.filter((o) => o.value !== selectedId)}
-                      row={r}
-                      onChange={(nr) =>
-                        setForm((f) => {
-                          const arr = [...f.predecessors];
-                          arr[idx] = nr;
-                          return { ...f, predecessors: arr };
-                        })
-                      }
-                      onRemove={() =>
-                        setForm((f) => {
-                          const arr = f.predecessors.slice();
-                          arr.splice(idx, 1);
-                          return { ...f, predecessors: arr };
-                        })
-                      }
-                    />
-                  ))}
-                </Stack>
-              </Stack>
-
-              <Divider />
-
-              {/* Successors (UI only) */}
-              <Stack spacing={1}>
-                <Stack direction="row" alignItems="center" justifyContent="space-between">
-                  <Typography level="title-sm">Successors</Typography>
-                  <Button
-                    size="sm"
-                    variant="soft"
-                    startDecorator={<Add />}
-                    onClick={() =>
-                      setForm((f) => ({
-                        ...f,
-                        successors: [
-                          ...f.successors,
-                          { activityId: "", activityName: "", type: "FS", lag: 0 },
-                        ],
-                      }))
-                    }
-                  >
-                    Add
-                  </Button>
-                </Stack>
-                <Stack spacing={1}>
-                  {form.successors.length === 0 && (
-                    <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
-                      No successors
-                    </Typography>
-                  )}
-                  {form.successors.map((r, idx) => (
-                    <DepRow
-                      key={`succ-${idx}`}
-                      title="Successor"
-                      options={activityOptions.filter((o) => o.value !== selectedId)}
-                      row={r}
-                      onChange={(nr) =>
-                        setForm((f) => {
-                          const arr = [...f.successors];
-                          arr[idx] = nr;
-                          return { ...f, successors: arr };
-                        })
-                      }
-                      onRemove={() =>
-                        setForm((f) => {
-                          const arr = f.successors.slice();
-                          arr.splice(idx, 1);
-                          return { ...f, successors: arr };
-                        })
-                      }
-                    />
-                  ))}
-                </Stack>
-              </Stack>
-
-              <Divider />
-
-              <Stack direction="row" spacing={1}>
-                <Button size="sm" onClick={saveFromModal} disabled={isSaving}>
-                  {isSaving ? "Saving…" : "Save"}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="soft"
-                  color="neutral"
-                  onClick={() => {
-                    setSelectedId(null);
-                    setActiveDbId(null);
-                  }}
-                >
-                  Close
-                </Button>
-              </Stack>
+              <Chip
+                color="primary"
+                size="sm"
+                variant="solid"
+                sx={{ fontWeight: 700, cursor: "pointer" }}
+                onClick={() =>
+                  projectDbId &&
+                  navigate(`/project_detail?project_id=${projectDbId}`)
+                }
+                aria-label="Open project detail"
+              >
+                {projectMeta?.code || "—"}
+              </Chip>
+            </Box>
+          </Sheet>
+          <Sheet
+            variant="outlined"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              borderRadius: "lg",
+              px: 1.5,
+              py: 1,
+            }}
+          >
+            <Stack direction="row" spacing={0.75} alignItems="center">
+              <Chip
+                variant={actView === "site" ? "solid" : "soft"}
+                color={actView === "site" ? "primary" : "neutral"}
+                size="sm"
+                sx={{ fontWeight: 700, cursor: "pointer" }}
+                onClick={() => setActView("site")}
+              >
+                Site
+              </Chip>
+              <Chip
+                variant={actView === "backend" ? "solid" : "soft"}
+                color={actView === "backend" ? "primary" : "neutral"}
+                size="sm"
+                sx={{ fontWeight: 700, cursor: "pointer" }}
+                onClick={() => setActView("backend")}
+              >
+                Backend
+              </Chip>
+              <Chip
+                variant={actView === "all" ? "solid" : "soft"}
+                color={actView === "all" ? "primary" : "neutral"}
+                size="sm"
+                sx={{ fontWeight: 700, cursor: "pointer" }}
+                onClick={() => setActView("all")}
+              >
+                All
+              </Chip>
             </Stack>
           </Sheet>
-        </>
-      )}
+          {/* CENTER: Baseline / Actual Toggle */}
+          <Sheet
+            variant="outlined"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              borderRadius: "lg",
+              px: 1,
+              py: 0.75,
+            }}
+          >
+            <Typography level="body-sm" sx={{ mr: 1, color: "text.secondary" }}>
+              Timeline:
+            </Typography>
+            <Chip
+              variant={timelineMode === "baseline" ? "solid" : "soft"}
+              color={timelineMode === "baseline" ? "primary" : "neutral"}
+              size="sm"
+              sx={{ fontWeight: 700, cursor: "pointer" }}
+              onClick={() => setTimelineMode("baseline")}
+            >
+              Baseline
+            </Chip>
+            <Chip
+              variant={timelineMode === "actual" ? "solid" : "soft"}
+              color={timelineMode === "actual" ? "primary" : "neutral"}
+              size="sm"
+              sx={{ fontWeight: 700, cursor: "pointer" }}
+              onClick={() => setTimelineMode("actual")}
+            >
+              Actual
+            </Chip>
+          </Sheet>
 
-      <AppSnackbar
-        color={isError ? "danger" : "success"}
-        open={!!snack.open}
-        message={safeMsg}
-        onClose={() => setSnack((s) => ({ ...s, open: false }))}
-      />
-    </Box>
-  );
-});
+          {/* RIGHT: countdown + range chips */}
+          <Sheet
+            variant="outlined"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              borderRadius: "lg",
+              px: 1,
+              py: 1,
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+              <Timelapse fontSize="small" color="primary" />
+              <Typography level="body-sm" sx={{ color: "text.secondary" }}>
+                Remaining:
+              </Typography>
+              <RemainingDaysChip
+                target={countdownTarget}
+                usedKey={countdownKey}
+              />
+            </Box>
+            <Divider orientation="vertical" />
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+              <EventOutlinedIcon fontSize="small" color="success" />
+              <Typography level="body-sm" sx={{ color: "text.secondary" }}>
+                Start:
+              </Typography>
+              <Chip
+                color="success"
+                size="sm"
+                variant="soft"
+                sx={{ fontWeight: 600 }}
+              >
+                {minStartDMY}
+              </Chip>
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+              <EventOutlinedIcon fontSize="small" color="danger" />
+              <Typography level="body-sm" sx={{ color: "text.secondary" }}>
+                End:
+              </Typography>
+              <Chip
+                color="danger"
+                size="sm"
+                variant="soft"
+                sx={{ fontWeight: 600 }}
+              >
+                {maxEndDMY}
+              </Chip>
+            </Box>
+          </Sheet>
+        </Box>
+
+        {/* Gantt area */}
+        <Box
+          style={{
+            position: "relative",
+            width: "100%",
+            minWidth: 600,
+            height: "80vh",
+          }}
+        >
+          <Box
+            ref={ganttContainer}
+            style={{
+              width: "100%",
+              height: "100%",
+              background: "#fff",
+              borderRadius: 8,
+              boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
+              zIndex: 1,
+              position: "relative",
+              top: 12,
+              transition: "box-shadow 0.2s, top 0.2s",
+            }}
+          />
+        </Box>
+
+        {/* Right panel: only in baseline mode */}
+        {selectedId && timelineMode === "baseline" && (
+          <>
+            <Box
+              onClick={() => {
+                setSelectedId(null);
+                setActiveDbId(null);
+              }}
+              sx={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 1399,
+                backgroundColor: "rgba(0,0,0,0.10)",
+                backdropFilter: "blur(8px)",
+                WebkitBackdropFilter: "blur(8px)",
+                animation: "fadeIn 140ms ease-out",
+              }}
+            />
+            <Sheet
+              variant="outlined"
+              sx={{
+                position: "fixed",
+                overflow: "auto",
+                height: "100%",
+                p: 2,
+                transition: "width 0.2s",
+                zIndex: 1400,
+                right: 0,
+                top: 0,
+                width: "40%",
+                animation: "slideInRight 230ms ease-out",
+                willChange: "transform, opacity",
+              }}
+            >
+              <Stack spacing={1.5}>
+                <Typography level="title-sm">
+                  Edit Activity {isFetchingActivity ? "(loading…)" : ""}
+                </Typography>
+                <Divider />
+
+                <FormControl>
+                  <FormLabel>Status</FormLabel>
+                  <Select
+                    size="sm"
+                    value={form.status}
+                    onChange={(_, v) =>
+                      setForm((f) => ({ ...f, status: v || "not started" }))
+                    }
+                    slotProps={{ listbox: { sx: { zIndex: 1401 } } }}
+                  >
+                    <Option value="not started">Not started</Option>
+                    <Option value="in progress">In progress</Option>
+                    <Option value="completed">Completed</Option>
+                  </Select>
+                </FormControl>
+
+                <Stack direction="row" spacing={1}>
+                  <FormControl sx={{ flex: 1 }}>
+                    <FormLabel>Start date</FormLabel>
+                    <Input
+                      size="sm"
+                      type="date"
+                      value={form.start}
+                      onChange={(e) => {
+                        const startISO = e.target.value;
+                        setForm((f) => {
+                          let endISO = f.end;
+                          if (startISO && f.duration) {
+                            const s = parseISOAsLocalDate(startISO);
+                            if (!isNaN(s)) {
+                              const eDate = gantt.calculateEndDate({
+                                start_date: s,
+                                duration: Number(f.duration),
+                              });
+                              endISO =
+                                gantt.date.date_to_str("%Y-%m-%d")(eDate);
+                            }
+                          }
+                          return { ...f, start: startISO, end: endISO };
+                        });
+                      }}
+                    />
+                  </FormControl>
+
+                  <FormControl sx={{ flex: 1 }}>
+                    <FormLabel>Resources</FormLabel>
+                    <Input
+                      size="sm"
+                      type="number"
+                      inputMode="numeric"
+                      placeholder="e.g., 3"
+                      value={form.resources}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, resources: e.target.value }))
+                      }
+                    />
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel>Duration (days)</FormLabel>
+                    <Input
+                      size="sm"
+                      type="number"
+                      value={form.duration}
+                      onChange={(e) => {
+                        const duration = Number(e.target.value) || 0;
+                        setForm((f) => {
+                          let endISO = f.end;
+                          if (f.start && duration > 0) {
+                            const s = parseISOAsLocalDate(f.start);
+                            if (!isNaN(s)) {
+                              const eDate = gantt.calculateEndDate({
+                                start_date: s,
+                                duration,
+                              });
+                              endISO =
+                                gantt.date.date_to_str("%Y-%m-%d")(eDate);
+                            }
+                          }
+                          return { ...f, duration, end: endISO };
+                        });
+                      }}
+                    />
+                  </FormControl>
+                </Stack>
+
+                <FormControl sx={{ flex: 1 }}>
+                  <FormLabel>End date</FormLabel>
+                  <Input size="sm" type="date" value={form.end} disabled />
+                </FormControl>
+
+                <Divider />
+
+                {/* Predecessors */}
+                <Stack spacing={1}>
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                  >
+                    <Typography level="title-sm">Predecessors</Typography>
+                    <Button
+                      size="sm"
+                      variant="soft"
+                      startDecorator={<Add />}
+                      onClick={() =>
+                        setForm((f) => ({
+                          ...f,
+                          predecessors: [
+                            ...f.predecessors,
+                            {
+                              activityId: "",
+                              activityName: "",
+                              type: "FS",
+                              lag: 0,
+                            },
+                          ],
+                        }))
+                      }
+                    >
+                      Add
+                    </Button>
+                  </Stack>
+                  <Stack spacing={1}>
+                    {form.predecessors.length === 0 && (
+                      <Typography
+                        level="body-xs"
+                        sx={{ color: "text.tertiary" }}
+                      >
+                        No predecessors
+                      </Typography>
+                    )}
+                    {form.predecessors.map((r, idx) => (
+                      <DepRow
+                        key={`pred-${idx}`}
+                        title="Predecessor"
+                        options={activityOptions.filter(
+                          (o) => o.value !== selectedId
+                        )}
+                        row={r}
+                        onChange={(nr) =>
+                          setForm((f) => {
+                            const arr = [...f.predecessors];
+                            arr[idx] = nr;
+                            return { ...f, predecessors: arr };
+                          })
+                        }
+                        onRemove={() =>
+                          setForm((f) => {
+                            const arr = f.predecessors.slice();
+                            arr.splice(idx, 1);
+                            return { ...f, predecessors: arr };
+                          })
+                        }
+                      />
+                    ))}
+                  </Stack>
+                </Stack>
+
+                <Divider />
+
+                {/* Successors (UI only) */}
+                <Stack spacing={1}>
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                  >
+                    <Typography level="title-sm">Successors</Typography>
+                    <Button
+                      size="sm"
+                      variant="soft"
+                      startDecorator={<Add />}
+                      onClick={() =>
+                        setForm((f) => ({
+                          ...f,
+                          successors: [
+                            ...f.successors,
+                            {
+                              activityId: "",
+                              activityName: "",
+                              type: "FS",
+                              lag: 0,
+                            },
+                          ],
+                        }))
+                      }
+                    >
+                      Add
+                    </Button>
+                  </Stack>
+                  <Stack spacing={1}>
+                    {form.successors.length === 0 && (
+                      <Typography
+                        level="body-xs"
+                        sx={{ color: "text.tertiary" }}
+                      >
+                        No successors
+                      </Typography>
+                    )}
+                    {form.successors.map((r, idx) => (
+                      <DepRow
+                        key={`succ-${idx}`}
+                        title="Successor"
+                        options={activityOptions.filter(
+                          (o) => o.value !== selectedId
+                        )}
+                        row={r}
+                        onChange={(nr) =>
+                          setForm((f) => {
+                            const arr = [...f.successors];
+                            arr[idx] = nr;
+                            return { ...f, successors: arr };
+                          })
+                        }
+                        onRemove={() =>
+                          setForm((f) => {
+                            const arr = f.successors.slice();
+                            arr.splice(idx, 1);
+                            return { ...f, successors: arr };
+                          })
+                        }
+                      />
+                    ))}
+                  </Stack>
+                </Stack>
+
+                <Divider />
+
+                <Stack direction="row" spacing={1}>
+                  <Button size="sm" onClick={saveFromModal} disabled={isSaving}>
+                    {isSaving ? "Saving…" : "Save"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="soft"
+                    color="neutral"
+                    onClick={() => {
+                      setSelectedId(null);
+                      setActiveDbId(null);
+                    }}
+                  >
+                    Close
+                  </Button>
+                </Stack>
+              </Stack>
+            </Sheet>
+          </>
+        )}
+
+        <AppSnackbar
+          color={isError ? "danger" : "success"}
+          open={!!snack.open}
+          message={safeMsg}
+          onClose={() => setSnack((s) => ({ ...s, open: false }))}
+        />
+      </Box>
+    );
+  }
+);
 
 export default View_Project_Management;
