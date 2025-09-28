@@ -31,6 +31,7 @@ import EventOutlinedIcon from "@mui/icons-material/EventOutlined";
 import { Timelapse, Add, Delete } from "@mui/icons-material";
 import {
   useGetProjectActivityByProjectIdQuery,
+  useReorderProjectActivitiesMutation,
   useUpdateActivityInProjectMutation,
   useCreateProjectActivityMutation,
   useGetActivityInProjectQuery,
@@ -39,8 +40,8 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import AppSnackbar from "./AppSnackbar";
 
 /* ---------------- helpers ---------------- */
-const labelToType = { FS: "0", SS: "1", FF: "2", SF: "3" };
-const typeToLabel = { 0: "FS", 1: "SS", 2: "FF", 3: "SF" };
+const labelToType = { FS: "0", SS: "1", FF: "2" };
+const typeToLabel = { 0: "FS", 1: "SS", 2: "FF" };
 
 const toDMY = (d) => {
   if (!d) return "";
@@ -51,6 +52,11 @@ const toDMY = (d) => {
   const yyyy = dt.getFullYear();
   return `${dd}-${mm}-${yyyy}`;
 };
+const toYMD = (d) =>
+  d instanceof Date && !Number.isNaN(d)
+    ? gantt.date.date_to_str("%Y-%m-%d")(d)
+    : "";
+
 function parseISOAsLocalDate(v) {
   if (!v) return null;
   if (v instanceof Date && !isNaN(v))
@@ -62,6 +68,13 @@ function parseISOAsLocalDate(v) {
   if (m) return new Date(+m[1], +m[2] - 1, +m[3], 0, 0, 0);
   return null;
 }
+const parseDMY = (s) => {
+  if (!s) return null;
+  const [dd, mm, yyyy] = String(s).split("-").map(Number);
+  if (!dd || !mm || !yyyy) return null;
+  return new Date(yyyy, mm - 1, dd);
+};
+
 const startCellTemplate = (task) =>
   task.start_date instanceof Date
     ? gantt.date.date_to_str("%d-%m-%Y")(task.start_date)
@@ -422,7 +435,7 @@ function RemainingDaysChip({ target, usedKey }) {
   );
 }
 
-/* ---------- row for predecessors/successors ---------- */
+/* ---------- row for predecessors ---------- */
 function DepRow({ title, options, row, onChange, onRemove }) {
   return (
     <Stack
@@ -480,29 +493,52 @@ const View_Project_Management = forwardRef(
   ({ viewModeParam = "week" }, ref) => {
     const ganttContainer = useRef(null);
     const [viewMode, setViewMode] = useState(viewModeParam);
-    const [timelineMode, setTimelineMode] = useState("baseline"); // "baseline" | "actual"
 
-    // NEW: Activity type tab: 'site' -> frontend, 'backend' -> backend, 'all' -> both
-    const [actView, setActView] = useState("site");
-
-    const [searchParams] = useSearchParams();
-    const projectId = searchParams.get("project_id");
+    const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
+
+    // read initial params
+    const projectId = searchParams.get("project_id");
+    const initView = (searchParams.get("type") || "site").toLowerCase();
+    const initTimeline = (
+      searchParams.get("timeline") || "baseline"
+    ).toLowerCase();
+
+    const [timelineMode, setTimelineMode] = useState(
+      initTimeline === "actual" ? "actual" : "baseline"
+    ); // "baseline" | "actual"
+    const [actView, setActView] = useState(
+      ["site", "backend", "all"].includes(initView) ? initView : "site"
+    ); // site | backend | all
 
     const [snack, setSnack] = useState({ open: false, msg: "" });
     const [selectedId, setSelectedId] = useState(null);
+    const [selectedTaskName, setSelectedTaskName] = useState("");
     const [activeDbId, setActiveDbId] = useState(null);
 
-    // GET ALL
+    // keep URL in sync whenever type/timeline change
+    const syncURL = (nextType, nextTimeline) => {
+      const params = new URLSearchParams(searchParams);
+      if (projectId) params.set("project_id", projectId);
+      params.set("type", nextType);
+      params.set("timeline", nextTimeline);
+      setSearchParams(params, { replace: true });
+    };
+
+    useEffect(() => {
+      // ensure URL reflects initial normalized state on first mount
+      syncURL(actView, timelineMode);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // API hooks
     const { data: apiData, refetch: refetchAll } =
       useGetProjectActivityByProjectIdQuery(projectId, { skip: !projectId });
-
-    // UPDATE + CREATE
+    const [reorderProjectActivities] = useReorderProjectActivitiesMutation();
     const [updateActivityInProject, { isLoading: isSaving }] =
       useUpdateActivityInProjectMutation();
     const [createProjectActivity] = useCreateProjectActivityMutation();
 
-    // GET SINGLE (when modal opens)
     const {
       data: activityFetch,
       isFetching: isFetchingActivity,
@@ -533,7 +569,6 @@ const View_Project_Management = forwardRef(
       if (actView === "backend") {
         return paListRaw.filter((pa) => mapType(pa) === "backend");
       }
-      // all
       return paListRaw;
     }, [paListRaw, actView]);
 
@@ -558,10 +593,9 @@ const View_Project_Management = forwardRef(
         if (masterId) _siToDbId.set(si, masterId);
 
         const text = master?.name || pa.name || pa.activity_name || "—";
-
         const typeLower = String(master?.type || pa?.type || "")
           .toLowerCase()
-          .trim(); // "frontend" | "backend" | ""
+          .trim();
 
         let startDateObj = null;
         let endDateObj = null;
@@ -638,7 +672,7 @@ const View_Project_Management = forwardRef(
           _resources: resources,
           _actual_completed: mode === "actual" ? !!pa.actual_finish : false,
           _actual_on_time: mode === "actual" ? onTime : null,
-          _type: typeLower, // <-- keep type for dimming
+          _type: typeLower,
         };
       });
 
@@ -727,7 +761,6 @@ const View_Project_Management = forwardRef(
       end: "",
       duration: "",
       predecessors: [],
-      successors: [],
       resources: "",
     });
 
@@ -744,14 +777,93 @@ const View_Project_Management = forwardRef(
       if (timelineMode === "actual") return; // read-only in actual view
       const task = gantt.getTask(siId);
       setSelectedId(String(siId));
+      setSelectedTaskName(task?.text || "");
       setActiveDbId(task?._dbId || null);
     };
+
+    // --- recompute dates from current form predecessors + duration
+    const recomputeDatesFromPredecessors = (predRows, durationDays) => {
+      if (!Array.isArray(predRows) || !predRows.length) return null;
+
+      let minStart = null;
+      let minFinish = null;
+
+      predRows.forEach((r) => {
+        const si = String(r.activityId || "");
+        if (!si) return;
+        const pt = gantt.getTask(si);
+        if (!pt) return;
+
+        const pStart = pt.start_date instanceof Date ? pt.start_date : null;
+        const pEnd = pt._end_dmy
+          ? parseDMY(pt._end_dmy)
+          : pStart && Number(pt.duration) > 0
+          ? gantt.calculateEndDate({
+              start_date: pStart,
+              duration: pt.duration,
+              task: pt,
+            })
+          : null;
+
+        if (!pStart && !pEnd) return;
+
+        const type = String(r.type || "FS").toUpperCase();
+        const lag = Number(r.lag || 0);
+
+        if (type === "FS" && pEnd) {
+          const req = addDays(pEnd, lag);
+          if (!minStart || isAfter(req, minStart)) minStart = req;
+        } else if (type === "SS" && pStart) {
+          const req = addDays(pStart, lag);
+          if (!minStart || isAfter(req, minStart)) minStart = req;
+        } else if (type === "FF" && pEnd) {
+          const req = addDays(pEnd, lag);
+          if (!minFinish || isAfter(req, minFinish)) minFinish = req;
+        }
+      });
+
+      const dur = Math.max(1, Number(durationDays) || 0);
+      const start = earliestStartGivenConstraints(dur, minStart, minFinish);
+      if (!start) return null;
+      const end = finishFromStartAndDuration(start, dur);
+      return { start, end };
+    };
+
+    // Auto-calc start/end whenever predecessors or duration change
+    useEffect(() => {
+      const hasPreds = (form.predecessors || []).length > 0;
+      const dur = Number(form.duration || 0);
+
+      if (hasPreds && dur > 0) {
+        const res = recomputeDatesFromPredecessors(form.predecessors, dur);
+        if (res) {
+          const nextStart = toYMD(res.start);
+          const nextEnd = toYMD(res.end);
+          if (form.start !== nextStart || form.end !== nextEnd) {
+            setForm((f) => ({ ...f, start: nextStart, end: nextEnd }));
+          }
+          return;
+        }
+      }
+
+      // No predecessors: keep end in sync from manual start + duration
+      if (!hasPreds && form.start && dur > 0) {
+        const s = parseISOAsLocalDate(form.start);
+        if (s && !Number.isNaN(s)) {
+          const e = gantt.calculateEndDate({ start_date: s, duration: dur });
+          const nextEnd = toYMD(e);
+          if (form.end !== nextEnd) {
+            setForm((f) => ({ ...f, end: nextEnd }));
+          }
+        }
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [form.predecessors, form.duration, form.start]);
 
     useEffect(() => {
       if (!activityFetch || !selectedId) return;
       const act = activityFetch.activity || activityFetch.data || activityFetch;
       const preds = Array.isArray(act?.predecessors) ? act.predecessors : [];
-      const succs = Array.isArray(act?.successors) ? act.successors : [];
 
       const uiPreds = preds
         .map((p) => {
@@ -768,42 +880,37 @@ const View_Project_Management = forwardRef(
         })
         .filter(Boolean);
 
-      const uiSuccs = succs
-        .map((s) => {
-          const db = String(s.activity_id || "");
-          const si = dbIdToSi.get(db);
-          if (!si) return null;
-          const task = gantt.getTask(si);
-          return {
-            activityId: si,
-            activityName: task?.text || "",
-            type: String(s.type || "FS").toUpperCase(),
-            lag: Number(s.lag || 0),
-          };
-        })
-        .filter(Boolean);
-
       const startISO = act?.planned_start || act?.start || null;
       const finishISO = act?.planned_finish || act?.end || null;
-      const dur = Number.isFinite(Number(act?.duration))
+      const durStr = Number.isFinite(Number(act?.duration))
         ? String(Number(act.duration))
         : "";
 
-      const toYMD = (iso) =>
-        iso ? gantt.date.date_to_str("%Y-%m-%d")(parseISOAsLocalDate(iso)) : "";
-
       setForm({
         status: act?.current_status?.status || "not started",
-        start: toYMD(startISO),
-        end: toYMD(finishISO),
-        duration: dur,
+        start: startISO ? toYMD(parseISOAsLocalDate(startISO)) : "",
+        end: finishISO ? toYMD(parseISOAsLocalDate(finishISO)) : "",
+        duration: durStr,
         predecessors: uiPreds,
-        successors: uiSuccs,
         resources:
           act?.resources !== undefined && act?.resources !== null
             ? String(act.resources)
             : "",
       });
+
+      // If activity has predecessors and duration, auto-calc to avoid BE errors
+      const durNum = Number(durStr || 0);
+      if (uiPreds.length > 0 && durNum > 0) {
+        const res = recomputeDatesFromPredecessors(uiPreds, durNum);
+        if (res) {
+          setForm((f) => ({
+            ...f,
+            start: toYMD(res.start),
+            end: toYMD(res.end),
+          }));
+        }
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activityFetch, selectedId, dbIdToSi]);
 
     useEffect(() => {
@@ -834,7 +941,7 @@ const View_Project_Management = forwardRef(
       const payload = {
         planned_start: form.start || null,
         planned_finish: form.end || null,
-        duration: Number(form.duration || 0),
+        duration: Math.max(1, Number(form.duration || 0)),
         status: form.status,
         predecessors: predsPayload,
         resources:
@@ -860,6 +967,7 @@ const View_Project_Management = forwardRef(
         setSnack({ open: true, msg: "Activity updated." });
         setSelectedId(null);
         setActiveDbId(null);
+        setSelectedTaskName("");
       } catch (e) {
         setSnack({ open: true, msg: extractBackendError(e) });
       }
@@ -870,12 +978,6 @@ const View_Project_Management = forwardRef(
       saveAsTemplate: async (meta = {}) => {
         const { name, description } = meta || {};
         const tasks = [];
-        const parseDMY = (s) => {
-          if (!s) return null;
-          const [dd, mm, yyyy] = String(s).split("-").map(Number);
-          if (!dd || !mm || !yyyy) return null;
-          return new Date(yyyy, mm - 1, dd);
-        };
         gantt.eachTask((t) => {
           const start = t.start_date instanceof Date ? t.start_date : null;
           const end = t._end_dmy
@@ -979,7 +1081,11 @@ const View_Project_Management = forwardRef(
       gantt.config.fit_tasks = false;
       gantt.config.lightbox = false;
 
-      gantt.config.readonly = false;
+      // Row reordering on (keep bar dragging off)
+      gantt.config.order_branch = true;
+      gantt.config.order_branch_free = true;
+
+      // disable bar moves/resizes/links
       gantt.config.drag_move = false;
       gantt.config.drag_resize = false;
       gantt.config.drag_progress = false;
@@ -994,7 +1100,7 @@ const View_Project_Management = forwardRef(
       };
       gantt.config.show_unscheduled = true;
 
-      // grid (with resources)
+      // grid columns
       gantt.config.columns = [
         {
           name: "text",
@@ -1050,18 +1156,24 @@ const View_Project_Management = forwardRef(
         },
       ];
 
-      // initial class templates (will be replaced by effect below)
+      // initial templates (overridden by effects)
       gantt.templates.task_class = () => "";
       gantt.templates.grid_row_class = () => "";
 
-      gantt.attachEvent("onTaskClick", function (id) {
-        onOpenModalForTask(String(id));
+      // single click: select only
+      gantt.attachEvent("onTaskClick", function (_id) {
         return true;
+      });
+
+      // double click: open edit form
+      gantt.attachEvent("onTaskDblClick", function (id) {
+        onOpenModalForTask(String(id));
+        return false;
       });
 
       if (ganttContainer.current) gantt.init(ganttContainer.current);
       return () => gantt.clearAll();
-    }, []); // init once
+    }, []);
 
     /* ---------- dim backend when actView === 'all' ---------- */
     useEffect(() => {
@@ -1096,6 +1208,36 @@ const View_Project_Management = forwardRef(
       gantt.render();
     }, [actView, timelineMode]);
 
+    /* ---------- handle drag-drop reorder → API ---------- */
+    useEffect(() => {
+      if (!gantt.$container) return;
+
+      const handlerId = gantt.attachEvent("onAfterTaskMove", async function () {
+        try {
+          const ordered = [];
+          gantt.eachTask((t) => ordered.push(String(t._dbId)));
+          const seen = new Set();
+          const ordered_activity_ids = ordered.filter(
+            (id) => id && !seen.has(id) && seen.add(id)
+          );
+
+          if (!projectId || !ordered_activity_ids.length) return;
+
+          await reorderProjectActivities({
+            projectId,
+            ordered_activity_ids,
+          }).unwrap();
+          setSnack({ open: true, msg: "Order updated." });
+        } catch (e) {
+          setSnack({ open: true, msg: "Failed to update order" });
+        }
+      });
+
+      return () => {
+        gantt.detachEvent(handlerId);
+      };
+    }, [projectId, reorderProjectActivities]);
+
     /* ---------- defensively parse data ---------- */
     const parseSafe = (payload) => {
       const ok =
@@ -1115,6 +1257,7 @@ const View_Project_Management = forwardRef(
       if (timelineMode === "actual") {
         setSelectedId(null);
         setActiveDbId(null);
+        setSelectedTaskName("");
       }
 
       const dataArr = Array.isArray(ganttData) ? ganttData : [];
@@ -1128,6 +1271,7 @@ const View_Project_Management = forwardRef(
     useEffect(() => {
       setSelectedId(null);
       setActiveDbId(null);
+      setSelectedTaskName("");
     }, [actView]);
 
     /* ---------- scales ---------- */
@@ -1175,7 +1319,7 @@ const View_Project_Management = forwardRef(
         .gantt_task_line.gantt-task-running { background:#3b82f6; border-color:#3b82f6; }
         .gantt_grid_scale, .gantt_task_scale { height: 28px; line-height: 28px; }
 
-        /* NEW: dim backend in "All" */
+        /* Dim backend in "All" */
         .gantt_task_line.gantt-task-dim { opacity: 0.45; }
         .gantt_grid_data .gantt_row.gantt-grid-dim { opacity: 0.6; }
       `}</style>
@@ -1242,7 +1386,10 @@ const View_Project_Management = forwardRef(
                 color={actView === "site" ? "primary" : "neutral"}
                 size="sm"
                 sx={{ fontWeight: 700, cursor: "pointer" }}
-                onClick={() => setActView("site")}
+                onClick={() => {
+                  setActView("site");
+                  syncURL("site", timelineMode);
+                }}
               >
                 Site
               </Chip>
@@ -1251,7 +1398,10 @@ const View_Project_Management = forwardRef(
                 color={actView === "backend" ? "primary" : "neutral"}
                 size="sm"
                 sx={{ fontWeight: 700, cursor: "pointer" }}
-                onClick={() => setActView("backend")}
+                onClick={() => {
+                  setActView("backend");
+                  syncURL("backend", timelineMode);
+                }}
               >
                 Backend
               </Chip>
@@ -1260,7 +1410,10 @@ const View_Project_Management = forwardRef(
                 color={actView === "all" ? "primary" : "neutral"}
                 size="sm"
                 sx={{ fontWeight: 700, cursor: "pointer" }}
-                onClick={() => setActView("all")}
+                onClick={() => {
+                  setActView("all");
+                  syncURL("all", timelineMode);
+                }}
               >
                 All
               </Chip>
@@ -1286,7 +1439,10 @@ const View_Project_Management = forwardRef(
               color={timelineMode === "baseline" ? "primary" : "neutral"}
               size="sm"
               sx={{ fontWeight: 700, cursor: "pointer" }}
-              onClick={() => setTimelineMode("baseline")}
+              onClick={() => {
+                setTimelineMode("baseline");
+                syncURL(actView, "baseline");
+              }}
             >
               Baseline
             </Chip>
@@ -1295,7 +1451,10 @@ const View_Project_Management = forwardRef(
               color={timelineMode === "actual" ? "primary" : "neutral"}
               size="sm"
               sx={{ fontWeight: 700, cursor: "pointer" }}
-              onClick={() => setTimelineMode("actual")}
+              onClick={() => {
+                setTimelineMode("actual");
+                syncURL(actView, "actual");
+              }}
             >
               Actual
             </Chip>
@@ -1387,6 +1546,7 @@ const View_Project_Management = forwardRef(
               onClick={() => {
                 setSelectedId(null);
                 setActiveDbId(null);
+                setSelectedTaskName("");
               }}
               sx={{
                 position: "fixed",
@@ -1415,8 +1575,11 @@ const View_Project_Management = forwardRef(
               }}
             >
               <Stack spacing={1.5}>
+                {/* Title now includes activity name */}
                 <Typography level="title-sm">
-                  Edit Activity {isFetchingActivity ? "(loading…)" : ""}
+                  Edit Activity
+                  {selectedTaskName ? ` (${selectedTaskName})` : ""}{" "}
+                  {isFetchingActivity ? "(loading…)" : ""}
                 </Typography>
                 <Divider />
 
@@ -1434,81 +1597,6 @@ const View_Project_Management = forwardRef(
                     <Option value="in progress">In progress</Option>
                     <Option value="completed">Completed</Option>
                   </Select>
-                </FormControl>
-
-                <Stack direction="row" spacing={1}>
-                  <FormControl sx={{ flex: 1 }}>
-                    <FormLabel>Start date</FormLabel>
-                    <Input
-                      size="sm"
-                      type="date"
-                      value={form.start}
-                      onChange={(e) => {
-                        const startISO = e.target.value;
-                        setForm((f) => {
-                          let endISO = f.end;
-                          if (startISO && f.duration) {
-                            const s = parseISOAsLocalDate(startISO);
-                            if (!isNaN(s)) {
-                              const eDate = gantt.calculateEndDate({
-                                start_date: s,
-                                duration: Number(f.duration),
-                              });
-                              endISO =
-                                gantt.date.date_to_str("%Y-%m-%d")(eDate);
-                            }
-                          }
-                          return { ...f, start: startISO, end: endISO };
-                        });
-                      }}
-                    />
-                  </FormControl>
-
-                  <FormControl sx={{ flex: 1 }}>
-                    <FormLabel>Resources</FormLabel>
-                    <Input
-                      size="sm"
-                      type="number"
-                      inputMode="numeric"
-                      placeholder="e.g., 3"
-                      value={form.resources}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, resources: e.target.value }))
-                      }
-                    />
-                  </FormControl>
-
-                  <FormControl>
-                    <FormLabel>Duration (days)</FormLabel>
-                    <Input
-                      size="sm"
-                      type="number"
-                      value={form.duration}
-                      onChange={(e) => {
-                        const duration = Number(e.target.value) || 0;
-                        setForm((f) => {
-                          let endISO = f.end;
-                          if (f.start && duration > 0) {
-                            const s = parseISOAsLocalDate(f.start);
-                            if (!isNaN(s)) {
-                              const eDate = gantt.calculateEndDate({
-                                start_date: s,
-                                duration,
-                              });
-                              endISO =
-                                gantt.date.date_to_str("%Y-%m-%d")(eDate);
-                            }
-                          }
-                          return { ...f, duration, end: endISO };
-                        });
-                      }}
-                    />
-                  </FormControl>
-                </Stack>
-
-                <FormControl sx={{ flex: 1 }}>
-                  <FormLabel>End date</FormLabel>
-                  <Input size="sm" type="date" value={form.end} disabled />
                 </FormControl>
 
                 <Divider />
@@ -1581,73 +1669,69 @@ const View_Project_Management = forwardRef(
 
                 <Divider />
 
-                {/* Successors (UI only) */}
-                <Stack spacing={1}>
-                  <Stack
-                    direction="row"
-                    alignItems="center"
-                    justifyContent="space-between"
-                  >
-                    <Typography level="title-sm">Successors</Typography>
-                    <Button
+                <Stack direction="row" spacing={1}>
+                  <FormControl sx={{ flex: 1 }}>
+                    <FormLabel>
+                      Start date{" "}
+                      {form.predecessors?.length ? (
+                        <Typography
+                          level="body-xs"
+                          sx={{
+                            color: "text.tertiary",
+                            ml: 0.5,
+                            display: "inline",
+                          }}
+                        >
+                          (auto from predecessors)
+                        </Typography>
+                      ) : null}
+                    </FormLabel>
+                    <Input
                       size="sm"
-                      variant="soft"
-                      startDecorator={<Add />}
-                      onClick={() =>
+                      type="date"
+                      value={form.start}
+                      disabled={!!form.predecessors?.length}
+                      onChange={(e) => {
+                        const startISO = e.target.value;
+                        setForm((f) => ({ ...f, start: startISO }));
+                      }}
+                    />
+                  </FormControl>
+
+                  <FormControl sx={{ flex: 1 }}>
+                    <FormLabel>Resources</FormLabel>
+                    <Input
+                      size="sm"
+                      type="number"
+                      inputMode="numeric"
+                      placeholder="e.g., 3"
+                      value={form.resources}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, resources: e.target.value }))
+                      }
+                    />
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel>Duration (days)</FormLabel>
+                    <Input
+                      size="sm"
+                      type="number"
+                      value={form.duration}
+                      onChange={(e) =>
                         setForm((f) => ({
                           ...f,
-                          successors: [
-                            ...f.successors,
-                            {
-                              activityId: "",
-                              activityName: "",
-                              type: "FS",
-                              lag: 0,
-                            },
-                          ],
+                          duration: e.target.value,
                         }))
                       }
-                    >
-                      Add
-                    </Button>
-                  </Stack>
-                  <Stack spacing={1}>
-                    {form.successors.length === 0 && (
-                      <Typography
-                        level="body-xs"
-                        sx={{ color: "text.tertiary" }}
-                      >
-                        No successors
-                      </Typography>
-                    )}
-                    {form.successors.map((r, idx) => (
-                      <DepRow
-                        key={`succ-${idx}`}
-                        title="Successor"
-                        options={activityOptions.filter(
-                          (o) => o.value !== selectedId
-                        )}
-                        row={r}
-                        onChange={(nr) =>
-                          setForm((f) => {
-                            const arr = [...f.successors];
-                            arr[idx] = nr;
-                            return { ...f, successors: arr };
-                          })
-                        }
-                        onRemove={() =>
-                          setForm((f) => {
-                            const arr = f.successors.slice();
-                            arr.splice(idx, 1);
-                            return { ...f, successors: arr };
-                          })
-                        }
-                      />
-                    ))}
-                  </Stack>
+                    />
+                  </FormControl>
                 </Stack>
 
-                <Divider />
+                <FormControl sx={{ flex: 1 }}>
+                  <FormLabel>End date</FormLabel>
+                  <Input size="sm" type="date" value={form.end} disabled />
+                </FormControl>
 
                 <Stack direction="row" spacing={1}>
                   <Button size="sm" onClick={saveFromModal} disabled={isSaving}>
@@ -1660,6 +1744,7 @@ const View_Project_Management = forwardRef(
                     onClick={() => {
                       setSelectedId(null);
                       setActiveDbId(null);
+                      setSelectedTaskName("");
                     }}
                   >
                     Close

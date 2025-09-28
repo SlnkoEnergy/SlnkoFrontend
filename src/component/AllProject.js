@@ -1,380 +1,284 @@
-import DeleteIcon from "@mui/icons-material/Delete";
+// component/AllProjects.jsx
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
-import ModeEditIcon from "@mui/icons-material/ModeEdit";
-import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
-import Divider from "@mui/joy/Divider";
-import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
-import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
-import Menu from "@mui/joy/Menu";
-import MenuButton from "@mui/joy/MenuButton";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import AddIcon from "@mui/icons-material/Add";
-import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
+import Tooltip from "@mui/joy/Tooltip";
 import Typography from "@mui/joy/Typography";
-import CloseIcon from "@mui/icons-material/Close";
-import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useMemo,
-  useState,
-} from "react";
+import Chip from "@mui/joy/Chip";
+import Modal from "@mui/joy/Modal";
+import ModalDialog from "@mui/joy/ModalDialog";
+import DialogTitle from "@mui/joy/DialogTitle";
+import DialogContent from "@mui/joy/DialogContent";
+import DialogActions from "@mui/joy/DialogActions";
+import Textarea from "@mui/joy/Textarea";
+import Select from "@mui/joy/Select";
+import Option from "@mui/joy/Option";
+import CircularProgress from "@mui/joy/CircularProgress";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { toast } from "react-toastify";
-// import Axios from "../utils/Axios";
+import { Tab, TabList, Tabs } from "@mui/joy";
+import NoData from "../assets/alert-bell.svg";
+import { useTheme } from "@emotion/react";
+import { Add } from "@mui/icons-material";
 import {
-  useDeleteProjectMutation,
-  useGetProjectsQuery,
+  useGetAllProjectsQuery,
+  useUpdateProjectStatusMutation,
 } from "../redux/projectsSlice";
-import ViewHandoverSheetForm from "./Lead Stage/View_HandOver";
-import { Modal, Tooltip } from "@mui/joy";
-import AddHandoverProject from "./Lead Stage/AddHandoverProject";
-import View_Project from "./Forms/View_Project";
 
-const AllProjects = forwardRef((props, ref) => {
+function AllProjects() {
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(12);
-  const [searchQuery, setSearchQuery] = useState("");
+  const theme = useTheme();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [selectedProjects, setSelectedProjects] = useState([]);
-  const [openProjectModal, setOpenProjectModal] = useState(false);
-  const [handoverMode, setHandoverMode] = useState(null);
-  const [selectedProjectId, setSelectedProjectId] = useState(null);
 
-  const modalStyles = {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    width: "45vw",
-    maxHeight: "70vh",
-    bgcolor: "white",
-    opacity: 1,
-    boxShadow: 36,
-    p: 3,
-    borderRadius: 2,
-    overflowY: "auto",
-  };
+  // ======== URL-backed state (persisted) ========
+  const pageFromUrl = Math.max(
+    1,
+    parseInt(searchParams.get("page") || "1", 10)
+  );
+  const pageSizeFromUrl = Math.max(
+    1,
+    parseInt(searchParams.get("pageSize") || "10", 10)
+  );
+  const tabFromUrl = searchParams.get("tab") || "All";
+  const searchFromUrl = searchParams.get("search") || "";
 
-  const modalStylesProject = {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    width: "35vw",
-    maxHeight: "70vh",
-    bgcolor: "white",
-    opacity: 1,
-    boxShadow: 36,
-    p: 3,
-    borderRadius: 2,
-    overflowY: "auto",
-  };
+  const [currentPage, setCurrentPage] = useState(pageFromUrl);
+  const [rowsPerPage, setRowsPerPage] = useState(pageSizeFromUrl);
+  const [selectedTab, setSelectedTab] = useState(tabFromUrl);
+  const [searchQuery, setSearchQuery] = useState(searchFromUrl);
 
-  
-
-  const handleOpen = (p_id, mode) => {
-    setSelectedProjectId(p_id);
-    setHandoverMode(mode);
-    setOpen(true);
-  };
-
-  const { data: getProject = [], isLoading, error } = useGetProjectsQuery();
-
-  const [deleteProject] = useDeleteProjectMutation();
-
-  console.log("getProject: ", getProject.data);
-
-  const [user, setUser] = useState(null);
-
+  // keep local state in sync when user navigates with back/forward
   useEffect(() => {
-    const userData = getUserData();
-    setUser(userData);
-  }, []);
+    const p = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const ps = Math.max(1, parseInt(searchParams.get("pageSize") || "10", 10));
+    const t = searchParams.get("tab") || "All";
+    const s = searchParams.get("search") || "";
+    setCurrentPage(p);
+    setRowsPerPage(ps);
+    setSelectedTab(t);
+    setSearchQuery(s);
+  }, [searchParams]);
 
-  const getUserData = () => {
-    const userData = localStorage.getItem("userDetails");
-    if (userData) {
-      return JSON.parse(userData);
-    }
-    return null;
+  // ======== selection state (local) ========
+  const [selected, setSelected] = useState([]);
+
+  const options = [1, 5, 10, 20, 50, 100];
+
+  // map UI tab -> backend status
+  const statusFilter = useMemo(() => {
+    const t = (selectedTab || "All").toLowerCase();
+    if (t === "all") return "";
+    if (t === "in progress") return "in progress";
+    if (t === "delayed") return "delayed";
+    if (t === "completed") return "completed";
+    if (t === "on hold") return "on hold";
+    return t;
+  }, [selectedTab]);
+
+  const {
+    data: getProjects = {},
+    isLoading,
+    refetch,
+  } = useGetAllProjectsQuery({
+    page: currentPage,
+    status: statusFilter,
+    search: searchQuery, // <- always in sync with URL
+    limit: rowsPerPage,
+    sort: "-createdAt",
+  });
+
+  const [updateProjectStatus, { isLoading: isUpdatingStatus }] =
+    useUpdateProjectStatusMutation();
+
+  const Projects = getProjects?.data || [];
+
+  const ProjectOverView = ({ currentPage, project_id, code }) => (
+    <span
+      style={{
+        cursor: "pointer",
+        color: theme.vars.palette.text.primary,
+        textDecoration: "underline",
+        textDecorationStyle: "dotted",
+        fontSize: "14px",
+      }}
+      onClick={() => {
+        navigate(
+          `/project_detail?page=${currentPage}&project_id=${project_id}`
+        );
+      }}
+    >
+      {code || "-"}
+    </span>
+  );
+
+  // ======== Search: update URL on every keystroke and reset page to 1 ========
+  const handleSearchChange = (query) => {
+    setSearchQuery(query);
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+      p.set("search", query);
+      p.set("page", "1");
+      // keep current tab & pageSize in URL
+      if (selectedTab) p.set("tab", selectedTab);
+      if (rowsPerPage) p.set("pageSize", String(rowsPerPage));
+      return p;
+    });
+    setCurrentPage(1);
   };
 
-  const RowMenu = ({ currentPage, p_id, _id }) => {
-    return (
-      <>
-        <Dropdown>
-          <MenuButton
-            slots={{ root: IconButton }}
-            slotProps={{
-              root: { variant: "plain", color: "neutral", size: "sm" },
-            }}
-          >
-            <MoreHorizRoundedIcon />
-          </MenuButton>
-          <Menu size="sm" sx={{ minWidth: 140, fontSize:"14px" }}>
-            <MenuItem
-              color="primary"
-              onClick={() => {
-                const page = currentPage;
-                const ID = p_id;
-                localStorage.setItem("idd", ID);
-                // console.log(`/add_money?page=${page}&p_id=${projectId}`);
-                navigate(`/edit_project?page=${page}&p_id=${ID}`);
-              }}
-            >
-              <ModeEditIcon />
-              <Typography>Edit</Typography>
-            </MenuItem>
-            <Divider sx={{ backgroundColor: "lightblue" }} />
-            {(user?.name === "IT Team" ||
-              user?.name === "Guddu Rani Dubey" ||
-              user?.name === "Varun Mishra" ||
-              user?.name === "Prachi Singh" ||
-              user?.name === "admin") && (
-              <MenuItem
-                color="danger"
-                disabled={selectedProjects.length === 0}
-                onClick={handleDelete}
-              >
-                <DeleteIcon />
-                <Typography>Delete</Typography>
-              </MenuItem>
-            )}
-          </Menu>
-        </Dropdown>
-      </>
-    );
-  };
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelectedProjects(getProject.map((row) => row._id));
+      setSelected(Projects.map((row) => row._id));
     } else {
-      setSelectedProjects([]);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (selectedProjects.length === 0) {
-      toast.error("No projects selected for deletion.");
-      return;
-    }
-
-    try {
-      await Promise.all(
-        selectedProjects.map(async (_id) => {
-          await deleteProject(_id).unwrap();
-        })
-      );
-
-      toast.success("Selected projects deleted successfully.");
-
-      // Clear selection after successful deletion
-      setSelectedProjects([]);
-    } catch (err) {
-      console.error("Failed to delete selected projects:", err);
-      toast.error("Failed to delete selected projects.");
+      setSelected([]);
     }
   };
 
   const handleRowSelect = (_id) => {
-    setSelectedProjects((prev) =>
+    setSelected((prev) =>
       prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
     );
   };
-  const handleSearch = (query) => {
-    setSearchQuery(query.toLowerCase());
-  };
-  const projects = useMemo(
-    () => (Array.isArray(getProject?.data) ? getProject.data : []),
-    [getProject]
-  );
 
-  const filteredAndSortedData = projects
-    .filter((project) => {
-      const matchesSearchQuery = ["code", "customer", "name"].some((key) =>
-        project[key]?.toLowerCase().includes(searchQuery)
-      );
-
-      return matchesSearchQuery;
-    })
-    .sort((a, b) => {
-      if (a.name?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.name?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.code?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.code?.toLowerCase().includes(searchQuery)) return 1;
-      if (a.customer?.toLowerCase().includes(searchQuery)) return -1;
-      if (b.customer?.toLowerCase().includes(searchQuery)) return 1;
-      return 0;
-    });
-
-  const generatePageNumbers = (currentPage, totalPages) => {
-    const pages = [];
-
-    if (currentPage > 2) {
-      pages.push(1);
-    }
-
-    if (currentPage > 3) {
-      pages.push("...");
-    }
-
-    for (
-      let i = Math.max(1, currentPage - 1);
-      i <= Math.min(totalPages, currentPage + 1);
-      i++
-    ) {
-      pages.push(i);
-    }
-
-    if (currentPage < totalPages - 2) {
-      pages.push("...");
-    }
-
-    if (currentPage < totalPages - 1) {
-      pages.push(totalPages);
-    }
-
-    return pages;
-  };
-
-  useEffect(() => {
-    const page = parseInt(searchParams.get("page")) || 1;
-    setCurrentPage(page);
-  }, [searchParams]);
-
-  const totalPages = Math.ceil(
-    (filteredAndSortedData?.length || 0) / itemsPerPage
-  );
-
-  const paginatedProjects = filteredAndSortedData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
+  const totalPages = Number(getProjects?.pagination?.totalPages || 1);
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
-      setSearchParams({ page });
+      setSearchParams((prev) => {
+        const p = new URLSearchParams(prev);
+        p.set("page", String(page));
+        if (selectedTab) p.set("tab", selectedTab);
+        if (rowsPerPage) p.set("pageSize", String(rowsPerPage));
+        p.set("search", searchQuery || "");
+        return p;
+      });
       setCurrentPage(page);
     }
   };
 
-  const renderFilters = () => (
-    <>
-      {/* <FormControl size="sm">
-        <FormLabel>State</FormLabel>
-        <Select
-          size="sm"
-          placeholder="Filter by state"
-          value={stateFilter}
-          onChange={(e) => {
-            const selectedValue = e.target.value;
-            console.log("Selected State:", selectedValue);
-            setStateFilter(selectedValue);
-          }}
-        >
-          <Option value="">All</Option>
-          {states.map((state, index) => (
-            <Option key={index} value={state}>
-              {state}
-            </Option>
-          ))}
-        </Select>
-      </FormControl>
-      <FormControl size="sm">
-        <FormLabel>Customer</FormLabel>
-        <Select
-          size="sm"
-          placeholder="Filter by customer"
-          value={customerFilter}
-          onChange={(e) => setCustomerFilter(e.target.value)}
-        >
-          <Option value="">All</Option>
-          {customers.map((customer, index) => (
-            <Option key={index} value={customer}>
-              {customer}
-            </Option>
-          ))}
-        </Select>
-      </FormControl> */}
-    </>
-  );
+  // ---------- Status chip helpers + modal ----------
+  const statusChipColor = (status) => {
+    const s = String(status || "").toLowerCase();
+    if (s === "completed") return "success";
+    if (s === "in progress") return "warning";
+    if (s === "delayed") return "danger";
+    return "neutral";
+  };
 
-  useImperativeHandle(ref, () => ({
-    exportToCSV() {
-      console.log("Exporting data to CSV...");
-      const headers = [
-        "Project ID",
-        "Customer",
-        "Project Name",
-        "Email",
-        "Mobile",
-        "State",
-        "Slnko Service Charges (without GST)",
-      ];
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [statusProjectId, setStatusProjectId] = useState(null);
+  const [statusForm, setStatusForm] = useState({ status: "", remarks: "" });
 
-      const rows = projects.map((project) => [
-        project.code || "-",
-        project.customer || "-",
-        project.name || "-",
-        project.email || "-",
-        project.number || "-",
-        project.state || "-",
-        project.service || "-",
-      ]);
+  const openStatusModal = (project) => {
+    const currentStatus =
+      project?.current_status?.status || project?.status || "";
+    const currentRemarks = project?.current_status?.remarks || "";
+    setStatusProjectId(project?._id || project?.project_id);
+    setStatusForm({
+      status: currentStatus || "not started",
+      remarks: currentRemarks || "",
+    });
+    setStatusModalOpen(true);
+  };
 
-      const csvContent = [
-        headers.join(","),
-        ...rows.map((row) => row.join(",")),
-      ].join("\n");
-
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "All_Project.csv";
-      link.click();
-    },
-  }));
+  const submitStatusUpdate = async () => {
+    if (!statusProjectId) return;
+    try {
+      await updateProjectStatus({
+        projectId: statusProjectId,
+        status: statusForm.status,
+        remarks: statusForm.remarks,
+      }).unwrap();
+      setStatusModalOpen(false);
+      await (refetch().unwrap?.() ?? refetch());
+    } catch (e) {
+      console.error("Failed to update status:", e);
+    }
+  };
 
   return (
-    <>
-      {/* Tablet and Up Filters */}
-      <Box
-        className="SearchAndFilters-tabletUp"
-        sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          borderRadius: "sm",
-          py: 2,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1.5,
-          "& > *": {
-            minWidth: { xs: "120px", md: "160px" },
-          },
-        }}
-      >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search</FormLabel>
-          <Input
-            size="sm"
-            placeholder="Search by Project ID, Customer, or Name"
-            startDecorator={<SearchIcon />}
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-        </FormControl>
-        {/* {renderFilters()} */}
+    <Box
+      sx={{
+        ml: { lg: "var(--Sidebar-width)" },
+        px: "0px",
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+      }}
+    >
+      <Box display={"flex"} justifyContent={"space-between"} pb={0.5}>
+        <Box
+          display={"flex"}
+          justifyContent={"space-between"}
+          width={"100%"}
+          alignItems={"center"}
+        >
+          <Tabs
+            value={selectedTab}
+            onChange={(event, newValue) => {
+              setSelectedTab(newValue);
+              setSearchParams((prev) => {
+                const newParams = new URLSearchParams(prev);
+                newParams.set("tab", newValue);
+                newParams.set("page", "1");
+                // keep search & pageSize
+                newParams.set("search", searchQuery || "");
+                newParams.set("pageSize", String(rowsPerPage));
+                return newParams;
+              });
+              setCurrentPage(1);
+            }}
+            sx={{ bgcolor: "background.level1", borderRadius: "xl" }}
+          >
+            <TabList sx={{ gap: 1 }}>
+              {["All", "In Progress", "Completed", "Delayed", "On Hold"].map(
+                (label) => (
+                  <Tab
+                    key={label}
+                    value={label}
+                    disableIndicator
+                    sx={{
+                      borderRadius: "xl",
+                      fontWeight: "md",
+                      "&.Mui-selected": {
+                        bgcolor: "background.surface",
+                        boxShadow: "sm",
+                      },
+                    }}
+                  >
+                    {label}
+                  </Tab>
+                )
+              )}
+            </TabList>
+          </Tabs>
+        </Box>
+
+        <Box
+          className="SearchAndFilters-tabletUp"
+          sx={{
+            borderRadius: "sm",
+            py: 1,
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 1.5,
+            width: { lg: "100%" },
+          }}
+        >
+          <FormControl sx={{ flex: 1 }} size="sm">
+            <Input
+              size="sm"
+              placeholder="Search by ProjectId, Customer, Type, or State"
+              startDecorator={<SearchIcon />}
+              value={searchQuery}
+              onChange={(e) => handleSearchChange(e.target.value)}
+            />
+          </FormControl>
+        </Box>
       </Box>
 
       {/* Table */}
@@ -382,250 +286,231 @@ const AllProjects = forwardRef((props, ref) => {
         className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: "flex",
+          display: { xs: "none", sm: "block" },
           width: "100%",
           borderRadius: "sm",
-          flexShrink: 1,
-          overflow: "auto",
-          minHeight: 0,
-          fontSize:"14px",
-          marginLeft: { xl: "15%", lg: "18%" },
-          maxWidth: { lg: "85%", sm: "100%" },
+          maxHeight: "66vh",
+          overflowY: "auto",
         }}
       >
         <Box
           component="table"
-          sx={{ width: "100%", borderCollapse: "collapse" }}
+          sx={{
+            width: "100%",
+            borderCollapse: "collapse",
+            maxHeight: "40vh",
+            overflowY: "auto",
+          }}
         >
-          <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
-            <Box component="tr">
-              <Box
-                component="th"
-                sx={{
+          <thead>
+            <tr style={{ backgroundColor: "neutral.softBg" }}>
+              <th
+                style={{
+                  position: "sticky",
+                  top: 0,
+                  background: "#e0e0e0",
+                  zIndex: 2,
                   borderBottom: "1px solid #ddd",
                   padding: "8px",
-                  textAlign: "center",
+                  textAlign: "left",
+                  fontWeight: "bold",
                 }}
               >
                 <Checkbox
                   size="sm"
-                  checked={selectedProjects.length === getProject.length}
+                  checked={
+                    Projects.length > 0 && selected?.length === Projects?.length
+                  }
                   onChange={handleSelectAll}
                   indeterminate={
-                    selectedProjects.length > 0 &&
-                    selectedProjects.length < getProject.length
+                    selected?.length > 0 && selected?.length < Projects?.length
                   }
                 />
-              </Box>
+              </th>
               {[
-                "Project ID",
-                "Customer",
+                "Project Id",
                 "Project Name",
-                "Email",
-                "Mobile",
+                "Customer",
                 "State",
-                "Slnko Service Charges (without GST)",
-                "Handover Status",
-                "",
-              ].map((header, index) => (
-                <Box
-                  component="th"
-                  key={index}
-                  sx={{
+                "Capacity(AC/DC)",
+                "Status",
+                "Schedule",
+              ].map((header) => (
+                <th
+                  key={header}
+                  style={{
+                    position: "sticky",
+                    top: 0,
+                    background: "#e0e0e0",
+                    zIndex: 2,
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
                     textAlign: "left",
                     fontWeight: "bold",
-                    fontSize:"14px",
                   }}
                 >
                   {header}
-                </Box>
+                </th>
               ))}
-            </Box>
-          </Box>
-          <Box component="tbody">
-            {paginatedProjects.length > 0 ? (
-              paginatedProjects.map((project, index) => (
-                <Box
-                  component="tr"
-                  key={index}
-                  sx={{
-                    "&:hover": { backgroundColor: "neutral.plainHoverBg" },
-                  }}
-                >
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading ? (
+              <tr>
+                <td colSpan={9} style={{ padding: "8px" }}>
                   <Box
-                    component="td"
                     sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                      fontSize:"14px",
+                      fontStyle: "italic",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
                     }}
                   >
-                    <Checkbox
-                      size="sm"
-                      color="primary"
-                      checked={selectedProjects.includes(project._id)}
-                      onChange={() => handleRowSelect(project._id)}
-                    />
+                    <CircularProgress size="sm" sx={{ mb: "8px" }} />
+                    <Typography fontStyle="italic">Loading...</Typography>
                   </Box>
-                  <Tooltip title="View Project Details" arrow>
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px dotted #888",
+                </td>
+              </tr>
+            ) : Projects?.length > 0 ? (
+              Projects.map((project, index) => {
+                const status =
+                  project?.current_status?.status || project?.status || "-";
+                const remarks = project?.current_status?.remarks || "";
+                const projectIdForLinks = project?.project_id || project?._id;
+
+                return (
+                  <tr key={project._id || index}>
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
                         padding: "8px",
                         textAlign: "left",
-                        cursor: "pointer",
-                        "&:hover": { textDecoration: "underline" },
-                      }}
-                      onClick={() => {
-                        setSelectedProjectId(project.p_id);
-                        setOpenProjectModal(true);
                       }}
                     >
-                      {project.code}
-                    </Box>
-                  </Tooltip>
-
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    {project.customer}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    {project.name}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    {project.email}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    {project.number}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    {project.state}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    {project.service}
-                  </Box>
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    {project.handover ? (
-                      <Box
-                        onClick={() => handleOpen(project.p_id, "view")}
-                        sx={{
-                          backgroundColor: "#214b7b",
-                          borderRadius: "50%",
-                          padding: 1,
-                          cursor: "pointer",
-                          display: "inline-flex",
-                        }}
-                      >
-                        <VisibilityIcon sx={{ color: "white" }} />
-                      </Box>
-                    ) : ["IT Team","Guddu Rani Dubey", "Varun Mishra","Prachi Singh"].includes(
-                        user?.name
-                      ) ? (
-                      <Box
-                        onClick={() => handleOpen(project.p_id, "edit")}
-                        sx={{
-                          backgroundColor: "#214b7b",
-                          borderRadius: "50%",
-                          padding: 1,
-                          cursor: "pointer",
-                          display: "inline-flex",
-                        }}
-                      >
-                        <AddIcon sx={{ color: "white" }} />
-                      </Box>
-                    ) : (
-                      <Tooltip title="Contact Internal Ops for Handover">
-                        <Typography
-                          textColor="#214b7b"
-                          fontWeight="600"
-                          sx={{ cursor: "pointer" }}
-                        >
-                          No Handover
-                        </Typography>
+                      <Checkbox
+                        size="sm"
+                        checked={selected.includes(project._id)}
+                        onChange={() => handleRowSelect(project._id)}
+                      />
+                    </td>
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "left",
+                      }}
+                    >
+                      <Tooltip title="View Project Detail" arrow>
+                        <span>
+                          <ProjectOverView
+                            currentPage={currentPage}
+                            project_id={projectIdForLinks}
+                            code={project.code}
+                          />
+                        </span>
                       </Tooltip>
-                    )}
-                  </Box>
+                    </td>
+                    <td
+                      style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                    >
+                      {project.name || "-"}
+                    </td>
+                    <td
+                      style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                    >
+                      {project.customer || "-"}
+                    </td>
+                    <td
+                      style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                    >
+                      {project.state || "-"}
+                    </td>
+                    <td
+                      style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                    >
+                      {project.project_kwp && project.proposed_dc_capacity
+                        ? `${project.project_kwp} AC / ${project.proposed_dc_capacity} DC`
+                        : "-"}
+                    </td>
 
+                    {/* Status chip */}
+                    <td
+                      style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                    >
+                      <Tooltip
+                        placement="top"
+                        title={
+                          remarks
+                            ? `Remarks: ${remarks}`
+                            : "Click to change status"
+                        }
+                        arrow
+                      >
+                        <Chip
+                          variant="soft"
+                          color={statusChipColor(status)}
+                          size="sm"
+                          onClick={() => openStatusModal(project)}
+                          sx={{ cursor: "pointer", fontWeight: 600 }}
+                        >
+                          {String(status || "-")
+                            .split(" ")
+                            .map((w) =>
+                              w ? w[0].toUpperCase() + w.slice(1) : ""
+                            )
+                            .join(" ")}
+                        </Chip>
+                      </Tooltip>
+                    </td>
+
+                    {/* Open PM schedule */}
+                    <td
+                      style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                    >
+                      <IconButton
+                        onClick={() =>
+                          navigate(`/view_pm?project_id=${projectIdForLinks}`)
+                        }
+                        size="sm"
+                        variant="outlined"
+                        color="primary"
+                      >
+                        <Add />
+                      </IconButton>
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan={9} style={{ padding: "8px", textAlign: "left" }}>
                   <Box
-                    component="td"
                     sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
+                      fontStyle: "italic",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
                     }}
                   >
-                    <RowMenu currentPage={currentPage} p_id={project.p_id} />
+                    <img
+                      src={NoData}
+                      alt="No data"
+                      style={{
+                        width: "50px",
+                        height: "50px",
+                        marginBottom: "8px",
+                      }}
+                    />
+                    <Typography fontStyle="italic">
+                      No Projects Found
+                    </Typography>
                   </Box>
-                </Box>
-              ))
-            ) : (
-              <Box component="tr">
-                <Box
-                  component="td"
-                  colSpan={9}
-                  sx={{
-                    padding: "8px",
-                    textAlign: "left",
-                    fontStyle: "italic",
-                  }}
-                >
-                  No data available
-                </Box>
-              </Box>
+                </td>
+              </tr>
             )}
-          </Box>
+          </tbody>
         </Box>
       </Sheet>
 
@@ -633,13 +518,12 @@ const AllProjects = forwardRef((props, ref) => {
       <Box
         className="Pagination-laptopUp"
         sx={{
-          pt: 2,
+          pt: 0.5,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
-          flexDirection: { xs: "column", md: "row" },
-          marginLeft: { xl: "15%", lg: "18%" },
         }}
       >
         <Button
@@ -648,73 +532,144 @@ const AllProjects = forwardRef((props, ref) => {
           color="neutral"
           startDecorator={<KeyboardArrowLeftIcon />}
           onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage === 1}
+          disabled={getProjects?.pagination?.hasPrevPage === false}
         >
           Previous
         </Button>
 
+        <Box>Showing {Projects?.length} results</Box>
+
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
-          {generatePageNumbers(currentPage, totalPages).map((page, index) =>
-            typeof page === "number" ? (
-              <IconButton
-                key={index}
-                size="sm"
-                variant={page === currentPage ? "contained" : "outlined"}
-                color="neutral"
-                onClick={() => handlePageChange(page)}
-              >
-                {page}
-              </IconButton>
-            ) : (
-              <Typography key={index} sx={{ px: 1, alignSelf: "center" }}>
-                {page}
-              </Typography>
-            )
+          {currentPage > 1 && (
+            <IconButton
+              size="sm"
+              variant="outlined"
+              color="neutral"
+              onClick={() => handlePageChange(currentPage - 1)}
+            >
+              {currentPage - 1}
+            </IconButton>
+          )}
+
+          <IconButton size="sm" variant="solid" color="neutral">
+            {currentPage}
+          </IconButton>
+
+          {currentPage + 1 <= totalPages && (
+            <IconButton
+              size="sm"
+              variant="outlined"
+              color="neutral"
+              onClick={() => handlePageChange(currentPage + 1)}
+            >
+              {currentPage + 1}
+            </IconButton>
           )}
         </Box>
+
+        <Box display="flex" alignItems="center" gap={1} sx={{ p: "8px 16px" }}>
+          <Select
+            value={rowsPerPage}
+            onChange={(e, newValue) => {
+              if (newValue !== null) {
+                setRowsPerPage(newValue);
+                setSearchParams((prev) => {
+                  const params = new URLSearchParams(prev);
+                  params.set("pageSize", String(newValue));
+                  params.set("page", "1");
+                  params.set("tab", selectedTab);
+                  params.set("search", searchQuery || "");
+                  return params;
+                });
+                setCurrentPage(1);
+              }
+            }}
+            size="sm"
+            variant="outlined"
+            sx={{ minWidth: 80, borderRadius: "md", boxShadow: "sm" }}
+          >
+            {options.map((value) => (
+              <Option key={value} value={value}>
+                {value}
+              </Option>
+            ))}
+          </Select>
+        </Box>
+
         <Button
           size="sm"
           variant="outlined"
           color="neutral"
           endDecorator={<KeyboardArrowRightIcon />}
           onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
+          disabled={getProjects?.pagination?.hasNextPage === false}
         >
           Next
         </Button>
       </Box>
 
-      <Modal open={open} onClose={() => setOpen(false)}>
-        <Box sx={{ ...modalStyles, position: "relative" }}>
-          {handoverMode === "view" ? (
-            <ViewHandoverSheetForm projectId={selectedProjectId} />
-          ) : (
-            <AddHandoverProject projectId={selectedProjectId} />
-          )}
-        </Box>
-      </Modal>
+      {/* Status Change Modal */}
+      <Modal open={statusModalOpen} onClose={() => setStatusModalOpen(false)}>
+        <ModalDialog variant="outlined" size="md" sx={{ borderRadius: "lg" }}>
+          <DialogTitle>Update Project Status</DialogTitle>
+          <DialogContent>
+            <Box sx={{ display: "grid", gap: 1.25 }}>
+              <FormControl size="sm">
+                <Typography level="body-sm" sx={{ mb: 0.5 }}>
+                  Status
+                </Typography>
+                <Select
+                  size="sm"
+                  value={statusForm.status}
+                  onChange={(_, v) =>
+                    setStatusForm((f) => ({ ...f, status: v || f.status }))
+                  }
+                >
+                  <Option value="in progress">In progress</Option>
+                  <Option value="completed">Completed</Option>
+                  <Option value="delayed">Delayed</Option>
+                  <Option value="on hold">On hold</Option>
+                </Select>
+              </FormControl>
 
-      <Modal open={openProjectModal} onClose={() => setOpenProjectModal(false)}>
-        <Box sx={{ ...modalStylesProject, position: "relative" }}>
-          <IconButton
-            onClick={() => setOpenProjectModal(false)}
-            sx={{
-              position: "fixed",
-              top: 8,
-              right: 8,
-              color: "red",
-              zIndex: 1,
-            }}
-          >
-            <CloseIcon />
-          </IconButton>
-
-          <View_Project projectId={selectedProjectId} />
-        </Box>
+              <FormControl size="sm">
+                <Typography level="body-sm" sx={{ mb: 0.5 }}>
+                  Remarks
+                </Typography>
+                <Textarea
+                  minRows={3}
+                  value={statusForm.remarks}
+                  onChange={(e) =>
+                    setStatusForm((f) => ({ ...f, remarks: e.target.value }))
+                  }
+                  placeholder="Add remarks (optional)"
+                />
+              </FormControl>
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              size="sm"
+              variant="outlined"
+              color="neutral"
+              onClick={() => setStatusModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={submitStatusUpdate}
+              disabled={isUpdatingStatus}
+            >
+              {isUpdatingStatus ? "Saving…" : "Save"}
+            </Button>
+          </DialogActions>
+        </ModalDialog>
       </Modal>
-    </>
+    </Box>
   );
-});
+}
+
 export default AllProjects;

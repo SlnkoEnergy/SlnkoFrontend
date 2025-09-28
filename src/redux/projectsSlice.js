@@ -59,6 +59,19 @@ export const projectsApi = createApi({
       providesTags: ["Project"],
     }),
 
+    getAllProjects: builder.query({
+      query: ({ page, limit, search, status, sort }) =>
+        `projects?page=${page}&limit=${limit}&search=${search}&status=${status}&sort=${sort}`,
+      providesTags: ["Project"],
+    }),
+    updateProjectStatus: builder.mutation({
+      query: ({ projectId, status, remarks }) => ({
+        url: `${projectId}/updateProjectStatus`,
+        method: "PUT",
+        body: { status, remarks },
+      }),
+      invalidatesTags: ["Project"],
+    }),
     getProjectDropdown: builder.query({
       query: () => "project-dropdown",
       providesTags: ["Project"],
@@ -100,7 +113,6 @@ export const projectsApi = createApi({
     }),
 
     getAllProjectActivities: builder.query({
-      // GET /v1/projectactivity/activities?search=&status=&page=1&limit=10
       query: ({ search = "", status = "", page = 1, limit = 10 } = {}) => ({
         url: "projectactivity/allprojectactivity",
         params: { search, ...(status ? { status } : {}), page, limit },
@@ -184,9 +196,9 @@ export const projectsApi = createApi({
 
     getAllModules: builder.query({
       query: ({ search = "", page = 1, limit = 50 } = {}) => ({
-        url: "engineering/get-module", // <--- UPDATE to your real endpoint
+        url: "engineering/get-module",
         method: "GET",
-        params: { search, page, limit }, // safe even if backend ignores
+        params: { search, page, limit },
       }),
       transformResponse: (res) => {
         const arr = Array.isArray(res?.data)
@@ -313,6 +325,16 @@ export const projectsApi = createApi({
         return [{ type: "ProjectActivityDependencies", id: key }];
       },
     }),
+    reorderProjectActivities: builder.mutation({
+      query: ({ projectId, ordered_activity_ids }) => ({
+        url: `projectactivity/reorder/${projectId}`,
+        method: "PATCH",
+        body: { ordered_activity_ids },
+      }),
+      invalidatesTags: (result, error, { projectId }) => [
+        { type: "ProjectActivities", id: projectId },
+      ],
+    }),
 
     getProjectStatesFilter: builder.query({
       query: () => `project-state-detail`,
@@ -331,15 +353,17 @@ export const {
   useDeleteProjectMutation,
   useAddProjectMutation,
   useUpdateProjectMutation,
+  useGetAllProjectsQuery,
+  useUpdateProjectStatusMutation,
   useGetProjectByPIdQuery,
   useGetProjectByIdQuery,
   useGetProjectDropdownQuery,
   useGetProjectSearchDropdownQuery,
   useLazyGetProjectSearchDropdownQuery,
+
   //Activity
   useCreateActivityMutation,
   useGetAllActivityQuery,
-
   //Project Activity
   useCreateProjectActivityMutation,
   useGetAllProjectActivityQuery,
@@ -365,6 +389,7 @@ export const {
   useGetRejectedOrNotAllowedDependenciesQuery,
   useLazyGetRejectedOrNotAllowedDependenciesQuery,
   useCreateApprovalMutation,
+  useReorderProjectActivitiesMutation,
   useGetProjectStatesFilterQuery,
   useGetProjectDetailQuery,
 } = projectsApi;

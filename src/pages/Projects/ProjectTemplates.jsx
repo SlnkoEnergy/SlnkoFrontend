@@ -6,7 +6,6 @@ import Sidebar from "../../component/Partials/Sidebar";
 import SubHeader from "../../component/Partials/SubHeader";
 import MainHeader from "../../component/Partials/MainHeader";
 import { useNavigate } from "react-router-dom";
-import Dash_eng from "../../component/EngDashboard";
 import TemplateTable from "../../component/ProjectTemplate";
 
 function ProjectTemplate() {
@@ -22,7 +21,7 @@ function ProjectTemplate() {
           <Box display="flex" gap={1}>
             <Button
               size="sm"
-              onClick={() => navigate(`/eng_dash`)}
+              onClick={() => navigate(`/project_dash`)}
               sx={{
                 color: "white",
                 bgcolor: "transparent",

@@ -411,7 +411,7 @@ function Sidebar() {
             </ListItem>
 
             <ListItem sx={{ mt: 0.5 }}>
-              <ListItemButton onClick={() => navigate("/project_management")}>
+              <ListItemButton onClick={() => navigate("/project_dash")}>
                 <BuildIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Projects</Typography>

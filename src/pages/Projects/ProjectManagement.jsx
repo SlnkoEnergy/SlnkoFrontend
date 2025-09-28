@@ -6,7 +6,6 @@ import Sidebar from "../../component/Partials/Sidebar";
 import SubHeader from "../../component/Partials/SubHeader";
 import MainHeader from "../../component/Partials/MainHeader";
 import { useNavigate } from "react-router-dom";
-import Dash_eng from "../../component/EngDashboard";
 import LibraryAddOutlined from "@mui/icons-material/LibraryAddOutlined";
 import AddActivityModal from "./ActivityModal";
 import { useState } from "react";
@@ -15,6 +14,7 @@ import {
   useUpdateDependencyMutation,
 } from "../../redux/projectsSlice";
 import { toast } from "react-toastify";
+import AllProjects from "../../component/AllProject";
 
 function ProjectManagement() {
   const navigate = useNavigate();
@@ -38,7 +38,10 @@ function ProjectManagement() {
           "";
 
         if (!id) {
-          console.error("Missing master Activity _id for dependency update. Payload:", payload);
+          console.error(
+            "Missing master Activity _id for dependency update. Payload:",
+            payload
+          );
           toast.error("Missing activity id for existing activity.");
           return;
         }
@@ -87,14 +90,20 @@ function ProjectManagement() {
       setOpenAdd(false);
     } catch (err) {
       console.error("Create/update error:", err);
-      toast.error(err?.data?.message || err?.error || "Something went wrong. Please try again.");
+      toast.error(
+        err?.data?.message ||
+          err?.error ||
+          "Something went wrong. Please try again."
+      );
     }
   };
 
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
-      <Box sx={{ display: "flex", minHeight: "100dvh", flexDirection: "column" }}>
+      <Box
+        sx={{ display: "flex", minHeight: "100dvh", flexDirection: "column" }}
+      >
         <Sidebar />
         <MainHeader title="Projects" sticky>
           <Box display="flex" gap={1}>
@@ -198,7 +207,7 @@ function ProjectManagement() {
             onCreate={handleCreate}
             isSubmitting={isLoading}
           />
-          <Dash_eng />
+          <AllProjects />
         </Box>
       </Box>
     </CssVarsProvider>
