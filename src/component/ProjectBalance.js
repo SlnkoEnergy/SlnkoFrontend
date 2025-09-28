@@ -263,7 +263,7 @@ const ProjectBalances = forwardRef(() => {
   };
 
   const RowMenu = ({ currentPage, p_id }) => {
-    console.log("currentPage:", currentPage, "Row menu p_id:", p_id);
+    // console.log("currentPage:", currentPage, "Row menu p_id:", p_id);
     const [user, setUser] = useState(null);
 
     useEffect(() => {
@@ -317,7 +317,7 @@ const ProjectBalances = forwardRef(() => {
     );
   };
 
-  const ProjectName = ({ currentPage, _id, name }) => {
+  const ProjectName = ({ currentPage, _id,p_id, name }) => {
     // console.log("currentPage:", currentPage, "p_id:", p_id);
 
     return (
@@ -329,7 +329,7 @@ const ProjectBalances = forwardRef(() => {
             textDecoration: "none",
           }}
           onClick={() => {
-            navigate(`/view_detail?page=${currentPage}&_id=${_id}`);
+            navigate(`/view_detail?page=${currentPage}&_id=${_id}&p_id=${p_id}`);
           }}
         >
           {name || "-"}
@@ -440,7 +440,7 @@ const ProjectBalances = forwardRef(() => {
               color="success"
               size="md"
               onClick={() =>
-                navigate(`/view_detail?page=${currentPage}&_id=${_id}`)
+                navigate(`/view_detail?page=${currentPage}&_id=${_id}&p_id=${p_id}`)
               }
               sx={{
                 cursor: "pointer",
@@ -995,6 +995,7 @@ const ProjectBalances = forwardRef(() => {
                     <ProjectID
                       currentPage={currentPage}
                       _id={project._id}
+                      p_id={project.p_id}
                       code={project.code}
                       name={project.name}
                     />
@@ -1004,6 +1005,7 @@ const ProjectBalances = forwardRef(() => {
                     <ProjectName
                       currentPage={currentPage}
                       _id={project._id}
+                      p_id={project.p_id}
                       name={project.name}
                     />
                   </Typography>
@@ -1169,6 +1171,7 @@ const ProjectBalances = forwardRef(() => {
                                   name={project.name}
                                   code={project.code}
                                   _id={project._id}
+                                   p_id={project.p_id}
                                   currentPage={currentPage}
                                 />
                               </Box>
