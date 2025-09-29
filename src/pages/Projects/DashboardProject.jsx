@@ -4,74 +4,29 @@ import PlayCircleFilledRoundedIcon from "@mui/icons-material/PlayCircleFilledRou
 import TaskAltRoundedIcon from "@mui/icons-material/TaskAltRounded";
 import DoNotDisturbOnRoundedIcon from "@mui/icons-material/DoNotDisturbOnRounded";
 import TeamLeaderboard from "../../component/All_Tasks/TeamLeaderboard";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import ProjectsWorkedCard from "../../component/All_Tasks/Charts/ProjectsDonut";
 import {
   useGetPostsActivityFeedQuery,
   useGetProjectDetailQuery,
   useGetProjectStatesFilterQuery,
   useGetProjectStatusFilterQuery,
-  // ⬇️ add this hook
   useGetProjectActivityForViewQuery,
 } from "../../redux/projectsSlice";
 import ActivityFeedCard from "../../component/All_Tasks/ActivityCard";
 import { useNavigate } from "react-router-dom";
 import WeeklyProjectTimelineCard from "../../component/WeeklyActivityProject";
 
-const IconBadge = ({ color = "#2563eb", bg = "#eff6ff", icon }) => (
-  <div
-    style={{
-      width: 42,
-      height: 26,
-      borderRadius: 999,
-      background: bg,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      color,
-      fontWeight: 700,
-      boxShadow: "0 1px 0 rgba(0,0,0,0.04) inset, 0 6px 14px rgba(2,6,23,0.06)",
-      border: "1px solid rgba(2,6,23,0.06)",
-    }}
-  >
-    {icon}
-  </div>
-);
-
+/* ---------- helpers ---------- */
 const DONUT_COLORS = [
-  "#f59e0b",
-  "#22c55e",
-  "#ef4444",
-  "#3b82f6",
-  "#8b5cf6",
-  "#14b8a6",
-  "#e11d48",
-  "#84cc16",
-  "#f97316",
-  "#06b6d4",
-  "#d946ef",
-  "#0ea5e9",
-  "#65a30d",
-  "#dc2626",
-  "#7c3aed",
-  "#10b981",
-  "#ca8a04",
-  "#2563eb",
-  "#f43f5e",
-  "#0891b2",
-  "#a16207",
-  "#15803d",
-  "#4f46e5",
-  "#ea580c",
-  "#db2777",
-  "#047857",
-  "#1d4ed8",
-  "#9333ea",
-  "#b91c1c",
-  "#0d9488",
+  "#f59e0b", "#22c55e", "#ef4444", "#3b82f6", "#8b5cf6", "#14b8a6",
+  "#e11d48", "#84cc16", "#f97316", "#06b6d4", "#d946ef", "#0ea5e9",
+  "#65a30d", "#dc2626", "#7c3aed", "#10b981", "#ca8a04", "#2563eb",
+  "#f43f5e", "#0891b2", "#a16207", "#15803d", "#4f46e5", "#ea580c",
+  "#db2777", "#047857", "#1d4ed8", "#9333ea", "#b91c1c", "#0d9488",
 ];
 
-// ---- helpers for current week (Mon..Sun) in YYYY-MM-DD
+// YYYY-MM-DD
 const ymd = (d) => {
   const dt = new Date(d);
   const y = dt.getFullYear();
@@ -81,7 +36,7 @@ const ymd = (d) => {
 };
 const startOfWeek = (date = new Date()) => {
   const d = new Date(date);
-  const day = d.getDay(); // 0..6 (Sun..Sat)
+  const day = d.getDay();
   const diff = day === 0 ? -6 : 1 - day; // Monday start
   const res = new Date(d);
   res.setHours(0, 0, 0, 0);
@@ -91,6 +46,7 @@ const startOfWeek = (date = new Date()) => {
 const addDays = (date, days) => {
   const d = new Date(date);
   d.setDate(d.getDate() + days);
+  d.setHours(0, 0, 0, 0);
   return d;
 };
 
@@ -143,7 +99,7 @@ function Dash_project() {
         null;
 
       let upcoming = [];
-      acts.map((activity) => {});
+      acts.map(() => {});
       if (current?.successors?.length) {
         const s = current.successors[0];
         upcoming =
@@ -196,20 +152,24 @@ function Dash_project() {
   } = useGetPostsActivityFeedQuery();
   const feedItems = Array.isArray(feedRes?.data) ? feedRes.data : [];
 
-  // ------ NEW: fetch timeline data for the current week using your API
-  const weekStart = startOfWeek(new Date());
-  const weekEnd = addDays(weekStart, 6);
+  /* --------- LIFTED RANGE STATE (default: current week) --------- */
+  const defaultStart = startOfWeek(new Date());
+  const defaultEnd = addDays(defaultStart, 6);
+  const [range, setRange] = useState({
+    startDate: defaultStart,
+    endDate: defaultEnd,
+  });
 
-  const baselineStart = ymd(weekStart);
-  const baselineEnd = ymd(weekEnd);
+  const baselineStart = ymd(range.startDate);
+  const baselineEnd = ymd(range.endDate);
 
+  // RTK Query fetch that refires when range changes
   const {
     data: paViewRes,
     isLoading: paLoading,
     isFetching: paFetching,
   } = useGetProjectActivityForViewQuery({ baselineStart, baselineEnd });
 
-  // API returns { success, data }; WeeklyProjectTimelineCard expects array
   const timelineData = useMemo(
     () => (Array.isArray(paViewRes?.data) ? paViewRes.data : []),
     [paViewRes]
@@ -232,11 +192,24 @@ function Dash_project() {
             subtitle="Projects that is still ongoing"
             accent="#60a5fa"
             illustration={
-              <IconBadge
-                icon={<PlayCircleFilledRoundedIcon fontSize="small" />}
-                color="#1d4ed8"
-                bg="#dbeafe"
-              />
+              <div
+                style={{
+                  width: 42,
+                  height: 26,
+                  borderRadius: 999,
+                  background: "#dbeafe",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#1d4ed8",
+                  fontWeight: 700,
+                  boxShadow:
+                    "0 1px 0 rgba(0,0,0,0.04) inset, 0 6px 14px rgba(2,6,23,0.06)",
+                  border: "1px solid rgba(2,6,23,0.06)",
+                }}
+              >
+                <PlayCircleFilledRoundedIcon fontSize="small" />
+              </div>
             }
             onAction={() => {
               const params = new URLSearchParams();
@@ -255,11 +228,24 @@ function Dash_project() {
             subtitle="Projects finished"
             accent="#86efac"
             illustration={
-              <IconBadge
-                icon={<TaskAltRoundedIcon fontSize="small" />}
-                color="#15803d"
-                bg="#ecfdf5"
-              />
+              <div
+                style={{
+                  width: 42,
+                  height: 26,
+                  borderRadius: 999,
+                  background: "#ecfdf5",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#15803d",
+                  fontWeight: 700,
+                  boxShadow:
+                    "0 1px 0 rgba(0,0,0,0.04) inset, 0 6px 14px rgba(2,6,23,0.06)",
+                  border: "1px solid rgba(2,6,23,0.06)",
+                }}
+              >
+                <TaskAltRoundedIcon fontSize="small" />
+              </div>
             }
             onAction={() => {
               const params = new URLSearchParams();
@@ -278,11 +264,24 @@ function Dash_project() {
             subtitle="Project Delayed"
             accent="#fca5a5"
             illustration={
-              <IconBadge
-                icon={<DoNotDisturbOnRoundedIcon fontSize="small" />}
-                color="#b91c1c"
-                bg="#fee2e2"
-              />
+              <div
+                style={{
+                  width: 42,
+                  height: 26,
+                  borderRadius: 999,
+                  background: "#fee2e2",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#b91c1c",
+                  fontWeight: 700,
+                  boxShadow:
+                    "0 1px 0 rgba(0,0,0,0.04) inset, 0 6px 14px rgba(2,6,23,0.06)",
+                  border: "1px solid rgba(2,6,23,0.06)",
+                }}
+              >
+                <DoNotDisturbOnRoundedIcon fontSize="small" />
+              </div>
             }
             onAction={() => {
               const params = new URLSearchParams();
@@ -301,11 +300,24 @@ function Dash_project() {
             subtitle="Projects cancelled"
             accent="#fca5a5"
             illustration={
-              <IconBadge
-                icon={<DoNotDisturbOnRoundedIcon fontSize="small" />}
-                color="#b91c1c"
-                bg="#fee2e2"
-              />
+              <div
+                style={{
+                  width: 42,
+                  height: 26,
+                  borderRadius: 999,
+                  background: "#fee2e2",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#b91c1c",
+                  fontWeight: 700,
+                  boxShadow:
+                    "0 1px 0 rgba(0,0,0,0.04) inset, 0 6px 14px rgba(2,6,23,0.06)",
+                  border: "1px solid rgba(2,6,23,0.06)",
+                }}
+              >
+                <DoNotDisturbOnRoundedIcon fontSize="small" />
+              </div>
             }
             onAction={() => {
               const params = new URLSearchParams();
@@ -321,7 +333,16 @@ function Dash_project() {
         <Grid xs={12} md={8}>
           <WeeklyProjectTimelineCard
             data={timelineData}
-            title="Calendar — Current Week"
+            loading={paLoading || paFetching}
+            title="Calendar — Selected Range"
+            range={range}
+            onRangeChange={(startDate, endDate) => {
+              const s = new Date(startDate);
+              const e = new Date(endDate);
+              s.setHours(0, 0, 0, 0);
+              e.setHours(0, 0, 0, 0);
+              setRange({ startDate: s, endDate: e }); // triggers RTK refetch
+            }}
           />
         </Grid>
 

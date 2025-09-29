@@ -57,6 +57,16 @@ const toYMD = (d) =>
     ? gantt.date.date_to_str("%Y-%m-%d")(d)
     : "";
 
+// NEW: Day + short month (e.g., "08 Oct")
+const toDM = (d) => {
+  if (!d) return "";
+  const dt = d instanceof Date ? d : new Date(d);
+  if (Number.isNaN(dt.getTime())) return "";
+  const dd = String(dt.getDate()).padStart(2, "0");
+  const mon = dt.toLocaleString("en-GB", { month: "short" });
+  return `${dd} ${mon}`;
+};
+
 function parseISOAsLocalDate(v) {
   if (!v) return null;
   if (v instanceof Date && !isNaN(v))
@@ -68,31 +78,26 @@ function parseISOAsLocalDate(v) {
   if (m) return new Date(+m[1], +m[2] - 1, +m[3], 0, 0, 0);
   return null;
 }
-const parseDMY = (s) => {
-  if (!s) return null;
-  const [dd, mm, yyyy] = String(s).split("-").map(Number);
-  if (!dd || !mm || !yyyy) return null;
-  return new Date(yyyy, mm - 1, dd);
-};
 
 const startCellTemplate = (task) =>
-  task.start_date instanceof Date
-    ? gantt.date.date_to_str("%d-%m-%Y")(task.start_date)
-    : "";
+  task.start_date instanceof Date ? toDM(task.start_date) : "-";
+
 const endCellTemplate = (task) => {
-  if (task._end_dmy) return task._end_dmy;
-  if (task.start_date instanceof Date && Number(task.duration) > 0) {
-    const e = gantt.calculateEndDate({
-      start_date: task.start_date,
-      duration: task.duration,
-      task,
-    });
-    return gantt.date.date_to_str("%d-%m-%Y")(e);
-  }
-  return "";
+  const endObj =
+    task._end_obj ||
+    (task.start_date instanceof Date && Number(task.duration) > 0
+      ? gantt.calculateEndDate({
+          start_date: task.start_date,
+          duration: task.duration,
+          task,
+        })
+      : null);
+  return endObj ? toDM(endObj) : "-";
 };
+
 const durationTemplate = (task) =>
   Number(task.duration) > 0 ? String(task.duration) : "";
+
 const predecessorTemplate = (task) => {
   const incoming = gantt
     .getLinks()
@@ -107,6 +112,7 @@ const predecessorTemplate = (task) => {
     })
     .join(", ");
 };
+
 const extractBackendError = (err) => {
   const data = err?.data || err?.response?.data || {};
   const msg = String(
@@ -263,6 +269,7 @@ function projectClientActuals(paList) {
 
     let minStart = null;
     let minFinish = null;
+
     (node.preds || []).forEach((link) => {
       const pred = map.get(
         String(link.activity_id?._id || link.activity_id || "")
@@ -651,13 +658,32 @@ const View_Project_Management = forwardRef(
           }
         }
 
+        // NEW: compute actual start/end objects for grid
+        const aSISO =
+          pa.actual_start_date || pa.actual_start || pa.actual_start_dt || null;
+        const aFISO =
+          pa.actual_finish_date || pa.actual_finish || pa.actual_end_dt || null;
+        const actualStartObj = aSISO ? parseISOAsLocalDate(aSISO) : null;
+        const actualEndObj = aFISO ? parseISOAsLocalDate(aFISO) : null;
+
+        // NEW: decide an end object for display regardless of source field
+        const endObj =
+          endDateObj ||
+          (startDateObj && Number(duration) > 0
+            ? gantt.calculateEndDate({
+                start_date: startDateObj,
+                duration,
+                task: {},
+              })
+            : null);
+
         return {
           id: si,
           _si: si,
           _dbId: masterId,
           text,
           start_date: startDateObj || null,
-          _end_dmy: endDateObj ? toDMY(endDateObj) : "",
+          _end_obj: endObj || null, // <— for End cell template
           duration,
           progress:
             typeof pa.percent_complete === "number"
@@ -673,6 +699,10 @@ const View_Project_Management = forwardRef(
           _actual_completed: mode === "actual" ? !!pa.actual_finish : false,
           _actual_on_time: mode === "actual" ? onTime : null,
           _type: typeLower,
+
+          // NEW: preformatted strings for A.Start / A.End
+          _a_start_dm: actualStartObj ? toDM(actualStartObj) : "",
+          _a_end_dm: actualEndObj ? toDM(actualEndObj) : "",
         };
       });
 
@@ -735,18 +765,16 @@ const View_Project_Management = forwardRef(
     }, [ganttData]);
     const maxEndDMY = useMemo(() => {
       const ends = (ganttData || []).map((t) => {
-        if (t._end_dmy) {
-          const [dd, mm, yyyy] = t._end_dmy.split("-").map(Number);
-          return new Date(yyyy, mm - 1, dd);
-        }
-        if (t.start_date instanceof Date && Number(t.duration) > 0) {
-          return gantt.calculateEndDate({
-            start_date: t.start_date,
-            duration: t.duration,
-            task: t,
-          });
-        }
-        return null;
+        const endObj =
+          t._end_obj ||
+          (t.start_date instanceof Date && Number(t.duration) > 0
+            ? gantt.calculateEndDate({
+                start_date: t.start_date,
+                duration: t.duration,
+                task: t,
+              })
+            : null);
+        return endObj || null;
       });
       const nums = ends
         .map((d) => d?.getTime())
@@ -795,15 +823,15 @@ const View_Project_Management = forwardRef(
         if (!pt) return;
 
         const pStart = pt.start_date instanceof Date ? pt.start_date : null;
-        const pEnd = pt._end_dmy
-          ? parseDMY(pt._end_dmy)
-          : pStart && Number(pt.duration) > 0
-          ? gantt.calculateEndDate({
-              start_date: pStart,
-              duration: pt.duration,
-              task: pt,
-            })
-          : null;
+        const pEnd =
+          pt._end_obj ||
+          (pStart && Number(pt.duration) > 0
+            ? gantt.calculateEndDate({
+                start_date: pStart,
+                duration: pt.duration,
+                task: pt,
+              })
+            : null);
 
         if (!pStart && !pEnd) return;
 
@@ -981,15 +1009,15 @@ const View_Project_Management = forwardRef(
         // 1) Gather visible tasks in order
         gantt.eachTask((t) => {
           const start = t.start_date instanceof Date ? t.start_date : null;
-          const end = t._end_dmy
-            ? parseDMY(t._end_dmy)
-            : start && Number(t.duration) > 0
-            ? gantt.calculateEndDate({
-                start_date: start,
-                duration: t.duration,
-                task: t,
-              })
-            : null;
+          const end =
+            t._end_obj ||
+            (start && Number(t.duration) > 0
+              ? gantt.calculateEndDate({
+                  start_date: start,
+                  duration: t.duration,
+                  task: t,
+                })
+              : null);
 
           const startISO = start ? start.toISOString() : null;
           const endISO = end ? end.toISOString() : null;
@@ -1130,24 +1158,25 @@ const View_Project_Management = forwardRef(
 
     /* ---------- init gantt (once) ---------- */
     useEffect(() => {
+      // base config
       gantt.config.date_format = "%d-%m-%Y";
       gantt.locale.date.day_short = ["S", "M", "T", "W", "T", "F", "S"];
+
+      // scrolling via layout scrollbars (turn off built-ins)
       gantt.config.scroll_on_click = true;
       gantt.config.autoscroll = true;
       gantt.config.preserve_scroll = true;
-      gantt.config.show_chart_scroll = true;
-      gantt.config.show_grid_scroll = true;
+      gantt.config.show_chart_scroll = false;
+      gantt.config.show_grid_scroll = false;
+
+      // behavior
       gantt.config.smart_rendering = true;
       gantt.config.start_on_monday = false;
       gantt.config.limit_view = false;
       gantt.config.fit_tasks = false;
       gantt.config.lightbox = false;
-
-      // Row reordering on (keep bar dragging off)
       gantt.config.order_branch = true;
       gantt.config.order_branch_free = true;
-
-      // disable bar moves/resizes/links
       gantt.config.drag_move = false;
       gantt.config.drag_resize = false;
       gantt.config.drag_progress = false;
@@ -1156,13 +1185,52 @@ const View_Project_Management = forwardRef(
       gantt.attachEvent("onBeforeLinkUpdate", () => false);
       gantt.attachEvent("onBeforeLinkDelete", () => false);
       gantt.attachEvent("onBeforeTaskDrag", () => false);
-
-      gantt.showLightbox = function () {
-        return false;
-      };
+      gantt.showLightbox = () => false;
       gantt.config.show_unscheduled = true;
 
-      // grid columns
+      // layout: separate X for grid/timeline, shared Y, with elastic separator
+      gantt.config.layout = {
+        css: "gantt_container",
+        rows: [
+          {
+            cols: [
+              {
+                id: "gridCol",
+                rows: [
+                  {
+                    view: "grid",
+                    id: "grid",
+                    scrollX: "gridX",
+                    scrollY: "vScroll",
+                  },
+                  { view: "scrollbar", id: "gridX" },
+                ],
+              },
+              { view: "resizer", id: "gridResizer", width: 6 },
+              {
+                id: "timeCol",
+                rows: [
+                  {
+                    view: "timeline",
+                    id: "timeline",
+                    scrollX: "timeX",
+                    scrollY: "vScroll",
+                  },
+                  { view: "scrollbar", id: "timeX" },
+                ],
+              },
+              { view: "scrollbar", id: "vScroll" },
+            ],
+          },
+        ],
+      };
+
+      // grid sizing/overflow
+      gantt.config.grid_elastic_columns = false;
+      gantt.config.min_column_width = 60;
+      gantt.config.grid_width = 420; // initial (we set a responsive one below)
+
+      // columns: show Start/End as "DD Mon", and Actuals too
       gantt.config.columns = [
         {
           name: "text",
@@ -1175,66 +1243,91 @@ const View_Project_Management = forwardRef(
           name: "duration",
           label: "Duration",
           width: 90,
-          align: "left",
+          align: "center",
           resize: true,
           template: durationTemplate,
         },
         {
           name: "resources",
           label: "Res.",
-          width: 80,
-          align: "left",
+          width: 60,
+          align: "center",
           resize: true,
-          template: (task) =>
-            task._resources === 0
-              ? "0"
-              : task._resources
-              ? String(task._resources)
-              : "",
+          template: (t) =>
+            t._resources === 0 ? "0" : t._resources ? String(t._resources) : "",
         },
         {
           name: "start",
           label: "Start",
-          width: 120,
-          align: "left",
+          width: 100,
+          align: "center",
           resize: true,
           template: startCellTemplate,
         },
         {
           name: "end",
           label: "End",
-          width: 120,
-          align: "left",
+          width: 100,
+          align: "center",
           resize: true,
           template: endCellTemplate,
         },
         {
+          name: "a_start",
+          label: "A.Start",
+          width: 100,
+          align: "center",
+          resize: true,
+          template: (t) => t._a_start_dm || "-",
+        },
+        {
+          name: "a_end",
+          label: "A.End",
+          width: 100,
+          align: "center",
+          resize: true,
+          template: (t) => t._a_end_dm || "-",
+        },
+        {
           name: "pred",
-          label: "Predecessors",
-          width: 180,
-          align: "left",
+          label: "Pred.",
+          width: 120,
+          align: "center",
           resize: true,
           template: predecessorTemplate,
         },
       ];
 
-      // initial templates (overridden by effects)
+      // templates / events
       gantt.templates.task_class = () => "";
       gantt.templates.grid_row_class = () => "";
-
-      // single click: select only
-      gantt.attachEvent("onTaskClick", function (_id) {
-        return true;
-      });
-
-      // double click: open edit form
-      gantt.attachEvent("onTaskDblClick", function (id) {
+      gantt.attachEvent("onTaskClick", () => true);
+      gantt.attachEvent("onTaskDblClick", (id) => {
         onOpenModalForTask(String(id));
         return false;
       });
 
-      if (ganttContainer.current) gantt.init(ganttContainer.current);
-      return () => gantt.clearAll();
+      // init
+      if (ganttContainer.current) {
+        gantt.init(ganttContainer.current);
+      }
+
+      // keep grid ≈ 40% only on window resize (not on user resizer drags)
+      const handleResize = () => {
+        const host = gantt.$container;
+        if (!host) return;
+        const w = host.clientWidth || 1000;
+        gantt.config.grid_width = Math.max(220, Math.floor(w * 0.4));
+        gantt.render();
+      };
+      window.addEventListener("resize", handleResize);
+      handleResize(); // set once now
+
+      // cleanup
+      return () => {
+        window.removeEventListener("resize", handleResize);
+        gantt.clearAll();
+      };
     }, []);
 
     /* ---------- dim backend when actView === 'all' ---------- */
@@ -1344,6 +1437,7 @@ const View_Project_Management = forwardRef(
 
       if (viewMode === "day" || viewMode === "week") {
         gantt.config.scale_unit = viewMode;
+        // keep timeline scale as-is; your grid renders DM format already
         gantt.config.date_scale = "%d %M %Y";
         const fmtFull = gantt.date.date_to_str("%d %M %Y");
         const fmtNoY = gantt.date.date_to_str("%d %M");
@@ -1384,6 +1478,18 @@ const View_Project_Management = forwardRef(
         /* Dim backend in "All" */
         .gantt_task_line.gantt-task-dim { opacity: 0.45; }
         .gantt_grid_data .gantt_row.gantt-grid-dim { opacity: 0.6; }
+
+        /* allow either side to shrink to 0 when dragging the resizer */
+        .gantt_grid, .gantt_task { min-width: 0 !important; }
+
+        /* elastic resizer handle */
+        .gantt_layout_cell.gantt_resizer { background: transparent; cursor: col-resize; }
+        .gantt_layout_cell.gantt_resizer::after {
+          content:""; display:block; width:2px; height:100%; margin:0 auto;
+          background: var(--joy-palette-neutral-outlinedBorder, rgba(0,0,0,0.15));
+          transition: transform .12s ease;
+        }
+        .gantt_layout_cell.gantt_resizer:hover::after { transform: scaleX(1.6); }
       `}</style>
 
         {/* Header row */}
