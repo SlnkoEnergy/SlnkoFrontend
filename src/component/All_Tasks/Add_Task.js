@@ -322,7 +322,6 @@ const AddTask = () => {
     );
   };
 
-
   const fetchAllowedModulePage = async ({
     page = 1,
     search = "",
@@ -342,7 +341,6 @@ const AddTask = () => {
     const rows = filtered.slice(start, start + pageSize);
     return { rows, total: filtered.length };
   };
-
 
   const fetchScmPage = async ({ page = 1, search = "", pageSize = 10 }) => {
     const res = await triggerScmSearch(

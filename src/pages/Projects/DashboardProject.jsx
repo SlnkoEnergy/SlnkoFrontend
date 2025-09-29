@@ -1,11 +1,5 @@
 import { Box, Grid } from "@mui/joy";
 import CloudStatCard from "../../component/All_Tasks/TaskDashboardCards";
-import {
-  useGetProjectsByStateQuery,
-  useGetTaskStatsQuery,
-  useGetUserPerformanceQuery,
-} from "../../redux/globalTaskSlice";
-import PendingActionsRoundedIcon from "@mui/icons-material/PendingActionsRounded";
 import PlayCircleFilledRoundedIcon from "@mui/icons-material/PlayCircleFilledRounded";
 import TaskAltRoundedIcon from "@mui/icons-material/TaskAltRounded";
 import DoNotDisturbOnRoundedIcon from "@mui/icons-material/DoNotDisturbOnRounded";
@@ -13,10 +7,16 @@ import TeamLeaderboard from "../../component/All_Tasks/TeamLeaderboard";
 import { useMemo } from "react";
 import ProjectsWorkedCard from "../../component/All_Tasks/Charts/ProjectsDonut";
 import {
+  useGetPostsActivityFeedQuery,
   useGetProjectDetailQuery,
   useGetProjectStatesFilterQuery,
   useGetProjectStatusFilterQuery,
+  // ⬇️ add this hook
+  useGetProjectActivityForViewQuery,
 } from "../../redux/projectsSlice";
+import ActivityFeedCard from "../../component/All_Tasks/ActivityCard";
+import { useNavigate } from "react-router-dom";
+import WeeklyProjectTimelineCard from "../../component/WeeklyActivityProject";
 
 const IconBadge = ({ color = "#2563eb", bg = "#eff6ff", icon }) => (
   <div
@@ -39,43 +39,64 @@ const IconBadge = ({ color = "#2563eb", bg = "#eff6ff", icon }) => (
 );
 
 const DONUT_COLORS = [
-  "#f59e0b", // amber
-  "#22c55e", // green
-  "#ef4444", // red
-  "#3b82f6", // blue
-  "#8b5cf6", // violet
-  "#14b8a6", // teal
-  "#e11d48", // rose
-  "#84cc16", // lime
-  "#f97316", // orange
-  "#06b6d4", // cyan
-
-  "#d946ef", // fuchsia
-  "#0ea5e9", // sky
-  "#65a30d", // olive green
-  "#dc2626", // deep red
-  "#7c3aed", // purple
-  "#10b981", // emerald
-  "#ca8a04", // yellow dark
-  "#2563eb", // indigo
-  "#f43f5e", // pinkish red
-  "#0891b2", // teal dark
-
-  "#a16207", // mustard
-  "#15803d", // forest green
-  "#4f46e5", // indigo dark
-  "#ea580c", // burnt orange
-  "#db2777", // magenta
-  "#047857", // green deep
-  "#1d4ed8", // royal blue
-  "#9333ea", // deep violet
-  "#b91c1c", // dark red
-  "#0d9488", // aqua teal
+  "#f59e0b",
+  "#22c55e",
+  "#ef4444",
+  "#3b82f6",
+  "#8b5cf6",
+  "#14b8a6",
+  "#e11d48",
+  "#84cc16",
+  "#f97316",
+  "#06b6d4",
+  "#d946ef",
+  "#0ea5e9",
+  "#65a30d",
+  "#dc2626",
+  "#7c3aed",
+  "#10b981",
+  "#ca8a04",
+  "#2563eb",
+  "#f43f5e",
+  "#0891b2",
+  "#a16207",
+  "#15803d",
+  "#4f46e5",
+  "#ea580c",
+  "#db2777",
+  "#047857",
+  "#1d4ed8",
+  "#9333ea",
+  "#b91c1c",
+  "#0d9488",
 ];
+
+// ---- helpers for current week (Mon..Sun) in YYYY-MM-DD
+const ymd = (d) => {
+  const dt = new Date(d);
+  const y = dt.getFullYear();
+  const m = String(dt.getMonth() + 1).padStart(2, "0");
+  const day = String(dt.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+const startOfWeek = (date = new Date()) => {
+  const d = new Date(date);
+  const day = d.getDay(); // 0..6 (Sun..Sat)
+  const diff = day === 0 ? -6 : 1 - day; // Monday start
+  const res = new Date(d);
+  res.setHours(0, 0, 0, 0);
+  res.setDate(d.getDate() + diff);
+  return res;
+};
+const addDays = (date, days) => {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+};
 
 function Dash_project() {
   const { data, isLoading, isFetching } = useGetProjectStatusFilterQuery();
-
+  const navigate = useNavigate();
   const stats = data?.data || {
     completed: 0,
     cancelled: 0,
@@ -100,8 +121,6 @@ function Dash_project() {
     return `${yyyy}-${mm}-${dd}`;
   };
 
-  console.log(projectData);
-
   const ProjectDetailColumns = [
     { key: "code", label: "Project Code" },
     { key: "name", label: "Project Name" },
@@ -110,13 +129,9 @@ function Dash_project() {
   ];
 
   const projectDetailRows = useMemo(() => {
-    const list = projectData?.data ?? []; // ← your array of 48
+    const list = projectData?.data ?? [];
     return list.map((p) => {
       const acts = Array.isArray(p.activities) ? p.activities : [];
-      console.log(acts);
-      // Heuristic:
-      // - current = first activity that isn't completed (or missing actual_end_date)
-      // - fallback to last activity if all completed or no obvious current
       const current =
         acts.find(
           (a) =>
@@ -129,12 +144,7 @@ function Dash_project() {
 
       let upcoming = [];
       acts.map((activity) => {});
-
-      // upcoming = a declared successor of current if present, else the first not-started activity
-      // let upcoming = null;
-
       if (current?.successors?.length) {
-        // sometimes successors are just IDs; sometimes objects—handle both
         const s = current.successors[0];
         upcoming =
           typeof s === "object" && s !== null
@@ -152,9 +162,8 @@ function Dash_project() {
       const completion_date = current?.actual_end_date
         ? fmtDate(current.actual_end_date)
         : "-";
-      console.log(p.project_code);
       return {
-        id: p._id, // stable unique id for the row
+        id: p._id,
         code: p.project_code ?? "NA",
         name: p.project_name ?? "-",
         current_activity: current?.activity_name ?? "-",
@@ -180,6 +189,32 @@ function Dash_project() {
     }));
   }, [stateRes]);
 
+  const {
+    data: feedRes,
+    isLoading: feedLoading,
+    isFetching: feedFetching,
+  } = useGetPostsActivityFeedQuery();
+  const feedItems = Array.isArray(feedRes?.data) ? feedRes.data : [];
+
+  // ------ NEW: fetch timeline data for the current week using your API
+  const weekStart = startOfWeek(new Date());
+  const weekEnd = addDays(weekStart, 6);
+
+  const baselineStart = ymd(weekStart);
+  const baselineEnd = ymd(weekEnd);
+
+  const {
+    data: paViewRes,
+    isLoading: paLoading,
+    isFetching: paFetching,
+  } = useGetProjectActivityForViewQuery({ baselineStart, baselineEnd });
+
+  // API returns { success, data }; WeeklyProjectTimelineCard expects array
+  const timelineData = useMemo(
+    () => (Array.isArray(paViewRes?.data) ? paViewRes.data : []),
+    [paViewRes]
+  );
+
   return (
     <Box
       sx={{
@@ -192,23 +227,23 @@ function Dash_project() {
         <Grid xs={12} md={3}>
           <CloudStatCard
             loading={isLoading || isFetching}
-            value={stats["to be started"] ?? 0}
+            value={stats["in progress"] ?? 0}
             title="In Progress Projects"
             subtitle="Projects that is still ongoing"
             accent="#60a5fa"
             illustration={
               <IconBadge
                 icon={<PlayCircleFilledRoundedIcon fontSize="small" />}
-                color="#1d4ed8" // blue-700
-                bg="#dbeafe" // blue-100
+                color="#1d4ed8"
+                bg="#dbeafe"
               />
             }
-            // onAction={() => {
-            //     const params = new URLSearchParams(apiParams);
-            //     params.set("page", "1");
-            //     params.set("tab", "In Progress");
-            //     navigate(`/all_task?${params.toString()}`);
-            // }}
+            onAction={() => {
+              const params = new URLSearchParams();
+              params.set("page", "1");
+              params.set("tab", "In Progress");
+              navigate(`/project_management?${params.toString()}`);
+            }}
           />
         </Grid>
 
@@ -222,16 +257,16 @@ function Dash_project() {
             illustration={
               <IconBadge
                 icon={<TaskAltRoundedIcon fontSize="small" />}
-                color="#15803d" // emerald-700
-                bg="#ecfdf5" // emerald-50
+                color="#15803d"
+                bg="#ecfdf5"
               />
             }
-            // onAction={() => {
-            //     const params = new URLSearchParams(apiParams);
-            //     params.set("page", "1");
-            //     params.set("tab", "Completed");
-            //     navigate(`/all_task?${params.toString()}`);
-            // }}
+            onAction={() => {
+              const params = new URLSearchParams();
+              params.set("page", "1");
+              params.set("tab", "Completed");
+              navigate(`/project_management?${params.toString()}`);
+            }}
           />
         </Grid>
 
@@ -245,39 +280,82 @@ function Dash_project() {
             illustration={
               <IconBadge
                 icon={<DoNotDisturbOnRoundedIcon fontSize="small" />}
-                color="#b91c1c" // red-700
-                bg="#fee2e2" // red-100
+                color="#b91c1c"
+                bg="#fee2e2"
               />
             }
-            // onAction={() => {
-            //     const params = new URLSearchParams(apiParams);
-            //     params.set("page", "1");
-            //     params.set("tab", "Cancelled");
-            //     navigate(`/all_task?${params.toString()}`);
-            // }}
+            onAction={() => {
+              const params = new URLSearchParams();
+              params.set("page", "1");
+              params.set("tab", "Delayed");
+              navigate(`/project_management?${params.toString()}`);
+            }}
           />
         </Grid>
 
         <Grid xs={12} md={3}>
           <CloudStatCard
             loading={isLoading || isFetching}
-            value={stats.cancelled ?? 0}
+            value={stats.onhold ?? 0}
             title="On Hold Projects"
-            subtitle="Tasks cancelled"
+            subtitle="Projects cancelled"
             accent="#fca5a5"
             illustration={
               <IconBadge
                 icon={<DoNotDisturbOnRoundedIcon fontSize="small" />}
-                color="#b91c1c" // red-700
-                bg="#fee2e2" // red-100
+                color="#b91c1c"
+                bg="#fee2e2"
               />
             }
-            // onAction={() => {
-            //     const params = new URLSearchParams(apiParams);
-            //     params.set("page", "1");
-            //     params.set("tab", "Cancelled");
-            //     navigate(`/all_task?${params.toString()}`);
-            // }}
+            onAction={() => {
+              const params = new URLSearchParams();
+              params.set("page", "1");
+              params.set("tab", "On Hold");
+              navigate(`/project_management?${params.toString()}`);
+            }}
+          />
+        </Grid>
+      </Grid>
+
+      <Grid container spacing={2} sx={{ mt: 1 }}>
+        <Grid xs={12} md={8}>
+          <WeeklyProjectTimelineCard
+            data={timelineData}
+            title="Calendar — Current Week"
+          />
+        </Grid>
+
+        <Grid xs={12} md={4}>
+          <ActivityFeedCard
+            title="Recent Notes"
+            items={feedItems}
+            onItemClick={(it) => {
+              if (it.project_id) {
+                navigate(
+                  `/project_detail?project_id=${encodeURIComponent(
+                    it.project_id
+                  )}`
+                );
+              }
+            }}
+            renderRight={(it) => (
+              <span
+                style={{
+                  fontSize: "0.7rem",
+                  fontWeight: 600,
+                  color: "#64748b",
+                }}
+              >
+                {it.ago}
+              </span>
+            )}
+            getAvatar={(it) => it.attachment_url}
+            getTitleLeft={(it) => it.name}
+            getActionVerb={(it) => it.action}
+            getTitleRight={(it) => it.project_name}
+            getTitleRightSub={(it) => it.project_code}
+            getRemarksHtml={(it) => it.comment}
+            getRightText={(it) => it.ago}
           />
         </Grid>
       </Grid>
@@ -288,8 +366,6 @@ function Dash_project() {
             rows={perfLoading || perfFetching ? [] : projectDetailRows}
             title="Project Detail Dashboard"
             columns={ProjectDetailColumns}
-            // searchValue={userSearch}
-            // onSearchChange={setUserSearch}
           />
         </Grid>
 

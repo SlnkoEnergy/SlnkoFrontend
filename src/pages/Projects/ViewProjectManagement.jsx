@@ -123,7 +123,7 @@ function ViewProjectManagement() {
       search: search || "",
       page: page || 1,
       limit: pageSize || 7,
-      projectId, 
+      projectId,
     }).unwrap();
 
     const rows =
@@ -157,7 +157,7 @@ function ViewProjectManagement() {
     try {
       await applyTemplate({
         projectId,
-        activityId: selectedTemplate._id, 
+        activityId: selectedTemplate._id,
       }).unwrap();
 
       setConfirmOpen(false);
