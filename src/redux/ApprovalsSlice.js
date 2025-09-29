@@ -87,6 +87,22 @@ export const approvalsApi = createApi({
         { type: "ApprovalReviews", id: "LIST" },
       ],
     }),
+
+    getApprovalFormById: builder.query({
+      query: (id) => ({
+        url: `approvals/approvals/${encodeURIComponent(id)}`,
+        method: "GET",
+      }),
+      // keepOnly the parts you need in the component
+      transformResponse: (resp) => ({
+        form: resp?.form ?? null,
+        approval: resp?.approval ?? null,
+      }),
+      providesTags: (result, error, id) => [
+        "Approval",
+        { type: "Approval", id },
+      ],
+    }),
   }),
 });
 
@@ -95,4 +111,5 @@ export const {
   useGetRequestsQuery,
   useGetReviewsQuery,
   useUpdateRequestStatusMutation,
+  useGetApprovalFormByIdQuery,
 } = approvalsApi;

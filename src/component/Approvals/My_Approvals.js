@@ -21,7 +21,7 @@ import RadioGroup from "@mui/joy/RadioGroup";
 import Radio from "@mui/joy/Radio";
 import Textarea from "@mui/joy/Textarea";
 import { useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams,useLocation } from "react-router-dom";
 import { Chip, CircularProgress, Option, Select } from "@mui/joy";
 import { useTheme } from "@emotion/react";
 import NoData from "../../assets/alert-bell.svg";
@@ -32,6 +32,7 @@ import {
 
 function My_Approvals() {
   const navigate = useNavigate();
+  const location = useLocation();
   const theme = useTheme();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -674,14 +675,19 @@ function My_Approvals() {
                     </td>
 
                     {/* Approval Code */}
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "left",
-                      }}
-                    >
-                      <Chip variant="outlined" color="primary">
+                    <td style={{ borderBottom: "1px solid #ddd", padding: "8px", textAlign: "left" }}>
+                      <Chip
+                        variant="outlined"
+                        color="primary"
+                        sx={{ cursor: "pointer" }}
+                        onClick={() => {
+                          const params = new URLSearchParams(location.search);
+                          params.set("mode", "view");
+                          params.set("approval_id", request._id); // pass the clicked _id
+                          setSearchParams(params); // parent page listens and opens the panel
+                        }}
+                        title="Open in view mode"
+                      >
                         {request.approval_code || "-"}
                       </Chip>
                     </td>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   Box,
   Button,
@@ -20,6 +20,8 @@ import {
 import ModalClose from "@mui/joy/ModalClose";
 import SaveRoundedIcon from "@mui/icons-material/SaveRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import SelectRS from "react-select";
 
 import {
@@ -40,26 +42,33 @@ export default function AddActivityModal({
   const [mode, setMode] = useState("new");
   const [scope, setScope] = useState("project");
 
-// ✳️ ADD just above useState: a factory for clean resets
-const makeInitialForm = () => ({
-  projectId: "",
-  projectCode: "",
-  projectName: "",
-  activityName: "",
-  activityId: "",
-  type: "frontend",
-  description: "",
-  dependencies: {
-    engineeringEnabled: false,
-    engineeringModules: [],
-    scmEnabled: false,
-    scmItems: [],
-  },
-});
+  // ---- form (no predecessorName anymore; predecessors handled separately)
+  const makeInitialForm = () => ({
+    projectId: "",
+    projectCode: "",
+    projectName: "",
+    activityName: "",
+    activityId: "",
+    type: "frontend",
+    description: "",
+    dependencies: {
+      engineeringEnabled: false,
+      engineeringModules: [],
+      scmEnabled: false,
+      scmItems: [],
+    },
+  });
+  const [form, setForm] = useState(makeInitialForm());
 
-// ✳️ REPLACE your form state line with:
-const [form, setForm] = useState(makeInitialForm());
-
+  // ---- predecessors (global only)
+  // each row: { activity: {value,label}|null, type: 'FS'|'SS'|'FF'|'SF', lag: number }
+  const [predecessors, setPredecessors] = useState([]);
+  const addPredRow = () =>
+    setPredecessors((p) => [...p, { activity: null, type: "FS", lag: 0 }]);
+  const updatePredRow = (idx, patch) =>
+    setPredecessors((p) => p.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
+  const removePredRow = (idx) =>
+    setPredecessors((p) => p.filter((_, i) => i !== idx));
 
   const [touched, setTouched] = useState({});
   const [openProjectPicker, setOpenProjectPicker] = useState(false);
@@ -68,25 +77,31 @@ const [form, setForm] = useState(makeInitialForm());
   const [openScmPicker, setOpenScmPicker] = useState(false);
   const [scmQuickOptions, setScmQuickOptions] = useState([]);
 
-  // ✳️ ADD below your state declarations
-const resetForm = () => {
-  setForm(makeInitialForm());
-  setTouched({});
-  setActQuickOptions([]);
-  setModuleQuickOptions([]);
-  setScmQuickOptions([]);
-  setOpenProjectPicker(false);
-  setOpenActivityPicker(false);
-  setOpenModulePicker(false);
-  setOpenScmPicker(false);
-};
+  // predecessor picker (Search more…)
+  const [openPredecessorPicker, setOpenPredecessorPicker] = useState(false);
+  const [predPickerIndex, setPredPickerIndex] = useState(null);
 
-// ✳️ ADD: a safe close wrapper
-const handleClose = () => {
-  resetForm();
-  onClose?.();
-};
+  const resetForm = () => {
+    setForm(makeInitialForm());
+    setTouched({});
+    setActQuickOptions([]);
+    setModuleQuickOptions([]);
+    setScmQuickOptions([]);
+    setOpenProjectPicker(false);
+    setOpenActivityPicker(false);
+    setOpenModulePicker(false);
+    setOpenScmPicker(false);
+    // predecessors
+    setPredecessors([]);
+    setOpenPredecessorPicker(false);
+    setPredPickerIndex(null);
+    predSearchRef.current = "";
+  };
 
+  const handleClose = () => {
+    resetForm();
+    onClose?.();
+  };
 
   const RS_MORE = { label: "Search more…", value: "__more__" };
 
@@ -148,6 +163,7 @@ const handleClose = () => {
 
   const [fetchMaterialCats, { isFetching: isFetchingScm }] =
     useLazyNamesearchMaterialCategoriesQuery();
+
   const loadQuickProjects = async () => {
     try {
       const res = await fetchProjects({
@@ -176,7 +192,7 @@ const handleClose = () => {
     if (open) loadQuickProjects();
   }, [open]); // eslint-disable-line
 
-  const loadScmQuick = async (q = "") => {
+  const loadScmQuick = async () => {
     try {
       const res = await fetchMaterialCats({
         search: "",
@@ -199,7 +215,6 @@ const handleClose = () => {
     }
   };
 
-  // refresh quick SCM if modal opens or deps toggled on
   useEffect(() => {
     if (open && form.dependencies.scmEnabled) loadScmQuick();
   }, [open, form.dependencies.scmEnabled, scope, form.projectId]); // eslint-disable-line
@@ -222,11 +237,6 @@ const handleClose = () => {
         name: form.projectName,
       }
     : null;
-
-  const scmRsOptions = useMemo(
-    () => [...scmQuickOptions, RS_MORE],
-    [scmQuickOptions]
-  );
 
   /* ---------------- Activities quick list (max 7) ---------------- */
   const [fetchActivitiesGlobal, { isFetching: isFetchingActsGlobal }] =
@@ -295,6 +305,44 @@ const handleClose = () => {
     ? { value: form.activityName, label: form.activityName }
     : null;
 
+  /* ---------------- Predecessor options (always from GLOBAL activities) ---------------- */
+  const [predQuickOptions, setPredQuickOptions] = useState([]);
+  const predSearchRef = useRef("");
+
+  const loadPredActivitiesQuick = useCallback(async () => {
+    try {
+      const { items } = await fetchActivitiesGlobal({
+        search: predSearchRef.current || "",
+        page: 1,
+        limit: 7,
+      }).unwrap();
+
+      const next = (items || []).slice(0, 7).map((a) => ({
+        value: String(a._id),
+        label: String(a.name || "Unnamed"),
+        name: a.name || "",
+      }));
+
+      setPredQuickOptions((prev) => {
+        const sameLen = prev.length === next.length;
+        const sameAll =
+          sameLen && prev.every((p, i) => p.value === next[i].value);
+        return sameAll ? prev : next;
+      });
+    } catch {
+      setPredQuickOptions([]);
+    }
+  }, [fetchActivitiesGlobal]);
+
+  useEffect(() => {
+    if (open && scope === "global") loadPredActivitiesQuick();
+  }, [open, scope, loadPredActivitiesQuick]);
+
+  const predRsOptions = useMemo(
+    () => [...predQuickOptions, RS_MORE],
+    [predQuickOptions]
+  );
+
   /* ---------------- Project-scoped modules from activities (Engineering only) ---------------- */
   const [projectModuleOptions, setProjectModuleOptions] = useState([]);
 
@@ -309,7 +357,6 @@ const handleClose = () => {
           setProjectModuleOptions([]);
           return;
         }
-        // Aggregate modules across many activities in the selected project
         const { activities } = await fetchActivitiesByProject({
           projectId: form.projectId,
           page: 1,
@@ -338,20 +385,19 @@ const handleClose = () => {
     useLazyGetAllModulesQuery();
   const [moduleQuickOptions, setModuleQuickOptions] = useState([]);
 
- const loadModulesQuick = async (q = "") => {
-  try {
-    const res = await fetchModules({
-      search: q,
-      page: 1,
-      limit: 7,
-    }).unwrap();
+  const loadModulesQuick = async (q = "") => {
+    try {
+      const res = await fetchModules({
+        search: q,
+        page: 1,
+        limit: 7,
+      }).unwrap();
 
-    const rows = Array.isArray(res?.data) ? res.data : [];
-    setModuleQuickOptions(
-      rows.slice(0, 7).map((m) => ({
-        value: String(m._id),
-        label:
-          String(
+      const rows = Array.isArray(res?.data) ? res.data : [];
+      setModuleQuickOptions(
+        rows.slice(0, 7).map((m) => ({
+          value: String(m._id),
+          label: String(
             m.name ||
               m.title ||
               m.module_name ||
@@ -359,13 +405,13 @@ const handleClose = () => {
               m?.boq?.template_category?.name ||
               "Unnamed"
           ),
-        raw: m,
-      }))
-    );
-  } catch {
-    setModuleQuickOptions([]);
-  }
-};
+          raw: m,
+        }))
+      );
+    } catch {
+      setModuleQuickOptions([]);
+    }
+  };
 
   useEffect(() => {
     if (open && form.dependencies.engineeringEnabled) loadModulesQuick();
@@ -415,78 +461,87 @@ const handleClose = () => {
   const hasErrors = Object.values(errors).some(Boolean);
 
   /* ---------------- Submit ---------------- */
- const handleSubmit = (e) => {
-  e?.preventDefault?.();
+  const handleSubmit = (e) => {
+    e?.preventDefault?.();
 
-  setTouched((prev) =>
-    mode === "new"
-      ? {
-          ...prev,
-          projectId: true,
-          projectName: true,
-          activityName: true,
-          type: true,
-          description: true,
-          dependencies: true,
-        }
-      : {
-          ...prev,
-          activityName: true,
-          type: true,
-          description: true,
-          dependencies: true,
-          ...(needProject ? { projectId: true, projectName: true } : {}),
-        }
-  );
+    setTouched((prev) =>
+      mode === "new"
+        ? {
+            ...prev,
+            projectId: true,
+            projectName: true,
+            activityName: true,
+            type: true,
+            description: true,
+            dependencies: true,
+          }
+        : {
+            ...prev,
+            activityName: true,
+            type: true,
+            description: true,
+            dependencies: true,
+            ...(needProject ? { projectId: true, projectName: true } : {}),
+          }
+    );
 
-  if (hasErrors) return;
+    if (hasErrors) return;
 
-  // Build dependencies payload
-  const dependencies = [];
-  if (form.dependencies.engineeringModules?.length) {
-    form.dependencies.engineeringModules.forEach((opt) => {
-      dependencies.push({
-        model: "moduleTemplates",
-        model_id: opt.value,
-        model_id_name: opt.label,
+    // Build dependencies payload
+    const dependencies = [];
+    if (form.dependencies.engineeringModules?.length) {
+      form.dependencies.engineeringModules.forEach((opt) => {
+        dependencies.push({
+          model: "moduleTemplates",
+          model_id: opt.value,
+          model_id_name: opt.label,
+        });
       });
-    });
-  }
-  if (form.dependencies.scmItems?.length) {
-    form.dependencies.scmItems.forEach((opt) => {
-      dependencies.push({
-        model: "MaterialCategory",
-        model_id: opt.value,
-        model_id_name: opt.label,
+    }
+    if (form.dependencies.scmItems?.length) {
+      form.dependencies.scmItems.forEach((opt) => {
+        dependencies.push({
+          model: "MaterialCategory",
+          model_id: opt.value,
+          model_id_name: opt.label,
+        });
       });
-    });
-  }
+    }
 
-  const payload = {
-    name: form.activityName.trim(),
-    description: form.description.trim(),
-    type: form.type.toLowerCase(),
-    ...(scope === "project" && form.projectId
-      ? { project_id: form.projectId, project_name: form.projectName }
-      : {}),
-    ...(dependencies.length ? { dependencies } : {}),
-    activityId: form.activityId || "",
-    __mode: mode,
-    __scope: scope,
+    // Build predecessors payload (global only)
+    const predecessorsPayload =
+      scope === "global"
+        ? predecessors
+            .filter((r) => r.activity && r.activity.value)
+            .map((r) => ({
+              activity_id: r.activity.value,
+              type: r.type || "FS",
+              lag: Number(r.lag) || 0,
+            }))
+        : [];
+
+    const payload = {
+      name: form.activityName.trim(),
+      description: form.description.trim(),
+      type: form.type.toLowerCase(),
+      ...(scope === "project" && form.projectId
+        ? { project_id: form.projectId, project_name: form.projectName }
+        : {}),
+      ...(dependencies.length ? { dependencies } : {}),
+      ...(predecessorsPayload.length ? { predecessors: predecessorsPayload } : {}),
+      activityId: form.activityId || "",
+      __mode: mode,
+      __scope: scope,
+    };
+
+    return Promise.resolve(onCreate?.(payload))
+      .then(() => {
+        resetForm();
+      })
+      .catch((err) => {
+        console.error("Create activity failed:", err);
+      });
   };
-
-  // If onCreate returns a Promise, wait for it; then reset on success
-  return Promise.resolve(onCreate?.(payload))
-    .then(() => {
-      resetForm();        // ✅ clear fields, touched, quick options, pickers
-      // onClose?.();     // 🔧 uncomment if you want to auto-close the modal
-    })
-    .catch((err) => {
-      // Keep the form so the user can fix and resubmit
-      console.error("Create activity failed:", err);
-    });
-};
-
 
   const labelRequiredSx = {
     "&::after": { content: '" *"', color: "danger.500", fontWeight: 700 },
@@ -512,6 +567,7 @@ const handleClose = () => {
     const total = res?.total ?? res?.pagination?.total ?? rows.length;
     return { rows, total };
   };
+
   const fetchScmPage = async ({ page, search, pageSize }) => {
     try {
       const res = await fetchMaterialCats({
@@ -533,7 +589,6 @@ const handleClose = () => {
 
       return { rows, total };
     } catch (e) {
-      // Don’t let the modal crash on network/validation errors
       console.error("SCM fetchPage failed:", e);
       return { rows: [], total: 0 };
     }
@@ -549,8 +604,8 @@ const handleClose = () => {
       }).unwrap();
 
       const rows = (activities || []).map((a) => ({
-        _id: a.activity_id || a._id, // ✅ return MASTER id as row key
-        activity_id: a.activity_id, // keep master explicitly
+        _id: a.activity_id || a._id,
+        activity_id: a.activity_id,
         embedded_id: a._id,
         name: a.name || "",
         type: a.type || "",
@@ -578,36 +633,36 @@ const handleClose = () => {
   };
 
   const fetchModulePage = async ({ page, search, pageSize }) => {
-  try {
-    const res = await fetchModules({
-      search: search || "",
-      page: page || 1,
-      limit: pageSize || 10,
-    }).unwrap();
+    try {
+      const res = await fetchModules({
+        search: search || "",
+        page: page || 1,
+        limit: pageSize || 10,
+      }).unwrap();
 
-    const rows = (Array.isArray(res?.data) ? res.data : []).map((m) => ({
-      _id: m._id,
-      name:
-        m.name ||
-        m.title ||
-        m.module_name ||
-        m.template_name ||
-        m?.boq?.template_category?.name ||
-        "Unnamed",
-      description: m.description || "",
-    }));
+      const rows = (Array.isArray(res?.data) ? res.data : []).map((m) => ({
+        _id: m._id,
+        name:
+          m.name ||
+          m.title ||
+          m.module_name ||
+          m.template_name ||
+          m?.boq?.template_category?.name ||
+          "Unnamed",
+        description: m.description || "",
+      }));
 
-    const total =
-      res?.pagination?.totalDocs != null
-        ? res.pagination.totalDocs
-        : rows.length;
+      const total =
+        res?.pagination?.totalDocs != null
+          ? res.pagination.totalDocs
+          : rows.length;
 
-    return { rows, total };
-  } catch (e) {
-    console.error("Modules fetchPage failed:", e);
-    return { rows: [], total: 0 };
-  }
-};
+      return { rows, total };
+    } catch (e) {
+      console.error("Modules fetchPage failed:", e);
+      return { rows: [], total: 0 };
+    }
+  };
 
   /* ---------------- Columns for pickers ---------------- */
   const projectPickerColumns = [
@@ -621,7 +676,6 @@ const handleClose = () => {
   ];
   const modulePickerColumns = [
     { key: "name", label: "Module Name", width: 260 },
-
     { key: "description", label: "Description" },
   ];
 
@@ -708,6 +762,11 @@ const handleClose = () => {
                     projectId: false,
                     projectName: false,
                   }));
+                } else {
+                  // leaving global → clear predecessors UI
+                  setPredecessors([]);
+                  setOpenPredecessorPicker(false);
+                  setPredPickerIndex(null);
                 }
                 setTimeout(loadActivitiesQuick, 0);
               }}
@@ -885,7 +944,7 @@ const handleClose = () => {
                       extractDepsByModel(opt);
                     setForm((p) => ({
                       ...p,
-                      activityId: opt.activity_id || opt.value || "", // <-- save the chosen activity _id
+                      activityId: opt.activity_id || opt.value || "",
                       activityName: opt.name || opt.label || "",
                       type: opt.type || "frontend",
                       description: opt.description || "",
@@ -932,6 +991,116 @@ const handleClose = () => {
                 </Typography>
               )}
             </FormControl>
+
+            {/* Predecessors (GLOBAL only) */}
+            {scope === "global" && (
+              <Box sx={{ gridColumn: "1 / -1", display: "grid", gap: 1 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <FormLabel>Predecessors</FormLabel>
+                  <Button
+                    size="sm"
+                    variant="soft"
+                    startDecorator={<AddRoundedIcon />}
+                    onClick={addPredRow}
+                  >
+                    Add
+                  </Button>
+                </Box>
+
+                {predecessors.length === 0 ? (
+                  <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
+                    No predecessors added.
+                  </Typography>
+                ) : null}
+
+                {predecessors.map((row, idx) => (
+                  <Box
+                    key={idx}
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: { xs: "1fr", md: "1fr 90px 80px 48px" },
+                      gap: 1,
+                      alignItems: "center",
+                    }}
+                  >
+                    {/* activity search */}
+                    <SelectRS
+                      placeholder="Predecessor activity…"
+                      value={row.activity}
+                      options={predRsOptions}
+                      isSearchable
+                      isClearable
+                      onMenuOpen={loadPredActivitiesQuick}
+                      onInputChange={(input, meta) => {
+                        if (meta.action === "input-change") {
+                          predSearchRef.current = input || "";
+                          loadPredActivitiesQuick();
+                        }
+                        return input;
+                      }}
+                      onChange={(opt) => {
+                        if (!opt) {
+                          updatePredRow(idx, { activity: null });
+                          return;
+                        }
+                        if (opt.value === "__more__") {
+                          setPredPickerIndex(idx);
+                          setOpenPredecessorPicker(true);
+                          return;
+                        }
+                        updatePredRow(idx, {
+                          activity: { value: opt.value, label: opt.label },
+                        });
+                      }}
+                      isLoading={isFetchingActsGlobal}
+                      menuPortalTarget={document.body}
+                      styles={{
+                        menuPortal: (b) => ({ ...b, zIndex: 2000 }),
+                        control: (b) => ({ ...b, minHeight: 36 }),
+                      }}
+                    />
+
+                    {/* link type */}
+                    <Select
+                      size="sm"
+                      value={row.type}
+                      onChange={(_, v) => v && updatePredRow(idx, { type: v })}
+                    >
+                      <Option value="FS">FS</Option>
+                      <Option value="SS">SS</Option>
+                      <Option value="FF">FF</Option>
+                      <Option value="SF">SF</Option>
+                    </Select>
+
+                    {/* lag */}
+                    <Input
+                      size="sm"
+                      type="number"
+                      value={row.lag}
+                      onChange={(e) =>
+                        updatePredRow(idx, { lag: Number(e.target.value) || 0 })
+                      }
+                    />
+
+                    {/* remove */}
+                    <Button
+                      size="sm"
+                      variant="soft"
+                      color="danger"
+                      onClick={() => removePredRow(idx)}
+                      aria-label="Remove predecessor"
+                      startDecorator={<DeleteOutlineRoundedIcon />}
+                    />
+                  </Box>
+                ))}
+              </Box>
+            )}
 
             {/* Type */}
             <FormControl size="sm" error={touched.type && !!errors.type}>
@@ -1023,9 +1192,7 @@ const handleClose = () => {
                   size="sm"
                   error={touched.dependencies && !!errors.dependencies}
                 >
-                  <FormLabel sx={labelRequiredSx}>
-                    Model Entry (Modules)
-                  </FormLabel>
+                  <FormLabel sx={labelRequiredSx}>Model Entry (Modules)</FormLabel>
                   <SelectRS
                     placeholder={
                       scope === "project" && !form.projectId
@@ -1108,11 +1275,9 @@ const handleClose = () => {
                     isMulti
                     isSearchable
                     closeMenuOnSelect={false}
-                    // ✅ Allow independent use in global scope. Only block in project scope without projectId
                     isDisabled={scope === "project" && !form.projectId}
-                    onMenuOpen={() => loadScmQuick("")} // ✅ fetch initial page
+                    onMenuOpen={() => loadScmQuick("")}
                     onInputChange={(input, meta) => {
-                      // ✅ remote search
                       if (meta.action === "input-change")
                         loadScmQuick(input || "");
                       return input;
@@ -1205,7 +1370,6 @@ const handleClose = () => {
         searchKey="code or name"
         fetchPage={fetchPage}
         onPick={(row) => {
-          // reset activity & dependencies on pick
           setForm((prev) => ({
             ...prev,
             projectId: row?._id || "",
@@ -1266,7 +1430,7 @@ const handleClose = () => {
         }}
       />
 
-      {/* Module picker (opened by selecting “Search more…”) */}
+      {/* Module picker */}
       <SearchPickerModal
         open={openModulePicker}
         onClose={() => setOpenModulePicker(false)}
@@ -1296,7 +1460,44 @@ const handleClose = () => {
         allowMultiple
       />
 
-      {/* SCM picker (opened by selecting “Search more…”) */}
+      {/* Predecessor picker (global) */}
+      {scope === "global" && (
+        <SearchPickerModal
+          open={openPredecessorPicker}
+          onClose={() => setOpenPredecessorPicker(false)}
+          title="Select Predecessor"
+          columns={activityPickerColumns}
+          rowKey="_id"
+          pageSize={10}
+          searchKey="name or description"
+          fetchPage={async ({ page, search, pageSize }) => {
+            const { items, pagination } = await fetchActivitiesGlobal({
+              search: search || "",
+              page: page || 1,
+              limit: pageSize || 50,
+            }).unwrap();
+            const rows = (items || []).map((a) => ({
+              _id: a._id,
+              name: a.name || "",
+              type: a.type || "",
+              description: a.description || "",
+            }));
+            const total = pagination?.total ?? rows.length;
+            return { rows, total };
+          }}
+          onPick={(row) => {
+            if (predPickerIndex != null) {
+              updatePredRow(predPickerIndex, {
+                activity: { value: String(row._id), label: row.name || "Unnamed" },
+              });
+            }
+            setOpenPredecessorPicker(false);
+            setPredPickerIndex(null);
+          }}
+        />
+      )}
+
+      {/* SCM picker */}
       <SearchPickerModal
         open={openScmPicker}
         onClose={() => setOpenScmPicker(false)}

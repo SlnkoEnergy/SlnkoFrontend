@@ -13,7 +13,7 @@ import Tooltip from "@mui/joy/Tooltip";
 import Typography from "@mui/joy/Typography";
 import Avatar from "@mui/joy/Avatar";
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams,useLocation  } from "react-router-dom";
 import { Chip, CircularProgress, Option, Select } from "@mui/joy";
 import { useTheme } from "@emotion/react";
 import NoData from "../../assets/alert-bell.svg";
@@ -21,6 +21,7 @@ import { useGetRequestsQuery } from "../../redux/ApprovalsSlice";
 
 function My_Requests() {
   const navigate = useNavigate();
+  const location = useLocation();
   const theme = useTheme();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -50,12 +51,13 @@ function My_Requests() {
   const from = searchParams.get("from") || "";
   const to = searchParams.get("to") || "";
   const dependency_model = searchParams.get("dependency_model") || "";
+
   const { data: getRequests = {}, isLoading } = useGetRequestsQuery({
     page: currentPage,
-    status: status,
+    status,
     createdAtFrom: from,
     createdAtTo: to,
-    dependency_model: dependency_model,
+    dependency_model,
     search: searchQuery.toLowerCase(),
     limit: rowsPerPage,
   });
@@ -99,13 +101,7 @@ function My_Requests() {
   const ProjectOverView = ({ currentPage, project_id, code }) => {
     if (!project_id) {
       return (
-        <Chip
-          variant="soft"
-          color="neutral"
-          size="sm"
-          disabled
-          sx={{ borderRadius: 999 }}
-        >
+        <Chip variant="soft" color="neutral" size="sm" disabled sx={{ borderRadius: 999 }}>
           -
         </Chip>
       );
@@ -114,9 +110,7 @@ function My_Requests() {
     return (
       <Chip
         onClick={() =>
-          navigate(
-            `/project_detail?page=${currentPage}&project_id=${project_id}`
-          )
+          navigate(`/project_detail?page=${currentPage}&project_id=${project_id}`)
         }
         title={code || "Open project"}
         variant="solid"
@@ -159,10 +153,7 @@ function My_Requests() {
                 zIndex: visible.length - idx,
                 backgroundColor: "#ccc",
                 transition: "transform 0.3s cubic-bezier(.68,-0.55,.27,1.55)",
-                "&:hover": {
-                  transform: "translateY(-3px)",
-                  zIndex: 100,
-                },
+                "&:hover": { transform: "translateY(-3px)", zIndex: 100 },
                 cursor: "pointer",
               }}
               onClick={() => navigate(`/user_profile?user_id=${u._id}`)}
@@ -224,27 +215,10 @@ function My_Requests() {
     );
   };
 
-  // ------- Chips & Timeline -------
   const StatusChip = ({ label, color = "neutral", sx = {} }) => {
-    const bg = {
-      success: "#e8f5e9",
-      danger: "#fde7e9",
-      warning: "#fff3e0",
-      neutral: "#f1f1f1",
-    }[color];
-    const text = {
-      success: "#2e7d32",
-      danger: "#c62828",
-      warning: "#b26a00",
-      neutral: "#424242",
-    }[color];
-    const border = {
-      success: "#c8e6c9",
-      danger: "#ffcdd2",
-      warning: "#ffe0b2",
-      neutral: "#e0e0e0",
-    }[color];
-
+    const bg = { success: "#e8f5e9", danger: "#fde7e9", warning: "#fff3e0", neutral: "#f1f1f1" }[color];
+    const text = { success: "#2e7d32", danger: "#c62828", warning: "#b26a00", neutral: "#424242" }[color];
+    const border = { success: "#c8e6c9", danger: "#ffcdd2", warning: "#ffe0b2", neutral: "#e0e0e0" }[color];
     return (
       <Box
         sx={{
@@ -270,17 +244,12 @@ function My_Requests() {
 
   const getAggregateStatus = (approvers = []) => {
     if (!approvers?.length) return "pending";
-    const norm = approvers.map((a) =>
-      String(a?.status || "")
-        .toLowerCase()
-        .trim()
-    );
+    const norm = approvers.map((a) => String(a?.status || "").toLowerCase().trim());
     if (norm.includes("rejected")) return "rejected";
     if (norm.length && norm.every((s) => s === "approved")) return "approved";
     return "pending";
   };
 
-  // ---------- Stage Timeline (SOOTHING, WHITE) ----------
   const StageTimeline = ({ approvers = [], current_approver }) => {
     const soft = {
       textPrimary: "#2f3a4a",
@@ -331,7 +300,7 @@ function My_Requests() {
     };
 
     const dotColorFor = (a, isCurrent) => {
-      if (isCurrent) return soft.dotBlue; 
+      if (isCurrent) return soft.dotBlue;
       if (a._s === "approved") return soft.dotGreen;
       if (a._s === "rejected") return soft.dotRed;
       if (a._s === "pending") return soft.dotBlue;
@@ -340,37 +309,14 @@ function My_Requests() {
 
     return (
       <Box sx={{ minWidth: 320, p: 1, bgcolor: "#fff", borderRadius: 2 }}>
-        <Typography
-          level="body-sm"
-          sx={{ fontWeight: 700, mb: 1, color: soft.textPrimary }}
-        >
+        <Typography level="body-sm" sx={{ fontWeight: 700, mb: 1, color: soft.textPrimary }}>
           Stage timeline
         </Typography>
-
-        <Box
-          sx={{
-            width: "100%",
-            height: 8,
-            borderRadius: 999,
-            background: soft.track,
-            mb: 1,
-            overflow: "hidden",
-          }}
-        >
-          <Box
-            sx={{
-              width: `${pct}%`,
-              height: "100%",
-              background: soft.bar,
-              borderRadius: 999,
-              transition: "width .3s ease",
-            }}
-          />
+        <Box sx={{ width: "100%", height: 8, borderRadius: 999, background: soft.track, mb: 1, overflow: "hidden" }}>
+          <Box sx={{ width: `${pct}%`, height: "100%", background: soft.bar, borderRadius: 999, transition: "width .3s ease" }} />
         </Box>
-
         {norm.map((a, idx) => {
-          const isCurrent =
-            current_approver && a.sequence === current_approver.sequence;
+          const isCurrent = current_approver && a.sequence === current_approver.sequence;
           const start = a.actionAt || a.createdAt;
           const end = a.updatedAt || a.resolvedAt;
           const timeLine =
@@ -394,30 +340,14 @@ function My_Requests() {
                 background: isCurrent ? soft.rowBg : "transparent",
               }}
             >
-              <Box
-                sx={{
-                  mt: 0.55,
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background: dotColorFor(a, isCurrent),
-                }}
-              />
+              <Box sx={{ mt: 0.55, width: 8, height: 8, borderRadius: "50%", background: dotColorFor(a, isCurrent) }} />
               <Box>
-                <Typography
-                  sx={{
-                    fontWeight: isCurrent ? 700 : 600,
-                    color: isCurrent ? "#1f4bd8" : soft.textPrimary,
-                  }}
-                >
+                <Typography sx={{ fontWeight: isCurrent ? 700 : 600, color: isCurrent ? "#1f4bd8" : soft.textPrimary }}>
                   {a.user_id?.name || a.stage_name || "Draft"}
                 </Typography>
                 {timeLine && (
-                  <Typography
-                    sx={{ fontSize: 12, color: soft.textMuted, mt: 0.25 }}
-                  >
-                    {timeLine}{" "}
-                    {duration(start, end) ? ` ${duration(start, end)}` : ""}
+                  <Typography sx={{ fontSize: 12, color: soft.textMuted, mt: 0.25 }}>
+                    {timeLine} {duration(start, end) ? ` ${duration(start, end)}` : ""}
                   </Typography>
                 )}
               </Box>
@@ -582,13 +512,7 @@ function My_Requests() {
                 return (
                   <tr key={request._id || index}>
                     {/* select */}
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "left",
-                      }}
-                    >
+                    <td style={{ borderBottom: "1px solid #ddd", padding: "8px", textAlign: "left" }}>
                       <Checkbox
                         size="sm"
                         checked={selected.includes(request._id)}
@@ -597,13 +521,7 @@ function My_Requests() {
                     </td>
 
                     {/* Project Id */}
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "left",
-                      }}
-                    >
+                    <td style={{ borderBottom: "1px solid #ddd", padding: "8px", textAlign: "left" }}>
                       <Tooltip title="View request detail" arrow disablePortal>
                         <span>
                           <ProjectOverView
@@ -615,40 +533,34 @@ function My_Requests() {
                       </Tooltip>
                     </td>
 
-                    {/* Approval Code */}
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "left",
-                      }}
-                    >
-                      <Chip variant="outlined" color="primary">
+                    {/* Approval Code → open slide-over in view mode */}
+                    <td style={{ borderBottom: "1px solid #ddd", padding: "8px", textAlign: "left" }}>
+                      <Chip
+                        variant="outlined"
+                        color="primary"
+                        sx={{ cursor: "pointer" }}
+                        onClick={() => {
+                          const params = new URLSearchParams(location.search);
+                          params.set("mode", "view");
+                          params.set("approval_id", request._id); // pass the clicked _id
+                          setSearchParams(params); // parent page listens and opens the panel
+                        }}
+                        title="Open in view mode"
+                      >
                         {request.approval_code || "-"}
                       </Chip>
                     </td>
 
                     {/* Category */}
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "left",
-                      }}
-                    >
+                    <td style={{ borderBottom: "1px solid #ddd", padding: "8px", textAlign: "left" }}>
                       {request.dependency_model
                         ? request.dependency_model.charAt(0).toUpperCase() +
                           request.dependency_model.slice(1)
                         : "-"}
                     </td>
 
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "left",
-                      }}
-                    >
+                    {/* Item */}
+                    <td style={{ borderBottom: "1px solid #ddd", padding: "8px", textAlign: "left" }}>
                       {request.dependency_name
                         ? request.dependency_name.charAt(0).toUpperCase() +
                           request.dependency_name.slice(1)
@@ -656,35 +568,17 @@ function My_Requests() {
                     </td>
 
                     {/* Approvers */}
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "left",
-                      }}
-                    >
+                    <td style={{ borderBottom: "1px solid #ddd", padding: "8px", textAlign: "left" }}>
                       <ApproverAvatars approvers={request.approvers} max={3} />
                     </td>
 
                     {/* Current approver */}
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "left",
-                      }}
-                    >
+                    <td style={{ borderBottom: "1px solid #ddd", padding: "8px", textAlign: "left" }}>
                       <AvatarProfile current={request.current_approver} />
                     </td>
 
                     {/* Status + timeline tooltip */}
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "left",
-                      }}
-                    >
+                    <td style={{ borderBottom: "1px solid #ddd", padding: "8px", textAlign: "left" }}>
                       <Tooltip
                         disablePortal
                         arrow
@@ -718,24 +612,12 @@ function My_Requests() {
                     </td>
 
                     {/* Created by */}
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "left",
-                      }}
-                    >
+                    <td style={{ borderBottom: "1px solid #ddd", padding: "8px", textAlign: "left" }}>
                       <AvatarProfile current={request.created_by} />
                     </td>
 
                     {/* Created at */}
-                    <td
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "left",
-                      }}
-                    >
+                    <td style={{ borderBottom: "1px solid #ddd", padding: "8px", textAlign: "left" }}>
                       {createdAtStr}
                     </td>
                   </tr>
@@ -758,9 +640,7 @@ function My_Requests() {
                       alt="No data"
                       style={{ width: 50, height: 50, marginBottom: 8 }}
                     />
-                    <Typography fontStyle="italic">
-                      No requests found
-                    </Typography>
+                    <Typography fontStyle="italic">No requests found</Typography>
                   </Box>
                 </td>
               </tr>
@@ -794,10 +674,7 @@ function My_Requests() {
 
         <Box>Showing {requests?.length} results</Box>
 
-        <Box
-          sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
-        >
-          {/* show previous page number if exists */}
+        <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
           {currentPage > 1 && (
             <IconButton
               size="sm"
@@ -809,12 +686,10 @@ function My_Requests() {
             </IconButton>
           )}
 
-          {/* current page */}
           <IconButton size="sm" variant="contained" color="neutral">
             {currentPage}
           </IconButton>
 
-          {/* next page number if exists */}
           {currentPage + 1 <= totalPages && (
             <IconButton
               size="sm"
