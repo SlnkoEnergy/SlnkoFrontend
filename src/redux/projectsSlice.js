@@ -339,6 +339,17 @@ export const projectsApi = createApi({
       query: () => `project-detail`,
       providesTags: ["Project"],
     }),
+
+    getPostsActivityFeed: builder.query({
+      query: () => `allposts`,
+      providesTags: ["Project"],
+    }),
+
+    getProjectActivityForView: builder.query({
+      query: ({ baselineStart, baselineEnd }) =>
+        `projectactivity/allprojectactivityforview?baselineStart=${baselineStart}&baselineEnd=${baselineEnd}`,
+      providesTags: ["Project"],
+    }),
   }),
 });
 
@@ -386,4 +397,6 @@ export const {
   useReorderProjectActivitiesMutation,
   useGetProjectStatesFilterQuery,
   useGetProjectDetailQuery,
+  useGetPostsActivityFeedQuery,
+  useGetProjectActivityForViewQuery,
 } = projectsApi;
