@@ -972,12 +972,13 @@ const View_Project_Management = forwardRef(
         setSnack({ open: true, msg: extractBackendError(e) });
       }
     };
-
-    /* ---------- expose saveAsTemplate ---------- */
     useImperativeHandle(ref, () => ({
       saveAsTemplate: async (meta = {}) => {
         const { name, description } = meta || {};
-        const tasks = [];
+        const rows = [];
+        const siToDb = new Map();
+
+        // 1) Gather visible tasks in order
         gantt.eachTask((t) => {
           const start = t.start_date instanceof Date ? t.start_date : null;
           const end = t._end_dmy
@@ -990,63 +991,124 @@ const View_Project_Management = forwardRef(
               })
             : null;
 
-          tasks.push({
+          const startISO = start ? start.toISOString() : null;
+          const endISO = end ? end.toISOString() : null;
+
+          const order_no = rows.length + 1;
+          const duration =
+            Number(t.duration || 0) ||
+            (start && end ? durationFromStartFinish(start, end) : 0);
+
+          rows.push({
             si: String(t.id),
             dbId: String(t._dbId || ""),
+            order_no,
+            name: t.text || "",
+            act_type: t._type || null,
             start,
             end,
-            duration: Number(t.duration || 0),
-            percent: Math.round(Number(t.progress || 0) * 100),
+            start_iso: startISO,
+            end_iso: endISO,
+            start_ymd: start ? toYMD(start) : null,
+            end_ymd: end ? toYMD(end) : null,
+            duration,
+            resources:
+              t._resources === 0
+                ? 0
+                : t._resources != null
+                ? t._resources
+                : null,
+            status: t._status || null,
+            percent_complete:
+              typeof t.progress === "number" ? Math.round(t.progress * 100) : 0,
           });
+
+          if (t._dbId) siToDb.set(String(t.id), String(t._dbId));
         });
 
-        const bySi = new Map(tasks.map((x) => [x.si, x]));
         const predsBySi = new Map();
         const succsBySi = new Map();
+
         gantt.getLinks().forEach((l) => {
-          const src = String(l.source);
-          const trg = String(l.target);
-          const type = typeToLabel[String(l.type)] || "FS";
+          const srcSi = String(l.source);
+          const trgSi = String(l.target);
+          const typeLabel = (typeToLabel[String(l.type)] || "FS").toUpperCase();
           const lag = Number(l.lag || 0);
 
-          if (!predsBySi.has(trg)) predsBySi.set(trg, []);
-          predsBySi.get(trg).push({ activityIdSi: src, type, lag });
+          const srcDb = siToDb.get(srcSi) || null;
+          const trgDb = siToDb.get(trgSi) || null;
 
-          if (!succsBySi.has(src)) succsBySi.set(src, []);
-          succsBySi.get(src).push({ activityIdSi: trg, type, lag });
+          if (!predsBySi.has(trgSi)) predsBySi.set(trgSi, []);
+          predsBySi.get(trgSi).push({ srcSi, srcDb, type: typeLabel, lag });
+
+          if (!succsBySi.has(srcSi)) succsBySi.set(srcSi, []);
+          succsBySi.get(srcSi).push({ trgSi, trgDb, type: typeLabel, lag });
         });
 
-        const activities = tasks
-          .filter((t) => t.dbId)
+        const depByDb = new Map();
+        (paList || []).forEach((pa) => {
+          const master = pa.activity_id || pa.master_activity_id || {};
+          const dbId = String(master?._id || pa.activity_id || "");
+          if (!dbId) return;
+
+          const deps = Array.isArray(pa.dependency) ? pa.dependency : [];
+          const normalized = deps.map((d) => ({
+            model: d?.model || undefined,
+            model_id: d?.model_id || undefined,
+            model_id_name: d?.model_id_name || undefined,
+            updatedAt: d?.updatedAt || d?.updated_at || undefined,
+            updated_by: d?.updated_by || undefined,
+            status_history: [],
+            current_status: d?.current_status
+              ? {
+                  status: "not allowed",
+                  remarks: " ",
+                }
+              : undefined,
+          }));
+
+          depByDb.set(dbId, normalized);
+        });
+
+        const activities = rows
+          .filter((r) => r.dbId)
           .map((t) => {
-            const preds = (predsBySi.get(t.si) || [])
-              .map((p) => {
-                const src = bySi.get(p.activityIdSi);
-                if (!src?.dbId) return null;
-                return { activity_id: src.dbId, type: p.type, lag: p.lag };
-              })
-              .filter(Boolean);
+            const predecessors = (predsBySi.get(t.si) || [])
+              .map((p) => ({
+                activity_id: p.srcDb,
+                type: p.type,
+                lag: p.lag,
+              }))
+              .filter((x) => !!x.activity_id);
 
-            const succs = (succsBySi.get(t.si) || [])
-              .map((s) => {
-                const trg = bySi.get(s.activityIdSi);
-                if (!trg?.dbId) return null;
-                return { activity_id: trg.dbId, type: s.type, lag: s.lag };
-              })
-              .filter(Boolean);
-
+            const successors = (succsBySi.get(t.si) || [])
+              .map((s) => ({
+                activity_id: s.trgDb,
+                type: s.type,
+                lag: s.lag,
+              }))
+              .filter((x) => !!x.activity_id);
             return {
               activity_id: t.dbId,
-              planned_start: t.start ? t.start.toISOString() : null,
-              planned_finish: t.end ? t.end.toISOString() : null,
-              duration:
-                t.duration ||
-                (t.start && t.end
-                  ? durationFromStartFinish(t.start, t.end)
-                  : 0),
-              percent_complete: t.percent || 0,
-              predecessors: preds,
-              successors: succs,
+              order: t.order_no,
+              planned_start: t.start_iso || null,
+              planned_finish: t.end_iso || null,
+              actual_start: null,
+              actual_finish: null,
+              duration: t.duration,
+              percent_complete: Math.max(
+                0,
+                Math.min(100, Number(t.percent_complete || 0))
+              ),
+              resources:
+                t.resources === undefined
+                  ? null
+                  : Number.isNaN(t.resources)
+                  ? null
+                  : t.resources,
+              predecessors,
+              successors,
+              dependency: depByDb.get(t.dbId) || [],
             };
           });
 
@@ -1060,7 +1122,7 @@ const View_Project_Management = forwardRef(
         try {
           await createProjectActivity(payload).unwrap();
           setSnack({ open: true, msg: "Template saved successfully" });
-        } catch {
+        } catch (e) {
           setSnack({ open: true, msg: "Failed to save template" });
         }
       },

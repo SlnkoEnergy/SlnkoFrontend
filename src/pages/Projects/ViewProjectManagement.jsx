@@ -118,13 +118,12 @@ function ViewProjectManagement() {
     []
   );
 
-  // SearchPickerModal expects: fetchPage({ page, search, pageSize }) => Promise<{rows,total}>
   const fetchTemplatePage = async ({ page, search, pageSize }) => {
     const res = await triggerSearchTemplates({
       search: search || "",
       page: page || 1,
       limit: pageSize || 7,
-      projectId, // pass along if server wants to filter by project
+      projectId, 
     }).unwrap();
 
     const rows =
@@ -156,17 +155,14 @@ function ViewProjectManagement() {
       return;
     }
     try {
-      // NOTE: API signature uses { projectId, activityId }, but you said activityId should be the templateId
       await applyTemplate({
         projectId,
-        activityId: selectedTemplate._id, // <-- templateId passed here
+        activityId: selectedTemplate._id, 
       }).unwrap();
 
-      // Since your mutation invalidates ["Project"], the child Gantt should refetch automatically.
       setConfirmOpen(false);
       setSelectedTemplate(null);
     } catch {
-      // you can add toast/snackbar here if desired
       setConfirmOpen(false);
       setSelectedTemplate(null);
     }

@@ -13,20 +13,8 @@ import Typography from "@mui/joy/Typography";
 import { CircularProgress, Option, Select } from "@mui/joy";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-
-// ⬇️ use the "get all" endpoint from your slice
 import { useGetAllProjectActivitiesQuery } from "../redux/projectsSlice";
 
-/**
- * Row shape:
- * {
- *   _id?: string,
- *   template_code: string,
- *   template_name: string,
- *   created_by: string,
- *   description: string,
- * }
- */
 function TemplateTable({ rows = [] }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [selected, setSelected] = useState([]);
@@ -38,45 +26,37 @@ function TemplateTable({ rows = [] }) {
     () => Number(searchParams.get("pageSize")) || 10
   );
 
-  // --- URL params (source of truth) ---------------------------------------
   const pageFromUrl = parseInt(searchParams.get("page") || "1", 10);
-  const statusFromUrl = searchParams.get("status") || "";   // optional: template|project
-  const searchFromUrl = searchParams.get("q") || "";        // search term
+  const searchFromUrl = searchParams.get("q") || "";
 
   useEffect(() => {
     setSearchQuery(searchFromUrl);
     setCurrentPage(pageFromUrl || 1);
   }, [searchFromUrl, pageFromUrl]);
 
-  // --- API call: GET /projectactivity/all ---------------------------------
-  const {
-    data,
-    isLoading,
-    isError,
-    error,
-  } = useGetAllProjectActivitiesQuery({
+  const { data, isLoading, isError, error } = useGetAllProjectActivitiesQuery({
     search: searchFromUrl,
-    status: statusFromUrl,
+    status: "template",
     page: pageFromUrl || 1,
     limit: rowsPerPage,
   });
 
-  // Controller returns: { ok, page, limit, total, totalPages, rows: [...] }
   const apiRows = data?.rows || [];
   const total = data?.total || 0;
   const totalPages = data?.totalPages || 1;
 
-  // Prefer prop rows if provided; else API rows
   const inputRows = rows.length ? rows : apiRows;
 
-  // ---- local filter/sort (client-side) -----------------------------------
   const filteredAndSortedData = useMemo(() => {
     const q = (searchQuery || "").trim().toLowerCase();
     const base = Array.isArray(inputRows) ? inputRows : [];
     const filtered = q
       ? base.filter((r) =>
           ["template_code", "template_name", "created_by", "description"].some(
-            (k) => String(r?.[k] ?? "").toLowerCase().includes(q)
+            (k) =>
+              String(r?.[k] ?? "")
+                .toLowerCase()
+                .includes(q)
           )
         )
       : base;
@@ -88,11 +68,8 @@ function TemplateTable({ rows = [] }) {
     );
   }, [inputRows, searchQuery]);
 
-  // We paginate on the server; `data.rows` is already the current page.
-  // Keeping client-side slice identical to your layout (no-op but harmless).
   const draftTemplates = filteredAndSortedData;
 
-  // ---- handlers -----------------------------------------------------------
   const handlePageChange = (page) => {
     if (page < 1 || page > totalPages) return;
     setSearchParams((prev) => {
@@ -109,7 +86,7 @@ function TemplateTable({ rows = [] }) {
     setSearchParams((prev) => {
       const p = new URLSearchParams(prev);
       p.set("q", query);
-      p.set("page", "1"); // reset page on search
+      p.set("page", "1");
       return p;
     });
   };
@@ -127,7 +104,7 @@ function TemplateTable({ rows = [] }) {
         <Box />
         <Box
           className="SearchAndFilters-tabletUp"
-           sx={{
+          sx={{
             py: 1,
             display: "flex",
             alignItems: "flex-end",
@@ -203,25 +180,28 @@ function TemplateTable({ rows = [] }) {
                   }
                 />
               </th>
-              {["Template Code", "Template Name", "Created By", "Description"].map(
-                (header, index) => (
-                  <th
-                    key={index}
-                    style={{
-                      position: "sticky",
-                      top: 0,
-                      background: "#e0e0e0",
-                      zIndex: 2,
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {header}
-                  </th>
-                )
-              )}
+              {[
+                "Template Code",
+                "Template Name",
+                "Created By",
+                "Description",
+              ].map((header, index) => (
+                <th
+                  key={index}
+                  style={{
+                    position: "sticky",
+                    top: 0,
+                    background: "#e0e0e0",
+                    zIndex: 2,
+                    borderBottom: "1px solid #ddd",
+                    padding: "8px",
+                    textAlign: "left",
+                    fontWeight: "bold",
+                  }}
+                >
+                  {header}
+                </th>
+              ))}
             </tr>
           </thead>
 
@@ -277,7 +257,7 @@ function TemplateTable({ rows = [] }) {
                       fontStyle: "italic",
                       display: "flex",
                       flexDirection: "column",
-                      alignItems: "flex-start",
+                      alignItems: "center",
                       justifyContent: "center",
                     }}
                   >
@@ -315,9 +295,13 @@ function TemplateTable({ rows = [] }) {
           Previous
         </Button>
 
-        <Box>Showing {draftTemplates.length} of {total} results</Box>
+        <Box>
+          Showing {draftTemplates.length} of {total} results
+        </Box>
 
-        <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
+        <Box
+          sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
+        >
           {currentPage > 1 && (
             <IconButton
               size="sm"
