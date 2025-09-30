@@ -48,6 +48,7 @@ import {
   useLazyGetAllProdcutPOQuery,
   useLazyGetProductsQuery,
   useGetAllCategoriesQuery,
+  useLazyGetPurchaseOrderPdfQuery,
 } from "../../redux/productsSlice";
 import ProductForm from "./Product_Form";
 import POUpdateFeed from "../PoUpdateForm";
@@ -1285,6 +1286,27 @@ const AddPurchaseOrder = ({
     }
   };
 
+  const [fetchPdf, { isFetching }] = useLazyGetPurchaseOrderPdfQuery();
+
+  const exportPdf = async () => {
+
+    if (!poNumberQ && !_id) {
+      console.warn("Missing po_number or _id in URL");
+      return;
+    }
+    const po_number = poNumberQ || undefined
+    const payload = po_number ? { po_number } : { _id };
+    const blob = await fetchPdf(payload).unwrap();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Purchase_Order_${po_number ? po_number : ""}.pdf`; // filename with .pdf
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
   const handleApprove = async () => {
     try {
       const token = localStorage.getItem("authToken");
@@ -1706,6 +1728,15 @@ const AddPurchaseOrder = ({
                     </Button>
                   </Box>
                 )}
+              <Button
+                color="danger"
+                size="sm"
+                variant="outlined"
+                onClick={exportPdf}
+                disabled={isFetching}
+              >
+                {isFetching ? "Generating..." : "Pdf"}
+              </Button>
 
               {((effectiveMode === "edit" && user?.department === "SCM") ||
                 user?.department === "superadmin" ||
@@ -1964,7 +1995,6 @@ const AddPurchaseOrder = ({
                     Add Bill
                   </Button>
                 </Box>
-
                 {poNumberQ && (
                   <Box
                     display={"flex"}
@@ -2639,7 +2669,7 @@ const AddPurchaseOrder = ({
           pageSize={VENDOR_LIMIT}
           backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
         />
-        
+
         <Modal open={createProdOpen} onClose={() => setCreateProdOpen(false)}>
           <ModalDialog
             sx={{ maxWidth: 1000, width: "95vw", p: 0, overflow: "hidden" }}
@@ -2724,13 +2754,11 @@ const AddPurchaseOrder = ({
               onSubmit={async (payload) => {
                 try {
                   const body = mapInspectionPayload(payload);
-                  console.log("Final inspection payload:", body);
                   await addInspection(body).unwrap();
                   toast.success("Inspection request submitted.");
                   setInspectionModalOpen(false);
                   clearInspectionSelection();
                 } catch (e) {
-                  console.error(e);
                   toast.error(
                     e?.data?.message ||
                     e?.error ||

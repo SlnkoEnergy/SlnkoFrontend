@@ -77,7 +77,9 @@ export const AccountsApi = createApi({
 
     getPaymentApproval: builder.query({
       query: ({ page = 1, search = "", pageSize = 10, tab = "", delaydays }) =>
-        `accounting/payment-approval?page=${page}&search=${search}&pageSize=${pageSize}&tab=${tab}&delaydays=${delaydays ?? ""}`,
+        `accounting/payment-approval?page=${page}&search=${search}&pageSize=${pageSize}&tab=${tab}&delaydays=${
+          delaydays ?? ""
+        }`,
 
       transformResponse: (response) => {
         return {
@@ -111,13 +113,25 @@ export const AccountsApi = createApi({
     getCustomerSummary: builder.query({
       query: ({
         p_id,
+        _id,
         start,
         end,
         searchClient,
         searchDebit,
         searchAdjustment,
       }) => {
-        const params = new URLSearchParams({ p_id });
+        const params = new URLSearchParams();
+
+        // prefer _id if both are present
+        if (_id) {
+          params.append("_id", _id);
+        } else if (
+          p_id !== undefined &&
+          p_id !== null &&
+          String(p_id).trim() !== ""
+        ) {
+          params.append("p_id", String(p_id));
+        }
 
         if (start) params.append("start", start);
         if (end) params.append("end", end);
