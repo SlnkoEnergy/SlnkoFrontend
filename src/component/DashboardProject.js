@@ -16,6 +16,7 @@ import {
 import ActivityFeedCard from "./All_Tasks/ActivityCard";
 import { useNavigate } from "react-router-dom";
 import WeeklyProjectTimelineCard from "./WeeklyActivityProject";
+import { HourglassDisabledSharp } from "@mui/icons-material";
 
 /* ---------- helpers ---------- */
 const DONUT_COLORS = [
@@ -341,7 +342,7 @@ function Dash_project() {
                   border: "1px solid rgba(2,6,23,0.06)",
                 }}
               >
-                <DoNotDisturbOnRoundedIcon fontSize="small" />
+                <HourglassDisabledSharp fontSize="small" />
               </div>
             }
             onAction={() => {
