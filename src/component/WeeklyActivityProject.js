@@ -152,12 +152,23 @@ function buildTasksFromData(data) {
     for (const a of proj.activities) {
       const parentActivityId = id++;
 
-      // FIX (2): give label row a minimal hidden 1-day window so it renders
+      // compute baseline/actual once
+      const bS = a.baselineStart ? new Date(a.baselineStart) : null;
+      const bE = a.baselineEnd ? new Date(a.baselineEnd) : null;
+      const sA = a.start ? new Date(a.start) : null;
+      const eA = a.end ? new Date(a.end) : null;
+
+      // label row should run until baseline end (fallback: actual; fallback: 1 day)
       const seed =
-        (a.baselineStart && new Date(a.baselineStart)) ||
-        (a.start && new Date(a.start)) ||
+        (isValidDate(bS) && bS) ||
+        (isValidDate(sA) && sA) ||
         new Date();
-      const seedOk = isValidDate(seed) ? seed : new Date();
+
+      const labelStart = seed;
+      const labelEnd =
+        (isValidDate(bE) && toExclusiveEnd(bE)) ||
+        (isValidDate(eA) && toExclusiveEnd(eA)) ||
+        addDays(seed, 1);
 
       tasks.push({
         id: parentActivityId,
@@ -167,12 +178,10 @@ function buildTasksFromData(data) {
         open: true,
         readonly: true,
         _rowkind: "activity-label",
-        start_date: fmtISODate(seedOk),
-        end_date: fmtISODate(addDays(seedOk, 1)),
+        start_date: fmtISODate(labelStart),
+        end_date: fmtISODate(labelEnd),
       });
 
-      const bS = a.baselineStart ? new Date(a.baselineStart) : null;
-      const bE = a.baselineEnd ? new Date(a.baselineEnd) : null;
       if (isValidDate(bS) && isValidDate(bE)) {
         tasks.push({
           id: id++,
@@ -185,8 +194,6 @@ function buildTasksFromData(data) {
         });
       }
 
-      const sA = a.start ? new Date(a.start) : null;
-      const eA = a.end ? new Date(a.end) : null;
       const hasActual = isValidDate(sA) || isValidDate(eA);
 
       if (hasActual) {
@@ -414,6 +421,9 @@ export default function WeeklyProjectTimelineCard({
             endInc
           )} (actual, ${state})`;
         }
+        if (task._rowkind === "activity-label") {
+          return `<b>${task.text}</b><br/>${df(start)} – ${df(endInc)}`;
+        }
         return `<b>${task.text}</b>`;
       };
 
@@ -426,8 +436,7 @@ export default function WeeklyProjectTimelineCard({
             return "row-actual row-actual-late";
           return "row-actual row-actual-running";
         }
-        // hide placeholder bar for activity label (keeps row renderable)
-        if (task._rowkind === "activity-label") return "gantt_hidden";
+        if (task._rowkind === "activity-label") return "row-activity";
         return "";
       };
 
@@ -448,7 +457,7 @@ export default function WeeklyProjectTimelineCard({
       // refresh data
       gantt.clearAll();
       gantt.parse({ data: tasksMemo });
-    })
+    });
 
     // keep scroll position when toggling tree
     const keepScrollAndRender = () => {
@@ -471,7 +480,7 @@ export default function WeeklyProjectTimelineCard({
       window.removeEventListener("resize", onResize);
       gantt.detachEvent(h1);
       gantt.detachEvent(h2);
-      // FIX (1): do NOT clearAll() here; cleanup can race and blank the grid
+      // do NOT clearAll() here; cleanup can race and blank the grid
     };
   }, [
     data,
@@ -498,7 +507,6 @@ export default function WeeklyProjectTimelineCard({
       (+gantt.config.start_date !== +newStart ||
         +gantt.config.end_date !== +newEndEx)
     ) {
-
       gantt.batchUpdate(() => {
         const ps = gantt.config.preserve_scroll;
         gantt.config.start_date = newStart;
@@ -506,13 +514,12 @@ export default function WeeklyProjectTimelineCard({
         gantt.config.preserve_scroll = false;
         gantt.render();
         gantt.config.preserve_scroll = ps;
-      })
+      });
     }
 
     onRangeChange?.(ymd(s), ymd(e));
     setRangeOpen(false);
   };
-
 
   return (
     <>
@@ -762,6 +769,20 @@ export default function WeeklyProjectTimelineCard({
           background: #EF4444;
           border: 1px solid #B91C1C;
         }
+        /* NEW: visible activity label bar spanning to baseline end */
+        .gantt_task_line.row-activity {
+  background: rgba(37, 99, 235, 0.40) !important; /* was ~0.18 */
+  border: 1px solid #1D4ED8 !important;
+  height: 22px !important;
+  border-radius: 999px !important;
+}
+
+/* Make the text pop on the darker bar */
+.gantt_task_line.row-activity .gantt_task_content {
+  color: #fff !important;
+  font-weight: 700;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.18);
+}
       `}</style>
     </>
   );
