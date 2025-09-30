@@ -144,6 +144,12 @@ export const GlobalTaskApi = createApi({
       providesTags: [{ type: "Users", id: "LIST" }],
     }),
 
+    getAllUserWithPagination: builder.query({
+      query: ({page = 1, pageSize = 7, search = "", department = "CAM"}) => 
+        `/all-user-with-pagination?page=${page}&search=${encodeURIComponent(search)}&pageSize=${pageSize}&department=${department}`,
+      providesTags: [{ type: "Users", id : "LIST"}]
+    }),
+
     getAllDept: builder.query({
       query: () => ({ url: "all-dept", method: "GET" }),
       providesTags: [{ type: "Depts", id: "LIST" }],
@@ -269,4 +275,6 @@ export const {
   useGetUserPerformanceQuery,
   useGetProjectsByStateQuery,
   useGetTasksAgingByResolutionQuery,
+  useGetAllUserWithPaginationQuery,
+  useLazyGetAllUserWithPaginationQuery,
 } = GlobalTaskApi;
