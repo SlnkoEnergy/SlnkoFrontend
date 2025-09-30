@@ -75,7 +75,7 @@ function AllProjects() {
   const statusFilter = useMemo(() => {
     const t = (selectedTab || "All").toLowerCase();
     if (t === "all") return "";
-    if (t === "in progress") return "in progress";
+    if (t === "to be started") return "to be started";
     if (t === "delayed") return "delayed";
     if (t === "completed") return "completed";
     if (t === "on hold") return "on hold";
@@ -166,7 +166,7 @@ function AllProjects() {
   const statusChipColor = (status) => {
     const s = String(status || "").toLowerCase();
     if (s === "completed") return "success";
-    if (s === "in progress") return "warning";
+    if (s === "to be started") return "warning";
     if (s === "delayed") return "danger";
     return "neutral";
   };
@@ -235,7 +235,7 @@ function AllProjects() {
             sx={{ bgcolor: "background.level1", borderRadius: "xl" }}
           >
             <TabList sx={{ gap: 1 }}>
-              {["All", "In Progress", "Completed", "Delayed", "On Hold"].map(
+              {["All", "To Be Started", "Completed", "Delayed", "On Hold"].map(
                 (label) => (
                   <Tab
                     key={label}
@@ -627,7 +627,7 @@ function AllProjects() {
                     setStatusForm((f) => ({ ...f, status: v || f.status }))
                   }
                 >
-                  <Option value="in progress">In progress</Option>
+                  <Option value="to be started">To be Started</Option>
                   <Option value="completed">Completed</Option>
                   <Option value="delayed">Delayed</Option>
                   <Option value="on hold">On hold</Option>

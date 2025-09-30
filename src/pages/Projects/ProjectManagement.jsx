@@ -143,11 +143,8 @@ function ProjectManagement() {
         name: payload.name,
         description: payload.description,
         type: payload.type,
-        // backend for create typically expects 'dependencies'
         dependencies,
-        // include predecessors for create; backend may ignore if unsupported
         ...(predecessors.length ? { predecessors } : {}),
-        // Not sending completion_formula on create-to-project; it’s global-only
       }).unwrap();
 
       toast.success("Activity added to project");

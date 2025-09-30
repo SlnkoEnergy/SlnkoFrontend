@@ -187,8 +187,8 @@ function Dash_project() {
         <Grid xs={12} md={3}>
           <CloudStatCard
             loading={isLoading || isFetching}
-            value={stats["in progress"] ?? 0}
-            title="In Progress Projects"
+            value={stats["to be started"] ?? 0}
+            title="To Be Started Projects"
             subtitle="Projects that is still ongoing"
             accent="#60a5fa"
             illustration={
@@ -214,7 +214,7 @@ function Dash_project() {
             onAction={() => {
               const params = new URLSearchParams();
               params.set("page", "1");
-              params.set("tab", "In Progress");
+              params.set("tab", "To Be Started");
               navigate(`/project_management?${params.toString()}`);
             }}
           />
