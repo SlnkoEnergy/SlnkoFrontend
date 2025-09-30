@@ -10,6 +10,7 @@ import Button from "@mui/joy/Button";
 import Divider from "@mui/joy/Divider";
 import Dropdown from "@mui/joy/Dropdown";
 import FormControl from "@mui/joy/FormControl";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
@@ -45,6 +46,7 @@ import {
 } from "lucide-react";
 import AnimatedNumber from "./AnimatedBalance";
 import axios from "axios";
+import Axios from "../utils/Axios";
 
 const ProjectBalances = forwardRef(() => {
   const theme = useTheme();
@@ -57,19 +59,21 @@ const ProjectBalances = forwardRef(() => {
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [searchQuery, setSearchQuery] = useState("");
   const [user, setUser] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const {
     data: responseData,
     isLoading,
     refetch,
-    error
-  } = useGetProjectBalanceQuery({
-    page: currentPage,
-    pageSize: perPage,
-    search: searchQuery,
-  },{ refetchOnMountOrArgChange: true });
-
-
+    error,
+  } = useGetProjectBalanceQuery(
+    {
+      page: currentPage,
+      pageSize: perPage,
+      search: searchQuery,
+    },
+    { refetchOnMountOrArgChange: true }
+  );
 
   const paginatedData = responseData?.data || [];
   const paginatedDataTotals = responseData?.totals || {};
@@ -121,7 +125,7 @@ const ProjectBalances = forwardRef(() => {
       const token = localStorage.getItem("authToken");
 
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/accounting/export-project-balance`,
+        `${process.env.REACT_APP_API_URL}accounting/export-project-balance`,
         { selectedIds, selectAll },
         {
           responseType: "blob",
@@ -174,6 +178,20 @@ const ProjectBalances = forwardRef(() => {
     }
   };
 
+  const handleRefresh = async () => {
+    try {
+      setIsRefreshing(true);
+      await Axios.post(
+        `${process.env.REACT_APP_API_URL}/project-balances/sync-all`,
+        {},
+        { withCredentials: true }
+      );
+    } catch (err) {
+      console.error("Error refreshing balances:", err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
   const renderFilters = () => {
     return (
       <Box
@@ -200,7 +218,9 @@ const ProjectBalances = forwardRef(() => {
             ))}
           </Select>
         </FormControl>
+
         <Box mt={3} sx={{ display: "flex", gap: 1 }}>
+          {/* Export Button */}
           {(user?.name === "IT Team" ||
             user?.name === "Guddu Rani Dubey" ||
             user?.name === "Varun Mishra" ||
@@ -221,13 +241,29 @@ const ProjectBalances = forwardRef(() => {
               {isExporting ? "Exporting..." : "Export to CSV"}
             </Button>
           )}
+         <Tooltip title="Refresh page (sync balances)" placement="top" arrow>
+          <span>
+            <Button
+              variant="outlined"
+              size="sm"
+              color="primary"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              startDecorator={
+                isRefreshing ? <CircularProgress size="sm" /> : <RefreshIcon />
+              }
+            >
+              {/* {isRefreshing ? "Refreshing..." : "Refresh"} */}
+            </Button>
+          </span>
+        </Tooltip>
         </Box>
       </Box>
     );
   };
 
   const RowMenu = ({ currentPage, p_id }) => {
-    // console.log("currentPage:", currentPage, "p_id:", p_id);
+    // console.log("currentPage:", currentPage, "Row menu p_id:", p_id);
     const [user, setUser] = useState(null);
 
     useEffect(() => {
@@ -275,26 +311,13 @@ const ProjectBalances = forwardRef(() => {
                 <Typography>Add Money</Typography>
               </MenuItem>
             )}
-
-            <Divider sx={{ backgroundColor: "lightblue" }} />
-            <MenuItem
-              onClick={() => {
-                const page = currentPage;
-                const p_id = p_id;
-                navigate(`/view_detail?page=${page}&p_id=${p_id}`);
-              }}
-            >
-              {" "}
-              <ContentPasteGoIcon />
-              <Typography>View More</Typography>
-            </MenuItem>
           </Menu>
         </Dropdown>
       </>
     );
   };
 
-  const ProjectName = ({ currentPage, p_id, name }) => {
+  const ProjectName = ({ currentPage, _id,p_id, name }) => {
     // console.log("currentPage:", currentPage, "p_id:", p_id);
 
     return (
@@ -306,7 +329,7 @@ const ProjectBalances = forwardRef(() => {
             textDecoration: "none",
           }}
           onClick={() => {
-            navigate(`/view_detail?page=${currentPage}&p_id=${p_id}`);
+            navigate(`/view_detail?page=${currentPage}&_id=${_id}&p_id=${p_id}`);
           }}
         >
           {name || "-"}
@@ -405,7 +428,7 @@ const ProjectBalances = forwardRef(() => {
     borderColor: "divider",
   };
 
-  const ProjectID = ({ code, name, p_id, currentPage }) => {
+  const ProjectID = ({ code, name, p_id, _id, currentPage }) => {
     const navigate = useNavigate();
 
     return (
@@ -417,7 +440,7 @@ const ProjectBalances = forwardRef(() => {
               color="success"
               size="md"
               onClick={() =>
-                navigate(`/view_detail?page=${currentPage}&p_id=${p_id}`)
+                navigate(`/view_detail?page=${currentPage}&_id=${_id}&p_id=${p_id}`)
               }
               sx={{
                 cursor: "pointer",
@@ -469,7 +492,7 @@ const ProjectBalances = forwardRef(() => {
     totalCredit,
     totalDebit,
     totalAdjustment,
-    availableAmount,
+    amountAvailable,
   }) => {
     const formatINR = (value) => {
       const number = Number(value || 0);
@@ -519,7 +542,7 @@ const ProjectBalances = forwardRef(() => {
           <Typography sx={fontStyleBold}>Amount Available (Old):</Typography>
           &nbsp;
           <Typography sx={fontStyleNormal}>
-            {formatINR(availableAmount)}
+            {formatINR(amountAvailable)}
           </Typography>
         </Box>
       </>
@@ -665,19 +688,19 @@ const ProjectBalances = forwardRef(() => {
               {
                 label: "Total Plant Capacity (MW AC)",
                 icon: <Lightbulb size={16} />,
-                key: "totalProjectKwp",
+                key: "totalProjectMw",
                 format: (val) => `${(val ?? 0).toLocaleString("en-IN")} MW AC`,
               },
               {
                 label: "Total Credit",
                 icon: <IndianRupee size={16} />,
-                key: "totalCreditSum",
+                key: "totalCredited",
                 format: "inr",
               },
               {
                 label: "Total Debit",
                 icon: <ArrowDownUp size={16} />,
-                key: "totalDebitSum",
+                key: "totalDebited",
                 format: "inr",
               },
             ],
@@ -685,13 +708,13 @@ const ProjectBalances = forwardRef(() => {
               {
                 label: "Total Adjustment",
                 icon: <Scale size={16} />,
-                key: "totalAdjustmentSum",
+                key: "totalAdjustment",
                 format: "inr",
               },
               {
                 label: "Available Amount (Old)",
                 icon: <Wallet size={16} />,
-                key: "totalAvailableAmount",
+                key: "amountAvailable",
                 format: "inr",
               },
             ],
@@ -699,19 +722,19 @@ const ProjectBalances = forwardRef(() => {
               {
                 label: "Balance with Slnko",
                 icon: <Banknote size={16} />,
-                key: "totalBalanceSlnko",
+                key: "balanceSlnko",
                 format: "inr",
               },
               {
                 label: "Balance Payable to Vendors",
                 icon: <ShieldCheck size={16} />,
-                key: "totalBalancePayable",
+                key: "balancePayable",
                 format: "inr",
               },
               {
                 label: "Balance Required",
                 icon: <AlertTriangle size={16} />,
-                key: "totalBalanceRequired",
+                key: "balanceRequired",
                 format: "inr",
               },
             ],
@@ -743,13 +766,13 @@ const ProjectBalances = forwardRef(() => {
                     const chipColor = isRed
                       ? "#d32f2f"
                       : isGreen
-                        ? "#2e7d32"
-                        : "#0052cc";
+                      ? "#2e7d32"
+                      : "#0052cc";
                     const bgColor = isRed
                       ? "rgba(211, 47, 47, 0.1)"
                       : isGreen
-                        ? "rgba(46, 125, 50, 0.08)"
-                        : "rgba(0, 82, 204, 0.08)";
+                      ? "rgba(46, 125, 50, 0.08)"
+                      : "rgba(0, 82, 204, 0.08)";
 
                     const chipInner = money ? (
                       <AnimatedNumber
@@ -821,34 +844,34 @@ const ProjectBalances = forwardRef(() => {
             : [
                 {
                   label: "Total Plant Capacity (MW AC)",
-                  key: "totalProjectKwp",
+                  key: "totalProjectMw",
                   render: (v) => `${(v ?? 0).toLocaleString("en-IN")} MW AC`,
                 },
-                { label: "Total Credit", key: "totalCreditSum", money: true },
-                { label: "Total Debit", key: "totalDebitSum", money: true },
+                { label: "Total Credit", key: "totalCredited", money: true },
+                { label: "Total Debit", key: "totalDebited", money: true },
                 {
                   label: "Total Adjustment",
-                  key: "totalAdjustmentSum",
+                  key: "totalAdjustment",
                   money: true,
                 },
                 {
                   label: "Available Amount (Old)",
-                  key: "totalAvailableAmount",
+                  key: "amountAvailable",
                   money: true,
                 },
                 {
                   label: "Balance with Slnko",
-                  key: "totalBalanceSlnko",
+                  key: "balanceSlnko",
                   money: true,
                 },
                 {
                   label: "Balance Payable to Vendors",
-                  key: "totalBalancePayable",
+                  key: "balancePayable",
                   money: true,
                 },
                 {
                   label: "Balance Required",
-                  key: "totalBalanceRequired",
+                  key: "balanceRequired",
                   money: true,
                 },
               ].map((item, index) => {
@@ -971,6 +994,7 @@ const ProjectBalances = forwardRef(() => {
                   <Typography fontWeight={600} fontSize="1rem" gutterBottom>
                     <ProjectID
                       currentPage={currentPage}
+                      _id={project._id}
                       p_id={project.p_id}
                       code={project.code}
                       name={project.name}
@@ -980,6 +1004,7 @@ const ProjectBalances = forwardRef(() => {
                     Client:{" "}
                     <ProjectName
                       currentPage={currentPage}
+                      _id={project._id}
                       p_id={project.p_id}
                       name={project.name}
                     />
@@ -989,12 +1014,12 @@ const ProjectBalances = forwardRef(() => {
                   </Typography>
                   <Divider sx={{ my: 1 }} />
                   {[
-                    { label: "Credit", value: project.totalCredit },
-                    { label: "Debit", value: project.totalDebit },
+                    { label: "Credit", value: project.totalCredited },
+                    { label: "Debit", value: project.totalDebited },
                     { label: "Adjustment", value: project.totalAdjustment },
                     {
                       label: "Available Amount (Old)",
-                      value: project.availableAmount,
+                      value: project.amountAvailable,
                     },
                     {
                       label: "Balance with SLnko",
@@ -1145,7 +1170,8 @@ const ProjectBalances = forwardRef(() => {
                                 <ProjectID
                                   name={project.name}
                                   code={project.code}
-                                  p_id={project.p_id}
+                                  _id={project._id}
+                                   p_id={project.p_id}
                                   currentPage={currentPage}
                                 />
                               </Box>
@@ -1162,10 +1188,10 @@ const ProjectBalances = forwardRef(() => {
                           <Box component="td" sx={cellStyle}>
                             <BalanceData
                               project_kwp={project.project_kwp}
-                              totalCredit={project.totalCredit}
-                              totalDebit={project.totalDebit}
+                              totalCredit={project.totalCredited}
+                              totalDebit={project.totalDebited}
                               totalAdjustment={project.totalAdjustment}
-                              availableAmount={project.availableAmount}
+                              amountAvailable={project.amountAvailable}
                             />
                           </Box>
 

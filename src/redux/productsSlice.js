@@ -54,6 +54,21 @@ export const productsApi = createApi({
       ],
     }),
 
+    getPurchaseOrderPdf: builder.query({
+      query: ({ po_number, _id }) => {
+        const params = new URLSearchParams();
+        if (po_number) params.set("po_number", po_number);
+        if (_id) params.set("_id", _id);
+
+        return {
+          url: `/purchase-generate-pdf?${params.toString()}`,
+          method: "POST",
+          // VERY IMPORTANT: parse as Blob (PDF)
+          responseHandler: (response) => response.blob(),
+        };
+      },
+    }),
+
     // ===== Categories =====
     getAllCategories: builder.query({
       query: ({
@@ -121,13 +136,13 @@ export const productsApi = createApi({
       providesTags: [{ type: "Categories", id: "LIST" }],
     }),
 
-    getAllProdcutPO : builder.query({
+    getAllProdcutPO: builder.query({
       query: ({ page = 1, pageSize = 10, search = "", categoryId = "" }) =>
-   `/engineering/all-product-po?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}&categoryId=${encodeURIComponent(categoryId)}`,
-      providesTags: [{ type: "Products", id: "LIST"}]
+        `/engineering/all-product-po?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}&categoryId=${encodeURIComponent(categoryId)}`,
+      providesTags: [{ type: "Products", id: "LIST" }]
     }),
 
-    
+
   }),
 });
 
@@ -139,6 +154,8 @@ export const {
   useLazyGetProductByIdQuery,
   useCreateProductMutation,
   useUpdateProductMutation,
+  useGetPurchaseOrderPdfQuery,
+  useLazyGetPurchaseOrderPdfQuery,
 
   // categories
   useGetAllCategoriesQuery,
