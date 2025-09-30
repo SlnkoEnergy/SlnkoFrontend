@@ -216,7 +216,6 @@ export default function TeamLeaderboard({
             <tbody>
               {data.map((r) => {
 
-                console.log("hello ", r);
                 return (
                   <tr key={r.id || r._id || r.name}>
                     <td style={{ padding: "12px 16px", color: "#334155" }}>
@@ -224,7 +223,6 @@ export default function TeamLeaderboard({
                     </td>
 
                     {columns.map((col) => {
-                      console.log(col);
                       return (
                         <td
                           key={col.key}
