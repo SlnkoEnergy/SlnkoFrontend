@@ -23,7 +23,6 @@ import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import SelectRS from "react-select";
-
 import {
   useLazyGetProjectSearchDropdownQuery,
   useLazyGetActivitiesByNameQuery,
@@ -42,7 +41,6 @@ export default function AddActivityModal({
   const [mode, setMode] = useState("new");
   const [scope, setScope] = useState("project");
 
-  // ---- form (no predecessorName anymore; predecessors handled separately)
   const makeInitialForm = () => ({
     projectId: "",
     projectCode: "",
@@ -60,15 +58,14 @@ export default function AddActivityModal({
   });
   const [form, setForm] = useState(makeInitialForm());
 
-  // ---- predecessors (global only)
-  // each row: { activity: {value,label}|null, type: 'FS'|'SS'|'FF'|'SF', lag: number }
-  const [predecessors, setPredecessors] = useState([]);
+  /* ---------- Predecessors state ---------- */
+  const [predRows, setPredRows] = useState([]);
   const addPredRow = () =>
-    setPredecessors((p) => [...p, { activity: null, type: "FS", lag: 0 }]);
+    setPredRows((p) => [...p, { activity: null, type: "FS", lag: 0 }]);
   const updatePredRow = (idx, patch) =>
-    setPredecessors((p) => p.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
+    setPredRows((p) => p.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
   const removePredRow = (idx) =>
-    setPredecessors((p) => p.filter((_, i) => i !== idx));
+    setPredRows((p) => p.filter((_, i) => i !== idx));
 
   const [touched, setTouched] = useState({});
   const [openProjectPicker, setOpenProjectPicker] = useState(false);
@@ -92,7 +89,7 @@ export default function AddActivityModal({
     setOpenModulePicker(false);
     setOpenScmPicker(false);
     // predecessors
-    setPredecessors([]);
+    setPredRows([]);
     setOpenPredecessorPicker(false);
     setPredPickerIndex(null);
     predSearchRef.current = "";
@@ -156,6 +153,24 @@ export default function AddActivityModal({
     };
   };
 
+  // ✅ Map API predecessors -> UI rows for predRows
+  const mapApiPredecessorsToRows = (arr) => {
+    if (!Array.isArray(arr)) return [];
+    return arr.map((p) => {
+      const aid = p?.activity_id;
+      const value = aid && (aid._id || aid); // populated object or raw id
+      const label =
+        (aid && (aid.name || aid.title)) ||
+        (typeof aid === "string" ? aid : "Unnamed");
+      return {
+        activity: value ? { value: String(value), label: String(label) } : null,
+        type: (p?.type || "FS").toUpperCase(),
+        lag: Number.isFinite(+p?.lag) ? Number(p.lag) : 0,
+        _id: p?._id, // optional: keep predecessor id if present
+      };
+    });
+  };
+
   /* ---------------- Project quick list (max 7) ---------------- */
   const [quickOptions, setQuickOptions] = useState([]);
   const [fetchProjects, { isFetching }] =
@@ -217,7 +232,7 @@ export default function AddActivityModal({
 
   useEffect(() => {
     if (open && form.dependencies.scmEnabled) loadScmQuick();
-  }, [open, form.dependencies.scmEnabled, scope, form.projectId]); // eslint-disable-line
+  }, [open, form.dependencies.scmEnabled, scope, form.projectId]);
 
   const rsOptions = useMemo(
     () => [
@@ -257,6 +272,8 @@ export default function AddActivityModal({
       description: a.description || "",
       type: a.type || "",
       dependency: a.dependency || [],
+      // ✅ carry predecessors on the option so we can map into UI
+      predecessors: a.predecessors || [],
     }));
 
   const loadActivitiesQuick = async () => {
@@ -288,13 +305,12 @@ export default function AddActivityModal({
 
   useEffect(() => {
     if (open && mode === "existing") loadActivitiesQuick();
-  }, [open, mode]); // eslint-disable-line
+  }, [open, mode]);
 
   useEffect(() => {
     if (mode === "existing" && scope === "project") {
       loadActivitiesQuick();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.projectId, scope, mode]);
 
   const actRsOptions = useMemo(
@@ -305,7 +321,7 @@ export default function AddActivityModal({
     ? { value: form.activityName, label: form.activityName }
     : null;
 
-  /* ---------------- Predecessor options (always from GLOBAL activities) ---------------- */
+  /* ---------------- Predecessor options (GLOBAL activities) ---------------- */
   const [predQuickOptions, setPredQuickOptions] = useState([]);
   const predSearchRef = useRef("");
 
@@ -343,7 +359,7 @@ export default function AddActivityModal({
     [predQuickOptions]
   );
 
-  /* ---------------- Project-scoped modules from activities (Engineering only) ---------------- */
+  /* ---------------- Project-scoped modules from activities (Engineering) ---------------- */
   const [projectModuleOptions, setProjectModuleOptions] = useState([]);
 
   useEffect(() => {
@@ -460,6 +476,18 @@ export default function AddActivityModal({
         };
   const hasErrors = Object.values(errors).some(Boolean);
 
+  /* ---------------- Predecessors payload helper ---------------- */
+  const buildPredecessors = (rows) => {
+    if (!Array.isArray(rows)) return [];
+    return rows
+      .filter((r) => r?.activity?.value)
+      .map((r) => ({
+        activity_id: String(r.activity.value),
+        type: (r.type || "FS").toUpperCase(),
+        lag: Number.isFinite(+r.lag) ? Number(r.lag) : 0,
+      }));
+  };
+
   /* ---------------- Submit ---------------- */
   const handleSubmit = (e) => {
     e?.preventDefault?.();
@@ -508,17 +536,18 @@ export default function AddActivityModal({
       });
     }
 
-    // Build predecessors payload (global only)
-    const predecessorsPayload =
-      scope === "global"
-        ? predecessors
-            .filter((r) => r.activity && r.activity.value)
-            .map((r) => ({
-              activity_id: r.activity.value,
-              type: r.type || "FS",
-              lag: Number(r.lag) || 0,
-            }))
-        : [];
+    // Build predecessors array (always, regardless of scope)
+    const predecessorsArr = buildPredecessors(predRows);
+
+    // Optional legacy single fields for backend fallback
+    const legacy =
+      predecessorsArr.length === 1
+        ? {
+            activity_id: predecessorsArr[0].activity_id,
+            type: predecessorsArr[0].type,
+            lag: predecessorsArr[0].lag,
+          }
+        : {};
 
     const payload = {
       name: form.activityName.trim(),
@@ -528,7 +557,8 @@ export default function AddActivityModal({
         ? { project_id: form.projectId, project_name: form.projectName }
         : {}),
       ...(dependencies.length ? { dependencies } : {}),
-      ...(predecessorsPayload.length ? { predecessors: predecessorsPayload } : {}),
+      ...(predecessorsArr.length ? { predecessors: predecessorsArr } : {}),
+      ...legacy,
       activityId: form.activityId || "",
       __mode: mode,
       __scope: scope,
@@ -611,6 +641,8 @@ export default function AddActivityModal({
         type: a.type || "",
         description: a.description || "",
         dependency: a.dependency || [],
+        // ✅ include predecessors so picker onPick can map them
+        predecessors: a.predecessors || [],
       }));
       return { rows, total: total ?? rows.length };
     }
@@ -627,6 +659,8 @@ export default function AddActivityModal({
       type: a.type || "",
       description: a.description || "",
       dependency: a.dependency || [],
+      // ✅ include predecessors so picker onPick can map them
+      predecessors: a.predecessors || [],
     }));
     const total = pagination?.total ?? rows.length;
     return { rows, total };
@@ -764,7 +798,7 @@ export default function AddActivityModal({
                   }));
                 } else {
                   // leaving global → clear predecessors UI
-                  setPredecessors([]);
+                  setPredRows([]);
                   setOpenPredecessorPicker(false);
                   setPredPickerIndex(null);
                 }
@@ -933,6 +967,7 @@ export default function AddActivityModal({
                           scmItems: [],
                         },
                       }));
+                      setPredRows([]);
                       return;
                     }
                     if (opt.value === "__more__") {
@@ -942,6 +977,10 @@ export default function AddActivityModal({
 
                     const { engineering: engOpts, scm: scmOpts } =
                       extractDepsByModel(opt);
+                    const nextPredRows = mapApiPredecessorsToRows(
+                      opt.predecessors
+                    );
+
                     setForm((p) => ({
                       ...p,
                       activityId: opt.activity_id || opt.value || "",
@@ -956,6 +995,7 @@ export default function AddActivityModal({
                         scmItems: scmOpts,
                       },
                     }));
+                    setPredRows(nextPredRows);
                     setTouched((t) => ({
                       ...t,
                       activityName: true,
@@ -992,7 +1032,7 @@ export default function AddActivityModal({
               )}
             </FormControl>
 
-            {/* Predecessors (GLOBAL only) */}
+            {/* Predecessors (GLOBAL only UI) */}
             {scope === "global" && (
               <Box sx={{ gridColumn: "1 / -1", display: "grid", gap: 1 }}>
                 <Box
@@ -1013,18 +1053,21 @@ export default function AddActivityModal({
                   </Button>
                 </Box>
 
-                {predecessors.length === 0 ? (
+                {predRows.length === 0 ? (
                   <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
                     No predecessors added.
                   </Typography>
                 ) : null}
 
-                {predecessors.map((row, idx) => (
+                {predRows.map((row, idx) => (
                   <Box
                     key={idx}
                     sx={{
                       display: "grid",
-                      gridTemplateColumns: { xs: "1fr", md: "1fr 90px 80px 48px" },
+                      gridTemplateColumns: {
+                        xs: "1fr",
+                        md: "1fr 90px 80px 48px",
+                      },
                       gap: 1,
                       alignItems: "center",
                     }}
@@ -1192,7 +1235,9 @@ export default function AddActivityModal({
                   size="sm"
                   error={touched.dependencies && !!errors.dependencies}
                 >
-                  <FormLabel sx={labelRequiredSx}>Model Entry (Modules)</FormLabel>
+                  <FormLabel sx={labelRequiredSx}>
+                    Model Entry (Modules)
+                  </FormLabel>
                   <SelectRS
                     placeholder={
                       scope === "project" && !form.projectId
@@ -1386,6 +1431,7 @@ export default function AddActivityModal({
               scmItems: [],
             },
           }));
+          setPredRows([]);
           setTouched((t) => ({ ...t, projectId: true, projectName: true }));
           setOpenProjectPicker(false);
           setTimeout(loadActivitiesQuick, 0);
@@ -1405,6 +1451,8 @@ export default function AddActivityModal({
         onPick={(row) => {
           const { engineering: engOpts, scm: scmOpts } =
             extractDepsByModel(row);
+          const nextPredRows = mapApiPredecessorsToRows(row.predecessors);
+
           setForm((prev) => ({
             ...prev,
             activityId: row?.activity_id || row?._id || "",
@@ -1419,6 +1467,7 @@ export default function AddActivityModal({
               scmItems: scmOpts,
             },
           }));
+          setPredRows(nextPredRows);
           setTouched((t) => ({
             ...t,
             activityName: true,
@@ -1488,7 +1537,10 @@ export default function AddActivityModal({
           onPick={(row) => {
             if (predPickerIndex != null) {
               updatePredRow(predPickerIndex, {
-                activity: { value: String(row._id), label: row.name || "Unnamed" },
+                activity: {
+                  value: String(row._id),
+                  label: row.name || "Unnamed",
+                },
               });
             }
             setOpenPredecessorPicker(false);

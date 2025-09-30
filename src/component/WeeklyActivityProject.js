@@ -195,7 +195,10 @@ function buildTasksFromData(data) {
           (typeof a.progress === "number" && a.progress >= 1) ||
           String(a.status || "").toLowerCase() === "done";
         const onTime =
-          completed && isValidDate(eA) && isValidDate(bE) && isOnOrBefore(eA, bE);
+          completed &&
+          isValidDate(eA) &&
+          isValidDate(bE) &&
+          isOnOrBefore(eA, bE);
 
         let actualState = "running";
         if (completed && onTime) actualState = "ontime";
@@ -659,13 +662,28 @@ export default function WeeklyProjectTimelineCard({
           >
             <Stack direction="row" alignItems="center" gap={1.5}>
               <Typography level="title-md">{title}</Typography>
-              <Chip size="sm" variant="soft" color="neutral" sx={{ fontWeight: 700 }}>
+              <Chip
+                size="sm"
+                variant="soft"
+                color="neutral"
+                sx={{ fontWeight: 700 }}
+              >
                 Baseline
               </Chip>
-              <Chip size="sm" variant="soft" color="success" sx={{ fontWeight: 700 }}>
+              <Chip
+                size="sm"
+                variant="soft"
+                color="success"
+                sx={{ fontWeight: 700 }}
+              >
                 Actual (on time)
               </Chip>
-              <Chip size="sm" variant="soft" color="danger" sx={{ fontWeight: 700 }}>
+              <Chip
+                size="sm"
+                variant="soft"
+                color="danger"
+                sx={{ fontWeight: 700 }}
+              >
                 Actual (late)
               </Chip>
             </Stack>

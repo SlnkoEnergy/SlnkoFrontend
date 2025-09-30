@@ -27,9 +27,46 @@ function ProjectManagement() {
 
   const isLoading = isPushing || isUpdatingDeps;
 
+  /** Normalize `dependency` + `predecessors` from modal payload */
+  const normalizeDepsAndPreds = (payload = {}) => {
+    // Prefer singular `dependency`; fallback to `dependencies`
+    const dependency = Array.isArray(payload.dependency)
+      ? payload.dependency
+      : Array.isArray(payload.dependencies)
+      ? payload.dependencies
+      : [];
+
+    // Prefer array `predecessors`; fallback to single fields {activity_id,type,lag}
+    let predecessors = Array.isArray(payload.predecessors)
+      ? payload.predecessors
+      : [];
+
+    if (
+      predecessors.length === 0 &&
+      payload.activity_id &&
+      (payload.type || payload.lag !== undefined)
+    ) {
+      predecessors = [
+        {
+          activity_id: String(payload.activity_id),
+          type: String(payload.type || "FS").toUpperCase(),
+          lag:
+            Number.isFinite(+payload.lag) && payload.lag !== ""
+              ? Number(payload.lag)
+              : 0,
+        },
+      ];
+    }
+
+    return { dependency, predecessors };
+  };
+
   const handleCreate = async (payload) => {
     try {
+      const { dependency, predecessors } = normalizeDepsAndPreds(payload || {});
+
       if (payload && payload.__mode === "existing") {
+        // ---- Update dependencies of an EXISTING activity master ----
         const id =
           payload.activityId ||
           payload.id ||
@@ -45,11 +82,8 @@ function ProjectManagement() {
           toast.error("Missing activity id for existing activity.");
           return;
         }
-        const deps = Array.isArray(payload.dependencies)
-          ? payload.dependencies
-          : [];
 
-        if (!deps.length) {
+        if (!dependency.length) {
           toast.error("Please select at least one dependency.");
           return;
         }
@@ -64,7 +98,11 @@ function ProjectManagement() {
           id,
           global: isGlobal,
           projectId: isGlobal ? undefined : payload.project_id,
-          body: { dependencies: deps },
+          // ✅ send singular `dependency`; include predecessors if present
+          body: {
+            dependency,
+            ...(predecessors.length ? { predecessors } : {}),
+          },
         }).unwrap();
 
         toast.success("Dependencies updated successfully");
@@ -72,7 +110,7 @@ function ProjectManagement() {
         return;
       }
 
-      // NEW activity: push into project
+      // ---- NEW activity: push into project ----
       if (!payload?.project_id) {
         toast.error("Pick a project first.");
         return;
@@ -83,7 +121,10 @@ function ProjectManagement() {
         name: payload.name,
         description: payload.description,
         type: payload.type,
-        dependencies: payload.dependencies ?? payload.dependency ?? [],
+        // ✅ Always pass singular `dependency`; allow modal to provide either
+        dependency,
+        // ✅ Pass predecessors if any (backend can ignore if unused)
+        ...(predecessors.length ? { predecessors } : {}),
       }).unwrap();
 
       toast.success("Activity added to project");
