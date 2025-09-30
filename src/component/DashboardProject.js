@@ -18,28 +18,9 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { PauseCircleRounded } from "@mui/icons-material";
 import ActivityFinishLineChart from "./ActivityFinishLineChart";
 import WeeklyProjectTimelineCard from "./WeeklyActivityProject";
-import ActivityFeedCard from "../component/All_Tasks/ActivityCard"
+import { HourglassDisabledSharp } from "@mui/icons-material";
 
-const IconBadge = ({ color = "#2563eb", bg = "#eff6ff", icon }) => (
-    <div
-        style={{
-            width: 42,
-            height: 26,
-            borderRadius: 999,
-            background: bg,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color,
-            fontWeight: 700,
-            boxShadow: "0 1px 0 rgba(0,0,0,0.04) inset, 0 6px 14px rgba(2,6,23,0.06)",
-            border: "1px solid rgba(2,6,23,0.06)",
-        }}
-    >
-        {icon}
-    </div>
-);
-
+/* ---------- helpers ---------- */
 const DONUT_COLORS = [
     "#f59e0b", // amber
     "#22c55e", // green
@@ -238,159 +219,159 @@ function Dash_project() {
         [paViewRes]
     );
 
-
-    const { projectId: paramId } = useParams();
-    const [sp] = useSearchParams();
-    const initialProjectId = sp.get("project_id") || paramId || "";
-
-    const [projectId, setProjectId] = useState(initialProjectId);
-
-    // keep local state in sync when URL changes (back/forward, etc.)
-    useEffect(() => {
-        if (initialProjectId && initialProjectId !== projectId) {
-            setProjectId(initialProjectId);
-        }
-    }, [initialProjectId]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    // when child picks a project, update URL + local state
-    const handleProjectChange = (id) => {
-        setProjectId(id || "");
-        const params = new URLSearchParams(sp);
-        if (id) params.set("project_id", id);
-        else params.delete("project_id");
-        navigate({ search: params.toString() }, { replace: true });
-    };
-
-
-    const {
-        data: LineData,
-        isLoading: isLOadingLineData,
-        isFetching: isFetchingLineData,
-        error,
-    } = useGetActivityLineByProjectIdQuery(projectId, { skip: !projectId });
-
-    return (
-        <Box
-            sx={{
-                ml: { xs: 0, lg: "var(--Sidebar-width)" },
-                width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
-                bgcolor: "background.body",
+  return (
+    <Box
+      sx={{
+        ml: { xs: 0, lg: "var(--Sidebar-width)" },
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+        bgcolor: "background.body",
+      }}
+    >
+      <Grid container spacing={2} columns={12}>
+        <Grid xs={12} md={3}>
+          <CloudStatCard
+            loading={isLoading || isFetching}
+            value={stats["to be started"] ?? 0}
+            title="To Be Started Projects"
+            subtitle="Projects that is still ongoing"
+            accent="#60a5fa"
+            illustration={
+              <div
+                style={{
+                  width: 42,
+                  height: 26,
+                  borderRadius: 999,
+                  background: "#dbeafe",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#1d4ed8",
+                  fontWeight: 700,
+                  boxShadow:
+                    "0 1px 0 rgba(0,0,0,0.04) inset, 0 6px 14px rgba(2,6,23,0.06)",
+                  border: "1px solid rgba(2,6,23,0.06)",
+                }}
+              >
+                <PlayCircleFilledRoundedIcon fontSize="small" />
+              </div>
+            }
+            onAction={() => {
+              const params = new URLSearchParams();
+              params.set("page", "1");
+              params.set("tab", "To Be Started");
+              navigate(`/project_management?${params.toString()}`);
             }}
-        >
-            <Grid container spacing={2} columns={12}>
-                <Grid xs={12} md={3}>
-                    <CloudStatCard
-                        loading={isLoading || isFetching}
-                        value={stats["to be started"] ?? 0}
-                        title="In Progress Projects"
-                        subtitle="Projects that is still ongoing"
-                        accent="#60a5fa"
-                        illustration={
-                            <IconBadge
-                                icon={<PlayCircleFilledRoundedIcon fontSize="small" />}
-                                color="#1d4ed8" // blue-700
-                                bg="#dbeafe" // blue-100
-                            />
-                        }
-                        onAction={() => {
-                            const params = new URLSearchParams();
-                            params.set("page", "1");
-                            params.set("tab", "In Progress");
-                            navigate(`/project_management?${params.toString()}`);
-                        }}
-                    />
-                </Grid>
+          />
+        </Grid>
 
-                <Grid xs={12} md={3}>
-                    <CloudStatCard
-                        loading={isLoading || isFetching}
-                        value={stats.completed ?? 0}
-                        title="Completed Projects"
-                        subtitle="Projects finished"
-                        accent="#86efac"
-                        illustration={
-                            <IconBadge
-                                icon={<TaskAltRoundedIcon fontSize="small" />}
-                                color="#15803d" // emerald-700
-                                bg="#ecfdf5" // emerald-50
-                            />
-                        }
-                        onAction={() => {
-                            const params = new URLSearchParams();
-                            params.set("page", "1");
-                            params.set("tab", "Completed");
-                            navigate(`/project_management?${params.toString()}`);
-                        }}
-                    />
-                </Grid>
+        <Grid xs={12} md={3}>
+          <CloudStatCard
+            loading={isLoading || isFetching}
+            value={stats.completed ?? 0}
+            title="Completed Projects"
+            subtitle="Projects finished"
+            accent="#86efac"
+            illustration={
+              <div
+                style={{
+                  width: 42,
+                  height: 26,
+                  borderRadius: 999,
+                  background: "#ecfdf5",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#15803d",
+                  fontWeight: 700,
+                  boxShadow:
+                    "0 1px 0 rgba(0,0,0,0.04) inset, 0 6px 14px rgba(2,6,23,0.06)",
+                  border: "1px solid rgba(2,6,23,0.06)",
+                }}
+              >
+                <TaskAltRoundedIcon fontSize="small" />
+              </div>
+            }
+            onAction={() => {
+              const params = new URLSearchParams();
+              params.set("page", "1");
+              params.set("tab", "Completed");
+              navigate(`/project_management?${params.toString()}`);
+            }}
+          />
+        </Grid>
 
-                <Grid xs={12} md={3}>
-                    <CloudStatCard
-                        loading={isLoading || isFetching}
-                        value={stats.delayed ?? 0}
-                        title="Delayed Projects"
-                        subtitle="Project Delayed"
-                        accent="#fca5a5"
-                        illustration={
-                            <IconBadge
-                                icon={<DoNotDisturbOnRoundedIcon fontSize="small" />}
-                                color="#b91c1c" // red-700
-                                bg="#fee2e2" // red-100
-                            />
-                        }
-                        onAction={() => {
-                            const params = new URLSearchParams();
-                            params.set("page", "1");
-                            params.set("tab", "Delayed");
-                            navigate(`/project_management?${params.toString()}`);
-                        }}
-                    />
-                </Grid>
+        <Grid xs={12} md={3}>
+          <CloudStatCard
+            loading={isLoading || isFetching}
+            value={stats.delayed ?? 0}
+            title="Delayed Projects"
+            subtitle="Project Delayed"
+            accent="#fca5a5"
+            illustration={
+              <div
+                style={{
+                  width: 42,
+                  height: 26,
+                  borderRadius: 999,
+                  background: "#fee2e2",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#b91c1c",
+                  fontWeight: 700,
+                  boxShadow:
+                    "0 1px 0 rgba(0,0,0,0.04) inset, 0 6px 14px rgba(2,6,23,0.06)",
+                  border: "1px solid rgba(2,6,23,0.06)",
+                }}
+              >
+                <DoNotDisturbOnRoundedIcon fontSize="small" />
+              </div>
+            }
+            onAction={() => {
+              const params = new URLSearchParams();
+              params.set("page", "1");
+              params.set("tab", "Delayed");
+              navigate(`/project_management?${params.toString()}`);
+            }}
+          />
+        </Grid>
 
-                <Grid xs={12} md={3}>
-                    <CloudStatCard
-                        loading={isLoading || isFetching}
-                        value={stats.cancelled ?? 0}
-                        title="On Hold Projects"
-                        subtitle="Tasks cancelled"
-                        accent="#fca5a5"
-                        illustration={
-                            <IconBadge
-                                icon={<PauseCircleRounded fontSize="small" />}
-                                color="#b91c1c" // red-700
-                                bg="#fee2e2" // red-100
-                            />
-                        }
-                        onAction={() => {
-                            const params = new URLSearchParams();
-                            params.set("page", "1");
-                            params.set("tab", "On Hold");
-                            navigate(`/project_management?${params.toString()}`);
-                        }}
-                    />
-                </Grid>
-            </Grid>
-
-            <Grid container spacing={2} sx={{ mt: 1 }}>
-                <Grid xs={12} md={8}>
-                    <TeamLeaderboard
-                        rows={perfLoading || perfFetching ? [] : projectDetailRows}
-                        title="Project Detail Dashboard"
-                        columns={ProjectDetailColumns}
-                        searchValue={userSearch}
-                        onSearchChange={setUserSearch}
-                    />
-                </Grid>
-
-                <Grid xs={12} md={4}>
-                    <ProjectsWorkedCard
-                        title="Projects worked"
-                        data={pbsLoading || pbsFetching ? [] : donutData}
-                        total={stateRes?.total ?? 0}
-                        totalLabel="Projects"
-                    />
-                </Grid>
-            </Grid>
+        <Grid xs={12} md={3}>
+          <CloudStatCard
+            loading={isLoading || isFetching}
+            value={stats.onhold ?? 0}
+            title="On Hold Projects"
+            subtitle="Projects cancelled"
+            accent="#fca5a5"
+            illustration={
+              <div
+                style={{
+                  width: 42,
+                  height: 26,
+                  borderRadius: 999,
+                  background: "#fee2e2",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#b91c1c",
+                  fontWeight: 700,
+                  boxShadow:
+                    "0 1px 0 rgba(0,0,0,0.04) inset, 0 6px 14px rgba(2,6,23,0.06)",
+                  border: "1px solid rgba(2,6,23,0.06)",
+                }}
+              >
+                <HourglassDisabledSharp fontSize="small" />
+              </div>
+            }
+            onAction={() => {
+              const params = new URLSearchParams();
+              params.set("page", "1");
+              params.set("tab", "On Hold");
+              navigate(`/project_management?${params.toString()}`);
+            }}
+          />
+        </Grid>
+      </Grid>
 
             <Grid container spacing={2} sx={{ mt: 1 }}>
                 <Grid xs={12} md={8}>
