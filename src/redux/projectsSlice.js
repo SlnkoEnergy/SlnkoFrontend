@@ -188,9 +188,9 @@ export const projectsApi = createApi({
       providesTags: (result) =>
         result?.items
           ? [
-              ...result.items.map((a) => ({ type: "Activity", id: a._id })),
-              { type: "Activity", id: "LIST" },
-            ]
+            ...result.items.map((a) => ({ type: "Activity", id: a._id })),
+            { type: "Activity", id: "LIST" },
+          ]
           : [{ type: "Activity", id: "LIST" }],
     }),
 
@@ -218,9 +218,9 @@ export const projectsApi = createApi({
       providesTags: (result) =>
         result?.data
           ? [
-              ...result.data.map((m) => ({ type: "Module", id: m._id })),
-              { type: "Module", id: "LIST" },
-            ]
+            ...result.data.map((m) => ({ type: "Module", id: m._id })),
+            { type: "Module", id: "LIST" },
+          ]
           : [{ type: "Module", id: "LIST" }],
     }),
 
@@ -269,12 +269,12 @@ export const projectsApi = createApi({
       providesTags: (result) =>
         result?.data
           ? [
-              ...result.data.map((m) => ({
-                type: "MaterialCategory",
-                id: m._id,
-              })),
-              { type: "MaterialCategory", id: "LIST" },
-            ]
+            ...result.data.map((m) => ({
+              type: "MaterialCategory",
+              id: m._id,
+            })),
+            { type: "MaterialCategory", id: "LIST" },
+          ]
           : [{ type: "MaterialCategory", id: "LIST" }],
     }),
 
@@ -336,8 +336,29 @@ export const projectsApi = createApi({
     }),
 
     getProjectDetail: builder.query({
-      query: () => `project-detail`,
+      query: ({ q }) => {
+        const qs = q ? `?q=${encodeURIComponent(q)}` : "";
+        return `project-detail${qs}`;
+      },
       providesTags: ["Project"],
+    }),
+
+    getActivityLineByProjectId: builder.query({
+      query: (projectId) => {
+        const id = projectId ?? "68cc51a671acfbca3602139c";
+        console.log("[RTKQ] getActivityLineByProjectId ->", id);
+        return {
+          url: `/project-activity-chart/${encodeURIComponent(id)}`,
+          method: "GET",
+        };
+      },
+      providesTags: (_res, _err, projectId) => [
+        { type: "Project", id: projectId ?? "default" },
+      ],
+    }),
+
+    getProjectDropdownForDashboard: builder.query({
+      query: () => `/project-dropdown-detail`
     }),
 
     getPostsActivityFeed: builder.query({
@@ -350,8 +371,9 @@ export const projectsApi = createApi({
         `projectactivity/allprojectactivityforview?baselineStart=${baselineStart}&baselineEnd=${baselineEnd}`,
       providesTags: ["Project"],
     }),
-  }),
-});
+  })
+
+})
 
 export const {
   useGetProjectsQuery,
@@ -359,6 +381,7 @@ export const {
   useAddProjectMutation,
   useUpdateProjectMutation,
   useGetAllProjectsQuery,
+  useGetProjectDropdownForDashboardQuery,
   useUpdateProjectStatusMutation,
   useGetProjectByPIdQuery,
   useGetProjectByIdQuery,
@@ -397,6 +420,7 @@ export const {
   useReorderProjectActivitiesMutation,
   useGetProjectStatesFilterQuery,
   useGetProjectDetailQuery,
+  useGetActivityLineByProjectIdQuery,
   useGetPostsActivityFeedQuery,
   useGetProjectActivityForViewQuery,
 } = projectsApi;

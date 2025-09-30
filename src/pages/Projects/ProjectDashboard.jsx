@@ -3,7 +3,7 @@ import Sidebar from "../../component/Partials/Sidebar";
 import MainHeader from "../../component/Partials/MainHeader";
 import { useNavigate } from "react-router-dom";
 import SubHeader from "../../component/Partials/SubHeader";
-import Dash_project from "./DashboardProject";
+import Dash_project from "../../component/DashboardProject";
 
 function ProjectDashBoard() {
   const navigate = useNavigate();
