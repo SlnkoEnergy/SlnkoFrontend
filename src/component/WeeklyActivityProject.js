@@ -510,7 +510,6 @@ export default function WeeklyProjectTimelineCard({
     setRangeOpen(false);
   };
 
-  console.log(data)
 
   return (
     <>
