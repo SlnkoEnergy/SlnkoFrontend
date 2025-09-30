@@ -49,6 +49,8 @@ export default function AddActivityModal({
     activityId: "",
     type: "frontend",
     description: "",
+    // shown only for global scope (but fine to keep in form)
+    completion_formula: "",
     dependencies: {
       engineeringEnabled: false,
       engineeringModules: [],
@@ -272,8 +274,9 @@ export default function AddActivityModal({
       description: a.description || "",
       type: a.type || "",
       dependency: a.dependency || [],
-      // ✅ carry predecessors on the option so we can map into UI
       predecessors: a.predecessors || [],
+      // If your API returns completion_formula on activity, map it:
+      completion_formula: a.completion_formula || "",
     }));
 
   const loadActivitiesQuick = async () => {
@@ -549,7 +552,7 @@ export default function AddActivityModal({
           }
         : {};
 
-    const payload = {
+    const base = {
       name: form.activityName.trim(),
       description: form.description.trim(),
       type: form.type.toLowerCase(),
@@ -563,6 +566,12 @@ export default function AddActivityModal({
       __mode: mode,
       __scope: scope,
     };
+
+    // Only attach completion_formula for global scope (empty is allowed, server decides)
+    const payload =
+      scope === "global"
+        ? { ...base, completion_formula: form.completion_formula ?? "" }
+        : base;
 
     return Promise.resolve(onCreate?.(payload))
       .then(() => {
@@ -641,8 +650,8 @@ export default function AddActivityModal({
         type: a.type || "",
         description: a.description || "",
         dependency: a.dependency || [],
-        // ✅ include predecessors so picker onPick can map them
         predecessors: a.predecessors || [],
+        completion_formula: a.completion_formula || "",
       }));
       return { rows, total: total ?? rows.length };
     }
@@ -659,8 +668,8 @@ export default function AddActivityModal({
       type: a.type || "",
       description: a.description || "",
       dependency: a.dependency || [],
-      // ✅ include predecessors so picker onPick can map them
       predecessors: a.predecessors || [],
+      completion_formula: a.completion_formula || "",
     }));
     const total = pagination?.total ?? rows.length;
     return { rows, total };
@@ -694,7 +703,6 @@ export default function AddActivityModal({
       return { rows, total };
     } catch (e) {
       console.error("Modules fetchPage failed:", e);
-      return { rows: [], total: 0 };
     }
   };
 
@@ -849,6 +857,7 @@ export default function AddActivityModal({
                         activityName: "",
                         type: "frontend",
                         description: "",
+                        completion_formula: "",
                         dependencies: {
                           ...form.dependencies,
                           engineeringEnabled: false,
@@ -959,6 +968,7 @@ export default function AddActivityModal({
                         activityName: "",
                         type: "frontend",
                         description: "",
+                        completion_formula: "",
                         dependencies: {
                           ...p.dependencies,
                           engineeringEnabled: false,
@@ -987,6 +997,8 @@ export default function AddActivityModal({
                       activityName: opt.name || opt.label || "",
                       type: opt.type || "frontend",
                       description: opt.description || "",
+                      // prefill completion_formula if backend supplied it on activity
+                      completion_formula: opt.completion_formula || "",
                       dependencies: {
                         ...p.dependencies,
                         engineeringEnabled: engOpts.length > 0,
@@ -1142,6 +1154,28 @@ export default function AddActivityModal({
                     />
                   </Box>
                 ))}
+
+                {/* ✅ Completion Formula (GLOBAL only) */}
+                <FormControl size="sm" sx={{ mt: 1 }}>
+                  <FormLabel>Completion Formula (Global)</FormLabel>
+                  <Textarea
+                    minRows={2}
+                    placeholder="e.g. (A*0.5) + (B*0.5) or any expression understood by backend"
+                    value={form.completion_formula}
+                    onChange={(e) =>
+                      setForm((p) => ({
+                        ...p,
+                        completion_formula: e.target.value,
+                      }))
+                    }
+                  />
+                  <Typography
+                    level="body-xs"
+                    sx={{ color: "text.tertiary", mt: 0.5 }}
+                  >
+                    This will be sent only for global activities.
+                  </Typography>
+                </FormControl>
               </Box>
             )}
 
@@ -1423,6 +1457,7 @@ export default function AddActivityModal({
             activityName: "",
             type: "frontend",
             description: "",
+            completion_formula: "",
             dependencies: {
               ...prev.dependencies,
               engineeringEnabled: false,
@@ -1459,6 +1494,7 @@ export default function AddActivityModal({
             activityName: row?.name || "",
             type: row?.type || "frontend",
             description: row?.description || "",
+            completion_formula: row?.completion_formula || "",
             dependencies: {
               ...prev.dependencies,
               engineeringEnabled: engOpts.length > 0,
