@@ -4,202 +4,220 @@ import PlayCircleFilledRoundedIcon from "@mui/icons-material/PlayCircleFilledRou
 import TaskAltRoundedIcon from "@mui/icons-material/TaskAltRounded";
 import DoNotDisturbOnRoundedIcon from "@mui/icons-material/DoNotDisturbOnRounded";
 import TeamLeaderboard from "./All_Tasks/TeamLeaderboard";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ProjectsWorkedCard from "./All_Tasks/Charts/ProjectsDonut";
 import {
-  useGetPostsActivityFeedQuery,
-  useGetProjectDetailQuery,
-  useGetProjectStatesFilterQuery,
-  useGetProjectStatusFilterQuery,
-  useGetProjectActivityForViewQuery,
+    useGetActivityLineByProjectIdQuery,
+    useGetPostsActivityFeedQuery,
+    useGetProjectActivityForViewQuery,
+    useGetProjectDetailQuery,
+    useGetProjectStatesFilterQuery,
+    useGetProjectStatusFilterQuery,
 } from "../redux/projectsSlice";
-import ActivityFeedCard from "./All_Tasks/ActivityCard";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { PauseCircleRounded } from "@mui/icons-material";
+import ActivityFinishLineChart from "./ActivityFinishLineChart";
 import WeeklyProjectTimelineCard from "./WeeklyActivityProject";
 import { HourglassDisabledSharp } from "@mui/icons-material";
-import PrecisionManufacturingRoundedIcon from "@mui/icons-material/PrecisionManufacturingRounded";
+
 /* ---------- helpers ---------- */
 const DONUT_COLORS = [
-  "#f59e0b",
-  "#22c55e",
-  "#ef4444",
-  "#3b82f6",
-  "#8b5cf6",
-  "#14b8a6",
-  "#e11d48",
-  "#84cc16",
-  "#f97316",
-  "#06b6d4",
-  "#d946ef",
-  "#0ea5e9",
-  "#65a30d",
-  "#dc2626",
-  "#7c3aed",
-  "#10b981",
-  "#ca8a04",
-  "#2563eb",
-  "#f43f5e",
-  "#0891b2",
-  "#a16207",
-  "#15803d",
-  "#4f46e5",
-  "#ea580c",
-  "#db2777",
-  "#047857",
-  "#1d4ed8",
-  "#9333ea",
-  "#b91c1c",
-  "#0d9488",
+    "#f59e0b", // amber
+    "#22c55e", // green
+    "#ef4444", // red
+    "#3b82f6", // blue
+    "#8b5cf6", // violet
+    "#14b8a6", // teal
+    "#e11d48", // rose
+    "#84cc16", // lime
+    "#f97316", // orange
+    "#06b6d4", // cyan
+
+    "#d946ef", // fuchsia
+    "#0ea5e9", // sky
+    "#65a30d", // olive green
+    "#dc2626", // deep red
+    "#7c3aed", // purple
+    "#10b981", // emerald
+    "#ca8a04", // yellow dark
+    "#2563eb", // indigo
+    "#f43f5e", // pinkish red
+    "#0891b2", // teal dark
+
+    "#a16207", // mustard
+    "#15803d", // forest green
+    "#4f46e5", // indigo dark
+    "#ea580c", // burnt orange
+    "#db2777", // magenta
+    "#047857", // green deep
+    "#1d4ed8", // royal blue
+    "#9333ea", // deep violet
+    "#b91c1c", // dark red
+    "#0d9488", // aqua teal
 ];
 
-// YYYY-MM-DD
 const ymd = (d) => {
-  const dt = new Date(d);
-  const y = dt.getFullYear();
-  const m = String(dt.getMonth() + 1).padStart(2, "0");
-  const day = String(dt.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+    const dt = new Date(d);
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, "0");
+    const day = String(dt.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
 };
 const startOfWeek = (date = new Date()) => {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  const res = new Date(d);
-  res.setHours(0, 0, 0, 0);
-  res.setDate(d.getDate() + diff);
-  return res;
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = day === 0 ? -6 : 1 - day; // Monday start
+    const res = new Date(d);
+    res.setHours(0, 0, 0, 0);
+    res.setDate(d.getDate() + diff);
+    return res;
 };
 const addDays = (date, days) => {
-  const d = new Date(date);
-  d.setDate(d.getDate() + days);
-  d.setHours(0, 0, 0, 0);
-  return d;
+    const d = new Date(date);
+    d.setDate(d.getDate() + days);
+    d.setHours(0, 0, 0, 0);
+    return d;
 };
 
 function Dash_project() {
-  const { data, isLoading, isFetching } = useGetProjectStatusFilterQuery();
-  const navigate = useNavigate();
-  const stats = data?.data || {
-    completed: 0,
-    cancelled: 0,
-    "to be started": 0,
-    delayed: 0,
-    pending: 0,
-  };
 
-  const {
-    data: projectData,
-    isLoading: perfLoading,
-    isFetching: perfFetching,
-  } = useGetProjectDetailQuery();
+    const navigate = useNavigate();
+    const { data, isLoading, isFetching } = useGetProjectStatusFilterQuery();
 
-  const fmtDate = (d) => {
-    if (!d) return "-";
-    const dt = new Date(d);
-    if (Number.isNaN(dt.getTime())) return "-";
-    const yyyy = dt.getFullYear();
-    const mm = String(dt.getMonth() + 1).padStart(2, "0");
-    const dd = String(dt.getDate()).padStart(2, "0");
-    return `${yyyy}-${mm}-${dd}`;
-  };
+    const stats = data?.data || {
+        completed: 0,
+        cancelled: 0,
+        "to be started": 0,
+        delayed: 0,
+        pending: 0,
+    };
 
-  const ProjectDetailColumns = [
-    { key: "code", label: "Project Code" },
-    { key: "name", label: "Project Name" },
-    { key: "current_activity", label: "Current Activity" },
-    { key: "project_state", label: "Project State" },
-  ];
+    const [userSearch, setUserSearch] = useState("");
+    const [debouncedQ, setDebouncedQ] = useState(userSearch);
+    useEffect(() => {
+        const t = setTimeout(() => setDebouncedQ(userSearch), 300);
+        return () => clearTimeout(t);
+    }, [userSearch]);
 
-  const projectDetailRows = useMemo(() => {
-    const list = projectData?.data ?? [];
-    return list.map((p) => {
-      const acts = Array.isArray(p.activities) ? p.activities : [];
-      const current =
-        acts.find(
-          (a) =>
-            a?.current_status === "in_progress" ||
-            a?.status === "in_progress" ||
-            !a?.actual_end_date
-        ) ||
-        acts[acts.length - 1] ||
-        null;
-
-      let upcoming = [];
-      acts.map(() => {});
-      if (current?.successors?.length) {
-        const s = current.successors[0];
-        upcoming =
-          typeof s === "object" && s !== null
-            ? s
-            : acts.find((a) => a?.activity_id === s) || null;
-      }
-      if (!upcoming) {
-        upcoming =
-          acts.find(
-            (a) =>
-              !a?.actual_start_date && a?.activity_id !== current?.activity_id
-          ) || null;
-      }
-
-      const completion_date = current?.actual_end_date
-        ? fmtDate(current.actual_end_date)
-        : "-";
-      return {
-        id: p._id,
-        code: p.project_code ?? "NA",
-        name: p.project_name ?? "-",
-        current_activity: current?.activity_name ?? "-",
-        upcoming_activity: upcoming?.activity_name ?? "-",
-        completion_date,
-        project_state: p.state ?? "-",
-      };
+    const {
+        data: projectData,
+        isLoading: perfLoading,
+        isFetching: perfFetching,
+    } = useGetProjectDetailQuery({
+        q: debouncedQ,
     });
-  }, [projectData]);
 
-  const {
-    data: stateRes,
-    isLoading: pbsLoading,
-    isFetching: pbsFetching,
-  } = useGetProjectStatesFilterQuery();
+    const fmtDate = (d) => {
+        if (!d) return "-";
+        const dt = new Date(d);
+        if (Number.isNaN(dt.getTime())) return "-";
+        const yyyy = dt.getFullYear();
+        const mm = String(dt.getMonth() + 1).padStart(2, "0");
+        const dd = String(dt.getDate()).padStart(2, "0");
+        return `${yyyy}-${mm}-${dd}`;
+    };
 
-  const donutData = useMemo(() => {
-    const dist = stateRes?.data || [];
-    return dist.map((d, i) => ({
-      name: d._id,
-      value: Number(((d.count / stateRes?.total) * 100).toFixed(2)),
-      color: DONUT_COLORS[i % DONUT_COLORS.length],
-    }));
-  }, [stateRes]);
+    console.log(projectData);
 
-  const {
-    data: feedRes,
-    isLoading: feedLoading,
-    isFetching: feedFetching,
-  } = useGetPostsActivityFeedQuery();
-  const feedItems = Array.isArray(feedRes?.data) ? feedRes.data : [];
+    const ProjectDetailColumns = [
+        { key: "code", label: "Project Code" },
+        { key: "name", label: "Project Name" },
+        { key: "current_activity", label: "Current Activity" },
+        { key: "project_state", label: "Project State" },
+    ];
 
-  /* --------- LIFTED RANGE STATE (default: current week) --------- */
-  const defaultStart = startOfWeek(new Date());
-  const defaultEnd = addDays(defaultStart, 6);
-  const [range, setRange] = useState({
-    startDate: defaultStart,
-    endDate: defaultEnd,
-  });
+    const projectDetailRows = useMemo(() => {
+        const list = projectData?.data ?? []; // ← your array of 48
+        return list.map((p) => {
+            const acts = Array.isArray(p.activities) ? p.activities : [];
 
-  const baselineStart = ymd(range.startDate);
-  const baselineEnd = ymd(range.endDate);
+            const current =
+                acts.find(
+                    (a) =>
+                        a?.current_status === "in_progress" ||
+                        a?.status === "in_progress" ||
+                        !a?.actual_end_date
+                ) ||
+                acts[acts.length - 1] ||
+                null;
 
-  // RTK Query fetch that refires when range changes
-  const {
-    data: paViewRes,
-    isLoading: paLoading,
-    isFetching: paFetching,
-  } = useGetProjectActivityForViewQuery({ baselineStart, baselineEnd });
+            let upcoming = [];
+            acts.map((activity) => { });
 
-  const timelineData = useMemo(
-    () => (Array.isArray(paViewRes?.data) ? paViewRes.data : []),
-    [paViewRes]
-  );
+            if (current?.successors?.length) {
+                const s = current.successors[0];
+                upcoming =
+                    typeof s === "object" && s !== null
+                        ? s
+                        : acts.find((a) => a?.activity_id === s) || null;
+            }
+            if (!upcoming) {
+                upcoming =
+                    acts.find(
+                        (a) =>
+                            !a?.actual_start_date && a?.activity_id !== current?.activity_id
+                    ) || null;
+            }
+
+            const completion_date = current?.actual_end_date
+                ? fmtDate(current.actual_end_date)
+                : "-";
+            return {
+                id: p._id,
+                code: p.project_code ?? "NA",
+                name: p.project_name ?? "-",
+                current_activity: current?.activity_name ?? "-",
+                upcoming_activity: upcoming?.activity_name ?? "-",
+                completion_date,
+                project_state: p.state ?? "-",
+            };
+        });
+    }, [projectData]);
+
+    const {
+        data: stateRes,
+        isLoading: pbsLoading,
+        isFetching: pbsFetching,
+    } = useGetProjectStatesFilterQuery();
+
+    const donutData = useMemo(() => {
+        const dist = stateRes?.data || [];
+        return dist.map((d, i) => ({
+            name: d._id,
+            value: Number(((d.count / stateRes?.total) * 100).toFixed(2)),
+            color: DONUT_COLORS[i % DONUT_COLORS.length],
+        }));
+    }, [stateRes]);
+
+    const {
+        data: feedRes,
+        isLoading: feedLoading,
+        isFetching: feedFetching,
+    } = useGetPostsActivityFeedQuery();
+    const feedItems = Array.isArray(feedRes?.data) ? feedRes.data : [];
+
+    /* --------- LIFTED RANGE STATE (default: current week) --------- */
+    const defaultStart = startOfWeek(new Date());
+    const defaultEnd = addDays(defaultStart, 6);
+    const [range, setRange] = useState({
+        startDate: defaultStart,
+        endDate: defaultEnd,
+    });
+
+    const baselineStart = ymd(range.startDate);
+    const baselineEnd = ymd(range.endDate);
+
+    // RTK Query fetch that refires when range changes
+    const {
+        data: paViewRes,
+        isLoading: paLoading,
+        isFetching: paFetching,
+    } = useGetProjectActivityForViewQuery({ baselineStart, baselineEnd });
+
+    const timelineData = useMemo(
+        () => (Array.isArray(paViewRes?.data) ? paViewRes.data : []),
+        [paViewRes]
+    );
 
   return (
     <Box
@@ -209,8 +227,8 @@ function Dash_project() {
         bgcolor: "background.body",
       }}
     >
-      <Grid container spacing={2} columns={15}>
-        <Grid xs={15} md={3}>
+      <Grid container spacing={2} columns={12}>
+        <Grid xs={12} md={3}>
           <CloudStatCard
             loading={isLoading || isFetching}
             value={stats["to be started"] ?? 0}
@@ -245,42 +263,8 @@ function Dash_project() {
             }}
           />
         </Grid>
-        <Grid xs={15} md={3}>
-          <CloudStatCard
-            loading={isLoading || isFetching}
-            value={stats.ongoing ?? 0}
-            title="Ongoing Projects"
-            subtitle="Projects ongoing"
-            accent="primary"
-            illustration={
-              <div
-                style={{
-                  width: 42,
-                  height: 26,
-                  borderRadius: 999,
-                  background: "#fee2e2",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#b91c1c",
-                  fontWeight: 700,
-                  boxShadow:
-                    "0 1px 0 rgba(0,0,0,0.04) inset, 0 6px 14px rgba(2,6,23,0.06)",
-                  border: "1px solid rgba(2,6,23,0.06)",
-                }}
-              >
-                <PrecisionManufacturingRoundedIcon fontSize="small" />
-              </div>
-            }
-            onAction={() => {
-              const params = new URLSearchParams();
-              params.set("page", "1");
-              params.set("tab", "On Hold");
-              navigate(`/project_management?${params.toString()}`);
-            }}
-          />
-        </Grid>
-        <Grid xs={15} md={3}>
+
+        <Grid xs={12} md={3}>
           <CloudStatCard
             loading={isLoading || isFetching}
             value={stats.completed ?? 0}
@@ -316,7 +300,7 @@ function Dash_project() {
           />
         </Grid>
 
-        <Grid xs={15} md={3}>
+        <Grid xs={12} md={3}>
           <CloudStatCard
             loading={isLoading || isFetching}
             value={stats.delayed ?? 0}
@@ -352,7 +336,7 @@ function Dash_project() {
           />
         </Grid>
 
-        <Grid xs={15} md={3}>
+        <Grid xs={12} md={3}>
           <CloudStatCard
             loading={isLoading || isFetching}
             value={stats.onhold ?? 0}
@@ -389,78 +373,74 @@ function Dash_project() {
         </Grid>
       </Grid>
 
-      <Grid container spacing={2} sx={{ mt: 1 }}>
-        <Grid xs={12} md={8}>
-          <WeeklyProjectTimelineCard
-            data={timelineData}
-            loading={paLoading || paFetching}
-            title="Calendar — Selected Range"
-            range={range}
-            onRangeChange={(startDate, endDate) => {
-              const s = new Date(startDate);
-              const e = new Date(endDate);
-              s.setHours(0, 0, 0, 0);
-              e.setHours(0, 0, 0, 0);
-              setRange({ startDate: s, endDate: e });
-            }}
-          />
-        </Grid>
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+                <Grid xs={12} md={8}>
+                    <WeeklyProjectTimelineCard
+                        data={timelineData}
+                        loading={paLoading || paFetching}
+                        title="Calendar — Selected Range"
+                        range={range}
+                        onRangeChange={(startDate, endDate) => {
+                            const s = new Date(startDate);
+                            const e = new Date(endDate);
+                            s.setHours(0, 0, 0, 0);
+                            e.setHours(0, 0, 0, 0);
+                            setRange({ startDate: s, endDate: e }); // triggers RTK refetch
+                        }}
+                    />
+                </Grid>
 
-        <Grid xs={12} md={4}>
-          <ActivityFeedCard
-            title="Recent Notes"
-            items={feedItems}
-            onItemClick={(it) => {
-              if (it.project_id) {
-                navigate(
-                  `/project_detail?project_id=${encodeURIComponent(
-                    it.project_id
-                  )}`
-                );
-              }
-            }}
-            renderRight={(it) => (
-              <span
-                style={{
-                  fontSize: "0.7rem",
-                  fontWeight: 600,
-                  color: "#64748b",
-                }}
-              >
-                {it.ago}
-              </span>
-            )}
-            getAvatar={(it) => it.attachment_url}
-            getTitleLeft={(it) => it.name}
-            getActionVerb={(it) => it.action}
-            getTitleRight={(it) => it.project_name}
-            getTitleRightSub={(it) => it.project_code}
-            getRemarksHtml={(it) => it.comment}
-            getRightText={(it) => it.ago}
-          />
-        </Grid>
-      </Grid>
+                <Grid xs={12} md={4}>
+                    <ActivityFeedCard
+                        title="Recent Notes"
+                        items={feedItems}
+                        onItemClick={(it) => {
+                            if (it.project_id) {
+                                navigate(
+                                    `/project_detail?project_id=${encodeURIComponent(
+                                        it.project_id
+                                    )}`
+                                );
+                            }
+                        }}
+                        renderRight={(it) => (
+                            <span
+                                style={{
+                                    fontSize: "0.7rem",
+                                    fontWeight: 600,
+                                    color: "#64748b",
+                                }}
+                            >
+                                {it.ago}
+                            </span>
+                        )}
+                        getAvatar={(it) => it.attachment_url}
+                        getTitleLeft={(it) => it.name}
+                        getActionVerb={(it) => it.action}
+                        getTitleRight={(it) => it.project_name}
+                        getTitleRightSub={(it) => it.project_code}
+                        getRemarksHtml={(it) => it.comment}
+                        getRightText={(it) => it.ago}
+                    />
+                </Grid>
+            </Grid>
 
-      <Grid container spacing={2} sx={{ mt: 1 }}>
-        <Grid xs={12} md={8}>
-          <TeamLeaderboard
-            rows={perfLoading || perfFetching ? [] : projectDetailRows}
-            title="Project Detail Dashboard"
-            columns={ProjectDetailColumns}
-          />
-        </Grid>
-
-        <Grid xs={12} md={4}>
-          <ProjectsWorkedCard
-            title="Projects worked"
-            data={pbsLoading || pbsFetching ? [] : donutData}
-            total={stateRes?.total ?? 0}
-            totalLabel="Projects"
-          />
-        </Grid>
-      </Grid>
-    </Box>
-  );
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+                <Grid xs={12} md={12}>
+                    {error && <div style={{ color: "crimson" }}>Failed to load: {error?.data?.message || String(error)}</div>}
+                    {isLOadingLineData || isFetchingLineData ? (
+                        <div>Loading…</div>
+                    ) : (
+                        <ActivityFinishLineChart
+                            apiData={LineData}
+                            projectId={projectId}
+                            onProjectChange={handleProjectChange}
+                        />
+                    )}
+                </Grid>
+            </Grid>
+        </Box>
+    );
 }
 
 export default Dash_project;
