@@ -76,6 +76,7 @@ function AllProjects() {
     const t = (selectedTab || "All").toLowerCase();
     if (t === "all") return "";
     if (t === "to be started") return "to be started";
+    if (t === "ongoing") return "ongoing";
     if (t === "delayed") return "delayed";
     if (t === "completed") return "completed";
     if (t === "on hold") return "on hold";
@@ -167,6 +168,7 @@ function AllProjects() {
     const s = String(status || "").toLowerCase();
     if (s === "completed") return "success";
     if (s === "to be started") return "warning";
+    if (s === "ongoing") return "primary";
     if (s === "delayed") return "danger";
     return "neutral";
   };
@@ -235,25 +237,30 @@ function AllProjects() {
             sx={{ bgcolor: "background.level1", borderRadius: "xl" }}
           >
             <TabList sx={{ gap: 1 }}>
-              {["All", "To Be Started", "Completed", "Delayed", "On Hold"].map(
-                (label) => (
-                  <Tab
-                    key={label}
-                    value={label}
-                    disableIndicator
-                    sx={{
-                      borderRadius: "xl",
-                      fontWeight: "md",
-                      "&.Mui-selected": {
-                        bgcolor: "background.surface",
-                        boxShadow: "sm",
-                      },
-                    }}
-                  >
-                    {label}
-                  </Tab>
-                )
-              )}
+              {[
+                "All",
+                "To Be Started",
+                "Ongoing",
+                "Completed",
+                "Delayed",
+                "On Hold",
+              ].map((label) => (
+                <Tab
+                  key={label}
+                  value={label}
+                  disableIndicator
+                  sx={{
+                    borderRadius: "xl",
+                    fontWeight: "md",
+                    "&.Mui-selected": {
+                      bgcolor: "background.surface",
+                      boxShadow: "sm",
+                    },
+                  }}
+                >
+                  {label}
+                </Tab>
+              ))}
             </TabList>
           </Tabs>
         </Box>
@@ -628,6 +635,7 @@ function AllProjects() {
                   }
                 >
                   <Option value="to be started">To be Started</Option>
+                  <Option value="ongoing">Ongoing</Option>
                   <Option value="completed">Completed</Option>
                   <Option value="delayed">Delayed</Option>
                   <Option value="on hold">On hold</Option>

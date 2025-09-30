@@ -65,6 +65,7 @@ export default function CloudStatCard({
           boxShadow:
             "0 6px 16px rgba(15,23,42,0.10), 0 20px 36px rgba(15,23,42,0.08)",
         },
+        height: 160,
         ...sx,
       }}
     >
@@ -73,7 +74,7 @@ export default function CloudStatCard({
           display: "grid",
           gridTemplateColumns: S.gridRightCol,
           alignItems: "center",
-          gap: { xs: 1.25, md: 1.75 },
+          gap: { xs: 1.25, md: 0 },
           mt: 0.5,
         }}
       >

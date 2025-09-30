@@ -17,7 +17,7 @@ import ActivityFeedCard from "./All_Tasks/ActivityCard";
 import { useNavigate } from "react-router-dom";
 import WeeklyProjectTimelineCard from "./WeeklyActivityProject";
 import { HourglassDisabledSharp } from "@mui/icons-material";
-
+import PrecisionManufacturingRoundedIcon from "@mui/icons-material/PrecisionManufacturingRounded";
 /* ---------- helpers ---------- */
 const DONUT_COLORS = [
   "#f59e0b",
@@ -209,8 +209,8 @@ function Dash_project() {
         bgcolor: "background.body",
       }}
     >
-      <Grid container spacing={2} columns={12}>
-        <Grid xs={12} md={3}>
+      <Grid container spacing={2} columns={15}>
+        <Grid xs={15} md={3}>
           <CloudStatCard
             loading={isLoading || isFetching}
             value={stats["to be started"] ?? 0}
@@ -245,8 +245,42 @@ function Dash_project() {
             }}
           />
         </Grid>
-
-        <Grid xs={12} md={3}>
+        <Grid xs={15} md={3}>
+          <CloudStatCard
+            loading={isLoading || isFetching}
+            value={stats.ongoing ?? 0}
+            title="Ongoing Projects"
+            subtitle="Projects ongoing"
+            accent="primary"
+            illustration={
+              <div
+                style={{
+                  width: 42,
+                  height: 26,
+                  borderRadius: 999,
+                  background: "#fee2e2",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#b91c1c",
+                  fontWeight: 700,
+                  boxShadow:
+                    "0 1px 0 rgba(0,0,0,0.04) inset, 0 6px 14px rgba(2,6,23,0.06)",
+                  border: "1px solid rgba(2,6,23,0.06)",
+                }}
+              >
+                <PrecisionManufacturingRoundedIcon fontSize="small" />
+              </div>
+            }
+            onAction={() => {
+              const params = new URLSearchParams();
+              params.set("page", "1");
+              params.set("tab", "On Hold");
+              navigate(`/project_management?${params.toString()}`);
+            }}
+          />
+        </Grid>
+        <Grid xs={15} md={3}>
           <CloudStatCard
             loading={isLoading || isFetching}
             value={stats.completed ?? 0}
@@ -282,7 +316,7 @@ function Dash_project() {
           />
         </Grid>
 
-        <Grid xs={12} md={3}>
+        <Grid xs={15} md={3}>
           <CloudStatCard
             loading={isLoading || isFetching}
             value={stats.delayed ?? 0}
@@ -318,7 +352,7 @@ function Dash_project() {
           />
         </Grid>
 
-        <Grid xs={12} md={3}>
+        <Grid xs={15} md={3}>
           <CloudStatCard
             loading={isLoading || isFetching}
             value={stats.onhold ?? 0}
