@@ -27,9 +27,62 @@ function ProjectManagement() {
 
   const isLoading = isPushing || isUpdatingDeps;
 
+  /** Normalize payload bits coming from the modal:
+   *  - dependencies: always plural array
+   *  - predecessors: array; or build from activity_id/type/lag fallback
+   *  - completion_formula: pass-through if provided (string/empty string allowed)
+   */
+  const normalizeFromModal = (payload = {}) => {
+    // --- dependencies (ensure plural key for backend) ---
+    const dependencies = Array.isArray(payload.dependencies)
+      ? payload.dependencies
+      : Array.isArray(payload.dependency)
+      ? payload.dependency
+      : [];
+
+    // --- predecessors: prefer array, else fallback to single fields ---
+    let predecessors = Array.isArray(payload.predecessors)
+      ? payload.predecessors
+      : [];
+
+    if (
+      predecessors.length === 0 &&
+      payload.activity_id &&
+      (payload.type || payload.lag !== undefined)
+    ) {
+      predecessors = [
+        {
+          activity_id: String(payload.activity_id),
+          type: String(payload.type || "FS").toUpperCase(),
+          lag:
+            Number.isFinite(+payload.lag) && payload.lag !== ""
+              ? Number(payload.lag)
+              : 0,
+        },
+      ];
+    }
+
+    // --- completion formula (optional, global-only on backend) ---
+    const hasCompletionFormula =
+      Object.prototype.hasOwnProperty.call(payload, "completion_formula");
+    const completion_formula = hasCompletionFormula
+      ? String(payload.completion_formula ?? "")
+      : undefined;
+
+    return { dependencies, predecessors, hasCompletionFormula, completion_formula };
+  };
+
   const handleCreate = async (payload) => {
     try {
+      const {
+        dependencies,
+        predecessors,
+        hasCompletionFormula,
+        completion_formula,
+      } = normalizeFromModal(payload || {});
+
       if (payload && payload.__mode === "existing") {
+        // ---- Update GLOBAL/PROJECT activity master ----
         const id =
           payload.activityId ||
           payload.id ||
@@ -39,40 +92,47 @@ function ProjectManagement() {
 
         if (!id) {
           console.error(
-            "Missing master Activity _id for dependency update. Payload:",
+            "Missing master Activity _id for update. Payload:",
             payload
           );
           toast.error("Missing activity id for existing activity.");
           return;
         }
-        const deps = Array.isArray(payload.dependencies)
-          ? payload.dependencies
-          : [];
-
-        if (!deps.length) {
-          toast.error("Please select at least one dependency.");
-          return;
-        }
 
         const isGlobal = payload.__scope === "global";
+
         if (!isGlobal && !payload.project_id) {
           toast.error("Missing project id for project-scoped update.");
           return;
         }
 
+        // At least one change must be present for update
+        if (!dependencies.length && !predecessors.length && !hasCompletionFormula) {
+          toast.error("Nothing to update.");
+          return;
+        }
+
+        const body = {
+          // backend expects 'dependencies'
+          ...(dependencies.length ? { dependencies } : {}),
+          ...(predecessors.length ? { predecessors } : {}),
+          // only send completion_formula for global updates
+          ...(isGlobal && hasCompletionFormula ? { completion_formula } : {}),
+        };
+
         await updateDependency({
           id,
           global: isGlobal,
           projectId: isGlobal ? undefined : payload.project_id,
-          body: { dependencies: deps },
+          body,
         }).unwrap();
 
-        toast.success("Dependencies updated successfully");
+        toast.success("Activity updated successfully");
         setOpenAdd(false);
         return;
       }
 
-      // NEW activity: push into project
+      // ---- NEW activity: push into project ----
       if (!payload?.project_id) {
         toast.error("Pick a project first.");
         return;
@@ -83,7 +143,11 @@ function ProjectManagement() {
         name: payload.name,
         description: payload.description,
         type: payload.type,
-        dependencies: payload.dependencies ?? payload.dependency ?? [],
+        // backend for create typically expects 'dependencies'
+        dependencies,
+        // include predecessors for create; backend may ignore if unsupported
+        ...(predecessors.length ? { predecessors } : {}),
+        // Not sending completion_formula on create-to-project; it’s global-only
       }).unwrap();
 
       toast.success("Activity added to project");
