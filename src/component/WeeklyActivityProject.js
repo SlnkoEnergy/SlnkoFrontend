@@ -151,6 +151,14 @@ function buildTasksFromData(data) {
 
     for (const a of proj.activities) {
       const parentActivityId = id++;
+
+      // FIX (2): give label row a minimal hidden 1-day window so it renders
+      const seed =
+        (a.baselineStart && new Date(a.baselineStart)) ||
+        (a.start && new Date(a.start)) ||
+        new Date();
+      const seedOk = isValidDate(seed) ? seed : new Date();
+
       tasks.push({
         id: parentActivityId,
         parent: projId,
@@ -159,6 +167,8 @@ function buildTasksFromData(data) {
         open: true,
         readonly: true,
         _rowkind: "activity-label",
+        start_date: fmtISODate(seedOk),
+        end_date: fmtISODate(addDays(seedOk, 1)),
       });
 
       const bS = a.baselineStart ? new Date(a.baselineStart) : null;
@@ -197,7 +207,8 @@ function buildTasksFromData(data) {
           text: "Actual",
           start_date: isValidDate(sA) ? fmtISODate(sA) : null,
           end_date: isValidDate(eA) ? fmtISODate(toExclusiveEnd(eA)) : null,
-          progress: typeof a.progress === "number" ? a.progress : completed ? 1 : 0,
+          progress:
+            typeof a.progress === "number" ? a.progress : completed ? 1 : 0,
           readonly: true,
           _rowkind: "actual",
           _actual_state: actualState,
@@ -234,7 +245,11 @@ function makeScales(view) {
         step: 1,
         format: (d) => (d.getFullYear() === yyyy ? m(d) : my(d)),
       },
-      { unit: "week", step: 1, format: (d) => `W${gantt.date.date_to_str("%W")(d)}` },
+      {
+        unit: "week",
+        step: 1,
+        format: (d) => `W${gantt.date.date_to_str("%W")(d)}`,
+      },
     ];
   }
   if (view === "year") {
@@ -246,7 +261,11 @@ function makeScales(view) {
   // 'all'
   return [
     { unit: "month", step: 1, format: "%F %Y" },
-    { unit: "week", step: 1, format: (d) => `W${gantt.date.date_to_str("%W")(d)}` },
+    {
+      unit: "week",
+      step: 1,
+      format: (d) => `W${gantt.date.date_to_str("%W")(d)}`,
+    },
   ];
 }
 
@@ -306,9 +325,12 @@ export default function WeeklyProjectTimelineCard({
   const baseRange = useMemo(() => {
     const s = selection?.startDate;
     const e = selection?.endDate;
-    const start =
-      isValidDate(s) ? startOfDay(s) : startOfDay(new Date(dataMin));
-    const endInc = isValidDate(e) ? startOfDay(e) : startOfDay(new Date(dataMax));
+    const start = isValidDate(s)
+      ? startOfDay(s)
+      : startOfDay(new Date(dataMin));
+    const endInc = isValidDate(e)
+      ? startOfDay(e)
+      : startOfDay(new Date(dataMax));
     return { start, end: addDays(endInc, 1) };
   }, [selection, dataMin, dataMax]);
 
@@ -328,7 +350,9 @@ export default function WeeklyProjectTimelineCard({
   const initedWithRef = useRef(null);
 
   useEffect(() => {
-    const container = open ? modalContainerRef.current : cardContainerRef.current;
+    const container = open
+      ? modalContainerRef.current
+      : cardContainerRef.current;
     if (!container) return;
 
     const needInit = initedWithRef.current !== container;
@@ -371,7 +395,9 @@ export default function WeeklyProjectTimelineCard({
       gantt.templates.tooltip_text = (start, end, task) => {
         const endInc = addDays(end, -1);
         if (task._rowkind === "baseline") {
-          return `<b>${task.text}</b><br/>${df(start)} – ${df(endInc)} (baseline)`;
+          return `<b>${task.text}</b><br/>${df(start)} – ${df(
+            endInc
+          )} (baseline)`;
         }
         if (task._rowkind === "actual") {
           const state =
@@ -380,7 +406,9 @@ export default function WeeklyProjectTimelineCard({
               : task._actual_state === "late"
               ? "late"
               : "in progress";
-          return `<b>${task.text}</b><br/>${df(start)} – ${df(endInc)} (actual, ${state})`;
+          return `<b>${task.text}</b><br/>${df(start)} – ${df(
+            endInc
+          )} (actual, ${state})`;
         }
         return `<b>${task.text}</b>`;
       };
@@ -388,10 +416,14 @@ export default function WeeklyProjectTimelineCard({
       gantt.templates.task_class = (_s, _e, task) => {
         if (task._rowkind === "baseline") return "row-baseline";
         if (task._rowkind === "actual") {
-          if (task._actual_state === "ontime") return "row-actual row-actual-ontime";
-          if (task._actual_state === "late") return "row-actual row-actual-late";
+          if (task._actual_state === "ontime")
+            return "row-actual row-actual-ontime";
+          if (task._actual_state === "late")
+            return "row-actual row-actual-late";
           return "row-actual row-actual-running";
         }
+        // hide placeholder bar for activity label (keeps row renderable)
+        if (task._rowkind === "activity-label") return "gantt_hidden";
         return "";
       };
 
@@ -408,7 +440,7 @@ export default function WeeklyProjectTimelineCard({
     gantt.config.start_date = baseRange.start;
     gantt.config.end_date = baseRange.end;
 
-    // refresh data (safe now; already inited)
+    // refresh data
     gantt.clearAll();
     gantt.parse({ data: tasksMemo });
 
@@ -433,11 +465,7 @@ export default function WeeklyProjectTimelineCard({
       window.removeEventListener("resize", onResize);
       gantt.detachEvent(h1);
       gantt.detachEvent(h2);
-      // do not clear here (prevents StrictMode flicker)
-      if (initedWithRef.current !== container) {
-        // if container will change (enter/exit fullscreen), let next init own state
-        gantt.clearAll();
-      }
+      // FIX (1): do NOT clearAll() here; cleanup can race and blank the grid
     };
   }, [
     data,
@@ -571,8 +599,17 @@ export default function WeeklyProjectTimelineCard({
                 editableDateInputs
                 rangeColors={["#2563eb"]}
               />
-              <Stack direction="row" justifyContent="flex-end" gap={1} sx={{ mt: 1 }}>
-                <Button size="sm" variant="plain" onClick={() => setRangeOpen(false)}>
+              <Stack
+                direction="row"
+                justifyContent="flex-end"
+                gap={1}
+                sx={{ mt: 1 }}
+              >
+                <Button
+                  size="sm"
+                  variant="plain"
+                  onClick={() => setRangeOpen(false)}
+                >
                   Cancel
                 </Button>
                 <Button size="sm" onClick={applyRange}>
