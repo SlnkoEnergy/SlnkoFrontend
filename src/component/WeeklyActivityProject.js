@@ -118,8 +118,8 @@ function buildTasksFromData(data) {
           typeof row.progress === "number"
             ? row.progress
             : typeof row.percent_complete === "number"
-            ? row.percent_complete / 100
-            : 0,
+              ? row.percent_complete / 100
+              : 0,
         status: row.status ?? row.current_status ?? "",
         completed:
           String(row.status || "").toLowerCase() === "done" ||
@@ -362,6 +362,7 @@ export default function WeeklyProjectTimelineCard({
     if (needInit) {
       // one-time config per container
       gantt.plugins({ tooltip: true });
+      gantt.config.xml_date = "%Y-%m-%d";
       gantt.config.readonly = true;
       gantt.config.drag_move = false;
       gantt.config.drag_progress = false;
@@ -407,8 +408,8 @@ export default function WeeklyProjectTimelineCard({
             task._actual_state === "ontime"
               ? "on time"
               : task._actual_state === "late"
-              ? "late"
-              : "in progress";
+                ? "late"
+                : "in progress";
           return `<b>${task.text}</b><br/>${df(start)} – ${df(
             endInc
           )} (actual, ${state})`;
@@ -439,13 +440,15 @@ export default function WeeklyProjectTimelineCard({
     }
 
     // always update window & scales before data
-    gantt.config.scales = makeScales(view);
-    gantt.config.start_date = baseRange.start;
-    gantt.config.end_date = baseRange.end;
+    gantt.batchUpdate(() => {
+      gantt.config.scales = makeScales(view);
+      gantt.config.start_date = baseRange.start;
+      gantt.config.end_date = baseRange.end;
 
-    // refresh data
-    gantt.clearAll();
-    gantt.parse({ data: tasksMemo });
+      // refresh data
+      gantt.clearAll();
+      gantt.parse({ data: tasksMemo });
+    })
 
     // keep scroll position when toggling tree
     const keepScrollAndRender = () => {
@@ -495,17 +498,21 @@ export default function WeeklyProjectTimelineCard({
       (+gantt.config.start_date !== +newStart ||
         +gantt.config.end_date !== +newEndEx)
     ) {
-      const ps = gantt.config.preserve_scroll;
-      gantt.config.start_date = newStart;
-      gantt.config.end_date = newEndEx;
-      gantt.config.preserve_scroll = false;
-      gantt.render();
-      gantt.config.preserve_scroll = ps;
+
+      gantt.batchUpdate(() => {
+        const ps = gantt.config.preserve_scroll;
+        gantt.config.start_date = newStart;
+        gantt.config.end_date = newEndEx;
+        gantt.config.preserve_scroll = false;
+        gantt.render();
+        gantt.config.preserve_scroll = ps;
+      })
     }
 
     onRangeChange?.(ymd(s), ymd(e));
     setRangeOpen(false);
   };
+
 
   return (
     <>
