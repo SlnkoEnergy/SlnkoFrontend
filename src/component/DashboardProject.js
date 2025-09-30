@@ -404,7 +404,7 @@ function Dash_project() {
               const e = new Date(endDate);
               s.setHours(0, 0, 0, 0);
               e.setHours(0, 0, 0, 0);
-              setRange({ startDate: s, endDate: e }); // triggers RTK refetch
+              setRange({ startDate: s, endDate: e }); 
             }}
           />
         </Grid>

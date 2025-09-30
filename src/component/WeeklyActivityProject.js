@@ -118,8 +118,8 @@ function buildTasksFromData(data) {
           typeof row.progress === "number"
             ? row.progress
             : typeof row.percent_complete === "number"
-              ? row.percent_complete / 100
-              : 0,
+            ? row.percent_complete / 100
+            : 0,
         status: row.status ?? row.current_status ?? "",
         completed:
           String(row.status || "").toLowerCase() === "done" ||
@@ -160,9 +160,7 @@ function buildTasksFromData(data) {
 
       // label row should run until baseline end (fallback: actual; fallback: 1 day)
       const seed =
-        (isValidDate(bS) && bS) ||
-        (isValidDate(sA) && sA) ||
-        new Date();
+        (isValidDate(bS) && bS) || (isValidDate(sA) && sA) || new Date();
 
       const labelStart = seed;
       const labelEnd =
@@ -415,8 +413,8 @@ export default function WeeklyProjectTimelineCard({
             task._actual_state === "ontime"
               ? "on time"
               : task._actual_state === "late"
-                ? "late"
-                : "in progress";
+              ? "late"
+              : "in progress";
           return `<b>${task.text}</b><br/>${df(start)} – ${df(
             endInc
           )} (actual, ${state})`;
