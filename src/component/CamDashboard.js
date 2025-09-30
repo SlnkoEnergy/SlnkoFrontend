@@ -450,6 +450,25 @@ function Dash_cam() {
       alert("Failed to change Assignies");
     }
   }
+  const cannotSeePR =
+    user?.department === "CAM" ||
+    user?.name === "Sushant Ranjan Dubey" ||
+    user?.name === "Sanjiv Kumar";
+
+  const baseHeaders = [
+    "Project Id",
+    "Customer",
+    "Mobile",
+    "State",
+    "Type",
+    "Capacity(AC/DC)",
+    "Slnko Service Charges (with GST)",
+    "Handover",
+    "Action",
+  ];
+  if (!cannotSeePR) baseHeaders.push("Purchsase Request");
+
+  const totalCols = 1 + baseHeaders.length;
 
   return (
     <>
@@ -616,6 +635,7 @@ function Dash_cam() {
         >
           <thead>
             <tr style={{ backgroundColor: "neutral.softBg" }}>
+              {/* checkbox column */}
               <th
                 style={{
                   position: "sticky",
@@ -638,18 +658,9 @@ function Dash_cam() {
                   }
                 />
               </th>
-              {[
-                "Project Id",
-                "Customer",
-                "Mobile",
-                "State",
-                "Type",
-                "Capacity(AC/DC)",
-                "Slnko Service Charges (with GST)",
-                "Handover",
-                "Action",
-                "Purchsase Request",
-              ].map((header, index) => (
+
+              {/* dynamic headers */}
+              {baseHeaders.map((header, index) => (
                 <th
                   key={index}
                   style={{
@@ -668,11 +679,12 @@ function Dash_cam() {
               ))}
             </tr>
           </thead>
+
           <tbody>
             {isLoading ? (
               <tr>
                 <td
-                  colSpan={10}
+                  colSpan={totalCols}
                   style={{ padding: "8px", textAlign: "center" }}
                 >
                   <Box
@@ -697,6 +709,7 @@ function Dash_cam() {
                     "&:hover": { backgroundColor: "neutral.plainHoverBg" },
                   }}
                 >
+                  {/* checkbox cell */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -712,6 +725,8 @@ function Dash_cam() {
                       }
                     />
                   </td>
+
+                  {/* Project Id */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -739,6 +754,8 @@ function Dash_cam() {
                       </Tooltip>
                     )}
                   </td>
+
+                  {/* Customer */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -749,6 +766,7 @@ function Dash_cam() {
                     {project.customer || "-"}
                   </td>
 
+                  {/* Mobile */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -759,6 +777,7 @@ function Dash_cam() {
                     {project.number || "-"}
                   </td>
 
+                  {/* State */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -768,6 +787,8 @@ function Dash_cam() {
                   >
                     {project.state || "-"}
                   </td>
+
+                  {/* Type (scheme) */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -778,6 +799,7 @@ function Dash_cam() {
                     {project.scheme || "-"}
                   </td>
 
+                  {/* Capacity(AC/DC) */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -790,6 +812,7 @@ function Dash_cam() {
                       : "-"}
                   </td>
 
+                  {/* Slnko Service Charges (with GST) */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -800,6 +823,7 @@ function Dash_cam() {
                     {project.total_gst || "-"}
                   </td>
 
+                  {/* Handover */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -816,6 +840,7 @@ function Dash_cam() {
                     />
                   </td>
 
+                  {/* Action */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -864,11 +889,53 @@ function Dash_cam() {
                       </span>
                     )}
                   </td>
+
+                  {/* Purchase Request (only if allowed) */}
+                  {!cannotSeePR && (
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "left",
+                      }}
+                    >
+                      {project.is_locked === "locked" &&
+                        project.scope_status !== "open" &&
+                        project.status_of_handoversheet === "Approved" ? (
+                        <Button
+                          size="xs"
+                          variant="soft"
+                          color="primary"
+                          startDecorator={
+                            <AddCircleIcon sx={{ mr: 0.8, fontSize: "lg" }} />
+                          }
+                          sx={{
+                            height: "35px",
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            minHeight: "20px",
+                            lineHeight: "1.5",
+                          }}
+                          onClick={() => handleCreatePR(project)}
+                        >
+                          Create PR
+                        </Button>
+                      ) : (
+                        <span style={{ color: "dimgray" }}>
+                          See Project Detail
+                        </span>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={9} style={{ padding: "8px", textAlign: "left" }}>
+                <td
+                  colSpan={totalCols}
+                  style={{ padding: "8px", textAlign: "left" }}
+                >
                   <Box
                     sx={{
                       fontStyle: "italic",
@@ -881,11 +948,7 @@ function Dash_cam() {
                     <img
                       src={NoData}
                       alt="No data"
-                      style={{
-                        width: "50px",
-                        height: "50px",
-                        marginBottom: "8px",
-                      }}
+                      style={{ width: 50, height: 50, marginBottom: 8 }}
                     />
                     <Typography fontStyle="italic">
                       No Handover Sheet Found
