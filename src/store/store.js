@@ -8,13 +8,12 @@ import { engsLTPanelApi } from "../redux/Eng/ltsSlice";
 import { engsModuleApi } from "../redux/Eng/modulesSlice";
 import { engsPoolingApi } from "../redux/Eng/poolingsSlice";
 import { engsTransformerApi } from "../redux/Eng/transformersSlice";
-import { expensesApi } from "../redux/Expense/expenseSlice";
+import { expensesApi } from "../redux/expenseSlice";
 import { templatesApi } from "../redux/Eng/templatesSlice";
 import { billsApi } from "../redux/billsSlice";
 import { camsApi } from "../redux/camsSlice";
 import { commsApi } from "../redux/commsSlice";
 import { engsApi } from "../redux/engsSlice";
-import { leadsApi } from "../redux/leadsSlice";
 import { loginsApi } from "../redux/loginSlice";
 import { paymentsApi } from "../redux/paymentsSlice";
 import { projectsApi } from "../redux/projectsSlice";
@@ -28,14 +27,16 @@ import { vendorsApi } from "../redux/vendorSlice";
 import { poHistoryApi } from "../redux/poHistory";
 import { inspectionApi } from "../redux/inspectionSlice";
 import { postsApi } from "../redux/postsSlice";
+import { approvalsApi } from "../redux/ApprovalsSlice";
+import {leadsApi} from "../redux/leadsSlice"
 
 export const store = configureStore({
   reducer: {
     [projectsApi.reducerPath]: projectsApi.reducer,
     [paymentsApi.reducerPath]: paymentsApi.reducer,
     [purchasesApi.reducerPath]: purchasesApi.reducer,
-    [leadsApi.reducerPath]: leadsApi.reducer,
     [tasksApi.reducerPath]: tasksApi.reducer,
+    [leadsApi.reducerPath]: leadsApi.reducer,
     [loginsApi.reducerPath]: loginsApi.reducer,
     [commsApi.reducerPath]: commsApi.reducer,
     [camsApi.reducerPath]: camsApi.reducer,
@@ -59,15 +60,16 @@ export const store = configureStore({
     [vendorsApi.reducerPath]: vendorsApi.reducer,
     [poHistoryApi.reducerPath]: poHistoryApi.reducer,
     [inspectionApi.reducerPath]: inspectionApi.reducer,
-    [postsApi.reducerPath] : postsApi.reducer
+    [postsApi.reducerPath] : postsApi.reducer,
+    [approvalsApi.reducerPath] : approvalsApi.reducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
       projectsApi.middleware,
       paymentsApi.middleware,
       purchasesApi.middleware,
-      leadsApi.middleware,
       tasksApi.middleware,
+      leadsApi.middleware,
       loginsApi.middleware,
       commsApi.middleware,
       camsApi.middleware,
@@ -91,6 +93,7 @@ export const store = configureStore({
       vendorsApi.middleware,
       poHistoryApi.middleware,
       inspectionApi.middleware,
-      postsApi.middleware
+      postsApi.middleware,
+      approvalsApi.middleware
     ),
 });

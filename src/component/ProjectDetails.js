@@ -21,6 +21,7 @@ import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
+import Timelapse from "@mui/icons-material/Timelapse";
 import { useGetProjectByIdQuery } from "../redux/projectsSlice";
 import {
   useGetPostsQuery,
@@ -77,6 +78,130 @@ const canUserSeeHandover = (user) => {
   const special = user.emp_id === "SE-013";
   const privileged = special || role === "admin" || role === "superadmin";
   return privileged || dept !== "SCM";
+};
+
+/* ------------ Remaining Days helpers (project-only) ------------- */
+function toDMY(date) {
+  try {
+    const d = new Date(date);
+    if (Number.isNaN(d.getTime())) return "-";
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const yyyy = d.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+  } catch {
+    return "-";
+  }
+}
+
+/** Pick preferred upcoming target among project dates. */
+function pickCountdownTargetFromProject(project) {
+  const candidates = [];
+  const pushIfValid = (key, value) => {
+    if (!value) return;
+    const d = new Date(value);
+    if (!Number.isNaN(d.getTime())) candidates.push({ key, date: d });
+  };
+  pushIfValid("project_completion_date", project?.project_completion_date);
+  pushIfValid("ppa_expiry_date", project?.ppa_expiry_date);
+  pushIfValid("bd_commitment_date", project?.bd_commitment_date);
+
+  if (!candidates.length) return { target: null, usedKey: null };
+
+  const prefOrder = [
+    "project_completion_date",
+    "ppa_expiry_date",
+    "bd_commitment_date",
+  ];
+  const now = Date.now();
+
+  // try preferred keys that are in the future
+  for (const k of prefOrder) {
+    const hit = candidates.find((c) => c.key === k && c.date.getTime() > now);
+    if (hit) return { target: hit.date, usedKey: hit.key };
+  }
+
+  // else earliest future
+  const futures = candidates.filter((c) => c.date.getTime() > now);
+  if (futures.length) {
+    const soonest = futures.reduce((a, b) => (a.date < b.date ? a : b));
+    return { target: soonest.date, usedKey: soonest.key };
+  }
+
+  // else latest past (already expired)
+  const latestPast = candidates.reduce((a, b) => (a.date > b.date ? a : b));
+  return { target: latestPast.date, usedKey: latestPast.key };
+}
+
+/** Live countdown chip */
+function RemainingDaysChip({ target, usedKey }) {
+  const [text, setText] = useState("—");
+  const [color, setColor] = useState("neutral");
+
+  useEffect(() => {
+    if (!target) {
+      setText("—");
+      setColor("neutral");
+      return;
+    }
+    let cancelled = false;
+    const tick = () => {
+      const now = new Date().getTime();
+      const end = new Date(target).getTime();
+      const diff = end - now;
+      if (diff <= 0) {
+        if (!cancelled) {
+          setText("Expired");
+          setColor("danger");
+        }
+        return;
+      }
+      const seconds = Math.floor(diff / 1000);
+      const d = Math.floor(seconds / (24 * 3600));
+      const h = Math.floor((seconds % (24 * 3600)) / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+
+      const parts = [];
+      if (d > 0) parts.push(`${d}d`);
+      parts.push(`${h}h`, `${m}m`, `${s}s`);
+
+      let c = "success";
+      if (d < 10) c = "danger";
+      else if (d < 30) c = "warning";
+
+      if (!cancelled) {
+        setText(parts.join(" "));
+        setColor(c);
+      }
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [target]);
+
+  const label =
+    usedKey === "project_completion_date"
+      ? "Project Completion"
+      : usedKey === "ppa_expiry_date"
+      ? "PPA Expiry"
+      : usedKey === "bd_commitment_date"
+      ? "BD Commitment"
+      : "Target";
+
+  return (
+    <Tooltip
+      title={target ? `${label}: ${toDMY(target)}` : "No target date"}
+      arrow
+    >
+      <Chip variant="soft" color={color} size="sm" sx={{ fontWeight: 600 }}>
+        {text}
+      </Chip>
+    </Tooltip>
+  );
 }
 
 export default function Project_Detail() {
@@ -111,7 +236,7 @@ export default function Project_Detail() {
     } else {
       setTabValue(requested);
     }
-  }, [searchParams, allowedPO]);
+  }, [searchParams, allowedPO, setSearchParams]);
 
   const handleTabChange = (_e, newValue) => {
     const next = String(newValue);
@@ -187,6 +312,22 @@ export default function Project_Detail() {
   const headerOffset = 72;
   const p_id = projectDetails?.p_id;
 
+  const { target: countdownTarget, usedKey: countdownKey } = useMemo(
+    () => pickCountdownTargetFromProject(projectDetails),
+    [projectDetails]
+  );
+
+  const fmtLocalDate = (v) => {
+    const d = v ? new Date(v) : null;
+    return d && !Number.isNaN(d.getTime())
+      ? d.toLocaleDateString(undefined, {
+          year: "numeric",
+          month: "short",
+          day: "2-digit",
+        })
+      : "-";
+  };
+
   return (
     <Box
       sx={{
@@ -220,7 +361,7 @@ export default function Project_Detail() {
             variant="outlined"
             sx={{
               position: { xs: "static", md: "sticky" },
-              top: { md: headerOffset + 16 }, 
+              top: { md: headerOffset + 16 },
               borderRadius: "lg",
               width: "100%",
               flexShrink: 0,
@@ -228,6 +369,25 @@ export default function Project_Detail() {
               overflow: { md: "auto" },
             }}
           >
+            {/* Remaining row ABOVE avatar */}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1.25,
+                mb: 1,
+              }}
+            >
+              <Timelapse fontSize="small" color="primary" />
+              <Typography level="body-sm" sx={{ color: "text.secondary" }}>
+                Remaining:
+              </Typography>
+              <RemainingDaysChip
+                target={countdownTarget}
+                usedKey={countdownKey}
+              />
+            </Box>
+
             <Box
               sx={{
                 display: "flex",
@@ -339,6 +499,18 @@ export default function Project_Detail() {
               <Typography level="body-sm">
                 <b>Tariff:</b> {projectDetails?.tarrif}
               </Typography>
+              <Typography level="body-sm">
+                <b>PPA Expiry Date:</b>{" "}
+                {fmtLocalDate(projectDetails?.ppa_expiry_date)}
+              </Typography>
+              <Typography level="body-sm">
+                <b>BD Commitment Date:</b>{" "}
+                {fmtLocalDate(projectDetails?.bd_commitment_date)}
+              </Typography>
+              <Typography level="body-sm">
+                <b>Project Completion Date:</b>{" "}
+                {fmtLocalDate(projectDetails?.bd_commitment_date)}
+              </Typography>
               {currentUser?.department !== "Engineering" &&
                 currentUser?.department !== "SCM" && (
                   <>
@@ -356,14 +528,13 @@ export default function Project_Detail() {
             sx={{
               borderRadius: "lg",
               p: { xs: 1, md: 1.5 },
-              minWidth: 0, // prevent overflow from long contents
+              minWidth: 0,
             }}
           >
             <Tabs
               value={tabValue}
               onChange={handleTabChange}
               sx={{
-                // make TabList sticky
                 "& .MuiTabs-list": {
                   position: { md: "sticky" },
                   top: { md: headerOffset },
@@ -381,14 +552,11 @@ export default function Project_Detail() {
                 {allowedPO && <Tab value="po">Purchase Order</Tab>}
                 <Tab value="eng">Engineering</Tab>
               </TabList>
-               <TabPanel
+              <TabPanel
                 value="notes"
                 sx={{
                   p: { xs: 1, md: 1.5 },
-                  height: {
-                    xs: "auto",
-                    md: `100%`,
-                  },
+                  height: { xs: "auto", md: `100%` },
                   overflowY: { md: "auto" },
                 }}
               >
@@ -399,10 +567,7 @@ export default function Project_Detail() {
                   value="handover"
                   sx={{
                     p: { xs: 1, md: 1.5 },
-                    height: {
-                      xs: "auto",
-                      md: `100%`,
-                    },
+                    height: { xs: "auto", md: `100%` },
                     overflowY: { md: "auto" },
                   }}
                 >
@@ -422,10 +587,7 @@ export default function Project_Detail() {
                 value="scope"
                 sx={{
                   p: { xs: 1, md: 1.5 },
-                  height: {
-                    xs: "auto",
-                    md: `100%`,
-                  },
+                  height: { xs: "auto", md: `100%` },
                   overflowY: { md: "auto" },
                 }}
               >
@@ -440,14 +602,10 @@ export default function Project_Detail() {
                   value="po"
                   sx={{
                     p: { xs: 1, md: 1.5 },
-                    height: {
-                      xs: "auto",
-                      md: `100%`,
-                    },
+                    height: { xs: "auto", md: `100%` },
                     overflowY: { md: "auto" },
                   }}
                 >
-                  {/* Use full width; avoid fixed vw so it's good on big screens */}
                   <Box sx={{ width: "100%" }}>
                     <PurchaseRequestCard project_code={projectDetails?.code} />
                   </Box>
@@ -458,10 +616,7 @@ export default function Project_Detail() {
                 value="eng"
                 sx={{
                   p: { xs: 1, md: 1.5 },
-                  height: {
-                    xs: "auto",
-                    md: `100%`,
-                  },
+                  height: { xs: "auto", md: `100%` },
                   overflowY: { md: "auto" },
                 }}
               >

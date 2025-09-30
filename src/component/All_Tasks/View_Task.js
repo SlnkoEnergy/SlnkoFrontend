@@ -27,7 +27,6 @@ import {
   Input,
   Autocomplete,
 } from "@mui/joy";
-import { Dropdown, Menu, MenuButton, MenuItem } from "@mui/joy";
 
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
 import KeyboardArrowRightRoundedIcon from "@mui/icons-material/KeyboardArrowRightRounded";
@@ -45,8 +44,8 @@ import ArchiveOutlinedIcon from "@mui/icons-material/ArchiveOutlined";
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
-import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import { toast } from "react-toastify";
 import DOMPurify from "dompurify";
 import {
@@ -56,7 +55,6 @@ import {
   useGetAllUserQuery,
   useCreateSubTaskMutation,
 } from "../../redux/globalTaskSlice";
-
 import CommentComposer from "../Comments";
 
 /* ---------------- meta / utils ---------------- */
@@ -85,6 +83,8 @@ const statusColor = (s) => {
       return "success";
     case "cancelled":
       return "warning";
+    case "system":
+      return "neutral";
     default:
       return "neutral";
   }
@@ -676,18 +676,21 @@ export default function ViewTaskPage() {
     useUpdateTaskStatusMutation();
   const [updateTask] = useUpdateTaskMutation();
 
-  /* ----- Followers modal state ----- */
+  /* ----- Followers modal state (independent of status) ----- */
   const [openFollowers, setOpenFollowers] = useState(false);
-  const [selectedFollowers, setSelectedFollowers] = useState([]); // {_id,name,avatar}
+  const [selectedFollowers, setSelectedFollowers] = useState([]);
   const [savingFollowers, setSavingFollowers] = useState(false);
 
   /* ----- Reassign modal state (MULTI SELECT) ----- */
   const [openReassign, setOpenReassign] = useState(false);
-  const [selectedAssignees, setSelectedAssignees] = useState([]); // [{_id,name,avatar}]
-  const [reassignDeadline, setReassignDeadline] = useState(""); // yyyy-MM-ddTHH:mm
+  const [selectedAssignees, setSelectedAssignees] = useState([]);
+  const [reassignDeadline, setReassignDeadline] = useState("");
   const [savingReassign, setSavingReassign] = useState(false);
 
   const [createSubTask] = useCreateSubTaskMutation();
+
+  // Quick-setup modal (compact editor for system step)
+  const [openSetup, setOpenSetup] = useState(false);
 
   // who am I?
   const meId = useMemo(() => {
@@ -715,14 +718,18 @@ export default function ViewTaskPage() {
   }, [taskApi]);
 
   const effectiveCurrentStatus = task?.current_status;
+  const currentStatusLower = String(
+    effectiveCurrentStatus?.status || ""
+  ).toLowerCase();
+  const isSystem = currentStatusLower === "system";
+  const isPending = currentStatusLower === "pending";
 
   // Select effective status value into the modal select
   useEffect(() => {
     const s = effectiveCurrentStatus?.status;
     if (!s || s.toLowerCase() === "draft") setStatus("Select Status");
     else setStatus(s.toLowerCase());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [task]);
+  }, [task]); // eslint-disable-line
 
   // followers options (excluding already-following)
   const allUserOptions = useMemo(() => {
@@ -790,25 +797,7 @@ export default function ViewTaskPage() {
     }
   };
 
-  const projects = useMemo(() => {
-    if (Array.isArray(task?.project_id) && task?.project_id?.length) {
-      return task.project_id.map((p) => ({
-        code: p.code ?? p.projectCode ?? "-",
-        name: p.name ?? p.projectName ?? "-",
-      }));
-    }
-    if (task?.project)
-      return [
-        { code: task.project.code ?? "-", name: task.project.name ?? "-" },
-      ];
-    if (task?.project_code || task?.project_name)
-      return [
-        { code: task.project_code ?? "-", name: task.project_name ?? "-" },
-      ];
-    return [];
-  }, [task]);
-
-  // ----- Subtask-aware view (subtask.assigned_to is now ARRAY) -----
+  // ----- Subtask-aware view -----
   const subtasks = task?.sub_tasks || [];
   const mySubtask = useMemo(() => {
     return (
@@ -822,17 +811,149 @@ export default function ViewTaskPage() {
       }) || null
     );
   }, [subtasks, meId]);
-  const viewIsSubtask = !!mySubtask;
-
-  const createdUser = task?.createdBy?._id === meId;
 
   const effectiveStatusHistory = task?.status_history || [];
-
   const hasReassign = subtasks.length > 0;
+
+  /* -------- compact edit state (used only in modal) -------- */
+  const [editedTitle, setEditedTitle] = useState("");
+  const [editedDesc, setEditedDesc] = useState("");
+  const [editedPriority, setEditedPriority] = useState(null);
+  const [editedAssignees, setEditedAssignees] = useState([]);
+  const [savingBasics, setSavingBasics] = useState(false);
+
+  useEffect(() => {
+    if (!task) return;
+    setEditedTitle(task?.title || "");
+    setEditedDesc(task?.description || "");
+    setEditedPriority(
+      Number(task?.priority) > 0 ? Number(task.priority) : null
+    );
+
+    const assignees = Array.isArray(task?.assigned_to) ? task.assigned_to : [];
+    setEditedAssignees(
+      assignees.map((u) => ({
+        _id: idOf(u),
+        name: u?.name || u?.fullName || u?.displayName || u?.email || "User",
+        avatar: getAvatarUrl(u),
+      }))
+    );
+  }, [task]);
+
+  const { data: allUsers } = useGetAllUserQuery({ department: "" });
+
+  // Reassign assignee options (exclude already assigned_to)
+  const allAssigneeOptions = useMemo(() => {
+    const apiUsers = Array.isArray(allUsers)
+      ? allUsers
+      : Array.isArray(allUsers?.data)
+      ? allUsers.data
+      : [];
+
+    const assignedIds = new Set(
+      (task?.assigned_to || []).map((u) => idOf(u)).filter(Boolean)
+    );
+
+    const seen = new Set();
+    const out = [];
+
+    for (const u of apiUsers) {
+      const _id = idOf(u);
+      if (!_id || seen.has(_id)) continue;
+      if (assignedIds.has(_id)) continue;
+
+      seen.add(_id);
+      out.push({
+        _id,
+        name: u?.name || u?.fullName || u?.displayName || u?.email || "User",
+        avatar: getAvatarUrl(u),
+      });
+    }
+
+    return out;
+  }, [allUsers, task?.assigned_to]);
+
+  const saveBasicsIfChanged = async () => {
+    if (!id) throw new Error("Task id missing");
+    const body = {};
+    const currentTitle = task?.title || "";
+    const currentDesc = task?.description || "";
+    const currentPriority =
+      Number(task?.priority) > 0 ? Number(task.priority) : null;
+    const currentAssigneeIds = (task?.assigned_to || [])
+      .map(idOf)
+      .filter(Boolean);
+    const editedAssigneeIds = (editedAssignees || []).map((u) => u._id);
+
+    if (editedTitle.trim() !== currentTitle.trim())
+      body.title = editedTitle.trim();
+    if (editedDesc.trim() !== currentDesc.trim())
+      body.description = editedDesc.trim();
+    if ((editedPriority || null) !== currentPriority)
+      body.priority = editedPriority ?? 0;
+
+    const changedAssignees =
+      editedAssigneeIds.length !== currentAssigneeIds.length ||
+      editedAssigneeIds.some((x, i) => x !== currentAssigneeIds[i]);
+    if (changedAssignees) body.assigned_to = editedAssigneeIds;
+
+    if (Object.keys(body).length === 0) return task;
+
+    setSavingBasics(true);
+    try {
+      const updated = await updateTask({ id, body }).unwrap();
+      setTask(updated);
+      toast.success("Changes saved");
+      return updated;
+    } catch (e) {
+      toast.error(e?.data?.message || "Failed to save changes");
+      throw e;
+    } finally {
+      setSavingBasics(false);
+    }
+  };
 
   const handleStatusSubmit = async () => {
     const chosen = status === "Select Status" ? "" : status;
     if (!chosen) return toast.error("Pick a status");
+    if (!id) return toast.error("Task id missing");
+
+    if (isSystem) {
+      if (chosen !== "pending")
+        return toast.error("From 'system' you can only move to 'Pending'.");
+      // minimal validation before leaving system
+      if (!editedTitle.trim())
+        return toast.error("Title is required before moving to Pending.");
+      if (!editedDesc.trim())
+        return toast.error("Description is required before moving to Pending.");
+      if (!editedPriority || ![1, 2, 3].includes(Number(editedPriority)))
+        return toast.error("Priority is required before moving to Pending.");
+      if (!editedAssignees.length)
+        return toast.error(
+          "Assign at least one user before moving to Pending."
+        );
+      try {
+        await saveBasicsIfChanged();
+      } catch {
+        return;
+      }
+    } else if (isPending) {
+      const allowed = new Set([
+        "pending",
+        "in progress",
+        "completed",
+        "cancelled",
+      ]);
+      if (!allowed.has(chosen))
+        return toast.error(
+          "From 'Pending', pick In Progress / Completed / Cancelled."
+        );
+    } else {
+      return toast.info(
+        "Status can be changed only from 'system' or 'pending'."
+      );
+    }
+
     try {
       await updateTaskStatus({ id, status: chosen, remarks: note }).unwrap();
       setNote("");
@@ -989,38 +1110,7 @@ export default function ViewTaskPage() {
     if (!uid) return;
     navigate(`/user_profile?user_id=${encodeURIComponent(String(uid))}`);
   };
-  // Reassign assignee options (exclude already assigned_to, and no user_id field)
-  const allAssigneeOptions = useMemo(() => {
-    const apiUsers = Array.isArray(allUsersResp)
-      ? allUsersResp
-      : Array.isArray(allUsersResp?.data)
-      ? allUsersResp.data
-      : [];
 
-    const assignedIds = new Set(
-      (task?.assigned_to || []).map((u) => idOf(u)).filter(Boolean)
-    );
-
-    const seen = new Set();
-    const out = [];
-
-    for (const u of apiUsers) {
-      const _id = idOf(u);
-      if (!_id || seen.has(_id)) continue;
-      if (assignedIds.has(_id)) continue;
-
-      seen.add(_id);
-      out.push({
-        _id,
-        name: u?.name || u?.fullName || u?.displayName || u?.email || "User",
-        avatar: getAvatarUrl(u),
-      });
-    }
-
-    return out;
-  }, [allUsersResp, task?.assigned_to]);
-
-  // --------- MULTI-SELECT submit ---------
   const handleSubmitReassign = async () => {
     if (!id) return toast.error("Task id missing");
     if (!selectedAssignees.length) return toast.error("Pick at least one user");
@@ -1030,7 +1120,7 @@ export default function ViewTaskPage() {
       const body = {
         title: `Reassigned to ${selectedAssignees.length} user(s)`,
         remarks: "Task reassigned via ViewTaskPage",
-        assigned_to: selectedAssignees.map((u) => u._id), // array of ids
+        assigned_to: selectedAssignees.map((u) => u._id),
         ...(reassignDeadline
           ? { deadline: new Date(reassignDeadline).toISOString() }
           : {}),
@@ -1038,7 +1128,6 @@ export default function ViewTaskPage() {
 
       const updated = await createSubTask({ taskId: id, body }).unwrap();
 
-      // If API returns the whole task as { task }, prefer that
       setTask(updated?.task || updated);
 
       toast.success("Reassignment subtask created");
@@ -1070,9 +1159,7 @@ export default function ViewTaskPage() {
     };
 
     if (task?.createdBy) addId(task.createdBy);
-
     (task?.assigned_to || []).forEach(addId);
-
     (task?.sub_tasks || []).forEach((st) => {
       const arr = Array.isArray(st?.assigned_to)
         ? st.assigned_to
@@ -1084,11 +1171,11 @@ export default function ViewTaskPage() {
 
     return set;
   }, [task]);
+
   const [isEditingDueDate, setIsEditingDueDate] = useState(false);
-  const [dueDateEdit, setDueDateEdit] = useState(""); // yyyy-MM-ddTHH:mm
+  const [dueDateEdit, setDueDateEdit] = useState("");
   const [savingDueDate, setSavingDueDate] = useState(false);
 
-  // Convert ISO -> value for <input type="datetime-local">
   const toLocalInputValue = (iso) => {
     if (!iso) return "";
     const d = new Date(iso);
@@ -1105,11 +1192,10 @@ export default function ViewTaskPage() {
     if (!id) return toast.error("Task id missing");
     try {
       setSavingDueDate(true);
-      // API still expects `deadline`. We just label it "Due Date" in UI.
       const body =
         dueDateEdit && !Number.isNaN(new Date(dueDateEdit).getTime())
           ? { deadline: new Date(dueDateEdit).toISOString() }
-          : { deadline: null }; // clears due date
+          : { deadline: null };
 
       const updated = await updateTask({ id, body }).unwrap();
       setTask(updated);
@@ -1123,7 +1209,6 @@ export default function ViewTaskPage() {
   };
 
   const currentUser = JSON.parse(localStorage.getItem("userDetails"))?.name;
-
   const same = (a, b) =>
     String(a ?? "")
       .trim()
@@ -1131,19 +1216,10 @@ export default function ViewTaskPage() {
     String(b ?? "")
       .trim()
       .toLowerCase();
-
-  const isAssigned = (task?.assigned_to || []).some((a) =>
-    same(a?.name, currentUser)
-  );
-
-  const curName = String(currentUser).trim();
-
-  // robust checks: prefer _id, fall back to name if needed
-  const isCreator = String(task?.createdBy?.name || "").trim() === curName;
-
   const isAssignee = Array.isArray(task?.assigned_to)
-    ? task.assigned_to.some((u) => String(u?.name || "").trim() === curName)
+    ? task.assigned_to.some((u) => same(u?.name, currentUser))
     : false;
+  const isCreator = same(task?.createdBy?.name, currentUser);
 
   const canSeeDeadline = isCreator || isAssignee;
   const canEditDeadline = isCreator;
@@ -1176,7 +1252,7 @@ export default function ViewTaskPage() {
           "& > *": { minWidth: 0 },
         }}
       >
-        {/* FIRST CARD with Followers button */}
+        {/* FIRST CARD: compact header */}
         <Sheet
           variant="outlined"
           sx={{
@@ -1193,102 +1269,103 @@ export default function ViewTaskPage() {
             position: "relative",
           }}
         >
-          <Tooltip title="Manage followers">
-            <IconButton
-              size="sm"
-              variant="soft"
-              onClick={() => setOpenFollowers(true)}
+          <Stack direction="column" gap={1} sx={{ minWidth: 0, width: "100%" }}>
+            <Stack direction={"row"} justifyContent={"space-between"}>
+              <Stack
+                direction="row"
+                gap={1}
+                alignItems="center"
+                sx={{ minWidth: 0 }}
+              >
+                {task?.taskCode && (
+                  <Chip size="sm" variant="soft" color="primary">
+                    {task.taskCode}
+                  </Chip>
+                )}
+
+                <Chip
+                  variant="soft"
+                  size="sm"
+                  color={statusColor(effectiveCurrentStatus?.status)}
+                  onClick={() => {
+                    if (isCompleted) return;
+                    if (isSystem || isPending) setOpenStatusModal(true);
+                    else
+                      toast.info(
+                        "Status can be changed only from 'system' or 'pending'."
+                      );
+                  }}
+                  sx={{
+                    cursor: isSystem || isPending ? "pointer" : "not-allowed",
+                  }}
+                >
+                  {effectiveCurrentStatus?.status
+                    ? effectiveCurrentStatus.status
+                        .split(" ")
+                        .map((w) => w[0]?.toUpperCase() + w.slice(1))
+                        .join(" ")
+                    : "—"}
+                </Chip>
+
+                {typeMeta(task?.type).icon}
+                <Typography level="body-sm">
+                  {typeMeta(task?.type).label}
+                </Typography>
+              </Stack>
+
+              <Stack direction="row" alignItems="center" gap={1}>
+                <Tooltip title="Manage followers">
+                  <IconButton
+                    size="sm"
+                    variant="soft"
+                    onClick={() => setOpenFollowers(true)}
+                    sx={{ borderRadius: "lg" }}
+                  >
+                    <GroupOutlinedIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                <Chip size="sm" variant="solid" color="primary">
+                  {(task?.followers?.length ?? 0).toString()}
+                </Chip>
+
+                {isSystem && (
+                  <Tooltip title="Quick setup">
+                    <IconButton size="sm" onClick={() => setOpenSetup(true)}>
+                      <SettingsOutlinedIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
+              </Stack>
+            </Stack>
+            {/* Title line (read-only, no big inputs) */}
+            <Typography
+              level="title-lg"
               sx={{
-                position: "absolute",
-                top: 8,
-                right: 8,
-                borderRadius: "lg",
+                whiteSpace: "pre-wrap",
+                overflowWrap: "anywhere",
+                wordBreak: "break-word",
+                fontWeight: 700,
+                lineHeight: 1.25,
               }}
             >
-              <GroupOutlinedIcon fontSize="small" />
-              <Chip
-                size="sm"
-                variant="solid"
-                color="primary"
-                sx={{
-                  ml: 0.75,
-                  height: 20,
-                  minHeight: 20,
-                  fontSize: 12,
-                  borderRadius: "999px",
-                }}
-              >
-                {(task?.followers?.length ?? 0).toString()}
-              </Chip>
-            </IconButton>
-          </Tooltip>
+              {task?.title || (isFetching ? "Loading…" : "Task")}
+            </Typography>
 
-          <Stack
-            direction="column"
-            gap={1.5}
-            alignItems="flex-start"
-            sx={{ minWidth: 0, width: "100%" }}
-          >
-            <Stack
-              direction="row"
-              gap={1}
-              alignItems="center"
-              sx={{ minWidth: 0 }}
+            {/* Description line (collapsed) */}
+            <Typography
+              level="body-sm"
+              sx={{
+                whiteSpace: "pre-wrap",
+                overflowWrap: "anywhere",
+                wordBreak: "break-word",
+                color: "text.secondary",
+                maxHeight: 90,
+                overflow: "auto",
+                pr: 0.5,
+              }}
             >
-              {task?.taskCode && (
-                <Chip size="sm" variant="soft" color="primary">
-                  {task.taskCode}
-                </Chip>
-              )}
-              <Chip
-                variant="soft"
-                color={statusColor(effectiveCurrentStatus?.status)}
-                data-status-modal
-                sx={{ cursor: isCompleted ? "not-allowed" : "pointer" }}
-                onClick={() => !isCompleted && setOpenStatusModal(true)}
-              >
-                {effectiveCurrentStatus?.status
-                  ? effectiveCurrentStatus.status
-                      .split(" ")
-                      .map((w) => w[0]?.toUpperCase() + w.slice(1))
-                      .join(" ")
-                  : "—"}
-              </Chip>
-              {typeMeta(task?.type).icon}
-              <Typography level="body-sm">
-                {typeMeta(task?.type).label}
-              </Typography>
-            </Stack>
-
-            <Box
-              sx={{ maxHeight: 72, overflowY: "auto", width: "100%", pr: 0.5 }}
-            >
-              <Typography
-                level="h4"
-                sx={{
-                  whiteSpace: "pre-wrap",
-                  overflowWrap: "anywhere",
-                  wordBreak: "break-word",
-                }}
-              >
-                {task?.title || (isFetching ? "Loading…" : "Task")}
-              </Typography>
-            </Box>
-
-            <Box
-              sx={{ maxHeight: 180, overflowY: "auto", width: "100%", pr: 0.5 }}
-            >
-              <Typography
-                level="body-sm"
-                sx={{
-                  whiteSpace: "pre-wrap",
-                  overflowWrap: "anywhere",
-                  wordBreak: "break-word",
-                }}
-              >
-                {task?.description || "—"}
-              </Typography>
-            </Box>
+              {task?.description || "—"}
+            </Typography>
           </Stack>
         </Sheet>
 
@@ -1329,33 +1406,18 @@ export default function ViewTaskPage() {
               <Field
                 label="Assign"
                 value={
-                  <Stack direction="row" alignItems="center" gap={1}>
-                    {task?.assigned_to?.length ? (
-                      <PeopleAvatars
-                        people={toPeople(task.assigned_to)}
-                        onPersonClick={goToProfile}
-                      />
-                    ) : (
-                      <Typography level="body-sm">None</Typography>
-                    )}
-                    {!hasReassign && isAssigned && (
-                      <Tooltip title="Reassign">
-                        <IconButton
-                          size="sm"
-                          variant="soft"
-                          onClick={() => setOpenReassign(true)}
-                          aria-label="Reassign"
-                          sx={{ ml: 1 }}
-                        >
-                          <AutorenewRoundedIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                  </Stack>
+                  task?.assigned_to?.length ? (
+                    <PeopleAvatars
+                      people={toPeople(task.assigned_to)}
+                      onPersonClick={goToProfile}
+                    />
+                  ) : (
+                    <Typography level="body-sm">None</Typography>
+                  )
                 }
               />
 
-              {/* When subtasks exist, show reassignment details */}
+              {/* Reassignment details if any */}
               {hasReassign && (
                 <>
                   <Field
@@ -1395,6 +1457,7 @@ export default function ViewTaskPage() {
                   />
                 </>
               )}
+
               <Field
                 label="Priority"
                 value={
@@ -1437,14 +1500,10 @@ export default function ViewTaskPage() {
                 <Field
                   label="Due Date"
                   value={
-                    canEditDeadline && isEditingDueDate ? (
-                      <Stack
-                        direction="row"
-                        gap={1}
-                        alignItems="center"
-                        sx={{ flexWrap: "wrap" }}
-                      >
+                    isEditingDueDate ? (
+                      <Stack direction="row" gap={1} alignItems="center">
                         <Input
+                          size="sm"
                           type="datetime-local"
                           value={dueDateEdit}
                           onChange={(e) => setDueDateEdit(e.target.value)}
@@ -1457,11 +1516,6 @@ export default function ViewTaskPage() {
                           size="sm"
                           onClick={saveDueDate}
                           loading={savingDueDate}
-                          sx={{
-                            backgroundColor: "#3366a3",
-                            color: "#fff",
-                            "&:hover": { backgroundColor: "#285680" },
-                          }}
                         >
                           Save
                         </Button>
@@ -1478,18 +1532,12 @@ export default function ViewTaskPage() {
                         </Button>
                       </Stack>
                     ) : (
-                      <Stack
-                        direction="row"
-                        gap={1}
-                        alignItems="center"
-                        sx={{ flexWrap: "wrap" }}
-                      >
+                      <Stack direction="row" gap={1} alignItems="center">
                         <Typography level="body-sm">
                           {task?.deadline
                             ? new Date(task.deadline).toLocaleString("en-GB")
                             : "—"}
                         </Typography>
-
                         {canEditDeadline && (
                           <Tooltip title="Change due date">
                             <IconButton
@@ -1514,8 +1562,17 @@ export default function ViewTaskPage() {
                   <Chip
                     size="sm"
                     color={statusColor(effectiveCurrentStatus?.status)}
-                    onClick={() => !isCompleted && setOpenStatusModal(true)}
-                    sx={{ cursor: isCompleted ? "not-allowed" : "pointer" }}
+                    onClick={() => {
+                      if (isCompleted) return;
+                      if (isSystem || isPending) setOpenStatusModal(true);
+                      else
+                        toast.info(
+                          "Status can be changed only from 'system' or 'pending'."
+                        );
+                    }}
+                    sx={{
+                      cursor: isSystem || isPending ? "pointer" : "default",
+                    }}
                   >
                     {effectiveCurrentStatus?.status
                       ? effectiveCurrentStatus.status
@@ -1566,7 +1623,7 @@ export default function ViewTaskPage() {
               {(Array.isArray(task?.project_id) ? task.project_id : []).map(
                 (p, i) => (
                   <Box
-                    key={`${p.code || p.projectCode || i}`}
+                    key={`${p?.code || p.projectCode || i}`}
                     sx={{
                       display: "flex",
                       alignItems: "center",
@@ -1896,62 +1953,172 @@ export default function ViewTaskPage() {
         </Tabs>
       </Section>
 
-      {/* Status Update Modal */}
+      {/* Status Update Modal: rules-based options */}
       <Modal open={openStatusModal} onClose={() => setOpenStatusModal(false)}>
         <ModalDialog variant="outlined" sx={{ maxWidth: 520 }}>
           <DialogTitle>Update Status</DialogTitle>
           <DialogContent>
-            Select a new status and add remarks (optional).
+            {isSystem
+              ? "From 'system' you can move to 'Pending' once the basics are set."
+              : isPending
+              ? "From 'Pending' you can move to In Progress, Completed, or Cancelled."
+              : "Status updates are locked for this step."}
           </DialogContent>
           <Stack gap={1.25} sx={{ mt: 1 }}>
             <Select
+              size="sm"
               value={status}
               onChange={(_, v) => setStatus(v)}
               placeholder="Select Status"
-              disabled={isCompleted}
+              disabled={!(isSystem || isPending) || isCompleted}
             >
               <Option disabled value="Select Status">
                 Select Status
               </Option>
-              <Option value="pending">Pending</Option>
-              <Option value="in progress">In Progress</Option>
-              <Option value="completed">Completed</Option>
-              <Option value="cancelled">Cancelled</Option>
+
+              {/* system -> pending */}
+              <Option value="pending" disabled={!isSystem && !isPending}>
+                Pending
+              </Option>
+
+              {/* pending -> anywhere else */}
+              <Option value="in progress" disabled={!isPending}>
+                In Progress
+              </Option>
+              <Option value="completed" disabled={!isPending}>
+                Completed
+              </Option>
+              <Option value="cancelled" disabled={!isPending}>
+                Cancelled
+              </Option>
             </Select>
+
             <Textarea
-              minRows={4}
+              size="sm"
+              minRows={3}
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Write remarks..."
+              disabled={!(isSystem || isPending)}
             />
           </Stack>
           <DialogActions>
             <Button
+              size="sm"
               variant="outlined"
-              sx={{
-                color: "#3366a3",
-                borderColor: "#3366a3",
-                backgroundColor: "transparent",
-                "--Button-hoverBg": "#e0e0e0",
-                "--Button-hoverBorderColor": "#3366a3",
-                "&:hover": { color: "#3366a3" },
-              }}
+              sx={{ color: "#3366a3", borderColor: "#3366a3" }}
               onClick={() => setOpenStatusModal(false)}
             >
               Cancel
             </Button>
             <Button
+              size="sm"
               onClick={handleStatusSubmit}
               loading={isUpdating}
-              disabled={isCompleted}
-              sx={{
-                backgroundColor: "#3366a3",
-                color: "#fff",
-                "&:hover": { backgroundColor: "#285680" },
-                height: "8px",
-              }}
+              disabled={!(isSystem || isPending) || isCompleted}
             >
               Submit
+            </Button>
+          </DialogActions>
+        </ModalDialog>
+      </Modal>
+
+      {/* Quick Setup Modal (compact editors; appears only when system) */}
+      <Modal open={openSetup} onClose={() => setOpenSetup(false)}>
+        <ModalDialog variant="outlined" sx={{ maxWidth: 560 }}>
+          <DialogTitle>Quick Setup</DialogTitle>
+          <DialogContent>
+            Fill the basics to move from <b>system</b> → <b>pending</b>.
+          </DialogContent>
+          <Stack gap={1} sx={{ mt: 1 }}>
+            <Stack gap={0.5}>
+              <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
+                Title
+              </Typography>
+              <Input
+                size="sm"
+                value={editedTitle}
+                onChange={(e) => setEditedTitle(e.target.value)}
+                placeholder="Task title"
+              />
+            </Stack>
+
+            <Stack gap={0.5}>
+              <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
+                Description
+              </Typography>
+              <Textarea
+                size="sm"
+                minRows={3}
+                value={editedDesc}
+                onChange={(e) => setEditedDesc(e.target.value)}
+                placeholder="Describe the task…"
+              />
+            </Stack>
+
+            <Stack direction="row" gap={1} flexWrap="wrap">
+              <Stack gap={0.5} sx={{ minWidth: 220, flex: 1 }}>
+                <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
+                  Priority
+                </Typography>
+                <Select
+                  size="sm"
+                  placeholder="Select priority"
+                  value={editedPriority ?? null}
+                  onChange={(_e, v) => setEditedPriority(v)}
+                >
+                  <Option value={1}>Low</Option>
+                  <Option value={2}>Medium</Option>
+                  <Option value={3}>High</Option>
+                </Select>
+              </Stack>
+
+              <Stack gap={0.5} sx={{ minWidth: 260, flex: 2 }}>
+                <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
+                  Assignees
+                </Typography>
+                <Autocomplete
+                  multiple
+                  size="sm"
+                  placeholder="Select assignees…"
+                  options={allAssigneeOptions.concat(
+                    editedAssignees.filter(
+                      (ea) => !allAssigneeOptions.some((o) => o._id === ea._id)
+                    )
+                  )}
+                  loading={usersLoading}
+                  value={editedAssignees}
+                  onChange={(_e, vals) => setEditedAssignees(vals || [])}
+                  getOptionLabel={(o) => o?.name || ""}
+                  isOptionEqualToValue={(o, v) =>
+                    (o?._id || o?.id || o?.email || o?.name) ===
+                    (v?._id || v?.id || v?.email || v?.name)
+                  }
+                />
+              </Stack>
+            </Stack>
+          </Stack>
+
+          <DialogActions>
+            <Button
+              size="sm"
+              variant="outlined"
+              onClick={() => setOpenSetup(false)}
+              sx={{ color: "#3366a3", borderColor: "#3366a3" }}
+            >
+              Close
+            </Button>
+            <Button
+              size="sm"
+              onClick={async () => {
+                try {
+                  await saveBasicsIfChanged();
+                  setOpenSetup(false);
+                } catch {}
+              }}
+              loading={savingBasics}
+            >
+              Save
             </Button>
           </DialogActions>
         </ModalDialog>
@@ -2046,35 +2213,21 @@ export default function ViewTaskPage() {
 
           <DialogActions>
             <Button
+              size="sm"
               variant="outlined"
               onClick={() => setOpenAttachModal(false)}
-              sx={{
-                color: "#3366a3",
-                borderColor: "#3366a3",
-                backgroundColor: "transparent",
-                "--Button-hoverBg": "#e0e0e0",
-                "--Button-hoverBorderColor": "#3366a3",
-                "&:hover": { color: "#3366a3" },
-              }}
+              sx={{ color: "#3366a3", borderColor: "#3366a3" }}
             >
               Close
             </Button>
-            <Button
-              onClick={() => setOpenAttachModal(false)}
-              sx={{
-                backgroundColor: "#3366a3",
-                color: "#fff",
-                px: 2.25,
-                "&:hover": { backgroundColor: "#285680" },
-              }}
-            >
+            <Button size="sm" onClick={() => setOpenAttachModal(false)}>
               Done
             </Button>
           </DialogActions>
         </ModalDialog>
       </Modal>
 
-      {/* Followers Manager Modal */}
+      {/* Followers Manager Modal (always allowed) */}
       <Modal open={openFollowers} onClose={() => setOpenFollowers(false)}>
         <ModalDialog variant="outlined" sx={{ maxWidth: 480 }}>
           <DialogTitle>Add Followers</DialogTitle>
@@ -2094,7 +2247,6 @@ export default function ViewTaskPage() {
                   const uid =
                     u?._id ||
                     u?.id ||
-                    u?.email ||
                     u?.name ||
                     (typeof u === "string" ? u : "");
                   const isProtected = protectedIds.has(String(uid));
@@ -2115,7 +2267,6 @@ export default function ViewTaskPage() {
                           {!u.avatar && initialsOf(u.name)}
                         </Avatar>
                       }
-                      // Only show the "cut" (remove) button if NOT protected
                       endDecorator={
                         !isProtected ? (
                           <IconButton
@@ -2128,8 +2279,8 @@ export default function ViewTaskPage() {
                               setSelectedFollowers((prev) =>
                                 prev.filter(
                                   (x) =>
-                                    (x._id || x.id || x.email || x.name) !==
-                                    (u._id || u.id || u.email || u.name)
+                                    (x._id || x.id || x.name) !==
+                                    (u._id || u.id || u.name)
                                 )
                               );
                             }}
@@ -2154,6 +2305,7 @@ export default function ViewTaskPage() {
             {/* Add more via Autocomplete */}
             <Autocomplete
               multiple
+              size="sm"
               placeholder="Search users to add…"
               options={allUserOptions}
               loading={usersLoading}
@@ -2172,58 +2324,25 @@ export default function ViewTaskPage() {
               }}
               getOptionLabel={(o) => o?.name || ""}
               isOptionEqualToValue={(o, v) =>
-                (o?._id || o?.id || o?.email || o?.name) ===
-                (v?._id || v?.id || v?.email || v?.name)
+                (o?._id || o?.id || o?.name) === (v?._id || v?.id || v?.name)
               }
-              renderOption={(liProps, option) => (
-                <li {...liProps} key={option._id}>
-                  <Stack
-                    sx={{ cursor: "pointer" }}
-                    direction="row"
-                    alignItems="center"
-                    gap={1}
-                  >
-                    <Avatar
-                      size="sm"
-                      src={option.avatar || undefined}
-                      variant={option.avatar ? "soft" : "solid"}
-                      color={
-                        option.avatar ? "neutral" : colorFromName(option.name)
-                      }
-                    >
-                      {!option.avatar && initialsOf(option.name)}
-                    </Avatar>
-                    <Typography level="body-sm">{option.name}</Typography>
-                  </Stack>
-                </li>
-              )}
               sx={{ "--Listbox-maxHeight": "260px", cursor: "pointer" }}
             />
           </Stack>
 
           <DialogActions>
             <Button
+              size="sm"
               variant="outlined"
               onClick={() => setOpenFollowers(false)}
-              sx={{
-                color: "#3366a3",
-                borderColor: "#3366a3",
-                backgroundColor: "transparent",
-                "--Button-hoverBg": "#e0e0e0",
-                "--Button-hoverBorderColor": "#3366a3",
-                "&:hover": { color: "#3366a3" },
-              }}
+              sx={{ color: "#3366a3", borderColor: "#3366a3" }}
             >
               Cancel
             </Button>
             <Button
+              size="sm"
               onClick={handleSaveFollowers}
               loading={savingFollowers}
-              sx={{
-                backgroundColor: "#3366a3",
-                color: "#fff",
-                "&:hover": { backgroundColor: "#285680" },
-              }}
             >
               Update
             </Button>
@@ -2244,6 +2363,7 @@ export default function ViewTaskPage() {
             {/* Multi-select users */}
             <Autocomplete
               multiple
+              size="sm"
               placeholder="Select users…"
               options={allAssigneeOptions}
               loading={usersLoading}
@@ -2254,23 +2374,6 @@ export default function ViewTaskPage() {
                 (o?._id || o?.id || o?.email || o?.name) ===
                 (v?._id || v?.id || v?.email || v?.name)
               }
-              renderOption={(liProps, option) => (
-                <li {...liProps} key={option._id}>
-                  <Stack direction="row" alignItems="center" gap={1}>
-                    <Avatar
-                      size="sm"
-                      src={option.avatar || undefined}
-                      variant={option.avatar ? "soft" : "solid"}
-                      color={
-                        option.avatar ? "neutral" : colorFromName(option.name)
-                      }
-                    >
-                      {!option.avatar && initialsOf(option.name)}
-                    </Avatar>
-                    <Typography level="body-sm">{option.name}</Typography>
-                  </Stack>
-                </li>
-              )}
               sx={{ "--Listbox-maxHeight": "260px" }}
             />
 
@@ -2280,7 +2383,7 @@ export default function ViewTaskPage() {
                 Deadline
               </Typography>
               <Input
-                required
+                size="sm"
                 type="datetime-local"
                 value={reassignDeadline}
                 onChange={(e) => setReassignDeadline(e.target.value)}
@@ -2290,27 +2393,17 @@ export default function ViewTaskPage() {
 
           <DialogActions>
             <Button
+              size="sm"
               variant="outlined"
               onClick={() => setOpenReassign(false)}
-              sx={{
-                color: "#3366a3",
-                borderColor: "#3366a3",
-                backgroundColor: "transparent",
-                "--Button-hoverBg": "#e0e0e0",
-                "--Button-hoverBorderColor": "#3366a3",
-                "&:hover": { color: "#3366a3" },
-              }}
+              sx={{ color: "#3366a3", borderColor: "#3366a3" }}
             >
               Cancel
             </Button>
             <Button
+              size="sm"
               onClick={handleSubmitReassign}
               loading={savingReassign}
-              sx={{
-                backgroundColor: "#3366a3",
-                color: "#fff",
-                "&:hover": { backgroundColor: "#285680" },
-              }}
             >
               Create Subtask
             </Button>
@@ -2363,5 +2456,3 @@ function Section({
     </Sheet>
   );
 }
-
-// testing slack

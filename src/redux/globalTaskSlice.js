@@ -255,6 +255,32 @@ export const GlobalTaskApi = createApi({
         })}`,
       providesTags: [{ type: "TaskStats", id: "AGING_BY_RESOLUTION" }],
     }),
+
+
+       getAllowedModule: builder.query({
+      query: (projectId) => ({
+        url: `engineering/${projectId}/allowedtemplates`,
+        method: "GET",
+      }),
+      providesTags: (_res, _err, projectId) => [
+        { type: "Tasks", id: "ALLOWED_MODULES" },
+        { type: "Task", id: projectId },
+      ],
+    }),
+
+
+    /* -------------- NAMESEARCH: Material Categories (allowed-only) -------------- */
+namesearchMaterialCategories: builder.query({
+  query: (q = {}) =>
+    `products/category${buildQS({
+      search: q.search ?? "",
+      page: q.page ?? 1,
+      limit: q.limit ?? 7,
+      pr: typeof q.pr === "boolean" ? String(q.pr) : (q.pr ?? ""),
+      project_id: q.project_id ?? "",
+    })}`,
+}),
+
   }),
 });
 
@@ -275,6 +301,9 @@ export const {
   useGetUserPerformanceQuery,
   useGetProjectsByStateQuery,
   useGetTasksAgingByResolutionQuery,
+  useGetAllowedModuleQuery,
+  useNamesearchMaterialCategoriesQuery,
+  useLazyNamesearchMaterialCategoriesQuery,
   useGetAllUserWithPaginationQuery,
   useLazyGetAllUserWithPaginationQuery,
 } = GlobalTaskApi;

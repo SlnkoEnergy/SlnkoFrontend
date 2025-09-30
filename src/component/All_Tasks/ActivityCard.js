@@ -1,36 +1,49 @@
-// ActivityFeedCard.jsx
+// ActivityFeed.jsx
 import DOMPurify from "dompurify";
-import { Card, Box, Typography, Avatar, Link, Divider } from "@mui/joy";
-import { useNavigate } from "react-router-dom";
-
-export default function ActivityFeedCard({
-  title = "Activity Feed",
+import { Card, Box, Typography, Avatar, Divider } from "@mui/joy";
+export default function ActivityFeed({
   items = [],
-  onSeeAll,
-  sx = {},
+  title = "Activity Feed",
+  renderHeader,          
+  renderEmpty,           
+  renderRight,        
+  onItemClick,         
+  getId = (it, idx) => it.id ?? idx,
+  getAvatar = (it) => it.avatar || "",
+  getFallbackInitial = (it) => (it.name ? it.name[0] : "?"),
+  getTitleLeft = (it) => it.name || "",                       
+  getActionVerb = (it) => it.action || "updated",             
+  getTitleRight = (it) => it.project || "",             
+  getTitleRightSub = (it) => it.task_code || "",              
+  getRemarksHtml = (it) => it.remarks || "",                
+  getRightText = (it) => it.ago || "",                         
+  maxHeight = 500,
+  cardSx = {},
+  listSx = {},
+  rowSx = {},
+  sanitizeOptions = {
+    USE_PROFILES: { html: true },
+    ALLOWED_TAGS: ["b", "strong", "i", "em", "u", "s", "del", "span", "br", "p", "ul", "ol", "li"],
+    ALLOWED_ATTR: ["style"],
+  },
 }) {
-  const navigate = useNavigate();
+  const sanitize = (html) => DOMPurify.sanitize(String(html || ""), sanitizeOptions);
 
-  const sanitize = (html) =>
-    DOMPurify.sanitize(String(html || ""), {
-      USE_PROFILES: { html: true },
-      ALLOWED_TAGS: [
-        "b",
-        "strong",
-        "i",
-        "em",
-        "u",
-        "s",
-        "del",
-        "span",
-        "br",
-        "p",
-        "ul",
-        "ol",
-        "li",
-      ],
-      ALLOWED_ATTR: ["style"],
-    });
+  const Header = () =>
+    renderHeader ? (
+      renderHeader()
+    ) : (
+      <Typography level="title-lg">{title}</Typography>
+    );
+
+  const Empty = () =>
+    renderEmpty ? (
+      renderEmpty()
+    ) : (
+      <Typography level="body-sm" sx={{ color: "text.secondary", p: 2 }}>
+        No recent activity.
+      </Typography>
+    );
 
   return (
     <Card
@@ -51,9 +64,9 @@ export default function ActivityFeedCard({
           boxShadow:
             "0 6px 16px rgba(15,23,42,0.10), 0 20px 36px rgba(15,23,42,0.08)",
         },
-        maxHeight: 500,
-        height: 500,
-        ...sx,
+        maxHeight,
+        height: maxHeight,
+        ...cardSx,
       }}
     >
       {/* Header */}
@@ -64,7 +77,7 @@ export default function ActivityFeedCard({
           alignItems: "center",
         }}
       >
-        <Typography level="title-lg">{title}</Typography>
+        <Header />
       </Box>
 
       <Divider sx={{ my: 0.5, borderColor: "rgba(0,0,0,0.06)" }} />
@@ -80,21 +93,44 @@ export default function ActivityFeedCard({
             borderRadius: 8,
           },
           "&::-webkit-scrollbar-track": { background: "transparent" },
+          ...listSx,
         }}
       >
         {items.length === 0 ? (
-          <Typography level="body-sm" sx={{ color: "text.secondary", p: 2 }}>
-            No recent activity.
-          </Typography>
+          <Empty />
         ) : (
           items.map((it, idx) => {
-            const safeRemarks = sanitize(it.remarks);
-            const goToTask = () =>
-              it.task_id &&
-              navigate(`/view_task?task=${encodeURIComponent(it.task_id)}`);
+            const id = getId(it, idx);
+            const avatar = getAvatar(it);
+            const initial = getFallbackInitial(it);
+            const left = getTitleLeft(it);
+            const action = getActionVerb(it);
+            const right = getTitleRight(it);
+            const rightSub = getTitleRightSub(it);
+            const safeRemarks = sanitize(getRemarksHtml(it));
+
+            const Right = () =>
+              renderRight ? (
+                renderRight(it)
+              ) : (
+                <Typography
+                  fontSize="0.7rem"
+                  fontWeight={600}
+                  sx={{
+                    color: "var(--joy-palette-neutral-500)",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {getRightText(it)}
+                </Typography>
+              );
+
+            const handleClick = () => {
+              if (onItemClick) onItemClick(it);
+            };
 
             return (
-              <Box key={it.id ?? idx}>
+              <Box key={id}>
                 <Box
                   sx={{
                     display: "grid",
@@ -102,17 +138,18 @@ export default function ActivityFeedCard({
                     gap: 1,
                     alignItems: "start",
                     p: 0.75,
-                    cursor: it.task_id ? "pointer" : "default",
+                    cursor: onItemClick ? "pointer" : "default",
                     "&:hover": { backgroundColor: "rgba(0,0,0,0.02)" },
+                    ...rowSx,
                   }}
-                  onClick={goToTask}
+                  onClick={handleClick}
                 >
-                  <Avatar src={it.avatar} size="sm">
-                    {it.name?.[0]}
+                  <Avatar src={avatar} size="sm">
+                    {initial}
                   </Avatar>
 
                   <Box sx={{ minWidth: 0 }}>
-                    {/* Header line (kept single line w/ ellipsis) */}
+                    {/* Single-line header with ellipsis */}
                     <Typography
                       level="body-md"
                       sx={{
@@ -120,16 +157,14 @@ export default function ActivityFeedCard({
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                       }}
-                      title={`${it.name} ${it.action || "updated"} ${
-                        it.project
-                      }${it.task_code ? ` (${it.task_code})` : ""}`}
+                      title={`${left} ${action} ${right}${
+                        rightSub ? ` (${rightSub})` : ""
+                      }`}
                     >
-                      <b>{it.name}</b>{" "}
-                      <span style={{ opacity: 0.9 }}>
-                        {it.action || "updated"}
-                      </span>{" "}
-                      <b style={{ color: "#1e40af" }}>{it.project}</b>
-                      {it.task_code ? (
+                      <b>{left}</b>{" "}
+                      <span style={{ opacity: 0.9 }}>{action}</span>{" "}
+                      <b style={{ color: "#1e40af" }}>{right}</b>
+                      {rightSub ? (
                         <Typography
                           component="span"
                           level="body-sm"
@@ -139,12 +174,12 @@ export default function ActivityFeedCard({
                             fontWeight: 600,
                           }}
                         >
-                          ({it.task_code})
+                          ({rightSub})
                         </Typography>
                       ) : null}
                     </Typography>
 
-                    {/* Sanitized remarks HTML (WRAPS LONG CONTENT) */}
+                    {/* Sanitized remarks HTML (wraps long content) */}
                     {safeRemarks && (
                       <Box
                         sx={{
@@ -155,8 +190,6 @@ export default function ActivityFeedCard({
                           wordBreak: "break-word",
                           overflowWrap: "anywhere",
                           whiteSpace: "normal",
-
-                          // make inner elements respect the small size
                           "& p, & span, & li": {
                             fontSize: "inherit",
                             lineHeight: "inherit",
@@ -171,16 +204,7 @@ export default function ActivityFeedCard({
                     )}
                   </Box>
 
-                  <Typography
-                    fontSize="0.7rem"
-                    fontWeight={600}
-                    sx={{
-                      color: "var(--joy-palette-neutral-500)",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {it.ago}
-                  </Typography>
+                  <Right />
                 </Box>
 
                 {idx < items.length - 1 && (
