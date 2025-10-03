@@ -27,20 +27,13 @@ function ProjectManagement() {
 
   const isLoading = isPushing || isUpdatingDeps;
 
-  /** Normalize payload bits coming from the modal:
-   *  - dependencies: always plural array
-   *  - predecessors: array; or build from activity_id/type/lag fallback
-   *  - completion_formula: pass-through if provided (string/empty string allowed)
-   */
   const normalizeFromModal = (payload = {}) => {
-    // --- dependencies (ensure plural key for backend) ---
     const dependencies = Array.isArray(payload.dependencies)
       ? payload.dependencies
       : Array.isArray(payload.dependency)
       ? payload.dependency
       : [];
 
-    // --- predecessors: prefer array, else fallback to single fields ---
     let predecessors = Array.isArray(payload.predecessors)
       ? payload.predecessors
       : [];
@@ -82,7 +75,6 @@ function ProjectManagement() {
       } = normalizeFromModal(payload || {});
 
       if (payload && payload.__mode === "existing") {
-        // ---- Update GLOBAL/PROJECT activity master ----
         const id =
           payload.activityId ||
           payload.id ||
