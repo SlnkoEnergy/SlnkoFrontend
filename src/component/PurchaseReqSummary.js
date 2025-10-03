@@ -384,23 +384,6 @@ function PurchaseReqSummary() {
             name
           )}
         </Typography>
-
-        {/* {isOthers && (
-          <Box sx={{ fontSize: 12, color: "gray" }}>
-            <div>
-              <b>
-                <TruckIcon size={13} /> Other Item Name:
-              </b>{" "}
-              {item?.other_item_name || "-"}
-            </div>
-            <div>
-              <b>
-                <Money /> Amount:
-              </b>{" "}
-              ₹{item?.amount || "0"}
-            </div>
-          </Box>
-        )} */}
       </Box>
     );
   };
@@ -413,7 +396,6 @@ function PurchaseReqSummary() {
       return <>{RenderItemCell(uniq[0].item)}</>;
     }
 
-    // Tooltip for the "+N" chip: show the names of the remaining items
     const tooltipContent = (
       <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, py: 0.5 }}>
         {uniq.slice(1).map(({ item }, i) => {
@@ -449,21 +431,27 @@ function PurchaseReqSummary() {
   };
 
   return (
-    <>
-      {/* SEARCH + ALL FILTERS IN ONE ROW */}
+    <Box
+    sx={{
+        ml: {
+          lg: "var(--Sidebar-width)",
+        },
+        px: "0px",
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+      }}
+    >
+      <Box display={"flex"} justifyContent={"space-between"} pb={0.5}>
       <Box
         sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          maxWidth: { lg: "85%", sm: "100%" },
+          maxWidth: '100%',
           display: "flex",
           alignItems: "flex-end",
           gap: 2,
-          flexWrap: { xs: "wrap", md: "nowrap" }, // single line on md+, wraps on small
+          flexWrap: { xs: "wrap", md: "nowrap" }, 
         }}
       >
         {/* Search */}
         <FormControl sx={{ flex: 1, minWidth: 300 }} size="sm">
-          <FormLabel>Search here</FormLabel>
           <Input
             size="sm"
             placeholder="Search by ProjectId, Customer, Type, or State"
@@ -473,166 +461,13 @@ function PurchaseReqSummary() {
           />
         </FormControl>
 
-        {/* Category (first 7 + Browse all…) */}
-        <FormControl sx={{ minWidth: 240 }} size="sm">
-          <FormLabel>Category Queue</FormLabel>
-          <Select
-            value={selecteditem}
-            placeholder={isCatInitFetching ? "Loading…" : "Select Category"}
-            listboxOpen={categorySelectOpen}
-            onListboxOpenChange={(_e, open) => setCategorySelectOpen(open)} // closes on outside click
-            onChange={(_e, newValue) => {
-              if (newValue === "__more__") {
-                setCategorySelectOpen(false);
-                setCategoryModalOpen(true);
-                return;
-              }
-              setSelecteditem(newValue || "");
-              setCurrentPage(1);
-              updateParams({
-                page: 1,
-                search: searchQuery,
-                itemSearch: newValue || "",
-                statusSearch: selectedstatus,
-                poValueSearch: selectedpovalue,
-              });
-            }}
-            size="sm"
-          >
-            <Option value="">All Categories</Option>
-
-            {topCategories.slice(0, 7).map((cat) => (
-              <Option key={cat._id} value={cat.name}>
-                {cat.name}
-              </Option>
-            ))}
-
-            {/* ensure picked value from modal (page 2+) appears in Select */}
-            {selecteditem &&
-              !topCategories
-                .slice(0, 7)
-                .some((c) => c.name === selecteditem) && (
-                <Option key={`picked-${selecteditem}`} value={selecteditem}>
-                  {selecteditem}
-                </Option>
-              )}
-
-            <Option
-              value="__more__"
-              sx={{
-                color: "primary.plainColor",
-                fontWeight: 600,
-                "&:hover": {
-                  bgcolor: "primary.softBg",
-                  color: "primary.solidColor",
-                },
-              }}
-            >
-              Browse all…
-            </Option>
-          </Select>
-        </FormControl>
-
-        {/* Created At */}
-        <FormControl sx={{ minWidth: 260 }} size="sm">
-          <FormLabel>Created At</FormLabel>
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <Input
-              type="date"
-              size="sm"
-              value={createdDateRange[0] || ""}
-              onChange={(e) => {
-                const from = e.target.value;
-                const to = createdDateRange[1];
-                setCreatedDateRange([from || null, to]);
-                updateParams({
-                  page: 1,
-                  search: searchQuery,
-                  itemSearch: selecteditem,
-                  statusSearch: selectedstatus,
-                  poValueSearch: selectedpovalue,
-                  createdFrom: from || "",
-                  createdTo: to || "",
-                  limit,
-                });
-              }}
-            />
-            <Input
-              type="date"
-              size="sm"
-              value={createdDateRange[1] || ""}
-              onChange={(e) => {
-                const from = createdDateRange[0];
-                const to = e.target.value;
-                setCreatedDateRange([from, to || null]);
-                updateParams({
-                  page: 1,
-                  search: searchQuery,
-                  itemSearch: selecteditem,
-                  statusSearch: selectedstatus,
-                  poValueSearch: selectedpovalue,
-                  createdFrom: from || "",
-                  createdTo: to || "",
-                  limit,
-                });
-              }}
-            />
-          </Box>
-        </FormControl>
-
-        {/* ETD Date */}
-        <FormControl sx={{ minWidth: 260 }} size="sm">
-          <FormLabel>ETD Date</FormLabel>
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <Input
-              type="date"
-              size="sm"
-              value={etdDateRange[0] || ""}
-              onChange={(e) => {
-                const from = e.target.value;
-                const to = etdDateRange[1];
-                setEtdDateRange([from || null, to]);
-                updateParams({
-                  page: 1,
-                  search: searchQuery,
-                  itemSearch: selecteditem,
-                  statusSearch: selectedstatus,
-                  poValueSearch: selectedpovalue,
-                  etdFrom: from || "",
-                  etdTo: to || "",
-                  limit,
-                });
-              }}
-            />
-            <Input
-              type="date"
-              size="sm"
-              value={etdDateRange[1] || ""}
-              onChange={(e) => {
-                const from = etdDateRange[0];
-                const to = e.target.value;
-                setEtdDateRange([from, to || null]);
-                updateParams({
-                  page: 1,
-                  search: searchQuery,
-                  itemSearch: selecteditem,
-                  statusSearch: selectedstatus,
-                  poValueSearch: selectedpovalue,
-                  etdFrom: from || "",
-                  etdTo: to || "",
-                  limit,
-                });
-              }}
-            />
-          </Box>
-        </FormControl>
+        
       </Box>
 
       {/* Tabs + Rows-per-page */}
       <Box
         sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          maxWidth: { lg: "85%", sm: "100%" },
+          maxWidth: '100%',
           mb: 0,
           display: "flex",
           alignItems: "center",
@@ -675,52 +510,18 @@ function PurchaseReqSummary() {
             </Tab>
           </TabList>
         </Tabs>
-
-        {/* Rows per page */}
-        <FormControl size="sm" sx={{ minWidth: 140 }}>
-          <FormLabel>Rows per page</FormLabel>
-          <Select
-            value={String(limit)}
-            onChange={(_e, newValue) => {
-              const newLimit = parseInt(newValue || "10", 10) || 10;
-              updateParams({
-                limit: String(newLimit),
-                page: 1,
-                tab,
-                search: searchQuery || undefined,
-                itemSearch: selecteditem || undefined,
-                statusSearch: selectedstatus || undefined,
-                poValueSearch: selectedpovalue || undefined,
-                createdFrom: createdDateRange[0] || undefined,
-                createdTo: createdDateRange[1] || undefined,
-                etdFrom: etdDateRange[0] || undefined,
-                etdTo: etdDateRange[1] || undefined,
-              });
-            }}
-            size="sm"
-            placeholder="Rows"
-          >
-            {[5, 10, 20, 50, 100].map((n) => (
-              <Option key={n} value={String(n)}>
-                {n}
-              </Option>
-            ))}
-          </Select>
-        </FormControl>
       </Box>
-
+    </Box>
       {/* Table */}
       <Sheet
+        className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: { xs: "none", sm: "initial" },
+          display: { xs: "none", sm: "block" },
           width: "100%",
           borderRadius: "sm",
-          flexShrink: 1,
-          overflow: "auto",
-          minHeight: 0,
-          marginLeft: { lg: "18%", xl: "15%" },
-          maxWidth: { lg: "85%", sm: "100%" },
+          maxHeight: "66vh",
+          overflowY: "auto",
         }}
       >
         <Box
@@ -995,13 +796,12 @@ function PurchaseReqSummary() {
       <Box
         className="Pagination-laptopUp"
         sx={{
-          pt: 2,
+          pt: 0.5,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: "flex",
           alignItems: "center",
           flexDirection: { xs: "column", md: "row" },
-          marginLeft: { xl: "15%", lg: "18%" },
         }}
       >
         <Button
@@ -1040,7 +840,46 @@ function PurchaseReqSummary() {
             )
           )}
         </Box>
-
+ {/* Rows per page */}
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={1}
+          sx={{ padding: "8px 16px" }}
+        >
+          <Select
+            value={String(limit)}
+            onChange={(_e, newValue) => {
+              const newLimit = parseInt(newValue || "10", 10) || 10;
+              updateParams({
+                limit: String(newLimit),
+                page: 1,
+                tab,
+                search: searchQuery || undefined,
+                itemSearch: selecteditem || undefined,
+                statusSearch: selectedstatus || undefined,
+                poValueSearch: selectedpovalue || undefined,
+                createdFrom: createdDateRange[0] || undefined,
+                createdTo: createdDateRange[1] || undefined,
+                etdFrom: etdDateRange[0] || undefined,
+                etdTo: etdDateRange[1] || undefined,
+              });
+            }}
+             sx={{
+              minWidth: 80,
+              borderRadius: "md",
+              boxShadow: "sm",
+            }}
+            size="sm"
+            placeholder="Rows"
+          >
+            {[5, 10, 20, 50, 100].map((n) => (
+              <Option key={n} value={String(n)}>
+                {n}
+              </Option>
+            ))}
+          </Select>
+        </Box>
         <Button
           size="sm"
           variant="outlined"
@@ -1065,7 +904,7 @@ function PurchaseReqSummary() {
         pageSize={7}
         backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
       />
-    </>
+    </Box>
   );
 }
 
