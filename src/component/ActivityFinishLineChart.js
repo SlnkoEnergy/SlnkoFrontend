@@ -283,6 +283,7 @@ export default function ActivityFinishLineChart({
                 </Box>
 
                 {/* Project selector (first page + "Search more…") */}
+                
                 <Box sx={{ display: "flex", gap: 1 }}>
                     <Select
                         value={selectedId || IDLE}

@@ -13,12 +13,15 @@ import {
   useGetProjectDetailQuery,
   useGetProjectStatesFilterQuery,
   useGetProjectStatusFilterQuery,
+  // ⬇️ added
+  useGetResourcesQuery,
 } from "../redux/projectsSlice";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { PauseCircleRounded } from "@mui/icons-material";
 import ActivityFinishLineChart from "./ActivityFinishLineChart";
 import WeeklyProjectTimelineCard from "./WeeklyActivityProject";
-import ActivityFeedCard from "../component/All_Tasks/ActivityCard"
+import ActivityFeedCard from "../component/All_Tasks/ActivityCard";
+import ResourceBarGraph from "./ResourceBarGraph";
 
 const IconBadge = ({ color = "#2563eb", bg = "#eff6ff", icon }) => (
   <div
@@ -98,8 +101,29 @@ const addDays = (date, days) => {
   return d;
 };
 
-function Dash_project() {
+// ADD: resource constants (must match backend enum order)
+const RESOURCE_TYPES = [
+  "surveyor",
+  "civil engineer",
+  "civil i&c",
+  "electric engineer",
+  "electric i&c",
+  "soil testing team",
+  "tline engineer",
+  "tline subcontractor",
+];
 
+// ADD: safe local parser for YYYY-MM-DD (prevents timezone shifts)
+const parseYMD = (s) => {
+  if (!s) return null;
+  const [y, m, d] = s.split("-").map(Number);
+  const dt = new Date(y, (m || 1) - 1, d || 1);
+  dt.setHours(0, 0, 0, 0);
+  return dt;
+};
+
+
+function Dash_project() {
   const navigate = useNavigate();
   const { data, isLoading, isFetching } = useGetProjectStatusFilterQuery();
 
@@ -112,7 +136,7 @@ function Dash_project() {
   };
 
   const [userSearch, setUserSearch] = useState("");
-  const [debouncedQ, setDebouncedQ] = useState(userSearch);
+   const [debouncedQ, setDebouncedQ] = useState(userSearch);
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQ(userSearch), 300);
     return () => clearTimeout(t);
@@ -161,7 +185,7 @@ function Dash_project() {
         null;
 
       let upcoming = [];
-      acts.map((activity) => { });
+      acts.map((activity) => {});
 
       if (current?.successors?.length) {
         const s = current.successors[0];
@@ -238,7 +262,6 @@ function Dash_project() {
     [paViewRes]
   );
 
-
   const { projectId: paramId } = useParams();
   const [sp] = useSearchParams();
   const initialProjectId = sp.get("project_id") || paramId || "";
@@ -261,13 +284,42 @@ function Dash_project() {
     navigate({ search: params.toString() }, { replace: true });
   };
 
-
   const {
     data: LineData,
     isLoading: isLOadingLineData,
     isFetching: isFetchingLineData,
     error,
   } = useGetActivityLineByProjectIdQuery(projectId, { skip: !projectId });
+
+  /* --------- RESOURCES API (integrated) --------- */
+  /* --------- RESOURCES API (integrated) --------- */
+// local 7-day window for the resource graph (today → +6)
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+const [resRange, setResRange] = useState({
+  startDate: today,
+  endDate: addDays(today, 6),
+});
+
+// fetch resources whenever the resource graph range or project changes
+const { data: resourcesRes } = useGetResourcesQuery({
+  start: ymd(resRange.startDate),
+  end: ymd(resRange.endDate),
+  ...(projectId ? { project_id: projectId } : {}),
+  allTypes: "1", // ensure zeros returned for missing types
+});
+
+// Map API [{type, number}] -> chart logs [{date, type, count}]
+const resourceLogs = useMemo(() => {
+  const items = Array.isArray(resourcesRes?.data) ? resourcesRes.data : [];
+  const anchor = resourcesRes?.start || ymd(resRange.startDate);
+  return items.map((it) => ({
+    date: anchor,
+    type: String(it.type || "-"),
+    count: Number(it.number || 0),
+  }));
+}, [resourcesRes, resRange.startDate]);
+
 
   return (
     <Box
@@ -404,7 +456,7 @@ function Dash_project() {
               const e = new Date(endDate);
               s.setHours(0, 0, 0, 0);
               e.setHours(0, 0, 0, 0);
-              setRange({ startDate: s, endDate: e }); 
+              setRange({ startDate: s, endDate: e });
             }}
           />
         </Grid>
@@ -443,10 +495,34 @@ function Dash_project() {
           />
         </Grid>
       </Grid>
+      <Grid container spacing={2} sx={{ mt: 1 }}>
+        <Grid xs={12} md={12}>
+          <ResourceBarGraph
+  title="Resources by Type"
+  resourceTypes={RESOURCE_TYPES}
+  logs={resourceLogs}
+  initialRange={resRange}
+  onRangeChange={(startY, endY) => {
+    const s = parseYMD(startY);
+    const e = parseYMD(endY);
+    setResRange({
+      startDate: s || resRange.startDate,
+      endDate: e || resRange.endDate,
+    });
+  }}
+  onBarClick={() => {}}
+/>
+
+        </Grid>
+      </Grid>
 
       <Grid container spacing={2} sx={{ mt: 1 }}>
         <Grid xs={12} md={12}>
-          {error && <div style={{ color: "crimson" }}>Failed to load: {error?.data?.message || String(error)}</div>}
+          {error && (
+            <div style={{ color: "crimson" }}>
+              Failed to load: {error?.data?.message || String(error)}
+            </div>
+          )}
           {isLOadingLineData || isFetchingLineData ? (
             <div>Loading…</div>
           ) : (
