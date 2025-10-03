@@ -1,4 +1,5 @@
-import { Box, Grid } from "@mui/joy";
+import { Box, Grid, Option, Select } from "@mui/joy";
+import ListItemDecorator from "@mui/joy/ListItemDecorator";
 import CloudStatCard from "./All_Tasks/TaskDashboardCards";
 import PlayCircleFilledRoundedIcon from "@mui/icons-material/PlayCircleFilledRounded";
 import TaskAltRoundedIcon from "@mui/icons-material/TaskAltRounded";
@@ -11,14 +12,17 @@ import {
   useGetPostsActivityFeedQuery,
   useGetProjectActivityForViewQuery,
   useGetProjectDetailQuery,
+  useGetProjectDropdownForDashboardQuery,
   useGetProjectStatesFilterQuery,
   useGetProjectStatusFilterQuery,
+  useLazyGetProjectSearchDropdownQuery,
 } from "../redux/projectsSlice";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { PauseCircleRounded } from "@mui/icons-material";
+import { CheckRounded, PauseCircleRounded } from "@mui/icons-material";
 import ActivityFinishLineChart from "./ActivityFinishLineChart";
 import WeeklyProjectTimelineCard from "./WeeklyActivityProject";
-import ActivityFeedCard from "../component/All_Tasks/ActivityCard"
+import ActivityFeedCard from "../component/All_Tasks/ActivityCard";
+import SearchPickerModal from "./SearchPickerModal";
 
 const IconBadge = ({ color = "#2563eb", bg = "#eff6ff", icon }) => (
   <div
@@ -41,38 +45,12 @@ const IconBadge = ({ color = "#2563eb", bg = "#eff6ff", icon }) => (
 );
 
 const DONUT_COLORS = [
-  "#f59e0b", // amber
-  "#22c55e", // green
-  "#ef4444", // red
-  "#3b82f6", // blue
-  "#8b5cf6", // violet
-  "#14b8a6", // teal
-  "#e11d48", // rose
-  "#84cc16", // lime
-  "#f97316", // orange
-  "#06b6d4", // cyan
-
-  "#d946ef", // fuchsia
-  "#0ea5e9", // sky
-  "#65a30d", // olive green
-  "#dc2626", // deep red
-  "#7c3aed", // purple
-  "#10b981", // emerald
-  "#ca8a04", // yellow dark
-  "#2563eb", // indigo
-  "#f43f5e", // pinkish red
-  "#0891b2", // teal dark
-
-  "#a16207", // mustard
-  "#15803d", // forest green
-  "#4f46e5", // indigo dark
-  "#ea580c", // burnt orange
-  "#db2777", // magenta
-  "#047857", // green deep
-  "#1d4ed8", // royal blue
-  "#9333ea", // deep violet
-  "#b91c1c", // dark red
-  "#0d9488", // aqua teal
+  "#f59e0b", "#22c55e", "#ef4444", "#3b82f6", "#8b5cf6",
+  "#14b8a6", "#e11d48", "#84cc16", "#f97316", "#06b6d4",
+  "#d946ef", "#0ea5e9", "#65a30d", "#dc2626", "#7c3aed",
+  "#10b981", "#ca8a04", "#2563eb", "#f43f5e", "#0891b2",
+  "#a16207", "#15803d", "#4f46e5", "#ea580c", "#db2777",
+  "#047857", "#1d4ed8", "#9333ea", "#b91c1c", "#0d9488",
 ];
 
 const ymd = (d) => {
@@ -98,8 +76,9 @@ const addDays = (date, days) => {
   return d;
 };
 
-function Dash_project() {
-
+function Dash_project({
+  projectIds,
+}) {
   const navigate = useNavigate();
   const { data, isLoading, isFetching } = useGetProjectStatusFilterQuery();
 
@@ -110,6 +89,12 @@ function Dash_project() {
     delayed: 0,
     pending: 0,
   };
+
+  const [selectedIds, setSelectedIds] = useState(projectIds || []);
+
+  useEffect(() => {
+    setSelectedIds(projectIds || []);
+  }, [projectIds]);
 
   const [userSearch, setUserSearch] = useState("");
   const [debouncedQ, setDebouncedQ] = useState(userSearch);
@@ -122,9 +107,7 @@ function Dash_project() {
     data: projectData,
     isLoading: perfLoading,
     isFetching: perfFetching,
-  } = useGetProjectDetailQuery({
-    q: debouncedQ,
-  });
+  } = useGetProjectDetailQuery({ q: debouncedQ });
 
   const fmtDate = (d) => {
     if (!d) return "-";
@@ -136,8 +119,6 @@ function Dash_project() {
     return `${yyyy}-${mm}-${dd}`;
   };
 
-  console.log(projectData);
-
   const ProjectDetailColumns = [
     { key: "code", label: "Project Code" },
     { key: "name", label: "Project Name" },
@@ -146,10 +127,9 @@ function Dash_project() {
   ];
 
   const projectDetailRows = useMemo(() => {
-    const list = projectData?.data ?? []; // ← your array of 48
+    const list = projectData?.data ?? [];
     return list.map((p) => {
       const acts = Array.isArray(p.activities) ? p.activities : [];
-
       const current =
         acts.find(
           (a) =>
@@ -161,8 +141,6 @@ function Dash_project() {
         null;
 
       let upcoming = [];
-      acts.map((activity) => { });
-
       if (current?.successors?.length) {
         const s = current.successors[0];
         upcoming =
@@ -215,7 +193,7 @@ function Dash_project() {
   } = useGetPostsActivityFeedQuery();
   const feedItems = Array.isArray(feedRes?.data) ? feedRes.data : [];
 
-  /* --------- LIFTED RANGE STATE (default: current week) --------- */
+  // -------- Range state (default: current week)
   const defaultStart = startOfWeek(new Date());
   const defaultEnd = addDays(defaultStart, 6);
   const [range, setRange] = useState({
@@ -226,7 +204,6 @@ function Dash_project() {
   const baselineStart = ymd(range.startDate);
   const baselineEnd = ymd(range.endDate);
 
-  // RTK Query fetch that refires when range changes
   const {
     data: paViewRes,
     isLoading: paLoading,
@@ -238,36 +215,111 @@ function Dash_project() {
     [paViewRes]
   );
 
-
-  const { projectId: paramId } = useParams();
+  // -------- Multi-select projects
   const [sp] = useSearchParams();
-  const initialProjectId = sp.get("project_id") || paramId || "";
 
-  const [projectId, setProjectId] = useState(initialProjectId);
-
-  // keep local state in sync when URL changes (back/forward, etc.)
-  useEffect(() => {
-    if (initialProjectId && initialProjectId !== projectId) {
-      setProjectId(initialProjectId);
-    }
-  }, [initialProjectId]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // when child picks a project, update URL + local state
-  const handleProjectChange = (id) => {
-    setProjectId(id || "");
-    const params = new URLSearchParams(sp);
-    if (id) params.set("project_id", id);
-    else params.delete("project_id");
-    navigate({ search: params.toString() }, { replace: true });
-  };
 
 
   const {
     data: LineData,
-    isLoading: isLOadingLineData,
+    isLoading: isLoadingLineData,
     isFetching: isFetchingLineData,
     error,
-  } = useGetActivityLineByProjectIdQuery(projectId, { skip: !projectId });
+  } = useGetActivityLineByProjectIdQuery(selectedIds, {
+    skip: selectedIds.length === 0,
+  });
+  
+
+  const { data: projectResponse } = useGetProjectDropdownForDashboardQuery({
+    page: 1,
+    pageSize: 7,
+  });
+
+  const projects = Array.isArray(projectResponse)
+    ? projectResponse
+    : projectResponse?.data ?? [];
+
+  const [triggerProjectSearch] = useLazyGetProjectSearchDropdownQuery();
+  const [projectModalOpen, setProjectModalOpen] = useState(false);
+
+  const OPEN_MODAL = "__OPEN_MODAL__";
+
+  const fetchProjectsPage = async ({ search = "", page = 1, pageSize = 7 }) => {
+    const res = await triggerProjectSearch(
+      { search, page, limit: pageSize },
+      true
+    );
+    const d = res?.data;
+    return {
+      rows: d?.data || [],
+      total: d?.pagination?.total || 0,
+      page: d?.pagination?.page || page,
+      pageSize: d?.pagination?.pageSize || pageSize,
+    };
+  };
+
+  // Label cache so values from modal show proper labels even if not in `projects` page
+  const [labelCache, setLabelCache] = useState({});
+  const labelFromRow = (row) =>
+    row.code
+      ? `${row.code}${row.name ? ` - ${row.name}` : ""}`
+      : row.name || String(row._id);
+
+  const onPickProject = (row) => {
+    if (!row) return;
+    setProjectModalOpen(false);
+    const id = String(row._id || "");
+    if (!id) return;
+    // cache label for this id
+    setLabelCache((prev) => ({ ...prev, [id]: labelFromRow(row) }));
+    // add to selection if not already
+    setSelectedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+  };
+
+  const handleProjectChange = (id) => {
+    if (!id) return;
+    const sId = String(id);
+    setSelectedIds((prev) => [sId, ...prev.filter((x) => x !== sId)]);
+    const params = new URLSearchParams(sp);
+    params.set("project_id", sId);
+    navigate({ search: params.toString() }, { replace: true });
+  };
+
+  const getLabelForId = (id) => {
+    if (labelCache[id]) return labelCache[id];
+    const p = (projects || []).find((x) => String(x._id) === String(id));
+    return p
+      ? p.code
+        ? `${p.code}${p.name ? ` - ${p.name}` : ""}`
+        : p.name || id
+      : id;
+  };
+
+  const renderMultiValue = (ids) => {
+    if (!ids?.length) return "Select Projects";
+    return ids.map(getLabelForId).join(", ");
+  };
+
+  // 🚀 Ensure options always include selected IDs (even if not in the current `projects` page)
+  const optionRows = useMemo(() => {
+    const seen = new Set();
+    const out = [];
+    // 1) existing page items
+    for (const p of projects || []) {
+      if (!p?._id) continue;
+      const id = String(p._id);
+      if (seen.has(id)) continue;
+      seen.add(id);
+      out.push(p);
+    }
+    // 2) any selected ids missing from the page -> synthesize an option using labelCache
+    for (const id of selectedIds) {
+      if (seen.has(id)) continue;
+      out.push({ _id: id, code: null, name: labelCache[id] || id });
+      seen.add(id);
+    }
+    return out;
+  }, [projects, selectedIds, labelCache]);
 
   return (
     <Box
@@ -288,8 +340,8 @@ function Dash_project() {
             illustration={
               <IconBadge
                 icon={<PlayCircleFilledRoundedIcon fontSize="small" />}
-                color="#1d4ed8" // blue-700
-                bg="#dbeafe" // blue-100
+                color="#1d4ed8"
+                bg="#dbeafe"
               />
             }
             onAction={() => {
@@ -311,8 +363,8 @@ function Dash_project() {
             illustration={
               <IconBadge
                 icon={<TaskAltRoundedIcon fontSize="small" />}
-                color="#15803d" // emerald-700
-                bg="#ecfdf5" // emerald-50
+                color="#15803d"
+                bg="#ecfdf5"
               />
             }
             onAction={() => {
@@ -334,8 +386,8 @@ function Dash_project() {
             illustration={
               <IconBadge
                 icon={<DoNotDisturbOnRoundedIcon fontSize="small" />}
-                color="#b91c1c" // red-700
-                bg="#fee2e2" // red-100
+                color="#b91c1c"
+                bg="#fee2e2"
               />
             }
             onAction={() => {
@@ -357,8 +409,8 @@ function Dash_project() {
             illustration={
               <IconBadge
                 icon={<PauseCircleRounded fontSize="small" />}
-                color="#b91c1c" // red-700
-                bg="#fee2e2" // red-100
+                color="#b91c1c"
+                bg="#fee2e2"
               />
             }
             onAction={() => {
@@ -404,7 +456,7 @@ function Dash_project() {
               const e = new Date(endDate);
               s.setHours(0, 0, 0, 0);
               e.setHours(0, 0, 0, 0);
-              setRange({ startDate: s, endDate: e }); 
+              setRange({ startDate: s, endDate: e });
             }}
           />
         </Grid>
@@ -444,20 +496,51 @@ function Dash_project() {
         </Grid>
       </Grid>
 
-      <Grid container spacing={2} sx={{ mt: 1 }}>
-        <Grid xs={12} md={12}>
-          {error && <div style={{ color: "crimson" }}>Failed to load: {error?.data?.message || String(error)}</div>}
-          {isLOadingLineData || isFetchingLineData ? (
-            <div>Loading…</div>
-          ) : (
-            <ActivityFinishLineChart
-              apiData={LineData}
-              projectId={projectId}
-              onProjectChange={handleProjectChange}
-            />
-          )}
-        </Grid>
-      </Grid>
+
+      {error && (
+        <div style={{ color: "crimson" }}>
+          Failed to load: {error?.data?.message || String(error)}
+        </div>
+      )}
+
+      {isLoadingLineData || isFetchingLineData ? (
+        <div>Loading…</div>
+      ) : (
+        Array.isArray(LineData?.rows) && LineData.rows.length > 0 ? (
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            {LineData.rows.map((row) => {
+              return (
+                <Grid key={row.project_id} xs={12} md={12}>
+                  <ActivityFinishLineChart
+                    apiData={row}
+                    projectId={row.project_id}
+                    // optional: align X-axes across all charts using the global domain
+                    domain={row.domain}
+                    title={row.project_name}
+                    onProjectChange={handleProjectChange}
+                  />
+                </Grid>
+              )
+            })}
+          </Grid>
+        ) : null
+      )}
+
+
+      <SearchPickerModal
+        open={projectModalOpen}
+        onClose={() => setProjectModalOpen(false)}
+        onPick={onPickProject}
+        title="Search: Project"
+        columns={[
+          { key: "name", label: "Project Name", width: 240 },
+          { key: "code", label: "Project Code", width: 200 },
+        ]}
+        fetchPage={fetchProjectsPage}
+        searchKey="name"
+        pageSize={7}
+        backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
+      />
     </Box>
   );
 }

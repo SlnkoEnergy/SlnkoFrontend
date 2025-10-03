@@ -345,10 +345,8 @@ export const projectsApi = createApi({
 
     getActivityLineByProjectId: builder.query({
       query: (projectId) => {
-        const id = projectId ?? "68cc51a671acfbca3602139c";
-        console.log("[RTKQ] getActivityLineByProjectId ->", id);
         return {
-          url: `/project-activity-chart/${encodeURIComponent(id)}`,
+          url: `/project-activity-chart/${encodeURIComponent(projectId)}`,
           method: "GET",
         };
       },
