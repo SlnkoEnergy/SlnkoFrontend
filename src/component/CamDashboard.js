@@ -394,7 +394,7 @@ function Dash_cam({selected, setSelected}) {
           width={"100%"}
           alignItems={"center"}
         >
-          <Box>
+       
             <Tabs
               value={selectedTab}
               onChange={(event, newValue) => {
@@ -436,7 +436,7 @@ function Dash_cam({selected, setSelected}) {
                 )}
               </TabList>
             </Tabs>
-          </Box>
+         
         </Box>
         <Box
           className="SearchAndFilters-tabletUp"

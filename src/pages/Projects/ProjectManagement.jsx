@@ -56,13 +56,20 @@ function ProjectManagement() {
     }
 
     // --- completion formula (optional, global-only on backend) ---
-    const hasCompletionFormula =
-      Object.prototype.hasOwnProperty.call(payload, "completion_formula");
+    const hasCompletionFormula = Object.prototype.hasOwnProperty.call(
+      payload,
+      "completion_formula"
+    );
     const completion_formula = hasCompletionFormula
       ? String(payload.completion_formula ?? "")
       : undefined;
 
-    return { dependencies, predecessors, hasCompletionFormula, completion_formula };
+    return {
+      dependencies,
+      predecessors,
+      hasCompletionFormula,
+      completion_formula,
+    };
   };
 
   const handleCreate = async (payload) => {
@@ -99,7 +106,11 @@ function ProjectManagement() {
         }
 
         // At least one change must be present for update
-        if (!dependencies.length && !predecessors.length && !hasCompletionFormula) {
+        if (
+          !dependencies.length &&
+          !predecessors.length &&
+          !hasCompletionFormula
+        ) {
           toast.error("Nothing to update.");
           return;
         }

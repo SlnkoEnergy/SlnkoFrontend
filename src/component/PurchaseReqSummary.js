@@ -16,23 +16,18 @@ import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
 import FormControl from "@mui/joy/FormControl";
-import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { Calendar, TruckIcon, User } from "lucide-react";
+import { Calendar, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
-
 import { useGetAllPurchaseRequestQuery } from "../redux/camsSlice";
 import {
-  useGetCategoriesNameSearchQuery,
   useLazyGetCategoriesNameSearchQuery,
 } from "../redux/productsSlice";
-import { Money } from "@mui/icons-material";
-
 import SearchPickerModal from "../component/SearchPickerModal";
 
 function PurchaseReqSummary() {
@@ -50,23 +45,14 @@ function PurchaseReqSummary() {
   const itemSearch = searchParams.get("itemSearch") || "";
   const poValueSearch = searchParams.get("poValueSearch") || "";
   const statusSearch = searchParams.get("statusSearch") || "";
-  const createdFromParam = searchParams.get("createdFrom") || "";
-  const createdToParam = searchParams.get("createdTo") || "";
-  const etdFromParam = searchParams.get("etdFrom") || "";
-  const etdToParam = searchParams.get("etdTo") || "";
-  const tab = searchParams.get("tab") || "all"; // "all" | "open"
+  const createdFromParam = searchParams.get("from") || "";
+  const createdToParam = searchParams.get("to") || "";
+  const etdFromParam = searchParams.get("deadlineFrom") || "";
+  const etdToParam = searchParams.get("deadlineTo") || "";
+  const tab = searchParams.get("tab") || "all"; 
   const openPR = tab === "open";
   const limit = parseInt(searchParams.get("limit") || "10", 10) || 10;
   const projectId = searchParams.get("projectId") || "";
-
-  const [createdDateRange, setCreatedDateRange] = useState([
-    createdFromParam || null,
-    createdToParam || null,
-  ]);
-  const [etdDateRange, setEtdDateRange] = useState([
-    etdFromParam || null,
-    etdToParam || null,
-  ]);
 
   // Category UI state
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
@@ -91,29 +77,19 @@ function PurchaseReqSummary() {
       itemSearch,
       poValueSearch,
       statusSearch,
-      etdFrom: etdDateRange ? etdDateRange[0] || "" : "",
-      etdTo: etdDateRange ? etdDateRange[1] || "" : "",
-      createdFrom: createdDateRange[0] || "",
-      createdTo: createdDateRange[1] || "",
+      etdFrom: etdFromParam || "",
+      etdTo: etdToParam || "",
+      createdFrom: createdFromParam || "",
+      createdTo: createdToParam || "",
       open_pr: tab === "open",
       limit,
     },
     {
-      refetchOnMountOrArgChange: true, // <—
+      refetchOnMountOrArgChange: true,
       refetchOnFocus: false,
       refetchOnReconnect: false,
     }
   );
-
-  // Initial 7 categories (for the Select)
-  const { data: catInitialData, isFetching: isCatInitFetching } =
-    useGetCategoriesNameSearchQuery({
-      page: 1,
-      search: "",
-      limit: 7,
-      pr: openPR,
-      projectId: projectId || "",
-    });
 
   // Lazy search for categories (modal paging & searching)
   const [triggerCategorySearch] = useLazyGetCategoriesNameSearchQuery();
@@ -180,14 +156,6 @@ function PurchaseReqSummary() {
     return pages;
   };
 
-  const topCategories = (() => {
-    const rows = catInitialData?.data || catInitialData?.rows || [];
-    return rows.map((r) => ({
-      ...r,
-      name: r?.name ?? r?.category ?? r?.make ?? "",
-    }));
-  })();
-
   const fetchCategoriesPage = async ({ page, search }) => {
     try {
       const res = await triggerCategorySearch(
@@ -215,8 +183,6 @@ function PurchaseReqSummary() {
     }
   };
 
-  console.log(purchaseRequests);
-
   const onPickCategory = (row) => {
     const pickedName = row?.name ?? row?.category ?? row?.make ?? "";
     setSelecteditem(pickedName);
@@ -237,10 +203,10 @@ function PurchaseReqSummary() {
 
     const formattedDate = createdAt
       ? new Date(createdAt).toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
       : "N/A";
 
     const isClickable = Boolean(pr_no && pr_id);
@@ -331,19 +297,20 @@ function PurchaseReqSummary() {
     return out;
   };
 
-  // helpers (safe getters)
   const getName = (it) =>
     it?.item_id?.name ?? it?.name ?? it?.other_item_name ?? "-";
 
   const getProductData = (it) =>
-    it?.product_data ?? it?.item_id?.product_data ?? it?.item_id?.product_Data ?? "-";
+    it?.product_data ??
+    it?.item_id?.product_data ??
+    it?.item_id?.product_Data ??
+    "-";
 
   const RenderItemCell = (item) => {
     const name = getName(item);
     const isOthers = name === "Others";
     const pData = getProductData(item);
 
-    // Tooltip body for "Others"
     const othersTooltip = (
       <Box
         sx={{
@@ -355,7 +322,9 @@ function PurchaseReqSummary() {
         }}
       >
         <Box sx={{ display: "flex", flexDirection: "column", gap: 0.25 }}>
-          <Typography fontWeight="lg" sx={{ color: "black" }}>Other's Product Name</Typography>
+          <Typography fontWeight="lg" sx={{ color: "black" }}>
+            Other's Product Name
+          </Typography>
           {Array.isArray(pData) ? (
             pData.map((pd, i) => (
               <Typography key={i} level="body-xs">
@@ -366,7 +335,6 @@ function PurchaseReqSummary() {
             <Typography level="body-xs">{pData ?? "-"}</Typography>
           )}
         </Box>
-
       </Box>
     );
 
@@ -376,9 +344,7 @@ function PurchaseReqSummary() {
           {isOthers ? (
             <Tooltip arrow placement="top" title={othersTooltip}>
               {/* make the hover target obvious but unobtrusive */}
-              <span style={{ cursor: "help" }}>
-                {name}
-              </span>
+              <span style={{ cursor: "help" }}>{name}</span>
             </Tooltip>
           ) : (
             name
@@ -429,10 +395,13 @@ function PurchaseReqSummary() {
       </Box>
     );
   };
-
+  const TABS = [
+    { value: "all", label: "All" },
+    { value: "open", label: "Open PR" },
+  ];
   return (
     <Box
-    sx={{
+      sx={{
         ml: {
           lg: "var(--Sidebar-width)",
         },
@@ -441,77 +410,74 @@ function PurchaseReqSummary() {
       }}
     >
       <Box display={"flex"} justifyContent={"space-between"} pb={0.5}>
-      <Box
-        sx={{
-          maxWidth: '100%',
-          display: "flex",
-          alignItems: "flex-end",
-          gap: 2,
-          flexWrap: { xs: "wrap", md: "nowrap" }, 
-        }}
-      >
-        {/* Search */}
-        <FormControl sx={{ flex: 1, minWidth: 300 }} size="sm">
-          <Input
-            size="sm"
-            placeholder="Search by ProjectId, Customer, Type, or State"
-            startDecorator={<SearchIcon />}
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-        </FormControl>
-
-        
-      </Box>
-
-      {/* Tabs + Rows-per-page */}
-      <Box
-        sx={{
-          maxWidth: '100%',
-          mb: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 2,
-        }}
-      >
-        {/* Tabs */}
-        <Tabs
-          value={tab}
-          onChange={(_e, newValue) => {
-            updateParams({ tab: newValue, page: 1, limit });
-          }}
-          sx={{ width: "fit-content" }}
+        <Box
+          display={"flex"}
+          justifyContent={"space-between"}
+          width={"100%"}
+          alignItems={"center"}
         >
-          <TabList
+          {/* Tabs */}
+
+          <Tabs
+            value={tab}
+            onChange={(_e, newValue) => {
+              updateParams({ tab: newValue, page: 1, limit });
+            }}
+            indicatorPlacement="none"
             sx={{
-              gap: 1,
-              p: 0.5,
               bgcolor: "background.level1",
-              borderRadius: "xl",
+              borderRadius: 9999,
+              boxShadow: "sm",
               width: "fit-content",
             }}
           >
-            <Tab
-              value="all"
-              variant={tab === "all" ? "solid" : "soft"}
-              color={tab === "all" ? "primary" : "neutral"}
-              sx={{ borderRadius: "xl", fontWeight: 600, px: 1.5 }}
-            >
-              All
-            </Tab>
-            <Tab
-              value="open"
-              variant={tab === "open" ? "solid" : "soft"}
-              color={tab === "open" ? "primary" : "neutral"}
-              sx={{ borderRadius: "xl", fontWeight: 600, px: 1.5 }}
-            >
-              Open PR
-            </Tab>
-          </TabList>
-        </Tabs>
+            <TabList sx={{ gap: 1 }}>
+              {TABS.map((t) => (
+                <Tab
+                  key={t.value}
+                  value={t.value}
+                  disableIndicator
+                  sx={{
+                    borderRadius: 9999,
+                    fontWeight: "md",
+                    textTransform: "none",
+                    "&.Mui-selected": {
+                      bgcolor: "background.surface",
+                      boxShadow: "sm",
+                    },
+                  }}
+                >
+                  {t.label}
+                </Tab>
+              ))}
+            </TabList>
+          </Tabs>
+        </Box>
+        <Box
+          className="SearchAndFilters-tabletUp"
+          sx={{
+            borderRadius: "sm",
+            py: 1,
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 1,
+            width: { lg: "100%" },
+          }}
+        >
+          {/* Search */}
+          <FormControl sx={{ flex: 1, minWidth: 300 }} size="sm">
+            <Input
+              size="sm"
+              placeholder="Search by ProjectId, Customer, Type, or State"
+              startDecorator={<SearchIcon />}
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+          </FormControl>
+        </Box>
+
+        {/* Tabs + Rows-per-page */}
       </Box>
-    </Box>
       {/* Table */}
       <Sheet
         className="OrderTableContainer"
@@ -591,7 +557,6 @@ function PurchaseReqSummary() {
                 </td>
               </tr>
             ) : purchaseRequests.length > 0 ? (
-
               purchaseRequests.map((row) => {
                 const item = row.item;
                 return (
@@ -661,7 +626,7 @@ function PurchaseReqSummary() {
                       }}
                     >
                       {Array.isArray(row.po_numbers) &&
-                        row.po_numbers.length > 0 ? (
+                      row.po_numbers.length > 0 ? (
                         (() => {
                           const cleaned = row.po_numbers.map((s) =>
                             (s ?? "").trim()
@@ -840,7 +805,7 @@ function PurchaseReqSummary() {
             )
           )}
         </Box>
- {/* Rows per page */}
+        {/* Rows per page */}
         <Box
           display="flex"
           alignItems="center"
@@ -859,13 +824,13 @@ function PurchaseReqSummary() {
                 itemSearch: selecteditem || undefined,
                 statusSearch: selectedstatus || undefined,
                 poValueSearch: selectedpovalue || undefined,
-                createdFrom: createdDateRange[0] || undefined,
-                createdTo: createdDateRange[1] || undefined,
-                etdFrom: etdDateRange[0] || undefined,
-                etdTo: etdDateRange[1] || undefined,
+                createdFrom: createdFromParam || undefined,
+                createdTo: createdToParam || undefined,
+                etdFrom: etdFromParam || undefined,
+                etdTo: etdToParam || undefined,
               });
             }}
-             sx={{
+            sx={{
               minWidth: 80,
               borderRadius: "md",
               boxShadow: "sm",
