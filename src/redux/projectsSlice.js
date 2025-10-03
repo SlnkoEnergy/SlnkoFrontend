@@ -371,6 +371,14 @@ export const projectsApi = createApi({
         `projectactivity/allprojectactivityforview?baselineStart=${baselineStart}&baselineEnd=${baselineEnd}`,
       providesTags: ["Project"],
     }),
+
+
+    getResources: builder.query({
+  query: ({ start, end, project_id, allTypes = "1" }) => ({
+    url: "projectactivity/resources",
+    params: { start, end, allTypes, ...(project_id ? { project_id } : {}) },
+  }),
+}),
   })
 
 })
@@ -423,4 +431,7 @@ export const {
   useGetActivityLineByProjectIdQuery,
   useGetPostsActivityFeedQuery,
   useGetProjectActivityForViewQuery,
+    useGetResourcesQuery,
+  useLazyGetResourcesQuery,
+
 } = projectsApi;

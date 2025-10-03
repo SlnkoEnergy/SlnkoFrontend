@@ -16,23 +16,18 @@ import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
 import FormControl from "@mui/joy/FormControl";
-import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { Calendar, TruckIcon, User } from "lucide-react";
+import { Calendar, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
-
 import { useGetAllPurchaseRequestQuery } from "../redux/camsSlice";
 import {
-  useGetCategoriesNameSearchQuery,
   useLazyGetCategoriesNameSearchQuery,
 } from "../redux/productsSlice";
-import { Money } from "@mui/icons-material";
-
 import SearchPickerModal from "../component/SearchPickerModal";
 
 function PurchaseReqSummary() {
@@ -50,23 +45,14 @@ function PurchaseReqSummary() {
   const itemSearch = searchParams.get("itemSearch") || "";
   const poValueSearch = searchParams.get("poValueSearch") || "";
   const statusSearch = searchParams.get("statusSearch") || "";
-  const createdFromParam = searchParams.get("createdFrom") || "";
-  const createdToParam = searchParams.get("createdTo") || "";
-  const etdFromParam = searchParams.get("etdFrom") || "";
-  const etdToParam = searchParams.get("etdTo") || "";
-  const tab = searchParams.get("tab") || "all"; // "all" | "open"
+  const createdFromParam = searchParams.get("from") || "";
+  const createdToParam = searchParams.get("to") || "";
+  const etdFromParam = searchParams.get("deadlineFrom") || "";
+  const etdToParam = searchParams.get("deadlineTo") || "";
+  const tab = searchParams.get("tab") || "all"; 
   const openPR = tab === "open";
   const limit = parseInt(searchParams.get("limit") || "10", 10) || 10;
   const projectId = searchParams.get("projectId") || "";
-
-  const [createdDateRange, setCreatedDateRange] = useState([
-    createdFromParam || null,
-    createdToParam || null,
-  ]);
-  const [etdDateRange, setEtdDateRange] = useState([
-    etdFromParam || null,
-    etdToParam || null,
-  ]);
 
   // Category UI state
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
@@ -91,29 +77,19 @@ function PurchaseReqSummary() {
       itemSearch,
       poValueSearch,
       statusSearch,
-      etdFrom: etdDateRange ? etdDateRange[0] || "" : "",
-      etdTo: etdDateRange ? etdDateRange[1] || "" : "",
-      createdFrom: createdDateRange[0] || "",
-      createdTo: createdDateRange[1] || "",
+      etdFrom: etdFromParam || "",
+      etdTo: etdToParam || "",
+      createdFrom: createdFromParam || "",
+      createdTo: createdToParam || "",
       open_pr: tab === "open",
       limit,
     },
     {
-      refetchOnMountOrArgChange: true, // <—
+      refetchOnMountOrArgChange: true,
       refetchOnFocus: false,
       refetchOnReconnect: false,
     }
   );
-
-  // Initial 7 categories (for the Select)
-  const { data: catInitialData, isFetching: isCatInitFetching } =
-    useGetCategoriesNameSearchQuery({
-      page: 1,
-      search: "",
-      limit: 7,
-      pr: openPR,
-      projectId: projectId || "",
-    });
 
   // Lazy search for categories (modal paging & searching)
   const [triggerCategorySearch] = useLazyGetCategoriesNameSearchQuery();
@@ -180,14 +156,6 @@ function PurchaseReqSummary() {
     return pages;
   };
 
-  const topCategories = (() => {
-    const rows = catInitialData?.data || catInitialData?.rows || [];
-    return rows.map((r) => ({
-      ...r,
-      name: r?.name ?? r?.category ?? r?.make ?? "",
-    }));
-  })();
-
   const fetchCategoriesPage = async ({ page, search }) => {
     try {
       const res = await triggerCategorySearch(
@@ -215,8 +183,6 @@ function PurchaseReqSummary() {
     }
   };
 
-  console.log(purchaseRequests);
-
   const onPickCategory = (row) => {
     const pickedName = row?.name ?? row?.category ?? row?.make ?? "";
     setSelecteditem(pickedName);
@@ -237,10 +203,10 @@ function PurchaseReqSummary() {
 
     const formattedDate = createdAt
       ? new Date(createdAt).toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
       : "N/A";
 
     const isClickable = Boolean(pr_no && pr_id);
@@ -331,19 +297,20 @@ function PurchaseReqSummary() {
     return out;
   };
 
-  // helpers (safe getters)
   const getName = (it) =>
     it?.item_id?.name ?? it?.name ?? it?.other_item_name ?? "-";
 
   const getProductData = (it) =>
-    it?.product_data ?? it?.item_id?.product_data ?? it?.item_id?.product_Data ?? "-";
+    it?.product_data ??
+    it?.item_id?.product_data ??
+    it?.item_id?.product_Data ??
+    "-";
 
   const RenderItemCell = (item) => {
     const name = getName(item);
     const isOthers = name === "Others";
     const pData = getProductData(item);
 
-    // Tooltip body for "Others"
     const othersTooltip = (
       <Box
         sx={{
@@ -355,7 +322,9 @@ function PurchaseReqSummary() {
         }}
       >
         <Box sx={{ display: "flex", flexDirection: "column", gap: 0.25 }}>
-          <Typography fontWeight="lg" sx={{ color: "black" }}>Other's Product Name</Typography>
+          <Typography fontWeight="lg" sx={{ color: "black" }}>
+            Other's Product Name
+          </Typography>
           {Array.isArray(pData) ? (
             pData.map((pd, i) => (
               <Typography key={i} level="body-xs">
@@ -366,7 +335,6 @@ function PurchaseReqSummary() {
             <Typography level="body-xs">{pData ?? "-"}</Typography>
           )}
         </Box>
-
       </Box>
     );
 
@@ -376,31 +344,12 @@ function PurchaseReqSummary() {
           {isOthers ? (
             <Tooltip arrow placement="top" title={othersTooltip}>
               {/* make the hover target obvious but unobtrusive */}
-              <span style={{ cursor: "help" }}>
-                {name}
-              </span>
+              <span style={{ cursor: "help" }}>{name}</span>
             </Tooltip>
           ) : (
             name
           )}
         </Typography>
-
-        {/* {isOthers && (
-          <Box sx={{ fontSize: 12, color: "gray" }}>
-            <div>
-              <b>
-                <TruckIcon size={13} /> Other Item Name:
-              </b>{" "}
-              {item?.other_item_name || "-"}
-            </div>
-            <div>
-              <b>
-                <Money /> Amount:
-              </b>{" "}
-              ₹{item?.amount || "0"}
-            </div>
-          </Box>
-        )} */}
       </Box>
     );
   };
@@ -413,7 +362,6 @@ function PurchaseReqSummary() {
       return <>{RenderItemCell(uniq[0].item)}</>;
     }
 
-    // Tooltip for the "+N" chip: show the names of the remaining items
     const tooltipContent = (
       <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, py: 0.5 }}>
         {uniq.slice(1).map(({ item }, i) => {
@@ -447,280 +395,99 @@ function PurchaseReqSummary() {
       </Box>
     );
   };
-
+  const TABS = [
+    { value: "all", label: "All" },
+    { value: "open", label: "Open PR" },
+  ];
   return (
-    <>
-      {/* SEARCH + ALL FILTERS IN ONE ROW */}
-      <Box
-        sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          maxWidth: { lg: "85%", sm: "100%" },
-          display: "flex",
-          alignItems: "flex-end",
-          gap: 2,
-          flexWrap: { xs: "wrap", md: "nowrap" }, // single line on md+, wraps on small
-        }}
-      >
-        {/* Search */}
-        <FormControl sx={{ flex: 1, minWidth: 300 }} size="sm">
-          <FormLabel>Search here</FormLabel>
-          <Input
-            size="sm"
-            placeholder="Search by ProjectId, Customer, Type, or State"
-            startDecorator={<SearchIcon />}
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-        </FormControl>
-
-        {/* Category (first 7 + Browse all…) */}
-        <FormControl sx={{ minWidth: 240 }} size="sm">
-          <FormLabel>Category Queue</FormLabel>
-          <Select
-            value={selecteditem}
-            placeholder={isCatInitFetching ? "Loading…" : "Select Category"}
-            listboxOpen={categorySelectOpen}
-            onListboxOpenChange={(_e, open) => setCategorySelectOpen(open)} // closes on outside click
-            onChange={(_e, newValue) => {
-              if (newValue === "__more__") {
-                setCategorySelectOpen(false);
-                setCategoryModalOpen(true);
-                return;
-              }
-              setSelecteditem(newValue || "");
-              setCurrentPage(1);
-              updateParams({
-                page: 1,
-                search: searchQuery,
-                itemSearch: newValue || "",
-                statusSearch: selectedstatus,
-                poValueSearch: selectedpovalue,
-              });
-            }}
-            size="sm"
-          >
-            <Option value="">All Categories</Option>
-
-            {topCategories.slice(0, 7).map((cat) => (
-              <Option key={cat._id} value={cat.name}>
-                {cat.name}
-              </Option>
-            ))}
-
-            {/* ensure picked value from modal (page 2+) appears in Select */}
-            {selecteditem &&
-              !topCategories
-                .slice(0, 7)
-                .some((c) => c.name === selecteditem) && (
-                <Option key={`picked-${selecteditem}`} value={selecteditem}>
-                  {selecteditem}
-                </Option>
-              )}
-
-            <Option
-              value="__more__"
-              sx={{
-                color: "primary.plainColor",
-                fontWeight: 600,
-                "&:hover": {
-                  bgcolor: "primary.softBg",
-                  color: "primary.solidColor",
-                },
-              }}
-            >
-              Browse all…
-            </Option>
-          </Select>
-        </FormControl>
-
-        {/* Created At */}
-        <FormControl sx={{ minWidth: 260 }} size="sm">
-          <FormLabel>Created At</FormLabel>
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <Input
-              type="date"
-              size="sm"
-              value={createdDateRange[0] || ""}
-              onChange={(e) => {
-                const from = e.target.value;
-                const to = createdDateRange[1];
-                setCreatedDateRange([from || null, to]);
-                updateParams({
-                  page: 1,
-                  search: searchQuery,
-                  itemSearch: selecteditem,
-                  statusSearch: selectedstatus,
-                  poValueSearch: selectedpovalue,
-                  createdFrom: from || "",
-                  createdTo: to || "",
-                  limit,
-                });
-              }}
-            />
-            <Input
-              type="date"
-              size="sm"
-              value={createdDateRange[1] || ""}
-              onChange={(e) => {
-                const from = createdDateRange[0];
-                const to = e.target.value;
-                setCreatedDateRange([from, to || null]);
-                updateParams({
-                  page: 1,
-                  search: searchQuery,
-                  itemSearch: selecteditem,
-                  statusSearch: selectedstatus,
-                  poValueSearch: selectedpovalue,
-                  createdFrom: from || "",
-                  createdTo: to || "",
-                  limit,
-                });
-              }}
-            />
-          </Box>
-        </FormControl>
-
-        {/* ETD Date */}
-        <FormControl sx={{ minWidth: 260 }} size="sm">
-          <FormLabel>ETD Date</FormLabel>
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <Input
-              type="date"
-              size="sm"
-              value={etdDateRange[0] || ""}
-              onChange={(e) => {
-                const from = e.target.value;
-                const to = etdDateRange[1];
-                setEtdDateRange([from || null, to]);
-                updateParams({
-                  page: 1,
-                  search: searchQuery,
-                  itemSearch: selecteditem,
-                  statusSearch: selectedstatus,
-                  poValueSearch: selectedpovalue,
-                  etdFrom: from || "",
-                  etdTo: to || "",
-                  limit,
-                });
-              }}
-            />
-            <Input
-              type="date"
-              size="sm"
-              value={etdDateRange[1] || ""}
-              onChange={(e) => {
-                const from = etdDateRange[0];
-                const to = e.target.value;
-                setEtdDateRange([from, to || null]);
-                updateParams({
-                  page: 1,
-                  search: searchQuery,
-                  itemSearch: selecteditem,
-                  statusSearch: selectedstatus,
-                  poValueSearch: selectedpovalue,
-                  etdFrom: from || "",
-                  etdTo: to || "",
-                  limit,
-                });
-              }}
-            />
-          </Box>
-        </FormControl>
-      </Box>
-
-      {/* Tabs + Rows-per-page */}
-      <Box
-        sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          maxWidth: { lg: "85%", sm: "100%" },
-          mb: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 2,
-        }}
-      >
-        {/* Tabs */}
-        <Tabs
-          value={tab}
-          onChange={(_e, newValue) => {
-            updateParams({ tab: newValue, page: 1, limit });
-          }}
-          sx={{ width: "fit-content" }}
+    <Box
+      sx={{
+        ml: {
+          lg: "var(--Sidebar-width)",
+        },
+        px: "0px",
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+      }}
+    >
+      <Box display={"flex"} justifyContent={"space-between"} pb={0.5}>
+        <Box
+          display={"flex"}
+          justifyContent={"space-between"}
+          width={"100%"}
+          alignItems={"center"}
         >
-          <TabList
+          {/* Tabs */}
+
+          <Tabs
+            value={tab}
+            onChange={(_e, newValue) => {
+              updateParams({ tab: newValue, page: 1, limit });
+            }}
+            indicatorPlacement="none"
             sx={{
-              gap: 1,
-              p: 0.5,
               bgcolor: "background.level1",
-              borderRadius: "xl",
+              borderRadius: 9999,
+              boxShadow: "sm",
               width: "fit-content",
             }}
           >
-            <Tab
-              value="all"
-              variant={tab === "all" ? "solid" : "soft"}
-              color={tab === "all" ? "primary" : "neutral"}
-              sx={{ borderRadius: "xl", fontWeight: 600, px: 1.5 }}
-            >
-              All
-            </Tab>
-            <Tab
-              value="open"
-              variant={tab === "open" ? "solid" : "soft"}
-              color={tab === "open" ? "primary" : "neutral"}
-              sx={{ borderRadius: "xl", fontWeight: 600, px: 1.5 }}
-            >
-              Open PR
-            </Tab>
-          </TabList>
-        </Tabs>
+            <TabList sx={{ gap: 1 }}>
+              {TABS.map((t) => (
+                <Tab
+                  key={t.value}
+                  value={t.value}
+                  disableIndicator
+                  sx={{
+                    borderRadius: 9999,
+                    fontWeight: "md",
+                    textTransform: "none",
+                    "&.Mui-selected": {
+                      bgcolor: "background.surface",
+                      boxShadow: "sm",
+                    },
+                  }}
+                >
+                  {t.label}
+                </Tab>
+              ))}
+            </TabList>
+          </Tabs>
+        </Box>
+        <Box
+          className="SearchAndFilters-tabletUp"
+          sx={{
+            borderRadius: "sm",
+            py: 1,
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 1,
+            width: { lg: "100%" },
+          }}
+        >
+          {/* Search */}
+          <FormControl sx={{ flex: 1, minWidth: 300 }} size="sm">
+            <Input
+              size="sm"
+              placeholder="Search by ProjectId, Customer, Type, or State"
+              startDecorator={<SearchIcon />}
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+          </FormControl>
+        </Box>
 
-        {/* Rows per page */}
-        <FormControl size="sm" sx={{ minWidth: 140 }}>
-          <FormLabel>Rows per page</FormLabel>
-          <Select
-            value={String(limit)}
-            onChange={(_e, newValue) => {
-              const newLimit = parseInt(newValue || "10", 10) || 10;
-              updateParams({
-                limit: String(newLimit),
-                page: 1,
-                tab,
-                search: searchQuery || undefined,
-                itemSearch: selecteditem || undefined,
-                statusSearch: selectedstatus || undefined,
-                poValueSearch: selectedpovalue || undefined,
-                createdFrom: createdDateRange[0] || undefined,
-                createdTo: createdDateRange[1] || undefined,
-                etdFrom: etdDateRange[0] || undefined,
-                etdTo: etdDateRange[1] || undefined,
-              });
-            }}
-            size="sm"
-            placeholder="Rows"
-          >
-            {[5, 10, 20, 50, 100].map((n) => (
-              <Option key={n} value={String(n)}>
-                {n}
-              </Option>
-            ))}
-          </Select>
-        </FormControl>
+        {/* Tabs + Rows-per-page */}
       </Box>
-
       {/* Table */}
       <Sheet
+        className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: { xs: "none", sm: "initial" },
+          display: { xs: "none", sm: "block" },
           width: "100%",
           borderRadius: "sm",
-          flexShrink: 1,
-          overflow: "auto",
-          minHeight: 0,
-          marginLeft: { lg: "18%", xl: "15%" },
-          maxWidth: { lg: "85%", sm: "100%" },
+          maxHeight: "66vh",
+          overflowY: "auto",
         }}
       >
         <Box
@@ -790,7 +557,6 @@ function PurchaseReqSummary() {
                 </td>
               </tr>
             ) : purchaseRequests.length > 0 ? (
-
               purchaseRequests.map((row) => {
                 const item = row.item;
                 return (
@@ -860,7 +626,7 @@ function PurchaseReqSummary() {
                       }}
                     >
                       {Array.isArray(row.po_numbers) &&
-                        row.po_numbers.length > 0 ? (
+                      row.po_numbers.length > 0 ? (
                         (() => {
                           const cleaned = row.po_numbers.map((s) =>
                             (s ?? "").trim()
@@ -995,13 +761,12 @@ function PurchaseReqSummary() {
       <Box
         className="Pagination-laptopUp"
         sx={{
-          pt: 2,
+          pt: 0.5,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: "flex",
           alignItems: "center",
           flexDirection: { xs: "column", md: "row" },
-          marginLeft: { xl: "15%", lg: "18%" },
         }}
       >
         <Button
@@ -1040,7 +805,46 @@ function PurchaseReqSummary() {
             )
           )}
         </Box>
-
+        {/* Rows per page */}
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={1}
+          sx={{ padding: "8px 16px" }}
+        >
+          <Select
+            value={String(limit)}
+            onChange={(_e, newValue) => {
+              const newLimit = parseInt(newValue || "10", 10) || 10;
+              updateParams({
+                limit: String(newLimit),
+                page: 1,
+                tab,
+                search: searchQuery || undefined,
+                itemSearch: selecteditem || undefined,
+                statusSearch: selectedstatus || undefined,
+                poValueSearch: selectedpovalue || undefined,
+                createdFrom: createdFromParam || undefined,
+                createdTo: createdToParam || undefined,
+                etdFrom: etdFromParam || undefined,
+                etdTo: etdToParam || undefined,
+              });
+            }}
+            sx={{
+              minWidth: 80,
+              borderRadius: "md",
+              boxShadow: "sm",
+            }}
+            size="sm"
+            placeholder="Rows"
+          >
+            {[5, 10, 20, 50, 100].map((n) => (
+              <Option key={n} value={String(n)}>
+                {n}
+              </Option>
+            ))}
+          </Select>
+        </Box>
         <Button
           size="sm"
           variant="outlined"
@@ -1065,7 +869,7 @@ function PurchaseReqSummary() {
         pageSize={7}
         backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
       />
-    </>
+    </Box>
   );
 }
 

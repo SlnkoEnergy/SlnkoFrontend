@@ -17,7 +17,6 @@ import {
 import { Card, Typography, Box, Select, Option } from "@mui/joy";
 import {
     useGetProjectDropdownForDashboardQuery,
-    useGetProjectDropdownQuery,
     useLazyGetProjectSearchDropdownQuery,
 } from "../redux/projectsSlice";
 import SearchPickerModal from "./SearchPickerModal";
@@ -79,14 +78,40 @@ function OngoingSpans({ xAxisMap, yAxisMap, data = [], nowMs = Date.now() }) {
     );
 }
 
-/** Custom tooltip: only show the four date series, formatted */
+/** Legend/meta for tooltip + markers (shapes aligned with chart) */
 const SERIES = [
-    { key: "actual_finish_ms", label: "Actual Finish", color: "#16a34a" },
-    { key: "actual_start_ms", label: "Actual Start", color: "#111827" },
-    { key: "planned_finish_ms", label: "Planned Finish", color: "#0ea5e9" },
-    { key: "planned_start_ms", label: "Planned Start", color: "#111827" },
+    { key: "actual_finish_ms", label: "Actual Finish", color: "#16a34a", shape: "square" },
+    { key: "actual_start_ms", label: "Actual Start", color: "#111827", shape: "triangle" },
+    { key: "planned_finish_ms", label: "Planned Finish", color: "#0ea5e9", shape: "square" },
+    { key: "planned_start_ms", label: "Planned Start", color: "#111827", shape: "dot" },
 ];
 
+/** Small SVG marker to match shapes used in the chart */
+function Marker({ shape = "square", color = "#000" }) {
+    const size = 10;
+    if (shape === "dot") {
+        return (
+            <svg width={size} height={size} style={{ flex: "0 0 auto" }}>
+                <circle cx={size / 2} cy={size / 2} r={size / 2 - 1} fill={color} />
+            </svg>
+        );
+    }
+    if (shape === "triangle") {
+        return (
+            <svg width={size} height={size} viewBox="0 0 10 10" style={{ flex: "0 0 auto" }}>
+                <polygon points="5,0 10,10 0,10" fill={color} />
+            </svg>
+        );
+    }
+    // square (default)
+    return (
+        <svg width={size} height={size} style={{ flex: "0 0 auto" }}>
+            <rect x="1" y="1" width={size - 2} height={size - 2} fill={color} rx="1" ry="1" />
+        </svg>
+    );
+}
+
+/** Custom tooltip: show markers matching each series' shape */
 function CustomTooltip({ active, label, payload }) {
     if (!active || !payload?.length) return null;
     const row = payload[0]?.payload || {};
@@ -107,9 +132,9 @@ function CustomTooltip({ active, label, payload }) {
             {items.map((it) => (
                 <div
                     key={it.key}
-                    style={{ display: "flex", gap: 6, alignItems: "center", margin: "2px 0" }}
+                    style={{ display: "flex", gap: 8, alignItems: "center", margin: "2px 0" }}
                 >
-                    <span style={{ width: 8, height: 8, borderRadius: 2, background: it.color }} />
+                    <Marker shape={it.shape} color={it.color} />
                     <span style={{ color: "#334155", minWidth: 110 }}>{it.label}</span>
                     <span style={{ color: "#0f172a" }}>{fmt(row[it.key])}</span>
                 </div>
@@ -123,7 +148,7 @@ export default function ActivityFinishLineChart({
     projectId,              // (optional) current project id from parent
     onProjectChange,        // function(id) -> parent updates URL & refetch
     title = "Planned vs Actual (Finish) by Activity",
-    height = 420,
+    height = 500,
 }) {
     const rows = apiData?.data ?? [];
     const domain = apiData?.domain ?? {};
@@ -143,7 +168,7 @@ export default function ActivityFinishLineChart({
         [rows]
     );
 
-    const pad = 1000 * 60 * 60 * 24 * 3; // 3 days
+    const pad = 1000 * 60 * 60 * 24 * 3; // 3 days padding
     const yMin = domain.min ? domain.min - pad : undefined;
     const yMax = domain.max ? Math.max(domain.max, nowMs) + pad : undefined;
 
@@ -152,10 +177,10 @@ export default function ActivityFinishLineChart({
         page: 1,
         pageSize: 7,
     });
+
     const projects = Array.isArray(projectResponse)
         ? projectResponse
         : projectResponse?.data ?? []; // normalize shape
-
 
     // ---- Search modal ----
     const [triggerProjectSearch] = useLazyGetProjectSearchDropdownQuery();
@@ -177,11 +202,6 @@ export default function ActivityFinishLineChart({
             pageSize: d?.pagination?.pageSize || pageSize,
         };
     };
-
-    const projectColumns = [
-        { key: "name", label: "Project Name", width: 240 },
-        { key: "code", label: "Project Code", width: 200 },
-    ];
 
     const applyPickedProject = (p) => {
         setSelectedId(p?._id || "");
@@ -209,11 +229,14 @@ export default function ActivityFinishLineChart({
     };
 
     const renderSelectValue = () => {
-        if (projectCode || projectName) return `${projectCode || ""}${projectCode && projectName ? " — " : ""}${projectName || ""}`;
+        if (projectCode || projectName)
+            return `${projectCode || ""}${projectCode && projectName ? " — " : ""
+                }${projectName || ""}`;
         if (selectedId) {
             // If we only know the id (e.g., loaded from URL), try to find in current page
             const p = projects.find((x) => String(x._id) === String(selectedId));
-            if (p) return `${p.code || ""}${p.code && p.name ? " — " : ""}${p.name || ""}`;
+            if (p)
+                return `${p.code || ""}${p.code && p.name ? " — " : ""}${p.name || ""}`;
         }
         return "Select Project";
     };
@@ -237,8 +260,9 @@ export default function ActivityFinishLineChart({
                     boxShadow:
                         "0 6px 16px rgba(15,23,42,0.10), 0 20px 36px rgba(15,23,42,0.08)",
                 },
-                height: "500px",
-            }}>
+                height,
+            }}
+        >
             <Box
                 sx={{
                     p: 1.5,
@@ -253,11 +277,13 @@ export default function ActivityFinishLineChart({
                 <Box>
                     <Typography level="title-lg">{title}</Typography>
                     <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
-                        Hover any dot/line to see exact dates. Dashed segment shows ongoing (Actual start → Today).
+                        Hover any dot/triangle/line to see exact dates. Dashed segment shows
+                        ongoing (Actual start → Today).
                     </Typography>
                 </Box>
 
                 {/* Project selector (first page + "Search more…") */}
+                
                 <Box sx={{ display: "flex", gap: 1 }}>
                     <Select
                         value={selectedId || IDLE}
@@ -272,7 +298,12 @@ export default function ActivityFinishLineChart({
                             <Option
                                 key={p._id}
                                 value={String(p._id)}
-                                sx={{ py: 1, px: 2, fontSize: "0.875rem", "&:hover": { bgcolor: "gray.100" } }}
+                                sx={{
+                                    py: 1,
+                                    px: 2,
+                                    fontSize: "0.875rem",
+                                    "&:hover": { bgcolor: "gray.100" },
+                                }}
                             >
                                 {p.code ? `${p.code} — ${p.name ?? ""}` : p.name ?? p._id}
                             </Option>
@@ -301,16 +332,20 @@ export default function ActivityFinishLineChart({
                         <YAxis
                             type="number"
                             scale="time"
-                            domain={[yMin, yMax]}
+                            domain={[yMin ?? "auto", yMax ?? "auto"]}
                             tickFormatter={(v) =>
-                                new Date(v).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })
+                                new Date(v).toLocaleDateString("en-GB", {
+                                    day: "2-digit",
+                                    month: "short",
+                                })
                             }
                         />
 
-                        {/* Custom tooltip that formats only the date series */}
+                        {/* Custom tooltip that formats only the date series with matching shapes */}
                         <RTooltip content={<CustomTooltip />} />
                         <Legend />
 
+                        {/* Today line */}
                         <ReferenceLine
                             y={nowMs}
                             stroke="#94a3b8"
@@ -318,14 +353,14 @@ export default function ActivityFinishLineChart({
                             label={{ value: "Today", fill: "#475569", position: "right" }}
                         />
 
-                        {/* Finish lines */}
+                        {/* Finish lines (with dots on line to help focus) */}
                         <Line
                             type="monotone"
                             dataKey="planned_finish_ms"
                             name="Planned Finish"
                             stroke="#0ea5e9"
                             strokeWidth={2}
-                            dot={{ r: 3 }}
+                            dot={{ r: 3, stroke: "#0ea5e9", fill: "#0ea5e9" }}
                             connectNulls
                         />
                         <Line
@@ -334,13 +369,23 @@ export default function ActivityFinishLineChart({
                             name="Actual Finish"
                             stroke="#16a34a"
                             strokeWidth={2}
-                            dot={{ r: 3 }}
+                            dot={{ r: 3, stroke: "#16a34a", fill: "#16a34a" }}
                             connectNulls
                         />
 
                         {/* Start dots */}
-                        <Scatter dataKey="planned_start_ms" name="Planned Start" shape="circle" />
-                        <Scatter dataKey="actual_start_ms" name="Actual Start" shape="triangle" />
+                        <Scatter
+                            dataKey="planned_start_ms"
+                            name="Planned Start"
+                            shape="circle"
+                            fill="#111827"
+                        />
+                        <Scatter
+                            dataKey="actual_start_ms"
+                            name="Actual Start"
+                            shape="triangle"
+                            fill="#111827"
+                        />
 
                         {/* Ongoing vertical spans */}
                         <Customized component={<OngoingSpans data={data} nowMs={nowMs} />} />

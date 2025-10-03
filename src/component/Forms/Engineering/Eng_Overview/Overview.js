@@ -157,7 +157,6 @@ const Overview = () => {
 
   const allowedKeys = Object.keys(effectiveCategoryData);
 
-  // 👉 ADDED: Clamp selected category & URL param when user/data changes
   useEffect(() => {
     if (!allowedKeys.length) return;
     setSelected((prev) => clampSelectedCategory(prev, allowedKeys));
@@ -167,7 +166,6 @@ const Overview = () => {
       sp.set("category", fixed);
       return sp;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, data]);
 
   const handleMultiFileChange = (index, files) => {

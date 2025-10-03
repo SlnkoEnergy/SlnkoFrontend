@@ -57,6 +57,17 @@ function isOnOrBefore(a, b) {
   return da.getTime() <= db.getTime();
 }
 
+/** NEW: compute duration in days given exclusive end */
+function daysBetweenExclusive(start, end) {
+  // start & end are Dates (end is exclusive in dhtmlx rendering we use)
+  if (!isValidDate(start) || !isValidDate(end)) return null;
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const s = startOfDay(start);
+  const e = startOfDay(end);
+  const diff = Math.round((e - s) / msPerDay);
+  return diff > 0 ? diff : 1; // keep at least 1 day visible
+}
+
 function getMinMaxFromData(data) {
   const stamps = [];
   (data || []).forEach((p) => {
@@ -425,6 +436,14 @@ export default function WeeklyProjectTimelineCard({
         return `<b>${task.text}</b>`;
       };
 
+      /** NEW: render "(X days)" inside each visible bar */
+      gantt.templates.task_text = (start, end, task) => {
+        const days = daysBetweenExclusive(start, end);
+        const suffix =
+          typeof days === "number" ? ` (${days} day${days === 1 ? "" : "s"})` : "";
+        return `${task.text || ""}${suffix}`;
+      };
+
       gantt.templates.task_class = (_s, _e, task) => {
         if (task._rowkind === "baseline") return "row-baseline";
         if (task._rowkind === "actual") {
@@ -767,20 +786,18 @@ export default function WeeklyProjectTimelineCard({
           background: #EF4444;
           border: 1px solid #B91C1C;
         }
-        /* NEW: visible activity label bar spanning to baseline end */
+        /* Activity label spanning to baseline end */
         .gantt_task_line.row-activity {
-  background: rgba(37, 99, 235, 0.40) !important; /* was ~0.18 */
-  border: 1px solid #1D4ED8 !important;
-  height: 22px !important;
-  border-radius: 999px !important;
-}
-
-/* Make the text pop on the darker bar */
-.gantt_task_line.row-activity .gantt_task_content {
-  color: #fff !important;
-  font-weight: 700;
-  text-shadow: 0 1px 0 rgba(0,0,0,0.18);
-}
+          background: rgba(37, 99, 235, 0.40) !important;
+          border: 1px solid #1D4ED8 !important;
+          height: 22px !important;
+          border-radius: 999px !important;
+        }
+        .gantt_task_line.row-activity .gantt_task_content {
+          color: #fff !important;
+          font-weight: 700;
+          text-shadow: 0 1px 0 rgba(0,0,0,0.18);
+        }
       `}</style>
     </>
   );

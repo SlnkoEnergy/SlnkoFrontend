@@ -162,10 +162,10 @@ export const camsApi = createApi({
       }),
     }),
     updateHandoverAssignee: builder.mutation({
-      query: ({selected, assignee}) => ({
-        url: `/change-assignee`,
+      query: ({ selected, assignee }) => ({
+        url: `handover/updateAssignedto`,
         method: "PUT",
-        body: {handoverIds: selected, AssignedTo: assignee}
+        body: { handoverIds: selected, AssignedTo: assignee },
       }),
     }),
   }),

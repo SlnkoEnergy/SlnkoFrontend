@@ -57,7 +57,7 @@ const toYMD = (d) =>
     ? gantt.date.date_to_str("%Y-%m-%d")(d)
     : "";
 
-// NEW: Day + short month (e.g., "08 Oct")
+// Day + short month (e.g., "08 Oct")
 const toDM = (d) => {
   if (!d) return "";
   const dt = d instanceof Date ? d : new Date(d);
@@ -79,21 +79,9 @@ function parseISOAsLocalDate(v) {
   return null;
 }
 
-const startCellTemplate = (task) =>
-  task.start_date instanceof Date ? toDM(task.start_date) : "-";
-
-const endCellTemplate = (task) => {
-  const endObj =
-    task._end_obj ||
-    (task.start_date instanceof Date && Number(task.duration) > 0
-      ? gantt.calculateEndDate({
-          start_date: task.start_date,
-          duration: task.duration,
-          task,
-        })
-      : null);
-  return endObj ? toDM(endObj) : "-";
-};
+/* ---------- grid date cells (always baseline) ---------- */
+const startCellTemplate = (task) => task._base_start_dm || "-";
+const endCellTemplate = (task) => task._base_end_dm || "-";
 
 const durationTemplate = (task) =>
   Number(task.duration) > 0 ? String(task.duration) : "";
@@ -442,6 +430,18 @@ function RemainingDaysChip({ target, usedKey }) {
   );
 }
 
+/* ---------- resource constants ---------- */
+const RESOURCE_TYPES = [
+  "surveyor",
+  "civil engineer",
+  "civil i&c",
+  "electric engineer",
+  "electric i&c",
+  "soil testing team",
+  "tline engineer",
+  "tline subcontractor",
+];
+
 /* ---------- row for predecessors ---------- */
 function DepRow({ title, options, row, onChange, onRemove }) {
   return (
@@ -488,6 +488,52 @@ function DepRow({ title, options, row, onChange, onRemove }) {
         onChange={(e) => onChange({ ...row, lag: Number(e.target.value || 0) })}
         sx={{ width: 80 }}
       />
+      <IconButton color="danger" size="sm" variant="soft" onClick={onRemove}>
+        <Delete fontSize="small" />
+      </IconButton>
+    </Stack>
+  );
+}
+
+/* ---------- row for resources ---------- */
+function ResourceRow({ row, onChange, onRemove }) {
+  return (
+    <Stack
+      direction="row"
+      alignItems="center"
+      spacing={1}
+      sx={{ width: "100%" }}
+    >
+      <Select
+        size="sm"
+        placeholder="Type"
+        value={row.type || ""}
+        onChange={(_, v) => onChange({ ...row, type: v || "" })}
+        sx={{ minWidth: 220 }}
+        slotProps={{ listbox: { sx: { zIndex: 1401 } } }}
+      >
+        {RESOURCE_TYPES.map((t) => (
+          <Option key={t} value={t}>
+            {t
+              .split(" ")
+              .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+              .join(" ")}
+          </Option>
+        ))}
+      </Select>
+
+      <Input
+        size="sm"
+        type="number"
+        inputMode="numeric"
+        placeholder="Number"
+        value={row.number ?? ""}
+        onChange={(e) =>
+          onChange({ ...row, number: Number(e.target.value || 0) })
+        }
+        sx={{ width: 120 }}
+      />
+
       <IconButton color="danger" size="sm" variant="soft" onClick={onRemove}>
         <Delete fontSize="small" />
       </IconButton>
@@ -604,23 +650,27 @@ const View_Project_Management = forwardRef(
           .toLowerCase()
           .trim();
 
-        let startDateObj = null;
-        let endDateObj = null;
+        // 🔵 Always compute BASELINE (planned) dates
+        const baseStartISO = pa.planned_start || pa.start_date || null;
+        const baseEndISO = pa.planned_finish || pa.end_date || null;
+        const baseStartObj = baseStartISO
+          ? parseISOAsLocalDate(baseStartISO)
+          : null;
+        const baseEndObj = baseEndISO ? parseISOAsLocalDate(baseEndISO) : null;
 
+        // 🟢 For ACTUAL mode, compute projected/actual dates for the timeline
+        let actualStartObj = null;
+        let actualEndObj = null;
         if (mode === "actual") {
           const proj = actualLookup?.get(masterId);
-          startDateObj = proj?.start || null;
-          endDateObj = proj?.finish || null;
-        } else {
-          const sISO = pa.planned_start || pa.start_date || null;
-          const eISO = pa.planned_finish || pa.end_date || null;
-          startDateObj = sISO ? parseISOAsLocalDate(sISO) : null;
-          endDateObj = eISO ? parseISOAsLocalDate(eISO) : null;
+          actualStartObj = proj?.start || null;
+          actualEndObj = proj?.finish || null;
         }
 
+        // Duration (fallback to calc from baseline if needed)
         let duration = 0;
-        if (startDateObj && endDateObj) {
-          duration = durationFromStartFinish(startDateObj, endDateObj);
+        if (baseStartObj && baseEndObj) {
+          duration = durationFromStartFinish(baseStartObj, baseEndObj);
         } else {
           duration = Number.isFinite(Number(pa.duration))
             ? Number(pa.duration)
@@ -634,44 +684,65 @@ const View_Project_Management = forwardRef(
 
         const status =
           pa.current_status?.status ||
-          (mode === "actual" && (pa.actual_finish || endDateObj)
+          (mode === "actual" && (pa.actual_finish || actualEndObj)
             ? "completed"
             : "not started");
 
-        const resources =
-          pa.resources ??
-          pa.activity_resources ??
-          pa.activity_id?.resources ??
-          null;
+        // 🔸 Normalize resources to array and compute total
+        let resourcesArray = [];
+        if (Array.isArray(pa.resources)) {
+          resourcesArray = pa.resources.map((r) => ({
+            type: r?.type || "",
+            number: Number(r?.number || 0),
+          }));
+        } else if (Array.isArray(pa.activity_resources)) {
+          resourcesArray = pa.activity_resources.map((r) => ({
+            type: r?.type || "",
+            number: Number(r?.number || 0),
+          }));
+        }
+        const resourcesTotal = resourcesArray.reduce(
+          (sum, r) => sum + (Number(r.number) || 0),
+          0
+        );
 
         let onTime = null;
         if (mode === "actual") {
-          const plannedFinish =
-            pa.planned_finish || pa.end_date
-              ? parseISOAsLocalDate(pa.planned_finish || pa.end_date)
-              : null;
           const realFinish = pa.actual_finish
             ? parseISOAsLocalDate(pa.actual_finish)
             : null;
-          if (realFinish && plannedFinish) {
-            onTime = !isAfter(realFinish, plannedFinish);
-          }
+          if (realFinish && baseEndObj)
+            onTime = !isAfter(realFinish, baseEndObj);
         }
 
-        // NEW: compute actual start/end objects for grid
+        // Also compute pretty strings for baseline + actual (grid uses baseline)
         const aSISO =
           pa.actual_start_date || pa.actual_start || pa.actual_start_dt || null;
         const aFISO =
           pa.actual_finish_date || pa.actual_finish || pa.actual_end_dt || null;
-        const actualStartObj = aSISO ? parseISOAsLocalDate(aSISO) : null;
-        const actualEndObj = aFISO ? parseISOAsLocalDate(aFISO) : null;
+        const aStartObj = aSISO ? parseISOAsLocalDate(aSISO) : null;
+        const aEndObj = aFISO ? parseISOAsLocalDate(aFISO) : null;
 
-        // NEW: decide an end object for display regardless of source field
-        const endObj =
-          endDateObj ||
-          (startDateObj && Number(duration) > 0
+        const base_start_dm = baseStartObj ? toDM(baseStartObj) : "";
+        const base_end_dm = baseEndObj ? toDM(baseEndObj) : "";
+        const act_start_dm = aStartObj ? toDM(aStartObj) : "";
+        const act_end_dm = aEndObj ? toDM(aEndObj) : "";
+
+        // 🧠 What the timeline should draw:
+        // - Baseline mode: draw baseline
+        // - Actual mode: draw actual/projection
+        const timelineStart =
+          mode === "actual" ? actualStartObj || null : baseStartObj || null;
+
+        const timelineEnd =
+          mode === "actual" ? actualEndObj || null : baseEndObj || null;
+
+        // If end missing but we have start+duration, let gantt compute
+        const endObjForTimeline =
+          timelineEnd ||
+          (timelineStart && Number(duration) > 0
             ? gantt.calculateEndDate({
-                start_date: startDateObj,
+                start_date: timelineStart,
                 duration,
                 task: {},
               })
@@ -682,8 +753,8 @@ const View_Project_Management = forwardRef(
           _si: si,
           _dbId: masterId,
           text,
-          start_date: startDateObj || null,
-          _end_obj: endObj || null, // <— for End cell template
+          start_date: timelineStart || null, // timeline uses selected mode
+          _end_obj: endObjForTimeline || null, // timeline end (selected mode)
           duration,
           progress:
             typeof pa.percent_complete === "number"
@@ -692,21 +763,30 @@ const View_Project_Management = forwardRef(
               ? 1
               : 0,
           open: true,
-          _unscheduled: !startDateObj && !duration,
+          _unscheduled: !timelineStart && !duration,
           _status: status,
           _mode: mode,
-          _resources: resources,
           _actual_completed: mode === "actual" ? !!pa.actual_finish : false,
           _actual_on_time: mode === "actual" ? onTime : null,
           _type: typeLower,
 
-          // NEW: preformatted strings for A.Start / A.End
-          _a_start_dm: actualStartObj ? toDM(actualStartObj) : "",
-          _a_end_dm: actualEndObj ? toDM(actualEndObj) : "",
+          // ✅ Baseline (always kept for grid)
+          _base_start_obj: baseStartObj,
+          _base_end_obj: baseEndObj,
+          _base_start_dm: base_start_dm,
+          _base_end_dm: base_end_dm,
+
+          // ℹ️ Actual (for the dedicated columns)
+          _a_start_dm: act_start_dm,
+          _a_end_dm: act_end_dm,
+
+          // 🔸 Resources
+          _resources_total: resourcesTotal,
+          _resources_arr: resourcesArray,
         };
       });
 
-      // Links
+      // Links unchanged
       let lid = 1;
       const links = [];
       (list || []).forEach((pa, idx) => {
@@ -740,7 +820,6 @@ const View_Project_Management = forwardRef(
       const _dbIdToSi = new Map(
         Array.from(_siToDbId.entries()).map(([si, db]) => [db, si])
       );
-
       return { data, links, siToDbId: _siToDbId, dbIdToSi: _dbIdToSi };
     };
 
@@ -789,7 +868,7 @@ const View_Project_Management = forwardRef(
       end: "",
       duration: "",
       predecessors: [],
-      resources: "",
+      resources: [], // array of { type, number }
     });
 
     const activityOptions = useMemo(
@@ -914,16 +993,20 @@ const View_Project_Management = forwardRef(
         ? String(Number(act.duration))
         : "";
 
+      // Resources: normalize array into UI
+      const resArrRaw = Array.isArray(act?.resources) ? act.resources : [];
+      const uiResources = resArrRaw.map((r) => ({
+        type: r?.type || "",
+        number: Number(r?.number || 0),
+      }));
+
       setForm({
         status: act?.current_status?.status || "not started",
         start: startISO ? toYMD(parseISOAsLocalDate(startISO)) : "",
         end: finishISO ? toYMD(parseISOAsLocalDate(finishISO)) : "",
         duration: durStr,
         predecessors: uiPreds,
-        resources:
-          act?.resources !== undefined && act?.resources !== null
-            ? String(act.resources)
-            : "",
+        resources: uiResources,
       });
 
       // If activity has predecessors and duration, auto-calc to avoid BE errors
@@ -966,18 +1049,22 @@ const View_Project_Management = forwardRef(
         })
         .filter(Boolean);
 
+      const resourcesPayload = Array.isArray(form.resources)
+        ? form.resources
+            .filter((r) => r && r.type)
+            .map((r) => ({
+              type: String(r.type),
+              number: Number(r.number || 0),
+            }))
+        : [];
+
       const payload = {
         planned_start: form.start || null,
         planned_finish: form.end || null,
         duration: Math.max(1, Number(form.duration || 0)),
         status: form.status,
         predecessors: predsPayload,
-        resources:
-          form.resources === "" || form.resources === null
-            ? null
-            : Number.isNaN(Number(form.resources))
-            ? form.resources
-            : Number(form.resources),
+        resources: resourcesPayload,
       };
 
       try {
@@ -1000,6 +1087,7 @@ const View_Project_Management = forwardRef(
         setSnack({ open: true, msg: extractBackendError(e) });
       }
     };
+
     useImperativeHandle(ref, () => ({
       saveAsTemplate: async (meta = {}) => {
         const { name, description } = meta || {};
@@ -1040,12 +1128,16 @@ const View_Project_Management = forwardRef(
             start_ymd: start ? toYMD(start) : null,
             end_ymd: end ? toYMD(end) : null,
             duration,
-            resources:
-              t._resources === 0
-                ? 0
-                : t._resources != null
-                ? t._resources
-                : null,
+            // keep array + computed total for export
+            resources_arr: Array.isArray(t._resources_arr)
+              ? t._resources_arr
+              : [],
+            resources_total: Array.isArray(t._resources_arr)
+              ? t._resources_arr.reduce(
+                  (s, r) => s + (Number(r?.number) || 0),
+                  0
+                )
+              : 0,
             status: t._status || null,
             percent_complete:
               typeof t.progress === "number" ? Math.round(t.progress * 100) : 0,
@@ -1116,6 +1208,7 @@ const View_Project_Management = forwardRef(
                 lag: s.lag,
               }))
               .filter((x) => !!x.activity_id);
+
             return {
               activity_id: t.dbId,
               order: t.order_no,
@@ -1128,12 +1221,12 @@ const View_Project_Management = forwardRef(
                 0,
                 Math.min(100, Number(t.percent_complete || 0))
               ),
-              resources:
-                t.resources === undefined
-                  ? null
-                  : Number.isNaN(t.resources)
-                  ? null
-                  : t.resources,
+              resources: Array.isArray(t.resources_arr)
+                ? t.resources_arr.map((r) => ({
+                    type: String(r?.type || ""),
+                    number: Number(r?.number || 0),
+                  }))
+                : [],
               predecessors,
               successors,
               dependency: depByDb.get(t.dbId) || [],
@@ -1228,9 +1321,8 @@ const View_Project_Management = forwardRef(
       // grid sizing/overflow
       gantt.config.grid_elastic_columns = false;
       gantt.config.min_column_width = 60;
-      gantt.config.grid_width = 420; // initial (we set a responsive one below)
+      gantt.config.grid_width = 420;
 
-      // columns: show Start/End as "DD Mon", and Actuals too
       gantt.config.columns = [
         {
           name: "text",
@@ -1254,7 +1346,7 @@ const View_Project_Management = forwardRef(
           align: "center",
           resize: true,
           template: (t) =>
-            t._resources === 0 ? "0" : t._resources ? String(t._resources) : "",
+            Number(t._resources_total) > 0 ? String(t._resources_total) : "",
         },
         {
           name: "start",
@@ -1262,7 +1354,7 @@ const View_Project_Management = forwardRef(
           width: 100,
           align: "center",
           resize: true,
-          template: startCellTemplate,
+          template: startCellTemplate, // baseline only
         },
         {
           name: "end",
@@ -1270,7 +1362,7 @@ const View_Project_Management = forwardRef(
           width: 100,
           align: "center",
           resize: true,
-          template: endCellTemplate,
+          template: endCellTemplate, // baseline only
         },
         {
           name: "a_start",
@@ -1437,7 +1529,6 @@ const View_Project_Management = forwardRef(
 
       if (viewMode === "day" || viewMode === "week") {
         gantt.config.scale_unit = viewMode;
-        // keep timeline scale as-is; your grid renders DM format already
         gantt.config.date_scale = "%d %M %Y";
         const fmtFull = gantt.date.date_to_str("%d %M %Y");
         const fmtNoY = gantt.date.date_to_str("%d %M");
@@ -1587,7 +1678,7 @@ const View_Project_Management = forwardRef(
               </Chip>
             </Stack>
           </Sheet>
-          {/* CENTER: Baseline / Actual Toggle */}
+
           <Sheet
             variant="outlined"
             sx={{
@@ -1628,7 +1719,6 @@ const View_Project_Management = forwardRef(
             </Chip>
           </Sheet>
 
-          {/* RIGHT: countdown + range chips */}
           <Sheet
             variant="outlined"
             sx={{
@@ -1866,20 +1956,6 @@ const View_Project_Management = forwardRef(
                     />
                   </FormControl>
 
-                  <FormControl sx={{ flex: 1 }}>
-                    <FormLabel>Resources</FormLabel>
-                    <Input
-                      size="sm"
-                      type="number"
-                      inputMode="numeric"
-                      placeholder="e.g., 3"
-                      value={form.resources}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, resources: e.target.value }))
-                      }
-                    />
-                  </FormControl>
-
                   <FormControl>
                     <FormLabel>Duration (days)</FormLabel>
                     <Input
@@ -1900,6 +1976,61 @@ const View_Project_Management = forwardRef(
                   <FormLabel>End date</FormLabel>
                   <Input size="sm" type="date" value={form.end} disabled />
                 </FormControl>
+
+                <Divider />
+                <Stack spacing={1}>
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                  >
+                    <Typography level="title-sm">Resources</Typography>
+                    <Button
+                      size="sm"
+                      variant="soft"
+                      startDecorator={<Add />}
+                      onClick={() =>
+                        setForm((f) => ({
+                          ...f,
+                          resources: [...f.resources, { type: "", number: 0 }],
+                        }))
+                      }
+                    >
+                      Add
+                    </Button>
+                  </Stack>
+
+                  <Stack spacing={1}>
+                    {(!form.resources || form.resources.length === 0) && (
+                      <Typography
+                        level="body-xs"
+                        sx={{ color: "text.tertiary" }}
+                      >
+                        No resources
+                      </Typography>
+                    )}
+                    {form.resources?.map((r, idx) => (
+                      <ResourceRow
+                        key={`res-${idx}`}
+                        row={r}
+                        onChange={(nr) =>
+                          setForm((f) => {
+                            const arr = [...f.resources];
+                            arr[idx] = nr;
+                            return { ...f, resources: arr };
+                          })
+                        }
+                        onRemove={() =>
+                          setForm((f) => {
+                            const arr = f.resources.slice();
+                            arr.splice(idx, 1);
+                            return { ...f, resources: arr };
+                          })
+                        }
+                      />
+                    ))}
+                  </Stack>
+                </Stack>
 
                 <Stack direction="row" spacing={1}>
                   <Button size="sm" onClick={saveFromModal} disabled={isSaving}>

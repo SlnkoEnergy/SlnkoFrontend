@@ -320,43 +320,13 @@ function Sidebar() {
               </ListItemButton>
             </ListItem>
 
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <MiscellaneousServicesIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">CAM</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/cam_dash")}>
-                      Dashboard
-                    </ListItemButton>
-                  </ListItem>
-                  <ListItem>
-                    <ListItemButton
-                      onClick={() => navigate("/purchase_request")}
-                    >
-                      Purchase Request
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/cam_dash")}>
+                <MiscellaneousServicesIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">CAM</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
 
             <ListItem sx={{ mt: 0.5 }}>
@@ -1391,10 +1361,8 @@ function Sidebar() {
                 )}
               >
                 <List sx={{ gap: 0.5 }}>
-                   <ListItem>
-                    <ListItemButton
-                      onClick={() => navigate("/cam_dash")}
-                    >
+                  <ListItem>
+                    <ListItemButton onClick={() => navigate("/cam_dash")}>
                       Dashboard
                     </ListItemButton>
                   </ListItem>
@@ -1889,8 +1857,7 @@ function Sidebar() {
               </ListItemButton>
             </ListItem>
           </List>
-        ) : user?.department === "CAM" && user?.name!== "Shantanu Sameer"
-           ? (
+        ) : user?.department === "CAM" && user?.name !== "Shantanu Sameer" ? (
           <List
             size="sm"
             sx={{

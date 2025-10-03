@@ -93,7 +93,7 @@ export const productsApi = createApi({
     }),
 
     getCategoriesNameSearch: builder.query({
-      query: ({ page, search, limit, pr, projectId }) =>
+      query: ({ page, search, pr, projectId }) =>
         `products/category?search=${search}&page=${page}&pr=${pr}&project_id=${projectId}`,
       providesTags: [{ type: "Categories", id: "LIST" }],
     }),
