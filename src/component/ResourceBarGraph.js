@@ -10,7 +10,6 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
-  Cell, // ⬅️ NEW: per-bar colors
 } from "recharts";
 import { DateRange } from "react-date-range";
 import { Popper } from "@mui/base/Popper";
@@ -38,9 +37,25 @@ function ymd(date) {
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
+function ddMMM(date) {
+  return new Date(date).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+  });
+}
+function enumerateDaysInclusive(start, end) {
+  const out = [];
+  let d = startOfDay(start);
+  const e = startOfDay(end);
+  while (d.getTime() <= e.getTime()) {
+    out.push(new Date(d));
+    d = addDays(d, 1);
+  }
+  return out;
+}
 
-// Nice default palette (loops if there are more bars)
-const DEFAULT_BAR_COLORS = [
+// Nice default palette (order = resourceTypes order)
+const DEFAULT_RESOURCE_COLORS = [
   "#3b82f6", // blue
   "#22c55e", // green
   "#ef4444", // red
@@ -49,10 +64,11 @@ const DEFAULT_BAR_COLORS = [
   "#14b8a6", // teal
   "#f97316", // orange
   "#64748b", // slate
-  "#0ea5e9", // sky
-  "#10b981", // emerald
-  "#d946ef", // fuchsia
-  "#84cc16", // lime
+  // if you ever have >8, it will keep going
+  "#0ea5e9",
+  "#10b981",
+  "#d946ef",
+  "#84cc16",
 ];
 
 // Converts "civil engineer" -> "Civil Engineer", "i&c" -> "I&C", etc.
@@ -62,38 +78,31 @@ const prettyResource = (s = "") =>
     .map((w) => {
       const lw = w.toLowerCase();
       if (lw === "i&c") return "I&C";
-      if (lw === "tline") return "Tline"; // or return "T-Line" if you prefer
+      if (lw === "tline") return "Tline"; // or "T-Line"
       return lw.charAt(0).toUpperCase() + lw.slice(1);
     })
     .join(" ");
 
-
 /**
- * Props:
- * - title?: string
- * - subtitle?: string
- * - resourceTypes: string[] (exactly your 8 types; order controls bar order)
- * - logs: Array<{ date: string|Date, type: string, count: number }>
- * - initialRange?: { startDate: Date, endDate: Date }  // inclusive
- * - height?: number
- * - barSize?: number
- * - barColors?: string[]  // ⬅️ NEW (optional) custom palette
- * - onBarClick?: (payload) => void
- * - onRangeChange?: (startYmd: string, endYmd: string) => void
+ * Expected logs shape (same idea as before, but now used per-day aggregation):
+ * logs: Array<{ date: string|Date, type: string, count: number }>
+ *
+ * The chart will render 7 x-axis dates (default today..+6),
+ * and for each date, 8 grouped bars (resourceTypes order) with color notation.
  */
 export default function ResourceBarGraph({
-  title = "Resources by Type",
-  subtitle = "Hover bars to see exact counts.",
-  resourceTypes = [],
+  title = "Resources by Day",
+  subtitle = "Grouped by resource type — hover for counts.",
+  resourceTypes = [], // exactly your 8 types; order controls grouping order & color mapping
   logs = [],
   initialRange,
-  height = 360,
-  barSize = 40,
-  barColors, // ⬅️ NEW
+  height = 420,
+  barSize = 16, // smaller so 8 bars fit nicely per day
+  resourceColors, // optional: string[] same length as resourceTypes
   onBarClick,
   onRangeChange,
 }) {
-  // ----- default 7-day window: today -> today+6 (independent of logs) -----
+  // ----- default 7-day window: today -> today+6 -----
   const defaultRange = useMemo(() => {
     const s = startOfDay(new Date());
     const e = addDays(s, 6);
@@ -129,7 +138,10 @@ export default function ResourceBarGraph({
     const curE = selection?.endDate?.getTime?.() ?? null;
     if (nextS !== curS || nextE !== curE) setSelection(safeDefaultSelection);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [safeDefaultSelection.startDate?.getTime?.(), safeDefaultSelection.endDate?.getTime?.()]);
+  }, [
+    safeDefaultSelection.startDate?.getTime?.(),
+    safeDefaultSelection.endDate?.getTime?.(),
+  ]);
 
   // ----- notify parent ONCE on mount with the default week -----
   const notifiedRef = useRef(false);
@@ -141,7 +153,7 @@ export default function ResourceBarGraph({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selection?.startDate, selection?.endDate]);
 
-  // ----- Popper for date picker (prevents cropping) -----
+  // ----- Popper for date picker -----
   const [rangeOpen, setRangeOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const toggleRange = (e) => {
@@ -150,37 +162,54 @@ export default function ResourceBarGraph({
   };
   const closeRange = () => setRangeOpen(false);
 
-  // ----- filter + aggregate logs by selected range -> bars -----
-  const bars = useMemo(() => {
+  // ----- color map by resource type (stable across re-renders) -----
+  const colorMap = useMemo(() => {
+    const palette =
+      Array.isArray(resourceColors) &&
+      resourceColors.length >= resourceTypes.length
+        ? resourceColors
+        : DEFAULT_RESOURCE_COLORS;
+
+    const m = {};
+    (resourceTypes || []).forEach((t, i) => {
+      m[t] = palette[i % palette.length];
+    });
+    return m;
+  }, [resourceColors, resourceTypes]);
+
+  // ----- Pre-index logs by day & type -----
+  //    index: { "YYYY-MM-DD": { [type]: totalCount } }
+  const indexByDayType = useMemo(() => {
+    const idx = {};
+    for (const row of logs || []) {
+      const day = ymd(startOfDay(new Date(row.date)));
+      const type = row.type;
+      const count = Number(row.count) || 0;
+      if (!type || !resourceTypes.includes(type)) continue;
+
+      if (!idx[day]) idx[day] = {};
+      idx[day][type] = (idx[day][type] || 0) + count;
+    }
+    return idx;
+  }, [logs, resourceTypes]);
+
+  // ----- Build 7-day grouped dataset -----
+  // Each data item = { day: 'YYYY-MM-DD', label: '05 Oct', [type1]: n, [type2]: n, ... }
+  const groupedData = useMemo(() => {
     const s = selection?.startDate;
     const e = selection?.endDate;
     if (!isValidDate(s) || !isValidDate(e)) return [];
 
-    const sTs = startOfDay(s).getTime();
-    const eTs = startOfDay(e).getTime();
-
-    const counts = Object.fromEntries((resourceTypes || []).map((t) => [t, 0]));
-
-    for (const row of logs || []) {
-      const dTs = startOfDay(new Date(row.date)).getTime();
-      if (Number.isNaN(dTs)) continue;
-      if (dTs < sTs || dTs > eTs) continue; // outside range
-      if (!resourceTypes.includes(row.type)) continue;
-
-      counts[row.type] += Number(row.count) || 0;
-    }
-
-    return (resourceTypes || []).map((t) => ({
-      resource: t,
-      count: counts[t] ?? 0,
-    }));
-  }, [logs, resourceTypes, selection?.startDate, selection?.endDate]);
-
-  // choose palette (prop > default)
-  const palette = useMemo(
-    () => (Array.isArray(barColors) && barColors.length ? barColors : DEFAULT_BAR_COLORS),
-    [barColors]
-  );
+    const days = enumerateDaysInclusive(s, e);
+    return days.map((d) => {
+      const key = ymd(d);
+      const base = { day: key, label: ddMMM(d) };
+      for (const t of resourceTypes || []) {
+        base[t] = indexByDayType[key]?.[t] ?? 0;
+      }
+      return base;
+    });
+  }, [selection?.startDate, selection?.endDate, resourceTypes, indexByDayType]);
 
   // ----- apply range -> notify parent -----
   const applyRange = () => {
@@ -199,17 +228,19 @@ export default function ResourceBarGraph({
       variant="outlined"
       sx={{
         position: "relative",
-        overflow: "hidden", // Popper renders in a portal
+        overflow: "hidden",
         borderRadius: 28,
         p: { xs: 1, sm: 0.5, md: 1.5 },
         bgcolor: "#fff",
         border: "1px solid",
         borderColor: "rgba(15,23,42,0.08)",
-        boxShadow: "0 2px 6px rgba(15,23,42,0.06), 0 18px 32px rgba(15,23,42,0.06)",
+        boxShadow:
+          "0 2px 6px rgba(15,23,42,0.06), 0 18px 32px rgba(15,23,42,0.06)",
         transition: "transform .16s ease, box-shadow .16s ease",
         "&:hover": {
           transform: "translateY(-2px)",
-          boxShadow: "0 6px 16px rgba(15,23,42,0.10), 0 20px 36px rgba(15,23,42,0.08)",
+          boxShadow:
+            "0 6px 16px rgba(15,23,42,0.10), 0 20px 36px rgba(15,23,42,0.08)",
         },
         height,
       }}
@@ -273,8 +304,12 @@ export default function ResourceBarGraph({
                     const e = r?.selection?.endDate;
                     setSelection((prev) => ({
                       ...(prev || { key: "selection" }),
-                      startDate: isValidDate(s) ? startOfDay(s) : defaultRange.startDate,
-                      endDate: isValidDate(e) ? startOfDay(e) : defaultRange.endDate,
+                      startDate: isValidDate(s)
+                        ? startOfDay(s)
+                        : defaultRange.startDate,
+                      endDate: isValidDate(e)
+                        ? startOfDay(e)
+                        : defaultRange.endDate,
                       key: "selection",
                     }));
                   }}
@@ -282,7 +317,12 @@ export default function ResourceBarGraph({
                   editableDateInputs
                   rangeColors={["#2563eb"]}
                 />
-                <Stack direction="row" justifyContent="flex-end" gap={1} sx={{ mt: 1 }}>
+                <Stack
+                  direction="row"
+                  justifyContent="flex-end"
+                  gap={1}
+                  sx={{ mt: 1 }}
+                >
                   <Button size="sm" variant="plain" onClick={closeRange}>
                     Cancel
                   </Button>
@@ -297,33 +337,46 @@ export default function ResourceBarGraph({
       </Box>
 
       {/* Chart area */}
-      <Box sx={{ height: height - 72, p: 1 }}>
+      <Box sx={{ height: height - 88, p: 1 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={bars} margin={{ top: 16, right: 24, left: 8, bottom: 8 }}>
+          <BarChart
+            data={groupedData}
+            margin={{ top: 12, right: 24, left: 8, bottom: 8 }}
+            barGap={4}
+            barCategoryGap={12}
+          >
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
-              dataKey="resource"
+              dataKey="label"
               interval={0}
               tick={{ fontSize: 12 }}
-              height={60}
-              angle={-15}
-              textAnchor="end"
-              tickFormatter={prettyResource}
+              height={48}
             />
             <YAxis allowDecimals={false} />
-            <Tooltip />
-          
-            <Bar
-              dataKey="count"
-              name="Count"
-              barSize={barSize}
-              onClick={(payload) => onBarClick?.(payload)}
-            >
-              {/* ⬇️ Color each bar */}
-              {(bars || []).map((entry, idx) => (
-                <Cell key={`cell-${entry.resource}-${idx}`} fill={palette[idx % palette.length]} />
-              ))}
-            </Bar>
+            <Tooltip
+              formatter={(value, name) => [value, prettyResource(name)]}
+              labelFormatter={(label, payload) => {
+                const day = payload?.[0]?.payload?.day ?? label;
+                return `${label} (${day})`;
+              }}
+            />
+            <Legend
+              iconType="circle"
+              formatter={(v) => prettyResource(v)}
+              wrapperStyle={{ fontSize: 12 }}
+            />
+
+            {/* Render 1 <Bar> per resource type (8 bars per date) */}
+            {(resourceTypes || []).map((type) => (
+              <Bar
+                key={type}
+                dataKey={type}
+                name={type}
+                fill={colorMap[type]}
+                barSize={barSize}
+                onClick={(payload) => onBarClick?.({ type, payload })}
+              />
+            ))}
           </BarChart>
         </ResponsiveContainer>
       </Box>
