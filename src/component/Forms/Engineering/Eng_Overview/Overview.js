@@ -152,10 +152,8 @@ const Overview = () => {
     });
   }
 
-  const effectiveCategoryData =
-    user?.department === "SCM"
-      ? pickKeys(categoryData, SCM_ALLOWED)
-      : categoryData;
+  // 👉 ADDED: Derive an effective category map based on user department
+  const effectiveCategoryData = categoryData;
 
   const allowedKeys = Object.keys(effectiveCategoryData);
 
@@ -638,8 +636,6 @@ const Overview = () => {
             >
               <Select
                 value={selected}
-                // onChange={(event, newValue) => handleCategorySelect(newValue)}
-                // 👉 ADDED: use safe selector to clamp to allowed list without touching your original handler
                 onChange={(event, newValue) => handleCategorySelectSafe(newValue)}
                 disabled={isLoading}
                 variant="soft"

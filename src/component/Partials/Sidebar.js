@@ -760,17 +760,15 @@ function Sidebar() {
                       User Dashboard
                     </ListItemButton>
                   </ListItem>
-                  {user?.department === "BD" &&
-                    (user?.emp_id === "SE-277" ||
-                      user?.emp_id === "SE-099") && (
-                      <ListItem>
-                        <ListItemButton
-                          onClick={() => navigate("/expense_approval")}
-                        >
-                          Expense Approval
-                        </ListItemButton>
-                      </ListItem>
-                    )}
+                  {user?.department === "BD" && (user?.emp_id === "SE-277" || user?.emp_id === "SE-046") && (
+                    <ListItem>
+                      <ListItemButton
+                        onClick={() => navigate("/expense_approval")}
+                      >
+                        Expense Approval
+                      </ListItemButton>
+                    </ListItem>
+                  )}
                 </List>
               </Toggler>
             </ListItem>
