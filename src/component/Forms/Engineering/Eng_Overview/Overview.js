@@ -636,7 +636,9 @@ const Overview = () => {
             >
               <Select
                 value={selected}
-                onChange={(event, newValue) => handleCategorySelectSafe(newValue)}
+                onChange={(event, newValue) =>
+                  handleCategorySelectSafe(newValue)
+                }
                 disabled={isLoading}
                 variant="soft"
                 sx={{

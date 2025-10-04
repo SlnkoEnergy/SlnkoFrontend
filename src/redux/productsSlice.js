@@ -20,9 +20,9 @@ export const productsApi = createApi({
       providesTags: (result) =>
         result?.data
           ? [
-            { type: "Products", id: "LIST" },
-            ...result.data.map((p) => ({ type: "Products", id: p._id })),
-          ]
+              { type: "Products", id: "LIST" },
+              ...result.data.map((p) => ({ type: "Products", id: p._id })),
+            ]
           : [{ type: "Products", id: "LIST" }],
     }),
 
@@ -86,9 +86,9 @@ export const productsApi = createApi({
       providesTags: (result) =>
         result?.data
           ? [
-            { type: "Categories", id: "LIST" },
-            ...result.data.map((c) => ({ type: "Categories", id: c._id })),
-          ]
+              { type: "Categories", id: "LIST" },
+              ...result.data.map((c) => ({ type: "Categories", id: c._id })),
+            ]
           : [{ type: "Categories", id: "LIST" }],
     }),
 
@@ -132,17 +132,19 @@ export const productsApi = createApi({
 
     getAllMaterialsPO: builder.query({
       query: ({ page = 1, pageSize = 10, search = "" }) =>
-        `/engineering/all-materials-po?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}`,
+        `/engineering/all-materials-po?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(
+          search
+        )}`,
       providesTags: [{ type: "Categories", id: "LIST" }],
     }),
 
     getAllProdcutPO: builder.query({
       query: ({ page = 1, pageSize = 10, search = "", categoryId = "" }) =>
-        `/engineering/all-product-po?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}&categoryId=${encodeURIComponent(categoryId)}`,
-      providesTags: [{ type: "Products", id: "LIST" }]
+        `/engineering/all-product-po?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(
+          search
+        )}&categoryId=${encodeURIComponent(categoryId)}`,
+      providesTags: [{ type: "Products", id: "LIST" }],
     }),
-
-
   }),
 });
 
@@ -167,5 +169,5 @@ export const {
   useGetAllMaterialsPOQuery,
   useLazyGetAllMaterialsPOQuery,
   useGetAllProdcutPOQuery,
-  useLazyGetAllProdcutPOQuery
+  useLazyGetAllProdcutPOQuery,
 } = productsApi;

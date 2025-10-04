@@ -25,9 +25,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
 import { useGetAllPurchaseRequestQuery } from "../redux/camsSlice";
-import {
-  useLazyGetCategoriesNameSearchQuery,
-} from "../redux/productsSlice";
+import { useLazyGetCategoriesNameSearchQuery } from "../redux/productsSlice";
 import SearchPickerModal from "../component/SearchPickerModal";
 
 function PurchaseReqSummary() {
@@ -49,7 +47,7 @@ function PurchaseReqSummary() {
   const createdToParam = searchParams.get("to") || "";
   const etdFromParam = searchParams.get("deadlineFrom") || "";
   const etdToParam = searchParams.get("deadlineTo") || "";
-  const tab = searchParams.get("tab") || "all"; 
+  const tab = searchParams.get("tab") || "all";
   const openPR = tab === "open";
   const limit = parseInt(searchParams.get("limit") || "10", 10) || 10;
   const projectId = searchParams.get("projectId") || "";

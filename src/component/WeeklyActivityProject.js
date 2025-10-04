@@ -440,7 +440,9 @@ export default function WeeklyProjectTimelineCard({
       gantt.templates.task_text = (start, end, task) => {
         const days = daysBetweenExclusive(start, end);
         const suffix =
-          typeof days === "number" ? ` (${days} day${days === 1 ? "" : "s"})` : "";
+          typeof days === "number"
+            ? ` (${days} day${days === 1 ? "" : "s"})`
+            : "";
         return `${task.text || ""}${suffix}`;
       };
 
