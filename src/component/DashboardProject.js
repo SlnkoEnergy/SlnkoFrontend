@@ -13,7 +13,6 @@ import {
   useGetProjectDetailQuery,
   useGetProjectStatesFilterQuery,
   useGetProjectStatusFilterQuery,
-  // ⬇️ added
   useGetResourcesQuery,
 } from "../redux/projectsSlice";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -44,38 +43,36 @@ const IconBadge = ({ color = "#2563eb", bg = "#eff6ff", icon }) => (
 );
 
 const DONUT_COLORS = [
-  "#f59e0b", // amber
-  "#22c55e", // green
-  "#ef4444", // red
-  "#3b82f6", // blue
-  "#8b5cf6", // violet
-  "#14b8a6", // teal
-  "#e11d48", // rose
-  "#84cc16", // lime
-  "#f97316", // orange
-  "#06b6d4", // cyan
-
-  "#d946ef", // fuchsia
-  "#0ea5e9", // sky
-  "#65a30d", // olive green
-  "#dc2626", // deep red
-  "#7c3aed", // purple
-  "#10b981", // emerald
-  "#ca8a04", // yellow dark
-  "#2563eb", // indigo
-  "#f43f5e", // pinkish red
-  "#0891b2", // teal dark
-
-  "#a16207", // mustard
-  "#15803d", // forest green
-  "#4f46e5", // indigo dark
-  "#ea580c", // burnt orange
-  "#db2777", // magenta
-  "#047857", // green deep
-  "#1d4ed8", // royal blue
-  "#9333ea", // deep violet
-  "#b91c1c", // dark red
-  "#0d9488", // aqua teal
+  "#f59e0b",
+  "#22c55e",
+  "#ef4444",
+  "#3b82f6",
+  "#8b5cf6",
+  "#14b8a6",
+  "#e11d48",
+  "#84cc16",
+  "#f97316",
+  "#06b6d4",
+  "#d946ef",
+  "#0ea5e9",
+  "#65a30d",
+  "#dc2626",
+  "#7c3aed",
+  "#10b981",
+  "#ca8a04",
+  "#2563eb",
+  "#f43f5e",
+  "#0891b2",
+  "#a16207",
+  "#15803d",
+  "#4f46e5",
+  "#ea580c",
+  "#db2777",
+  "#047857",
+  "#1d4ed8",
+  "#9333ea",
+  "#b91c1c",
+  "#0d9488",
 ];
 
 const ymd = (d) => {
@@ -88,7 +85,7 @@ const ymd = (d) => {
 const startOfWeek = (date = new Date()) => {
   const d = new Date(date);
   const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day; // Monday start
+  const diff = day === 0 ? -6 : 1 - day;
   const res = new Date(d);
   res.setHours(0, 0, 0, 0);
   res.setDate(d.getDate() + diff);
@@ -101,7 +98,7 @@ const addDays = (date, days) => {
   return d;
 };
 
-// ADD: resource constants (must match backend enum order)
+// resource constants
 const RESOURCE_TYPES = [
   "surveyor",
   "civil engineer",
@@ -113,7 +110,6 @@ const RESOURCE_TYPES = [
   "tline subcontractor",
 ];
 
-// ADD: safe local parser for YYYY-MM-DD (prevents timezone shifts)
 const parseYMD = (s) => {
   if (!s) return null;
   const [y, m, d] = s.split("-").map(Number);
@@ -121,7 +117,6 @@ const parseYMD = (s) => {
   dt.setHours(0, 0, 0, 0);
   return dt;
 };
-
 
 function Dash_project() {
   const navigate = useNavigate();
@@ -136,7 +131,7 @@ function Dash_project() {
   };
 
   const [userSearch, setUserSearch] = useState("");
-   const [debouncedQ, setDebouncedQ] = useState(userSearch);
+  const [debouncedQ, setDebouncedQ] = useState(userSearch);
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQ(userSearch), 300);
     return () => clearTimeout(t);
@@ -146,21 +141,7 @@ function Dash_project() {
     data: projectData,
     isLoading: perfLoading,
     isFetching: perfFetching,
-  } = useGetProjectDetailQuery({
-    q: debouncedQ,
-  });
-
-  const fmtDate = (d) => {
-    if (!d) return "-";
-    const dt = new Date(d);
-    if (Number.isNaN(dt.getTime())) return "-";
-    const yyyy = dt.getFullYear();
-    const mm = String(dt.getMonth() + 1).padStart(2, "0");
-    const dd = String(dt.getDate()).padStart(2, "0");
-    return `${yyyy}-${mm}-${dd}`;
-  };
-
-  console.log(projectData);
+  } = useGetProjectDetailQuery({ q: debouncedQ });
 
   const ProjectDetailColumns = [
     { key: "code", label: "Project Code" },
@@ -170,7 +151,7 @@ function Dash_project() {
   ];
 
   const projectDetailRows = useMemo(() => {
-    const list = projectData?.data ?? []; // ← your array of 48
+    const list = projectData?.data ?? [];
     return list.map((p) => {
       const acts = Array.isArray(p.activities) ? p.activities : [];
 
@@ -185,7 +166,7 @@ function Dash_project() {
         null;
 
       let upcoming = [];
-      acts.map((activity) => {});
+      acts.map(() => {});
 
       if (current?.successors?.length) {
         const s = current.successors[0];
@@ -201,6 +182,16 @@ function Dash_project() {
               !a?.actual_start_date && a?.activity_id !== current?.activity_id
           ) || null;
       }
+
+      const fmtDate = (d) => {
+        if (!d) return "-";
+        const dt = new Date(d);
+        if (Number.isNaN(dt.getTime())) return "-";
+        const yyyy = dt.getFullYear();
+        const mm = String(dt.getMonth() + 1).padStart(2, "0");
+        const dd = String(dt.getDate()).padStart(2, "0");
+        return `${yyyy}-${mm}-${dd}`;
+      };
 
       const completion_date = current?.actual_end_date
         ? fmtDate(current.actual_end_date)
@@ -239,7 +230,7 @@ function Dash_project() {
   } = useGetPostsActivityFeedQuery();
   const feedItems = Array.isArray(feedRes?.data) ? feedRes.data : [];
 
-  /* --------- LIFTED RANGE STATE (default: current week) --------- */
+  /* --------- Range state (default: current week) --------- */
   const defaultStart = startOfWeek(new Date());
   const defaultEnd = addDays(defaultStart, 6);
   const [range, setRange] = useState({
@@ -250,12 +241,28 @@ function Dash_project() {
   const baselineStart = ymd(range.startDate);
   const baselineEnd = ymd(range.endDate);
 
-  // RTK Query fetch that refires when range changes
+  // NEW: fullscreen chip filter state for the timeline
+  // Values: 'all' | 'baseline' | 'actual_ontime' | 'actual_late'
+  const [paFilter, setPaFilter] = useState("all");
+
+  // Map UI filter to backend query (omit when 'all')
+  const apiFilter =
+    paFilter === "baseline" ||
+    paFilter === "actual_ontime" ||
+    paFilter === "actual_late"
+      ? paFilter
+      : undefined;
+
+  // Fetch activities (refires when range or filter changes)
   const {
     data: paViewRes,
     isLoading: paLoading,
     isFetching: paFetching,
-  } = useGetProjectActivityForViewQuery({ baselineStart, baselineEnd });
+  } = useGetProjectActivityForViewQuery({
+    baselineStart,
+    baselineEnd,
+    filter: apiFilter,
+  });
 
   const timelineData = useMemo(
     () => (Array.isArray(paViewRes?.data) ? paViewRes.data : []),
@@ -268,14 +275,12 @@ function Dash_project() {
 
   const [projectId, setProjectId] = useState(initialProjectId);
 
-  // keep local state in sync when URL changes (back/forward, etc.)
   useEffect(() => {
     if (initialProjectId && initialProjectId !== projectId) {
       setProjectId(initialProjectId);
     }
   }, [initialProjectId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // when child picks a project, update URL + local state
   const handleProjectChange = (id) => {
     setProjectId(id || "");
     const params = new URLSearchParams(sp);
@@ -291,35 +296,30 @@ function Dash_project() {
     error,
   } = useGetActivityLineByProjectIdQuery(projectId, { skip: !projectId });
 
-  /* --------- RESOURCES API (integrated) --------- */
-  /* --------- RESOURCES API (integrated) --------- */
-// local 7-day window for the resource graph (today → +6)
-const today = new Date();
-today.setHours(0, 0, 0, 0);
-const [resRange, setResRange] = useState({
-  startDate: today,
-  endDate: addDays(today, 6),
-});
+  // RESOURCES
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const [resRange, setResRange] = useState({
+    startDate: today,
+    endDate: addDays(today, 6),
+  });
 
-// fetch resources whenever the resource graph range or project changes
-const { data: resourcesRes } = useGetResourcesQuery({
-  start: ymd(resRange.startDate),
-  end: ymd(resRange.endDate),
-  ...(projectId ? { project_id: projectId } : {}),
-  allTypes: "1", // ensure zeros returned for missing types
-});
+  const { data: resourcesRes } = useGetResourcesQuery({
+    start: ymd(resRange.startDate),
+    end: ymd(resRange.endDate),
+    ...(projectId ? { project_id: projectId } : {}),
+    allTypes: "1",
+  });
 
-// Map API [{type, number}] -> chart logs [{date, type, count}]
-const resourceLogs = useMemo(() => {
-  const items = Array.isArray(resourcesRes?.data) ? resourcesRes.data : [];
-  const anchor = resourcesRes?.start || ymd(resRange.startDate);
-  return items.map((it) => ({
-    date: anchor,
-    type: String(it.type || "-"),
-    count: Number(it.number || 0),
-  }));
-}, [resourcesRes, resRange.startDate]);
-
+  const resourceLogs = useMemo(() => {
+    const items = Array.isArray(resourcesRes?.data) ? resourcesRes.data : [];
+    const anchor = resourcesRes?.start || ymd(resRange.startDate);
+    return items.map((it) => ({
+      date: anchor,
+      type: String(it.type || "-"),
+      count: Number(it.number || 0),
+    }));
+  }, [resourcesRes, resRange.startDate]);
 
   return (
     <Box
@@ -340,8 +340,8 @@ const resourceLogs = useMemo(() => {
             illustration={
               <IconBadge
                 icon={<PlayCircleFilledRoundedIcon fontSize="small" />}
-                color="#1d4ed8" // blue-700
-                bg="#dbeafe" // blue-100
+                color="#1d4ed8"
+                bg="#dbeafe"
               />
             }
             onAction={() => {
@@ -363,8 +363,8 @@ const resourceLogs = useMemo(() => {
             illustration={
               <IconBadge
                 icon={<TaskAltRoundedIcon fontSize="small" />}
-                color="#15803d" // emerald-700
-                bg="#ecfdf5" // emerald-50
+                color="#15803d"
+                bg="#ecfdf5"
               />
             }
             onAction={() => {
@@ -386,8 +386,8 @@ const resourceLogs = useMemo(() => {
             illustration={
               <IconBadge
                 icon={<DoNotDisturbOnRoundedIcon fontSize="small" />}
-                color="#b91c1c" // red-700
-                bg="#fee2e2" // red-100
+                color="#b91c1c"
+                bg="#fee2e2"
               />
             }
             onAction={() => {
@@ -409,8 +409,8 @@ const resourceLogs = useMemo(() => {
             illustration={
               <IconBadge
                 icon={<PauseCircleRounded fontSize="small" />}
-                color="#b91c1c" // red-700
-                bg="#fee2e2" // red-100
+                color="#b91c1c"
+                bg="#fee2e2"
               />
             }
             onAction={() => {
@@ -458,6 +458,8 @@ const resourceLogs = useMemo(() => {
               e.setHours(0, 0, 0, 0);
               setRange({ startDate: s, endDate: e });
             }}
+            layerFilter={paFilter}
+            onLayerFilterChange={setPaFilter}
           />
         </Grid>
 
@@ -495,24 +497,20 @@ const resourceLogs = useMemo(() => {
           />
         </Grid>
       </Grid>
+
       <Grid container spacing={2} sx={{ mt: 1 }}>
         <Grid xs={12} md={12}>
           <ResourceBarGraph
-  title="Resources by Type"
-  resourceTypes={RESOURCE_TYPES}
-  logs={resourceLogs}
-  initialRange={resRange}
-  onRangeChange={(startY, endY) => {
-    const s = parseYMD(startY);
-    const e = parseYMD(endY);
-    setResRange({
-      startDate: s || resRange.startDate,
-      endDate: e || resRange.endDate,
-    });
-  }}
-  onBarClick={() => {}}
-/>
-
+            title="Resources by Type"
+            resourceTypes={RESOURCE_TYPES}
+            logs={[]}
+            initialRange={{
+              startDate: new Date(),
+              endDate: addDays(new Date(), 6),
+            }}
+            onRangeChange={() => {}}
+            onBarClick={() => {}}
+          />
         </Grid>
       </Grid>
 

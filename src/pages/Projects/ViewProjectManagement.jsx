@@ -21,24 +21,54 @@ import Sidebar from "../../component/Partials/Sidebar";
 import SubHeader from "../../component/Partials/SubHeader";
 import MainHeader from "../../component/Partials/MainHeader";
 import { useSearchParams } from "react-router-dom";
-import { useRef, useState, useMemo } from "react";
+import { useRef, useState, useMemo, useCallback } from "react";
 import View_Project_Management from "../../component/ViewProjectManagement";
 import Filter from "../../component/Partials/Filter";
 import SearchPickerModal from "../../component/SearchPickerModal";
-
 import {
   useLazyGetAllTemplateNameSearchQuery,
   useUpdateProjectActivityFromTemplateMutation,
+  useUpdateStatusOfPlanMutation,
 } from "../../redux/projectsSlice";
+import AppSnackbar from "../../component/AppSnackbar";
 
 function ViewProjectManagement() {
   const [searchParams, setSearchParams] = useSearchParams();
   const projectId = searchParams.get("project_id") || "";
   const selectedView = searchParams.get("view") || "week";
-
+  const [snack, setSnack] = useState({ open: false, msg: "" });
   const ganttRef = useRef(null);
 
-  // ------- Filters -------
+  const [planStatus, setPlanStatus] = useState(null);
+  const [updatePlanStatus, { isLoading: isUpdatingPlanStatus }] =
+    useUpdateStatusOfPlanMutation();
+
+  const handlePlanStatusFromChild = useCallback((statusObj) => {
+    const s = (statusObj?.status || "").toLowerCase();
+    if (s === "freeze" || s === "unfreeze") {
+      setPlanStatus(s);
+    }
+  }, []);
+  const safeMsg = String(snack?.msg ?? "");
+  const isError = /^(failed|invalid|error|server)/i.test(safeMsg);
+  const toggleFreeze = async () => {
+    if (!projectId || !planStatus) return;
+    const next = planStatus === "unfreeze" ? "freeze" : "unfreeze";
+    try {
+      await updatePlanStatus({
+        projectId,
+        status: next,
+      }).unwrap();
+
+      setPlanStatus(next);
+      ganttRef.current?.refetch?.();
+      setSnack({ open: true, msg: "Status Updated Successfully" });
+    } catch (e) {
+      setSnack({ open: true, msg: "Failed to update status:" });
+    }
+  };
+
+  // ====== Filters ======
   const [open, setOpen] = useState(false);
   const fields = [
     {
@@ -54,7 +84,7 @@ function ViewProjectManagement() {
     },
   ];
 
-  // ------- Save-as-template -------
+  // ====== Save-as-template ======
   const [tplOpen, setTplOpen] = useState(false);
   const [tplName, setTplName] = useState("");
   const [tplDesc, setTplDesc] = useState("");
@@ -95,11 +125,9 @@ function ViewProjectManagement() {
     }
   };
 
-  // ------- Fetch-from-template (SearchPickerModal + confirm) -------
   const [tplPickerOpen, setTplPickerOpen] = useState(false);
   const [triggerSearchTemplates] = useLazyGetAllTemplateNameSearchQuery();
 
-  // template apply confirm
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [applyTemplate, { isLoading: isApplyingTemplate }] =
@@ -162,11 +190,19 @@ function ViewProjectManagement() {
 
       setConfirmOpen(false);
       setSelectedTemplate(null);
+      ganttRef.current?.refetch?.();
     } catch {
       setConfirmOpen(false);
       setSelectedTemplate(null);
     }
   };
+
+  // Compute button visuals from planStatus
+  const isUnfreeze = (planStatus || "").toLowerCase() === "unfreeze";
+  const freezeBtnLabel = isUnfreeze ? "Freeze" : "Unfreeze";
+  const freezeBtnProps = isUnfreeze
+    ? { variant: "solid", color: "danger" }
+    : { variant: "outlined", color: "success" };
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -176,68 +212,95 @@ function ViewProjectManagement() {
       >
         <Sidebar />
         <MainHeader title="Projects" sticky />
-        <SubHeader title="View Project Schedule" isBackEnabled sticky>
-          <Box display="flex" gap={1} alignItems="center">
-            <Button
-              variant="outlined"
-              size="sm"
-              startDecorator={<Save />}
-              sx={{
-                color: "#3366a3",
-                borderColor: "#3366a3",
-                backgroundColor: "transparent",
-                "--Button-hoverBg": "#e0e0e0",
-                "--Button-hoverBorderColor": "#3366a3",
-                "&:hover": { color: "#3366a3" },
-                height: "8px",
-              }}
-              onClick={onClickSaveAsTemplate}
-            >
-              Save as Template
-            </Button>
+        <SubHeader
+          title="View Project Schedule"
+          isBackEnabled
+          sticky
+          rightSlot={
+            <>
+              {/* Freeze / Unfreeze button */}
+              <Button
+                {...freezeBtnProps}
+                size="sm"
+                onClick={toggleFreeze}
+                loading={isUpdatingPlanStatus}
+                disabled={!projectId || isUpdatingPlanStatus || !planStatus}
+                sx={{
+                  height: "8px",
+                  ...(freezeBtnProps.variant === "outlined"
+                    ? {
+                        borderColor: "success.outlinedBorder",
+                        color: "success.plainColor",
+                        "--Button-hoverBorderColor":
+                          "success.outlinedHoverBorder",
+                      }
+                    : {}),
+                }}
+              >
+                {freezeBtnLabel}
+              </Button>
 
-            <Button
-              variant="solid"
-              size="sm"
-              startDecorator={<ContentPasteGo />}
-              sx={{
-                backgroundColor: "#3366a3",
-                color: "#fff",
-                "&:hover": { backgroundColor: "#285680" },
-                height: "8px",
-              }}
-              onClick={() => setTplPickerOpen(true)}
-            >
-              Fetch From Template
-            </Button>
+              <Button
+                variant="outlined"
+                size="sm"
+                startDecorator={<Save />}
+                sx={{
+                  color: "#3366a3",
+                  borderColor: "#3366a3",
+                  backgroundColor: "transparent",
+                  "--Button-hoverBg": "#e0e0e0",
+                  "--Button-hoverBorderColor": "#3366a3",
+                  "&:hover": { color: "#3366a3" },
+                  height: "8px",
+                }}
+                onClick={onClickSaveAsTemplate}
+              >
+                Save as Template
+              </Button>
 
-            <Filter
-              open={open}
-              onOpenChange={setOpen}
-              fields={fields}
-              title="Filters"
-              onApply={(values) => {
-                setSearchParams((prev) => {
-                  const merged = Object.fromEntries(prev.entries());
-                  const next = {
-                    ...merged,
-                    page: "1",
-                    ...(values.view && { view: String(values.view) }),
-                  };
-                  return next;
-                });
-                setOpen(false);
-              }}
-              onReset={() => {
-                setSearchParams((prev) => {
-                  const merged = Object.fromEntries(prev.entries());
-                  delete merged.view;
-                  return { ...merged, page: "1" };
-                });
-              }}
-            />
-          </Box>
-        </SubHeader>
+              <Button
+                variant="solid"
+                size="sm"
+                startDecorator={<ContentPasteGo />}
+                sx={{
+                  backgroundColor: "#3366a3",
+                  color: "#fff",
+                  "&:hover": { backgroundColor: "#285680" },
+                  height: "8px",
+                }}
+                onClick={() => setTplPickerOpen(true)}
+              >
+                Fetch From Template
+              </Button>
+
+              <Filter
+                open={open}
+                onOpenChange={setOpen}
+                fields={fields}
+                title="Filters"
+                onApply={(values) => {
+                  setSearchParams((prev) => {
+                    const merged = Object.fromEntries(prev.entries());
+                    const next = {
+                      ...merged,
+                      page: "1",
+                      ...(values.view && { view: String(values.view) }),
+                    };
+                    return next;
+                  });
+                  setOpen(false);
+                }}
+                onReset={() => {
+                  setSearchParams((prev) => {
+                    const merged = Object.fromEntries(prev.entries());
+                    delete merged.view;
+                    return { ...merged, page: "1" };
+                  });
+                }}
+              />
+            </>
+          }
+        ></SubHeader>
 
         <Box
           component="main"
@@ -255,6 +318,7 @@ function ViewProjectManagement() {
           <View_Project_Management
             ref={ganttRef}
             viewModeParam={selectedView}
+            onPlanStatus={handlePlanStatusFromChild}
           />
         </Box>
       </Box>
@@ -400,7 +464,7 @@ function ViewProjectManagement() {
               startDecorator={<Save />}
               onClick={handleSubmitTemplate}
               loading={tplSubmitting}
-              disabled={tplSubmitting || !tplConfirm} // ✅ disable until checkbox ticked
+              disabled={tplSubmitting || !tplConfirm}
             >
               Submit
             </Button>
@@ -465,6 +529,13 @@ function ViewProjectManagement() {
           </DialogActions>
         </ModalDialog>
       </Modal>
+
+      <AppSnackbar
+        color={isError ? "danger" : "success"}
+        open={!!snack.open}
+        message={safeMsg}
+        onClose={() => setSnack((s) => ({ ...s, open: false }))}
+      />
     </CssVarsProvider>
   );
 }
