@@ -1101,7 +1101,7 @@ const View_Project_Management = forwardRef(
         })
         .filter(Boolean);
 
-        const resourcesPayload = Array.isArray(form.resources)
+      const resourcesPayload = Array.isArray(form.resources)
         ? form.resources
             .filter((r) => r && r.type)
             .map((r) => ({

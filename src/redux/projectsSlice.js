@@ -431,5 +431,5 @@ export const {
   useGetProjectActivityForViewQuery,
   useGetResourcesQuery,
   useLazyGetResourcesQuery,
-  useUpdateStatusOfPlanMutation
+  useUpdateStatusOfPlanMutation,
 } = projectsApi;
