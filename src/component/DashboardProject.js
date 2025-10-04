@@ -228,7 +228,7 @@ function Dash_project({
   } = useGetActivityLineByProjectIdQuery(selectedIds, {
     skip: selectedIds.length === 0,
   });
-  
+
 
   const { data: projectResponse } = useGetProjectDropdownForDashboardQuery({
     page: 1,
@@ -505,26 +505,22 @@ function Dash_project({
 
       {isLoadingLineData || isFetchingLineData ? (
         <div>Loading…</div>
-      ) : (
-        Array.isArray(LineData?.rows) && LineData.rows.length > 0 ? (
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            {LineData.rows.map((row) => {
-              return (
-                <Grid key={row.project_id} xs={12} md={12}>
-                  <ActivityFinishLineChart
-                    apiData={row}
-                    projectId={row.project_id}
-                    // optional: align X-axes across all charts using the global domain
-                    domain={row.domain}
-                    title={row.project_name}
-                    onProjectChange={handleProjectChange}
-                  />
-                </Grid>
-              )
-            })}
-          </Grid>
-        ) : null
-      )}
+      ) : selectedIds.length > 0 && Array.isArray(LineData?.rows) && LineData.rows.length > 0 ? (
+        <Grid container spacing={2} sx={{ mt: 1 }}>
+          {LineData.rows.map((row) => (
+            <Grid key={row.project_id} xs={12} md={12}>
+              <ActivityFinishLineChart
+                apiData={row}
+                projectId={row.project_id}
+                domain={row.domain}
+                title={row.project_name}
+                onProjectChange={handleProjectChange}
+              />
+            </Grid>
+          ))}
+        </Grid>
+      ) : null}
+
 
 
       <SearchPickerModal

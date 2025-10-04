@@ -47,7 +47,6 @@ function ProjectDashBoard() {
     }
   }, [selectedIds, setSearchParams]);
 
-  console.log(selectedIds);
 
   return (
     <CssVarsProvider disableTransitionOnChange>
