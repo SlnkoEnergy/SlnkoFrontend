@@ -5,12 +5,10 @@ import {
   Typography,
   Box,
   Stack,
-  Sheet,
   Button,
   Select,
   Option,
   Checkbox,
-  Chip,
 } from "@mui/joy";
 import {
   BarChart,
@@ -25,37 +23,11 @@ import {
 
 /* ---------------- Safe date helpers ---------------- */
 const isValidDate = (d) => d instanceof Date && !Number.isNaN(d.getTime());
-function startOfDay(d) {
-  const dt = new Date(d);
-  dt.setHours(0, 0, 0, 0);
-  return dt;
-}
-function addDays(date, days) {
-  const d = new Date(date);
-  d.setDate(d.getDate() + days);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-function ymd(date) {
-  const d = new Date(date);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-    2,
-    "0"
-  )}-${String(d.getDate()).padStart(2, "0")}`;
-}
-function ddMMM(date) {
-  return new Date(date).toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-  });
-}
-function parseYMD(s) {
-  if (!s) return null;
-  const [y, m, d] = String(s).split("-").map(Number);
-  const dt = new Date(y, (m || 1) - 1, d || 1);
-  dt.setHours(0, 0, 0, 0);
-  return dt;
-}
+function startOfDay(d) { const dt = new Date(d); dt.setHours(0,0,0,0); return dt; }
+function addDays(date, days) { const d = new Date(date); d.setDate(d.getDate()+days); d.setHours(0,0,0,0); return d; }
+function ymd(date) { const d = new Date(date); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+function ddMMM(date) { return new Date(date).toLocaleDateString("en-GB",{ day:"2-digit", month:"short" }); }
+function parseYMD(s) { if(!s) return null; const [y,m,d]=String(s).split("-").map(Number); const dt=new Date(y,(m||1)-1,d||1); dt.setHours(0,0,0,0); return dt; }
 
 /* ---- Recharts-friendly keys ---- */
 const toSafeKey = (s = "") =>
@@ -63,19 +35,26 @@ const toSafeKey = (s = "") =>
 
 /* ---- colors ---- */
 const DEFAULT_RESOURCE_COLORS = [
-  "#3b82f6",
-  "#22c55e",
-  "#ef4444",
-  "#f59e0b",
+  "#3b82f6", // blue
+  "#22c55e", // green
+  "#ef4444", // red
+  "#221926ff", // deep plum
   "#8b5cf6",
   "#14b8a6",
-  "#f97316",
+  "#f97416ff", // orange (Tline Engineer uses this in your palette)
   "#64748b",
   "#0ea5e9",
   "#10b981",
   "#d946ef",
   "#84cc16",
 ];
+
+/* ✅ Explicit overrides so certain types ALWAYS get unique colors */
+const COLOR_OVERRIDES = {
+  // Keep label comparison robust to whitespace/case
+  "electric engineer": "#e11d48", // vivid rose (distinct from Tline orange)
+  // add more overrides here if needed
+};
 
 /* ---- pretty labels ---- */
 const prettyResource = (s = "") =>
@@ -104,8 +83,65 @@ function buildTicks(end, totalDays) {
   const s = addDays(e, -(totalDays - 1));
   const stepDays = Math.max(1, Math.floor(totalDays / 7));
   const out = [];
-  for (let i = 0; i < 7; i++) out.push(addDays(s, i * stepDays)); // 7 uniform ticks
+  for (let i = 0; i < 7; i++) out.push(addDays(s, i * stepDays));
   return out;
+}
+
+/* -------- custom legend that ALWAYS shows all resourceTypes -------- */
+function LegendWithCheckbox({
+  resourceTypes = [],
+  selectedTypes,
+  toggleType,
+  colorMap,
+  prettyResourceFn,
+}) {
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 1.25,
+        alignItems: "center",
+        justifyContent: "center",
+        pb: 0.5,
+      }}
+    >
+      {resourceTypes.map((type) => {
+        const checked = selectedTypes.includes(type);
+        return (
+          <Box
+            key={type}
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 0.5,
+              px: 0.75,
+              py: 0.25,
+              borderRadius: 999,
+              backgroundColor: "transparent",
+            }}
+          >
+            <span
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: 999,
+                display: "inline-block",
+                background: colorMap[type],
+              }}
+            />
+            <Checkbox
+              size="sm"
+              checked={checked}
+              onChange={() => toggleType(type)}
+              sx={{ "--Checkbox-size": "16px" }}
+            />
+            <Typography level="body-xs">{prettyResourceFn(type)}</Typography>
+          </Box>
+        );
+      })}
+    </Box>
+  );
 }
 
 export default function ResourceBarGraph({
@@ -120,14 +156,12 @@ export default function ResourceBarGraph({
   onBarClick,
   onRangeChange,
 }) {
-  /* ---- window selection ---- */
   const [windowKey, setWindowKey] = useState("1w");
   const windowDays = useMemo(
     () => PRESETS.find((p) => p.key === windowKey)?.days ?? 7,
     [windowKey]
   );
 
-  /* ---- selection (checkboxes) ---- */
   const [selectedTypes, setSelectedTypes] = useState(() => resourceTypes || []);
   useEffect(() => {
     setSelectedTypes((prev) => {
@@ -137,10 +171,8 @@ export default function ResourceBarGraph({
     });
   }, [resourceTypes]);
 
-  /* ---- map types <-> safe keys ---- */
   const { typeToKey, keyToType } = useMemo(() => {
-    const t2k = {},
-      k2t = {};
+    const t2k = {}, k2t = {};
     (resourceTypes || []).forEach((t) => {
       const k = toSafeKey(t);
       t2k[t] = k;
@@ -149,35 +181,38 @@ export default function ResourceBarGraph({
     return { typeToKey: t2k, keyToType: k2t };
   }, [resourceTypes]);
 
-  /* ---- colors ---- */
+  /* colors (palette first, then overrides) */
   const colorMap = useMemo(() => {
     const palette =
       Array.isArray(resourceColors) && resourceColors.length >= resourceTypes.length
         ? resourceColors
         : DEFAULT_RESOURCE_COLORS;
+
     const m = {};
     (resourceTypes || []).forEach((t, i) => (m[t] = palette[i % palette.length]));
+
+    // apply explicit overrides last
+    (resourceTypes || []).forEach((t) => {
+      const norm = String(t).trim().toLowerCase();
+      if (COLOR_OVERRIDES[norm]) m[t] = COLOR_OVERRIDES[norm];
+    });
+
     return m;
   }, [resourceColors, resourceTypes]);
 
-  /* ---- latest date in logs -> align ticks to data end ---- */
   const logsEnd = useMemo(() => {
     const ds = (logs || [])
-      .map((r) =>
-        r?.date instanceof Date ? startOfDay(r.date) : parseYMD(r?.date)
-      )
+      .map((r) => (r?.date instanceof Date ? startOfDay(r.date) : parseYMD(r?.date)))
       .filter(isValidDate);
     return ds.length
       ? startOfDay(new Date(Math.max(...ds.map((d) => d.getTime()))))
       : startOfDay(new Date());
   }, [logs]);
 
-  /* ---- index logs by YYYY-MM-DD and type ---- */
   const indexByDayType = useMemo(() => {
     const idx = {};
     for (const row of logs || []) {
-      const d =
-        row?.date instanceof Date ? startOfDay(row.date) : parseYMD(row?.date);
+      const d = row?.date instanceof Date ? startOfDay(row.date) : parseYMD(row?.date);
       if (!isValidDate(d)) continue;
       const day = ymd(d);
       const t = row.type;
@@ -189,11 +224,7 @@ export default function ResourceBarGraph({
     return idx;
   }, [logs, resourceTypes]);
 
-  /* ---- 7 rows & 7 ticks ---- */
-  const tickDates = useMemo(
-    () => buildTicks(logsEnd, windowDays),
-    [logsEnd, windowDays]
-  );
+  const tickDates = useMemo(() => buildTicks(logsEnd, windowDays), [logsEnd, windowDays]);
   const ticks = useMemo(() => tickDates.map(ymd), [tickDates]);
 
   const data = useMemo(() => {
@@ -208,7 +239,6 @@ export default function ResourceBarGraph({
     });
   }, [tickDates, resourceTypes, typeToKey, indexByDayType]);
 
-  /* ---- notify parent when window changes ---- */
   const notifiedRef = useRef(false);
   useEffect(() => {
     if (!notifiedRef.current && initialRange?.startDate && initialRange?.endDate) {
@@ -225,7 +255,6 @@ export default function ResourceBarGraph({
     onRangeChange?.(ymd(start), ymd(end));
   }, [windowDays, logsEnd, onRangeChange]);
 
-  /* ---- handlers ---- */
   const toggleType = (t) =>
     setSelectedTypes((prev) =>
       prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]
@@ -238,8 +267,8 @@ export default function ResourceBarGraph({
       variant="outlined"
       sx={{
         position: "relative",
-        overflow: "visible", // let tooltip extend out of the card
-        zIndex: 1200, // lift the whole card
+        overflow: "visible",
+        zIndex: 2,
         borderRadius: 28,
         p: { xs: 1, sm: 0.5, md: 1.5 },
         bgcolor: "#fff",
@@ -252,7 +281,7 @@ export default function ResourceBarGraph({
           transform: "translateY(-2px)",
           boxShadow:
             "0 6px 16px rgba(15,23,42,0.10), 0 20px 36px rgba(15,23,42,0.08)",
-          zIndex: 1300,
+          zIndex: 3,
         },
         height,
       }}
@@ -282,11 +311,10 @@ export default function ResourceBarGraph({
             size="sm"
             value={windowKey}
             onChange={(e, v) => v && setWindowKey(v)}
-            sx={{ minWidth: 160, position: "relative", zIndex: 1600 }}
+            sx={{ minWidth: 160, position: "relative" }}
             slotProps={{
-              // keep dropdown list above everything
-              listbox: { sx: { zIndex: 20000 } },
-              button: { sx: { position: "relative", zIndex: 1600 } },
+              listbox: { sx: { zIndex: 1401 } },
+              button: { sx: { position: "relative" } },
             }}
           >
             {PRESETS.map((p) => (
@@ -307,85 +335,28 @@ export default function ResourceBarGraph({
         </Stack>
       </Box>
 
-      {/* Resource checkboxes */}
-      <Sheet
-        variant="soft"
-        sx={{
-          mx: 1.5,
-          mb: 1,
-          p: 1,
-          borderRadius: 14,
-          overflowX: "auto",
-          display: "flex",
-          gap: 1.25,
-          alignItems: "center",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {(resourceTypes || []).map((t) => {
-          const checked = selectedTypes.includes(t);
-          return (
-            <Chip
-              key={t}
-              variant={checked ? "soft" : "plain"}
-              color="neutral"
-              sx={{
-                borderRadius: "999px",
-                "--Chip-decoratorChildSize": "10px",
-                pr: 1,
-              }}
-              startDecorator={
-                <span
-                  style={{
-                    display: "inline-block",
-                    width: 10,
-                    height: 10,
-                    borderRadius: 999,
-                    background: colorMap[t],
-                  }}
-                />
-              }
-            >
-              <Checkbox
-                size="sm"
-                label={prettyResource(t)}
-                checked={checked}
-                onChange={() => toggleType(t)}
-                overlay
-              />
-            </Chip>
-          );
-        })}
-      </Sheet>
-
       {/* Chart area */}
-      <Box sx={{ height: height - 140, p: 1, overflow: "visible" }}>
+      <Box sx={{ height: height - 120, p: 1, overflow: "visible" }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
-            data={data} // 7 rows (tick dates only)
-            margin={{ top: 24, right: 24, left: 8, bottom: 8 }}
+            data={data}
+            margin={{ top: 24, right: 24, left: 8, bottom: 24 }}
             barGap={4}
             barCategoryGap={20}
           >
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="day"
-              ticks={ticks}
-              interval={0}
-              height={48}
-              tick={{ fontSize: 12 }}
-              tickFormatter={(val) => ddMMM(val)}
-            />
+            <XAxis dataKey="day" ticks={ticks} interval={0} height={48} tick={{ fontSize: 12 }} tickFormatter={(v) => ddMMM(v)} />
             <YAxis allowDecimals={false} domain={[0, "dataMax + 5"]} />
             <Tooltip
-              allowEscapeViewBox={{ x: true, y: true }} // let tooltip leave the SVG
-              wrapperStyle={{ zIndex: 9999, pointerEvents: "none" }} // above everything; non-blocking
+              allowEscapeViewBox={{ x: true, y: true }}
+              wrapperStyle={{ zIndex: 4000, pointerEvents: "none" }}
               contentStyle={{
                 background: "rgba(255,255,255,0.98)",
                 borderRadius: 12,
                 border: "1px solid rgba(2,6,23,0.08)",
                 boxShadow: "0 8px 24px rgba(15,23,42,0.15)",
                 padding: "10px 12px",
+                whiteSpace: "nowrap",
               }}
               labelStyle={{ fontWeight: 700, marginBottom: 6 }}
               itemStyle={{ paddingTop: 2, paddingBottom: 2 }}
@@ -397,22 +368,35 @@ export default function ResourceBarGraph({
               offset={12}
               cursor={{ fill: "rgba(2,6,23,0.06)" }}
             />
+
+            {/* Legend that always shows every type */}
             <Legend
-              iconType="circle"
-              formatter={(v) => prettyResource(keyToType[v] || v)}
-              wrapperStyle={{ fontSize: 12 }}
+              verticalAlign="bottom"
+              align="center"
+              wrapperStyle={{ paddingTop: 8 }}
+              content={() => (
+                <LegendWithCheckbox
+                  resourceTypes={resourceTypes}
+                  selectedTypes={selectedTypes}
+                  toggleType={toggleType}
+                  colorMap={colorMap}
+                  prettyResourceFn={prettyResource}
+                />
+              )}
             />
 
-            {(selectedTypes || []).map((type) => {
+            {(resourceTypes || []).map((type) => {
               const safe = typeToKey[type];
+              const hidden = !selectedTypes.includes(type);
               return (
                 <Bar
                   key={type}
                   dataKey={safe}
                   name={safe}
-                  fill={colorMap[type]}
+                  fill={colorMap[type]}   
                   maxBarSize={barSize}
                   isAnimationActive={false}
+                  hide={hidden}
                   onClick={(payload) => onBarClick?.({ type, payload })}
                 />
               );
