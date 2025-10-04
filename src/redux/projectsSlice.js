@@ -373,11 +373,46 @@ export const projectsApi = createApi({
     }),
 
 
-    getResources: builder.query({
-  query: ({ start, end, project_id, allTypes = "1" }) => ({
-    url: "projectactivity/resources",
-    params: { start, end, allTypes, ...(project_id ? { project_id } : {}) },
-  }),
+   getResources: builder.query({
+  // accept either { window, project_id } OR legacy { start, end, project_id }
+  query: (args = {}) => {
+    const { window: windowKeyIn, start, end, project_id } = args || {};
+
+    // If caller gave start/end, map it to a window key; else use provided window or default 1w
+    let windowKey = windowKeyIn;
+    if (!windowKey) {
+      if (start && end) {
+        const toDate = (s) => {
+          // avoid TZ shifts; treat as local date
+          const [y, m, d] = String(s).split("-").map(Number);
+          const dt = new Date(y, (m || 1) - 1, d || 1);
+          dt.setHours(0, 0, 0, 0);
+          return dt;
+        };
+        const s = toDate(start);
+        const e = toDate(end);
+        const days = Math.max(1, Math.round((e - s) / 86400000) + 1);
+
+        // inclusive-day span → backend window key
+        if (days <= 7) windowKey = "1w";
+        else if (days <= 14) windowKey = "2w";
+        else if (days <= 21) windowKey = "3w";
+        else if (days <= 30) windowKey = "1m";
+        else if (days <= 90) windowKey = "3m";
+        else windowKey = "6m";
+      } else {
+        windowKey = "1w";
+      }
+    }
+
+    const params = { window: windowKey };
+    if (project_id) params.project_id = project_id;
+
+    return {
+      url: "projectactivity/resources",
+      params,
+    };
+  },
 }),
   })
 
