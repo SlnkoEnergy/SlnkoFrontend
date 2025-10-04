@@ -13,7 +13,6 @@ import {
   useGetProjectDetailQuery,
   useGetProjectStatesFilterQuery,
   useGetProjectStatusFilterQuery,
-  // ⬇️ resources
   useGetResourcesQuery,
 } from "../redux/projectsSlice";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -44,12 +43,36 @@ const IconBadge = ({ color = "#2563eb", bg = "#eff6ff", icon }) => (
 );
 
 const DONUT_COLORS = [
-  "#f59e0b", "#22c55e", "#ef4444", "#3b82f6", "#8b5cf6",
-  "#14b8a6", "#e11d48", "#84cc16", "#f97316", "#06b6d4",
-  "#d946ef", "#0ea5e9", "#65a30d", "#dc2626", "#7c3aed",
-  "#10b981", "#ca8a04", "#2563eb", "#f43f5e", "#0891b2",
-  "#a16207", "#15803d", "#4f46e5", "#ea580c", "#db2777",
-  "#047857", "#1d4ed8", "#9333ea", "#b91c1c", "#0d9488",
+  "#f59e0b",
+  "#22c55e",
+  "#ef4444",
+  "#3b82f6",
+  "#8b5cf6",
+  "#14b8a6",
+  "#e11d48",
+  "#84cc16",
+  "#f97316",
+  "#06b6d4",
+  "#d946ef",
+  "#0ea5e9",
+  "#65a30d",
+  "#dc2626",
+  "#7c3aed",
+  "#10b981",
+  "#ca8a04",
+  "#2563eb",
+  "#f43f5e",
+  "#0891b2",
+  "#a16207",
+  "#15803d",
+  "#4f46e5",
+  "#ea580c",
+  "#db2777",
+  "#047857",
+  "#1d4ed8",
+  "#9333ea",
+  "#b91c1c",
+  "#0d9488",
 ];
 
 const ymd = (d) => {
@@ -62,7 +85,7 @@ const ymd = (d) => {
 const startOfWeek = (date = new Date()) => {
   const d = new Date(date);
   const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day; // Monday start
+  const diff = day === 0 ? -6 : 1 - day;
   const res = new Date(d);
   res.setHours(0, 0, 0, 0);
   res.setDate(d.getDate() + diff);
@@ -75,7 +98,7 @@ const addDays = (date, days) => {
   return d;
 };
 
-// default list (used as fallback if API doesn't send resource_types)
+// resource constants
 const RESOURCE_TYPES = [
   "surveyor",
   "civil engineer",
@@ -87,7 +110,6 @@ const RESOURCE_TYPES = [
   "tline subcontractor",
 ];
 
-// safe local parser for YYYY-MM-DD
 const parseYMD = (s) => {
   if (!s) return null;
   const [y, m, d] = s.split("-").map(Number);
@@ -121,16 +143,6 @@ function Dash_project() {
     isFetching: perfFetching,
   } = useGetProjectDetailQuery({ q: debouncedQ });
 
-  const fmtDate = (d) => {
-    if (!d) return "-";
-    const dt = new Date(d);
-    if (Number.isNaN(dt.getTime())) return "-";
-    const yyyy = dt.getFullYear();
-    const mm = String(dt.getMonth() + 1).padStart(2, "0");
-    const dd = String(dt.getDate()).padStart(2, "0");
-    return `${yyyy}-${mm}-${dd}`;
-  };
-
   const ProjectDetailColumns = [
     { key: "code", label: "Project Code" },
     { key: "name", label: "Project Name" },
@@ -154,7 +166,7 @@ function Dash_project() {
         null;
 
       let upcoming = [];
-      acts.map((activity) => {}); // (unchanged)
+      acts.map(() => {});
 
       if (current?.successors?.length) {
         const s = current.successors[0];
@@ -170,6 +182,16 @@ function Dash_project() {
               !a?.actual_start_date && a?.activity_id !== current?.activity_id
           ) || null;
       }
+
+      const fmtDate = (d) => {
+        if (!d) return "-";
+        const dt = new Date(d);
+        if (Number.isNaN(dt.getTime())) return "-";
+        const yyyy = dt.getFullYear();
+        const mm = String(dt.getMonth() + 1).padStart(2, "0");
+        const dd = String(dt.getDate()).padStart(2, "0");
+        return `${yyyy}-${mm}-${dd}`;
+      };
 
       const completion_date = current?.actual_end_date
         ? fmtDate(current.actual_end_date)
@@ -208,7 +230,7 @@ function Dash_project() {
   } = useGetPostsActivityFeedQuery();
   const feedItems = Array.isArray(feedRes?.data) ? feedRes.data : [];
 
-  /* --------- Calendar range (unchanged) --------- */
+  /* --------- Range state (default: current week) --------- */
   const defaultStart = startOfWeek(new Date());
   const defaultEnd = addDays(defaultStart, 6);
   const [range, setRange] = useState({
@@ -219,11 +241,28 @@ function Dash_project() {
   const baselineStart = ymd(range.startDate);
   const baselineEnd = ymd(range.endDate);
 
+  // NEW: fullscreen chip filter state for the timeline
+  // Values: 'all' | 'baseline' | 'actual_ontime' | 'actual_late'
+  const [paFilter, setPaFilter] = useState("all");
+
+  // Map UI filter to backend query (omit when 'all')
+  const apiFilter =
+    paFilter === "baseline" ||
+    paFilter === "actual_ontime" ||
+    paFilter === "actual_late"
+      ? paFilter
+      : undefined;
+
+  // Fetch activities (refires when range or filter changes)
   const {
     data: paViewRes,
     isLoading: paLoading,
     isFetching: paFetching,
-  } = useGetProjectActivityForViewQuery({ baselineStart, baselineEnd });
+  } = useGetProjectActivityForViewQuery({
+    baselineStart,
+    baselineEnd,
+    filter: apiFilter,
+  });
 
   const timelineData = useMemo(
     () => (Array.isArray(paViewRes?.data) ? paViewRes.data : []),
@@ -257,9 +296,7 @@ function Dash_project() {
     error,
   } = useGetActivityLineByProjectIdQuery(projectId, { skip: !projectId });
 
-  /* --------- RESOURCES (updated) --------- */
-
-  // local range that ResourceBarGraph will keep adjusting via onRangeChange
+  // RESOURCES
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const [resRange, setResRange] = useState({
@@ -267,7 +304,6 @@ function Dash_project() {
     endDate: addDays(today, 6),
   });
 
-  // call API; your slice converts start/end → window key
   const { data: resourcesRes } = useGetResourcesQuery({
     start: ymd(resRange.startDate),
     end: ymd(resRange.endDate),
@@ -437,6 +473,8 @@ function Dash_project() {
               e.setHours(0, 0, 0, 0);
               setRange({ startDate: s, endDate: e });
             }}
+            layerFilter={paFilter}
+            onLayerFilterChange={setPaFilter}
           />
         </Grid>
 

@@ -55,7 +55,6 @@ function ProjectManagement() {
       ];
     }
 
-    // --- completion formula (optional, global-only on backend) ---
     const hasCompletionFormula = Object.prototype.hasOwnProperty.call(
       payload,
       "completion_formula"
@@ -105,7 +104,6 @@ function ProjectManagement() {
           return;
         }
 
-        // At least one change must be present for update
         if (
           !dependencies.length &&
           !predecessors.length &&
@@ -116,10 +114,8 @@ function ProjectManagement() {
         }
 
         const body = {
-          // backend expects 'dependencies'
           ...(dependencies.length ? { dependencies } : {}),
           ...(predecessors.length ? { predecessors } : {}),
-          // only send completion_formula for global updates
           ...(isGlobal && hasCompletionFormula ? { completion_formula } : {}),
         };
 
@@ -135,7 +131,6 @@ function ProjectManagement() {
         return;
       }
 
-      // ---- NEW activity: push into project ----
       if (!payload?.project_id) {
         toast.error("Pick a project first.");
         return;
@@ -153,7 +148,6 @@ function ProjectManagement() {
       toast.success("Activity added to project");
       setOpenAdd(false);
     } catch (err) {
-      console.error("Create/update error:", err);
       toast.error(
         err?.data?.message ||
           err?.error ||

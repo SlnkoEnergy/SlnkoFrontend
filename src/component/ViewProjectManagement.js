@@ -443,7 +443,7 @@ const RESOURCE_TYPES = [
 ];
 
 /* ---------- row for predecessors ---------- */
-function DepRow({ title, options, row, onChange, onRemove }) {
+function DepRow({ title, options, row, onChange, onRemove, disabled = false }) {
   return (
     <Stack
       direction="row"
@@ -464,12 +464,14 @@ function DepRow({ title, options, row, onChange, onRemove }) {
             activityName: val?.label || "",
           })
         }
+        disabled={disabled}
         sx={{ minWidth: 180, flex: 1 }}
         slotProps={{ listbox: { sx: { zIndex: 1401 } } }}
       />
       <Select
         size="sm"
         value={row.type}
+        disabled={disabled}
         onChange={(_, v) => onChange({ ...row, type: v || "FS" })}
         sx={{ width: 90 }}
         slotProps={{ listbox: { sx: { zIndex: 1401 } } }}
@@ -485,10 +487,17 @@ function DepRow({ title, options, row, onChange, onRemove }) {
         type="number"
         placeholder="Lag"
         value={row.lag}
+        disabled={disabled}
         onChange={(e) => onChange({ ...row, lag: Number(e.target.value || 0) })}
         sx={{ width: 80 }}
       />
-      <IconButton color="danger" size="sm" variant="soft" onClick={onRemove}>
+      <IconButton
+        color="danger"
+        size="sm"
+        variant="soft"
+        disabled={disabled}
+        onClick={onRemove}
+      >
         <Delete fontSize="small" />
       </IconButton>
     </Stack>
@@ -496,7 +505,7 @@ function DepRow({ title, options, row, onChange, onRemove }) {
 }
 
 /* ---------- row for resources ---------- */
-function ResourceRow({ row, onChange, onRemove }) {
+function ResourceRow({ row, onChange, onRemove, disabled = false }) {
   return (
     <Stack
       direction="row"
@@ -508,6 +517,7 @@ function ResourceRow({ row, onChange, onRemove }) {
         size="sm"
         placeholder="Type"
         value={row.type || ""}
+        disabled={disabled}
         onChange={(_, v) => onChange({ ...row, type: v || "" })}
         sx={{ minWidth: "80%" }}
         slotProps={{ listbox: { sx: { zIndex: 1401 } } }}
@@ -528,13 +538,23 @@ function ResourceRow({ row, onChange, onRemove }) {
         inputMode="numeric"
         placeholder="Number"
         value={row.number ?? ""}
+        disabled={disabled}
         onChange={(e) =>
-          onChange({ ...row, number: Number(e.target.value || 0) })
+          onChange({
+            ...row,
+            number: Number(e.target.value) > 1 ? Number(e.target.value) : 1,
+          })
         }
         sx={{ width: "100%" }}
       />
 
-      <IconButton color="danger" size="sm" variant="soft" onClick={onRemove}>
+      <IconButton
+        color="danger"
+        size="sm"
+        variant="soft"
+        disabled={disabled}
+        onClick={onRemove}
+      >
         <Delete fontSize="small" />
       </IconButton>
     </Stack>
@@ -543,7 +563,7 @@ function ResourceRow({ row, onChange, onRemove }) {
 
 /* ---------------- main component ---------------- */
 const View_Project_Management = forwardRef(
-  ({ viewModeParam = "week" }, ref) => {
+  ({ viewModeParam = "week", onPlanStatus }, ref) => {
     const ganttContainer = useRef(null);
     const [viewMode, setViewMode] = useState(viewModeParam);
 
@@ -603,6 +623,31 @@ const View_Project_Management = forwardRef(
       { skip: !activeDbId || !projectId }
     );
 
+    // Send current plan status to parent (freeze/unfreeze)
+    const lastSentRef = useRef("");
+    useEffect(() => {
+      const statusObj = apiData?.projectactivity?.current_status ?? null;
+      if (!statusObj) return;
+
+      const key = JSON.stringify({
+        status: statusObj.status ?? null,
+        remarks: statusObj.remarks ?? null,
+        user_id: statusObj.user_id ?? null,
+      });
+      if (key === lastSentRef.current) return;
+
+      lastSentRef.current = key;
+      onPlanStatus?.(statusObj);
+    }, [apiData, activityFetch, onPlanStatus]);
+
+    // Local flag for frozen state
+    const planStatus =
+      apiData?.projectactivity?.current_status?.status ??
+      apiData?.current_status?.status ??
+      null;
+    const isPlanFrozen = String(planStatus || "").toLowerCase() === "freeze";
+    const disableEditing = isPlanFrozen || isSaving;
+
     const paWrapper = apiData?.projectactivity || apiData || {};
     const paListRaw = Array.isArray(paWrapper.activities)
       ? paWrapper.activities
@@ -612,7 +657,6 @@ const View_Project_Management = forwardRef(
     const projectMeta = paWrapper.project_id || apiData?.project || {};
     const projectDbId = projectMeta?._id || projectId;
 
-    // FILTER by tab
     const paList = useMemo(() => {
       const mapType = (pa) =>
         (pa?.activity_id?.type || pa?.type || "").toLowerCase();
@@ -675,7 +719,7 @@ const View_Project_Management = forwardRef(
         const aStartObj = aSISO ? parseISOAsLocalDate(aSISO) : null;
         const aEndObj = aFISO ? parseISOAsLocalDate(aFISO) : null;
 
-        // Projected actuals (already considers predecessors)
+        // Projected actuals
         const proj = actualLookup?.get(masterId);
         const projActualStartObj = proj?.start || null;
         const projActualEndObj = proj?.finish || null;
@@ -698,12 +742,10 @@ const View_Project_Management = forwardRef(
 
         if (mode === "actual") {
           if (aStartObj && aEndObj) {
-            // exact real actuals
             timelineStart = aStartObj;
             timelineEndObj = aEndObj;
             drawDuration = durationFromStartFinish(aStartObj, aEndObj);
           } else if (aStartObj && !aEndObj) {
-            // in-progress: start is real, end is projected (then planned)
             const end = projActualEndObj || baseEndObj || null;
             timelineStart = aStartObj;
             timelineEndObj = end;
@@ -711,7 +753,6 @@ const View_Project_Management = forwardRef(
               ? durationFromStartFinish(aStartObj, end)
               : Math.max(1, Number(pa.duration) || 1);
           } else {
-            // no real actuals: use projected (then planned)
             timelineStart = projActualStartObj || baseStartObj || null;
             timelineEndObj = projActualEndObj || baseEndObj || null;
             if (!timelineEndObj && timelineStart && Number(drawDuration) > 0) {
@@ -723,7 +764,6 @@ const View_Project_Management = forwardRef(
             }
           }
         } else {
-          // Baseline mode: draw planned baseline
           timelineStart = baseStartObj || null;
           timelineEndObj = baseEndObj || null;
           if (!timelineEndObj && timelineStart && Number(drawDuration) > 0) {
@@ -1037,6 +1077,13 @@ const View_Project_Management = forwardRef(
 
     const saveFromModal = async () => {
       if (!selectedId) return;
+      if (isPlanFrozen) {
+        setSnack({
+          open: true,
+          msg: "Plan is frozen. Unfreeze to edit activities.",
+        });
+        return;
+      }
       const task = gantt.getTask(selectedId);
       const dbActivityId = task?._dbId;
       if (!projectId || !dbActivityId) return;
@@ -1059,7 +1106,7 @@ const View_Project_Management = forwardRef(
             .filter((r) => r && r.type)
             .map((r) => ({
               type: String(r.type),
-              number: Number(r.number || 0),
+              number: Number(r.number || 1),
             }))
         : [];
 
@@ -1528,18 +1575,14 @@ const View_Project_Management = forwardRef(
         if (task._mode === "actual") {
           if (task._actual_completed) {
             if (task._actual_on_time === false) {
-              // Completed but late → keep base bar BLUE; late tail drawn in task_text
               classes.push("gantt-task-running");
             } else {
-              // Completed and on-time → GREEN
               classes.push("gantt-task-ontime");
             }
           } else {
-            // In-progress / not started with projection → BLUE
             classes.push("gantt-task-running");
           }
         } else {
-          // Baseline → GREY
           classes.push("gantt-task-baseline");
         }
 
@@ -1563,7 +1606,6 @@ const View_Project_Management = forwardRef(
       gantt.templates.task_text = (start, end, task) => {
         const parts = [];
 
-        // Late-tail overlay (only in Actual mode, completed-late)
         if (
           task._mode === "actual" &&
           task._actual_completed &&
@@ -1575,7 +1617,6 @@ const View_Project_Management = forwardRef(
           const actEnd = task._end_obj || end;
 
           if (actEnd.getTime() > baseEnd.getTime()) {
-            // tail strictly after baseline end
             const tailStart = addDays(baseEnd, 1);
             const lateDays = durationFromStartFinish(tailStart, actEnd);
             const totalDays = durationFromStartFinish(task.start_date, actEnd);
@@ -1592,7 +1633,6 @@ const View_Project_Management = forwardRef(
           }
         }
 
-        // Centered task label on the bar (always)
         const label = task.text ? String(task.text) : "";
         parts.push(
           `<div class="gantt_bar_label" title="${label.replace(
@@ -1612,6 +1652,13 @@ const View_Project_Management = forwardRef(
       if (!gantt.$container) return;
 
       const handlerId = gantt.attachEvent("onAfterTaskMove", async function () {
+        if (isPlanFrozen) {
+          setSnack({
+            open: true,
+            msg: "Plan is frozen. Unfreeze to change order.",
+          });
+          return;
+        }
         try {
           const ordered = [];
           gantt.eachTask((t) => ordered.push(String(t._dbId)));
@@ -1635,7 +1682,7 @@ const View_Project_Management = forwardRef(
       return () => {
         gantt.detachEvent(handlerId);
       };
-    }, [projectId, reorderProjectActivities]);
+    }, [projectId, reorderProjectActivities, isPlanFrozen]);
 
     useEffect(() => {
       if (!gantt.$container) return;
@@ -1718,15 +1765,15 @@ const View_Project_Management = forwardRef(
         /* Red overlay for the late portion of completed tasks in Actual mode (drawn inside the bar) */
         .gantt_late_tail_overlay{
           position:absolute;
-          right:0;      /* stick to bar's right edge */
+          right:0;
           top:0;
           height:100%;
           background:#ef4444;
           opacity:0.95;
           border-top-right-radius:4px;
           border-bottom-right-radius:4px;
-          pointer-events:none; /* don't block clicks */
-          z-index:0; /* stays under the text label */
+          pointer-events:none;
+          z-index:0;
         }
 
         /* Centered label printed inside each bar */
@@ -1742,7 +1789,7 @@ const View_Project_Management = forwardRef(
           text-overflow:ellipsis;
           padding:0 6px;
           pointer-events:none;
-          z-index:1; /* above overlays */
+          z-index:1;
         }
 
         .gantt_grid_scale, .gantt_task_scale { height: 28px; line-height: 28px; }
@@ -1979,7 +2026,7 @@ const View_Project_Management = forwardRef(
           />
         </Box>
 
-        {/* Right panel: only in baseline mode */}
+        {/* Right panel: edit drawer (read-only while frozen) */}
         {selectedId && (
           <>
             <Box
@@ -2015,12 +2062,23 @@ const View_Project_Management = forwardRef(
               }}
             >
               <Stack spacing={1.5}>
-                {/* Title now includes activity name */}
                 <Typography level="title-sm">
                   Edit Activity
                   {selectedTaskName ? ` (${selectedTaskName})` : ""}{" "}
                   {isFetchingActivity ? "(loading…)" : ""}
                 </Typography>
+
+                {isPlanFrozen && (
+                  <Chip
+                    size="sm"
+                    color="danger"
+                    variant="soft"
+                    sx={{ fontWeight: 700 }}
+                  >
+                    Plan is frozen — read-only
+                  </Chip>
+                )}
+
                 <Divider />
 
                 <FormControl>
@@ -2053,6 +2111,7 @@ const View_Project_Management = forwardRef(
                       size="sm"
                       variant="soft"
                       startDecorator={<Add />}
+                      disabled={disableEditing}
                       onClick={() =>
                         setForm((f) => ({
                           ...f,
@@ -2102,6 +2161,7 @@ const View_Project_Management = forwardRef(
                             return { ...f, predecessors: arr };
                           })
                         }
+                        disabled={disableEditing}
                       />
                     ))}
                   </Stack>
@@ -2130,7 +2190,7 @@ const View_Project_Management = forwardRef(
                       size="sm"
                       type="date"
                       value={form.start}
-                      disabled={!!form.predecessors?.length}
+                      disabled={disableEditing || !!form.predecessors?.length}
                       onChange={(e) => {
                         const startISO = e.target.value;
                         setForm((f) => ({ ...f, start: startISO }));
@@ -2144,6 +2204,7 @@ const View_Project_Management = forwardRef(
                       size="sm"
                       type="number"
                       value={form.duration}
+                      disabled={disableEditing}
                       onChange={(e) =>
                         setForm((f) => ({
                           ...f,
@@ -2171,10 +2232,11 @@ const View_Project_Management = forwardRef(
                       size="sm"
                       variant="soft"
                       startDecorator={<Add />}
+                      disabled={disableEditing}
                       onClick={() =>
                         setForm((f) => ({
                           ...f,
-                          resources: [...f.resources, { type: "", number: 0 }],
+                          resources: [...f.resources, { type: "", number: 1 }],
                         }))
                       }
                     >
@@ -2209,15 +2271,28 @@ const View_Project_Management = forwardRef(
                             return { ...f, resources: arr };
                           })
                         }
+                        disabled={disableEditing}
                       />
                     ))}
                   </Stack>
                 </Stack>
 
                 <Stack direction="row" spacing={1}>
-                  <Button size="sm" onClick={saveFromModal} disabled={isSaving}>
-                    {isSaving ? "Saving…" : "Save"}
-                  </Button>
+                  <Tooltip
+                    title={
+                      isPlanFrozen ? "Plan is frozen — unfreeze to save" : ""
+                    }
+                  >
+                    <span>
+                      <Button
+                        size="sm"
+                        onClick={saveFromModal}
+                        disabled={disableEditing}
+                      >
+                        {isSaving ? "Saving…" : "Save"}
+                      </Button>
+                    </span>
+                  </Tooltip>
                   <Button
                     size="sm"
                     variant="soft"
