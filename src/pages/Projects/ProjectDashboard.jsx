@@ -26,7 +26,7 @@ function ProjectDashBoard() {
 
   const fields = [
     {
-      key: "Projects",
+      key: "projects", // 👈 lowercase to match URL ?projects=
       label: "Project By Name",
       type: "multiselect",
       options: projects.map((d) => ({ label: d.name, value: d._id })),
@@ -124,13 +124,13 @@ function ProjectDashBoard() {
             onOpenChange={setOpen}
             fields={fields}
             title="Filters"
-            values={{ Projects: selectedIds }}   // 👈 controlled values
+            values={{ projects: selectedIds }}    // 👈 controlled values
             onApply={(values) => {
-              setSelectedIds(values?.Projects || []);
+              setSelectedIds(values?.projects || []);
               setOpen(false);
             }}
             onReset={() => {
-              setSelectedIds([]); 
+              setSelectedIds([]);
             }}
           />
 

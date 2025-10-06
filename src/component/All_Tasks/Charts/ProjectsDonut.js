@@ -1,5 +1,15 @@
+// src/components/All_Tasks/Charts/ProjectsDonut.jsx
 import { Card, Box, Typography } from "@mui/joy";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+
+const PALETTE = [
+  "#f59e0b", "#22c55e", "#ef4444", "#3b82f6", "#8b5cf6",
+  "#14b8a6", "#e11d48", "#84cc16", "#f97316", "#06b6d4",
+  "#d946ef", "#0ea5e9", "#65a30d", "#dc2626", "#7c3aed",
+  "#10b981", "#ca8a04", "#2563eb", "#f43f5e", "#0891b2",
+  "#a16207", "#15803d", "#4f46e5", "#ea580c", "#db2777",
+  "#047857", "#1d4ed8", "#9333ea", "#b91c1c", "#0d9488",
+];
 
 export default function ProjectsWorkedCard({
   title = "Task State",
@@ -8,10 +18,24 @@ export default function ProjectsWorkedCard({
   totalLabel = "Projects",
   sx = {},
 }) {
-  // fallback if someone forgets to pass total
+  // 1) Normalize data: ensure color & numeric value
+  const safeData = (Array.isArray(data) ? data : []).map((d, i) => {
+    const raw = Number(d.value);
+    const value = Number.isFinite(raw) ? raw : 0;
+    const color = d.color || PALETTE[i % PALETTE.length];
+    return { name: d.name ?? `Item ${i + 1}`, value, color };
+  });
+
+  // 2) If all values are 0, show a single grey slice for empty state
+  const allZero = safeData.length > 0 && safeData.every((d) => d.value === 0);
+  const pieData = allZero
+    ? [{ name: "No Data", value: 1, color: "#e2e8f0" }]
+    : safeData;
+
+  // 3) Robust total label (fallback to sum if total is bad)
   const totalToShow = Number.isFinite(total)
     ? total
-    : data.reduce((a, b) => a + (Number(b.value) || 0), 0);
+    : safeData.reduce((a, b) => a + (Number(b.value) || 0), 0);
 
   return (
     <Card
@@ -32,9 +56,8 @@ export default function ProjectsWorkedCard({
           boxShadow:
             "0 6px 16px rgba(15,23,42,0.10), 0 20px 36px rgba(15,23,42,0.08)",
         },
-        maxHeight: "500px",
-        overflow: "auto",
-        height: "500px",
+        maxHeight: 500,
+        height: 500,
         gap: 0,
         ...sx,
       }}
@@ -61,12 +84,12 @@ export default function ProjectsWorkedCard({
           alignItems: "center",
         }}
       >
-        {/* Donut + centered text (absolute overlay) */}
-        <Box sx={{ width: "100%", height: 180, position: "relative" }}>
-          <ResponsiveContainer>
+        {/* Donut + centered text */}
+        <Box sx={{ width: "100%", height: 220, position: "relative" }}>
+          <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
-                data={data}
+                data={pieData}
                 dataKey="value"
                 nameKey="name"
                 innerRadius={58}
@@ -76,9 +99,9 @@ export default function ProjectsWorkedCard({
                 stroke="#fff"
                 strokeWidth={6}
                 cornerRadius={10}
-                isAnimationActive
+                isAnimationActive={false}
               >
-                {data.map((entry, idx) => (
+                {pieData.map((entry, idx) => (
                   <Cell key={`cell-${idx}`} fill={entry.color} />
                 ))}
               </Pie>
@@ -108,7 +131,7 @@ export default function ProjectsWorkedCard({
 
         {/* Legend */}
         <Box sx={{ pl: { xs: 0, sm: 1 } }}>
-          {data.map((d) => (
+          {safeData.map((d) => (
             <Box
               key={d.name}
               sx={{
@@ -121,8 +144,8 @@ export default function ProjectsWorkedCard({
             >
               <Box
                 sx={{
-                  width: 8,
-                  height: 8,
+                  width: 10,
+                  height: 10,
                   borderRadius: "50%",
                   bgcolor: d.color,
                   justifySelf: "center",
@@ -135,7 +158,8 @@ export default function ProjectsWorkedCard({
                 level="body-sm"
                 sx={{ color: "#0f172a", fontWeight: 600 }}
               >
-                {typeof d.value === "number" ? `${d.value}%` : d.value}
+                {/* If you're passing percentage values, append %; otherwise show raw */}
+                {Number.isFinite(d.value) ? `${d.value}%` : d.value}
               </Typography>
             </Box>
           ))}

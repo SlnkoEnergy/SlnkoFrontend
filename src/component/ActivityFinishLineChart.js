@@ -1,5 +1,5 @@
 // src/components/charts/ActivityFinishLineChart.jsx
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import {
     ComposedChart,
     Line,
@@ -9,19 +9,13 @@ import {
     Tooltip as RTooltip,
     Legend,
     ResponsiveContainer,
-    Scatter,
     Customized,
     Brush,
     ReferenceLine,
 } from "recharts";
-import { Card, Typography, Box, Select, Option } from "@mui/joy";
-import {
-    useGetProjectDropdownForDashboardQuery,
-    useLazyGetProjectSearchDropdownQuery,
-} from "../redux/projectsSlice";
-import SearchPickerModal from "./SearchPickerModal";
+import { Card, Typography, Box } from "@mui/joy";
 
-/** Pretty date formatter */
+/* ---------- utils ---------- */
 const fmt = (ms) =>
     ms
         ? new Date(ms).toLocaleDateString("en-GB", {
@@ -31,7 +25,29 @@ const fmt = (ms) =>
         })
         : "-";
 
-/** Dashed vertical span (Actual start → Today) with safe guards */
+// normalize epoch (handles seconds vs milliseconds)
+const normalizeMs = (v) => {
+    if (v == null) return null;
+    const n = Number(v);
+    if (!Number.isFinite(n)) return null;
+    // if in seconds (e.g., 1,700,000,000), convert to ms
+    return n < 1e11 ? n * 1000 : n;
+};
+
+// collect min/max from an array of numbers
+const minMax = (arr) => {
+    let min = Infinity;
+    let max = -Infinity;
+    for (const v of arr) {
+        if (v == null || !Number.isFinite(v)) continue;
+        if (v < min) min = v;
+        if (v > max) max = v;
+    }
+    if (min === Infinity || max === -Infinity) return { min: undefined, max: undefined };
+    return { min, max };
+};
+
+/** Dashed vertical span (Actual start → Today) with guards */
 function OngoingSpans({ xAxisMap, yAxisMap, data = [], nowMs = Date.now() }) {
     if (!xAxisMap || !yAxisMap) return null;
     const xKeys = Object.keys(xAxisMap);
@@ -44,20 +60,19 @@ function OngoingSpans({ xAxisMap, yAxisMap, data = [], nowMs = Date.now() }) {
     const yScale = yAxis?.scale;
     if (typeof xScale !== "function" || typeof yScale !== "function") return null;
 
-    // center on categorical band
     const xCenterOffset = (xAxis.bandSize || 0) / 2;
+    const now = normalizeMs(nowMs);
 
     return (
         <g>
             {(data || []).map((d, i) => {
                 if (!d?.ongoing || !d?.actual_start_ms) return null;
-
                 const x0 = xScale(d.activity_name);
                 if (x0 == null || Number.isNaN(x0)) return null;
 
                 const x = x0 + xCenterOffset;
                 const y1 = yScale(d.actual_start_ms);
-                const y2 = yScale(nowMs);
+                const y2 = yScale(now);
                 if ([y1, y2].some((v) => v == null || Number.isNaN(v))) return null;
 
                 return (
@@ -78,7 +93,7 @@ function OngoingSpans({ xAxisMap, yAxisMap, data = [], nowMs = Date.now() }) {
     );
 }
 
-/** Legend/meta for tooltip + markers (shapes aligned with chart) */
+/** Legend/meta for tooltip + markers */
 const SERIES = [
     { key: "actual_finish_ms", label: "Actual Finish", color: "#16a34a", shape: "square" },
     { key: "actual_start_ms", label: "Actual Start", color: "#111827", shape: "triangle" },
@@ -86,7 +101,6 @@ const SERIES = [
     { key: "planned_start_ms", label: "Planned Start", color: "#111827", shape: "dot" },
 ];
 
-/** Small SVG marker to match shapes used in the chart */
 function Marker({ shape = "square", color = "#000" }) {
     const size = 10;
     if (shape === "dot") {
@@ -103,7 +117,6 @@ function Marker({ shape = "square", color = "#000" }) {
             </svg>
         );
     }
-    // square (default)
     return (
         <svg width={size} height={size} style={{ flex: "0 0 auto" }}>
             <rect x="1" y="1" width={size - 2} height={size - 2} fill={color} rx="1" ry="1" />
@@ -111,7 +124,6 @@ function Marker({ shape = "square", color = "#000" }) {
     );
 }
 
-/** Custom tooltip: show markers matching each series' shape */
 function CustomTooltip({ active, label, payload }) {
     if (!active || !payload?.length) return null;
     const row = payload[0]?.payload || {};
@@ -143,102 +155,94 @@ function CustomTooltip({ active, label, payload }) {
     );
 }
 
+/* ---------- custom dot renderers for start markers ---------- */
+const DotCircle = (props) => {
+    const { cx, cy, payload, fill = "#111827", r = 5 } = props || {};
+    if (cx == null || cy == null || payload?.planned_start_ms == null) return null;
+    return <circle cx={cx} cy={cy} r={r} fill={fill} />;
+};
+
+const DotTriangle = (props) => {
+    const { cx, cy, payload, fill = "#111827", size = 10 } = props || {};
+    if (cx == null || cy == null || payload?.actual_start_ms == null) return null;
+    const h = size;
+    const w = size;
+    const points = `${cx},${cy - h / 2} ${cx + w / 2},${cy + h / 2} ${cx - w / 2},${cy + h / 2}`;
+    return <polygon points={points} fill={fill} />;
+};
+
 export default function ActivityFinishLineChart({
-    apiData,                // { data, domain }
-    projectId,              // (optional) current project id from parent
-    onProjectChange,        // function(id) -> parent updates URL & refetch
+    apiData, // { data, domain }
     title = "Planned vs Actual (Finish) by Activity",
     height = 500,
 }) {
     const rows = apiData?.data ?? [];
     const domain = apiData?.domain ?? {};
-    const nowMs = domain.now ?? Date.now();
-    // Build chart rows
+
+    // Normalize rows to ms + shape for chart
     const data = useMemo(
         () =>
             rows.map((r) => ({
                 activity_name: r.activity_name,
-                planned_finish_ms: r.planned_finish_ms ?? null,
-                actual_finish_ms: r.actual_finish_ms ?? null,
-                planned_start_ms: r.planned_start_ms ?? null,
-                actual_start_ms: r.actual_start_ms ?? null,
-                ongoing: r.ongoing,
+                planned_finish_ms: normalizeMs(r.planned_finish_ms),
+                actual_finish_ms: normalizeMs(r.actual_finish_ms),
+                planned_start_ms: normalizeMs(r.planned_start_ms),
+                actual_start_ms: normalizeMs(r.actual_start_ms),
+                ongoing: !!r.ongoing,
             })),
         [rows]
     );
 
-    const pad = 1000 * 60 * 60 * 24 * 3; // 3 days padding
-    const yMin = domain.min ? domain.min - pad : undefined;
-    const yMax = domain.max ? Math.max(domain.max, nowMs) + pad : undefined;
-
-    // ---- Project dropdown (first page) ----
-    const { data: projectResponse } = useGetProjectDropdownForDashboardQuery({
-        page: 1,
-        pageSize: 7,
-    });
-
-    const projects = Array.isArray(projectResponse)
-        ? projectResponse
-        : projectResponse?.data ?? []; // normalize shape
-
-    // ---- Search modal ----
-    const [triggerProjectSearch] = useLazyGetProjectSearchDropdownQuery();
-    const [projectCode, setProjectCode] = useState("");
-    const [projectName, setProjectName] = useState("");
-    const [selectedId, setSelectedId] = useState(projectId || ""); // keep selected id for Select value
-    const [projectModalOpen, setProjectModalOpen] = useState(false);
-
-    const IDLE = "__IDLE__";
-    const OPEN_MODAL = "__OPEN_MODAL__";
-
-    const fetchProjectsPage = async ({ search = "", page = 1, pageSize = 7 }) => {
-        const res = await triggerProjectSearch({ search, page, limit: pageSize }, true);
-        const d = res?.data;
-        return {
-            rows: d?.data || [],
-            total: d?.pagination?.total || 0,
-            page: d?.pagination?.page || page,
-            pageSize: d?.pagination?.pageSize || pageSize,
-        };
-    };
-
-    const applyPickedProject = (p) => {
-        setSelectedId(p?._id || "");
-        setProjectCode(p?.code || "");
-        setProjectName(p?.name || "");
-        onProjectChange?.(p?._id);
-    };
-
-    const onPickProject = (row) => {
-        if (!row) return;
-        setProjectModalOpen(false);
-        applyPickedProject(row);
-    };
-
-    const handleSelectChange = (_e, v) => {
-        if (v === OPEN_MODAL) {
-            setProjectModalOpen(true);
-            return;
+    // Aggregate all values to compute a robust domain
+    const allVals = useMemo(() => {
+        const vals = [];
+        for (const d of data) {
+            if (d.planned_finish_ms != null) vals.push(d.planned_finish_ms);
+            if (d.actual_finish_ms != null) vals.push(d.actual_finish_ms);
+            if (d.planned_start_ms != null) vals.push(d.planned_start_ms);
+            if (d.actual_start_ms != null) vals.push(d.actual_start_ms);
         }
-        if (!v || v === IDLE) return;
+        return vals;
+    }, [data]);
 
-        // user picked from the first-page dropdown
-        const p = projects.find((x) => String(x._id) === String(v));
-        applyPickedProject(p || { _id: v, code: "", name: "" });
-    };
+    // Prefer backend domain if valid; otherwise derive from data
+    const backendMin = normalizeMs(domain.min);
+    const backendMax = normalizeMs(domain.max);
+    const { min: dataMin, max: dataMax } = minMax(allVals);
 
-    const renderSelectValue = () => {
-        if (projectCode || projectName)
-            return `${projectCode || ""}${projectCode && projectName ? " — " : ""
-                }${projectName || ""}`;
-        if (selectedId) {
-            // If we only know the id (e.g., loaded from URL), try to find in current page
-            const p = projects.find((x) => String(x._id) === String(selectedId));
-            if (p)
-                return `${p.code || ""}${p.code && p.name ? " — " : ""}${p.name || ""}`;
-        }
-        return "Select Project";
-    };
+    const pad = 3 * 24 * 60 * 60 * 1000; // 3 days
+    const minCandidate = Number.isFinite(backendMin) ? backendMin : dataMin;
+    const maxCandidate = Number.isFinite(backendMax) ? backendMax : dataMax;
+
+    const yMin = Number.isFinite(minCandidate) ? minCandidate - pad : undefined;
+    const yMax = Number.isFinite(maxCandidate)
+        ? Math.max(maxCandidate, normalizeMs(domain.now) ?? Date.now()) + pad
+        : undefined;
+
+    const safeDomain = [
+        Number.isFinite(yMin) ? yMin : "auto",
+        Number.isFinite(yMax) ? yMax : "auto",
+    ];
+
+    const nowMs = normalizeMs(domain.now) ?? Date.now();
+
+    // Render guards to avoid empty series & messy legends
+    const hasPlannedFinish = useMemo(
+        () => data.some((d) => Number.isFinite(d.planned_finish_ms)),
+        [data]
+    );
+    const hasActualFinish = useMemo(
+        () => data.some((d) => Number.isFinite(d.actual_finish_ms)),
+        [data]
+    );
+    const hasPlannedStart = useMemo(
+        () => data.some((d) => Number.isFinite(d.planned_start_ms)),
+        [data]
+    );
+    const hasActualStart = useMemo(
+        () => data.some((d) => Number.isFinite(d.actual_start_ms)),
+        [data]
+    );
 
     return (
         <Card
@@ -251,13 +255,11 @@ export default function ActivityFinishLineChart({
                 bgcolor: "#fff",
                 border: "1px solid",
                 borderColor: "rgba(15,23,42,0.08)",
-                boxShadow:
-                    "0 2px 6px rgba(15,23,42,0.06), 0 18px 32px rgba(15,23,42,0.06)",
+                boxShadow: "0 2px 6px rgba(15,23,42,0.06), 0 18px 32px rgba(15,23,42,0.06)",
                 transition: "transform .16s ease, box-shadow .16s ease",
                 "&:hover": {
                     transform: "translateY(-2px)",
-                    boxShadow:
-                        "0 6px 16px rgba(15,23,42,0.10), 0 20px 36px rgba(15,23,42,0.08)",
+                    boxShadow: "0 6px 16px rgba(15,23,42,0.10), 0 20px 36px rgba(15,23,42,0.08)",
                 },
                 height,
             }}
@@ -276,13 +278,10 @@ export default function ActivityFinishLineChart({
                 <Box>
                     <Typography level="title-lg">{title}</Typography>
                     <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
-                        Hover any dot/triangle/line to see exact dates. Dashed segment shows
-                        ongoing (Actual start → Today).
+                        Hover any dot/triangle/line to see exact dates. Dashed segment shows ongoing
+                        (Actual start → Today).
                     </Typography>
                 </Box>
-
-                {/* Project selector (first page + "Search more…") */}
-
             </Box>
 
             <Box sx={{ height: height - 72, p: 1 }}>
@@ -300,16 +299,12 @@ export default function ActivityFinishLineChart({
                         <YAxis
                             type="number"
                             scale="time"
-                            domain={[yMin ?? "auto", yMax ?? "auto"]}
+                            domain={safeDomain}
                             tickFormatter={(v) =>
-                                new Date(v).toLocaleDateString("en-GB", {
-                                    day: "2-digit",
-                                    month: "short",
-                                })
+                                new Date(v).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })
                             }
                         />
 
-                        {/* Custom tooltip that formats only the date series with matching shapes */}
                         <RTooltip content={<CustomTooltip />} />
                         <Legend />
 
@@ -321,68 +316,69 @@ export default function ActivityFinishLineChart({
                             label={{ value: "Today", fill: "#475569", position: "right" }}
                         />
 
-                        {/* Finish lines (with dots on line to help focus) */}
-                        <Line
-                            type="monotone"
-                            dataKey="planned_finish_ms"
-                            name="Planned Finish"
-                            stroke="#0ea5e9"
-                            strokeWidth={2}
-                            dot={{ r: 3, stroke: "#0ea5e9", fill: "#0ea5e9" }}
-                            connectNulls
-                        />
-                        <Line
-                            type="monotone"
-                            dataKey="actual_finish_ms"
-                            name="Actual Finish"
-                            stroke="#16a34a"
-                            strokeWidth={2}
-                            dot={{ r: 3, stroke: "#16a34a", fill: "#16a34a" }}
-                            connectNulls
-                        />
+                        {/* Finish lines */}
+                        {hasPlannedFinish && (
+                            <Line
+                                type="monotone"
+                                dataKey="planned_finish_ms"
+                                name="Planned Finish"
+                                stroke="#0ea5e9"
+                                strokeWidth={2}
+                                dot={{ r: 3, stroke: "#0ea5e9", fill: "#0ea5e9" }}
+                                connectNulls
+                                isAnimationActive={false}
+                            />
+                        )}
+                        {hasActualFinish && (
+                            <Line
+                                type="monotone"
+                                dataKey="actual_finish_ms"
+                                name="Actual Finish"
+                                stroke="#16a34a"
+                                strokeWidth={2}
+                                dot={{ r: 3, stroke: "#16a34a", fill: "#16a34a" }}
+                                connectNulls
+                                isAnimationActive={false}
+                            />
+                        )}
 
-                        {/* Start dots */}
-                        <Scatter
-                            dataKey="planned_start_ms"
-                            name="Planned Start"
-                            shape="circle"
-                            fill="#111827"
-                        />
-                        <Scatter
-                            dataKey="actual_start_ms"
-                            name="Actual Start"
-                            shape="triangle"
-                            fill="#111827"
-                        />
+                        {/* Start markers as dot-only lines (robust with categorical X + time Y) */}
+                        {hasPlannedStart && (
+                            <Line
+                                type="monotone"
+                                dataKey="planned_start_ms"
+                                name="Planned Start"
+                                stroke="none"
+                                dot={<DotCircle fill="#111827" r={5} />}
+                                isAnimationActive={false}
+                                connectNulls
+                            />
+                        )}
+                        {hasActualStart && (
+                            <Line
+                                type="monotone"
+                                dataKey="actual_start_ms"
+                                name="Actual Start"
+                                stroke="none"
+                                dot={<DotTriangle fill="#111827" size={10} />}
+                                isAnimationActive={false}
+                                connectNulls
+                            />
+                        )}
 
-                        {/* Ongoing vertical spans */}
+                        {/* Ongoing spans (Actual Start → Today) */}
                         <Customized component={<OngoingSpans data={data} nowMs={nowMs} />} />
 
-                        {/* Scroll long activity lists */}
+                        {/* Scroll for long lists */}
                         <Brush
                             dataKey="activity_name"
                             height={20}
                             travellerWidth={10}
                             startIndex={0}
-                            endIndex={Math.min(12, data.length - 1)}
+                            endIndex={Math.max(0, Math.min(12, data.length - 1))}
                         />
                     </ComposedChart>
                 </ResponsiveContainer>
-
-                <SearchPickerModal
-                    open={projectModalOpen}
-                    onClose={() => setProjectModalOpen(false)}
-                    onPick={onPickProject}
-                    title="Search: Project"
-                    columns={[
-                        { key: "name", label: "Project Name", width: 240 },
-                        { key: "code", label: "Project Code", width: 200 },
-                    ]}
-                    fetchPage={fetchProjectsPage}
-                    searchKey="name"
-                    pageSize={7}
-                    backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
-                />
             </Box>
         </Card>
     );

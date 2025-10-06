@@ -580,21 +580,7 @@ function Dash_project({ projectIds }) {
         </Grid>
       ) : null}
 
-      {/* ---------- Project Search Modal ---------- */}
-      <SearchPickerModal
-        open={projectModalOpen}
-        onClose={() => setProjectModalOpen(false)}
-        onPick={onPickProject}
-        title="Search: Project"
-        columns={[
-          { key: "name", label: "Project Name", width: 240 },
-          { key: "code", label: "Project Code", width: 200 },
-        ]}
-        fetchPage={fetchProjectsPage}
-        searchKey="name"
-        pageSize={7}
-        backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
-      />
+      
     </Box>
   );
 }
