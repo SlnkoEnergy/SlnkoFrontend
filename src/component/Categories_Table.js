@@ -9,7 +9,7 @@ import FormLabel from "@mui/joy/FormLabel";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { iconButtonClasses } from "@mui/joy/IconButton";
+import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Tooltip from "@mui/joy/Tooltip";
 import Chip from "@mui/joy/Chip";
 import Select from "@mui/joy/Select";
@@ -17,7 +17,7 @@ import Option from "@mui/joy/Option";
 import Modal from "@mui/joy/Modal";
 import ModalDialog from "@mui/joy/ModalDialog";
 import ModalClose from "@mui/joy/ModalClose";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { debounce } from "lodash";
 import NoData from "../assets/alert-bell.svg";
 
@@ -25,43 +25,137 @@ import {
   useGetAllCategoriesQuery,
   useUpdateCategoriesMutation, // PUT /products/category/:id
 } from "../redux/productsSlice";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 function Categories_Table() {
-  // ---------- local UI state ----------
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-
-  const [type, setType] = useState("");
-  const [status, setStatus] = useState(""); // '' | 'active' | 'inactive'
-
-  const [sortBy, setSortBy] = useState("createdAt");
-  const [sortOrder, setSortOrder] = useState("desc");
+  // ---------- URL search params ----------
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // Tabs → control status
-  const [statusTab, setStatusTab] = useState("all"); // 'all' | 'active' | 'inactive'
+  // helpers to read/write params safely
+  const readInt = (v, fallback) => {
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0 ? n : fallback;
+  };
+  const setParams = (patch, replace = true) => {
+    const next = new URLSearchParams(searchParams);
+    Object.entries(patch).forEach(([k, v]) => {
+      if (v === "" || v == null) next.delete(k);
+      else next.set(k, String(v));
+    });
+    setSearchParams(next, { replace });
+  };
+
+  // ---------- local UI state ----------
+  const [page, setPage] = useState(readInt(searchParams.get("page"), 1));
+  const [pageSize, setPageSize] = useState(
+    readInt(searchParams.get("pageSize"), 10)
+  );
+
+  const [search, setSearch] = useState(searchParams.get("q") || "");
+  const [debouncedSearch, setDebouncedSearch] = useState(
+    searchParams.get("q") || ""
+  );
+
+  const [type, setType] = useState(searchParams.get("type") || "");
+  const initialStatusParam =
+    searchParams.get("status") || searchParams.get("statusTab") || "all";
+  const [statusTab, setStatusTab] = useState(
+    ["all", "active", "inactive"].includes(initialStatusParam)
+      ? initialStatusParam
+      : "all"
+  );
+  const [status, setStatus] = useState(
+    statusTab === "all" ? "" : statusTab // '' | 'active' | 'inactive'
+  );
+
+  const [sortBy, setSortBy] = useState(
+    searchParams.get("sortBy") || "createdAt"
+  );
+  const [sortOrder, setSortOrder] = useState(
+    (searchParams.get("sortOrder") || "desc").toLowerCase() === "asc"
+      ? "asc"
+      : "desc"
+  );
+
+  // keep state in sync if user edits URL manually
   useEffect(() => {
-    setStatus(statusTab === "all" ? "" : statusTab);
+    // page, pageSize
+    const p = readInt(searchParams.get("page"), 1);
+    if (p !== page) setPage(p);
+    const ps = readInt(searchParams.get("pageSize"), 10);
+    if (ps !== pageSize) setPageSize(ps);
+
+    // search q
+    const q = searchParams.get("q") || "";
+    if (q !== search) {
+      setSearch(q);
+      setDebouncedSearch(q);
+    }
+
+    // status tab
+    const stParam =
+      searchParams.get("status") || searchParams.get("statusTab") || "all";
+    const st = ["all", "active", "inactive"].includes(stParam)
+      ? stParam
+      : "all";
+    if (st !== statusTab) setStatusTab(st);
+
+    // type/sort (optional)
+    const t = searchParams.get("type") || "";
+    if (t !== type) setType(t);
+    const sb = searchParams.get("sortBy") || "createdAt";
+    if (sb !== sortBy) setSortBy(sb);
+    const so =
+      (searchParams.get("sortOrder") || "desc").toLowerCase() === "asc"
+        ? "asc"
+        : "desc";
+    if (so !== sortOrder) setSortOrder(so);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // Tabs → control status (avoid resetting page on first render)
+  const firstStatusRun = useRef(true);
+  useEffect(() => {
+    const next = statusTab === "all" ? "" : statusTab;
+    setStatus(next);
+    if (firstStatusRun.current) {
+      firstStatusRun.current = false;
+      // reflect status in URL but DON'T reset page on first render
+      setParams({ status: statusTab });
+      return;
+    }
+    // user changed status → go to first page
     setPage(1);
+    setParams({ status: statusTab, page: 1 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusTab]);
 
-  // debounce search input
+  // debounce search input (only reset to page 1 if query actually changed)
   const debouncer = useMemo(
     () =>
-      debounce((v) => {
+      debounce((v, prev) => {
         setDebouncedSearch(v);
-        setPage(1);
+        if (v !== prev) {
+          setPage(1);
+          setParams({ q: v, page: 1 });
+        } else {
+          setParams({ q: v });
+        }
       }, 400),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
   useEffect(() => {
-    debouncer(search);
+    debouncer(search, debouncedSearch);
     return () => debouncer.cancel();
-  }, [search, debouncer]);
+  }, [search, debouncedSearch, debouncer]);
+
+  // reflect page+pageSize changes to URL
+  useEffect(() => {
+    setParams({ page, pageSize });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, pageSize]);
 
   // ---------- API call ----------
   const { data, isLoading, isFetching, error, refetch } =
@@ -82,6 +176,11 @@ function Categories_Table() {
   const total = data?.meta?.total || 0;
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
 
+  // clamp page if it exceeds pageCount (e.g., user typed a huge ?page=999)
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
+
   // ---------- start & end index ----------
   const startIndex = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const endIndex =
@@ -89,6 +188,10 @@ function Categories_Table() {
 
   const handlePrev = () => setPage((p) => Math.max(1, p - 1));
   const handleNext = () => setPage((p) => Math.min(pageCount, p + 1));
+  const handlePageChange = (newPage) => {
+    const n = Math.max(1, Math.min(pageCount, Number(newPage) || 1));
+    if (n !== page) setPage(n);
+  };
 
   // ---------- helpers ----------
   const renderNameCell = (name) => {
@@ -207,8 +310,8 @@ function Categories_Table() {
     typeTargetCat?.type === "supply"
       ? "execution"
       : typeTargetCat?.type === "execution"
-        ? "supply"
-        : null;
+      ? "supply"
+      : null;
 
   const handleTypeConfirm = async () => {
     if (!typeTargetCat?._id || !nextType) return;
@@ -225,137 +328,72 @@ function Categories_Table() {
   };
 
   return (
-    <>
-      {/* Search & Filters */}
-      <Box
-        sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          py: 1,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1.5,
-          alignItems: "center",
-          "& > *": { minWidth: { xs: "120px", md: "160px" } },
-        }}
-      >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search</FormLabel>
-          <Input
-            size="sm"
-            placeholder="Search by Name / Code / Description"
-            startDecorator={<SearchIcon />}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </FormControl>
-
-        <FormControl size="sm">
-          <FormLabel>Type</FormLabel>
-          <Select
-            size="sm"
-            value={type}
-            onChange={(_, v) => {
-              setType(v || "");
-              setPage(1);
-            }}
-          >
-            <Option value="">All</Option>
-            <Option value="supply">Supply</Option>
-            <Option value="execution">Execution</Option>
-          </Select>
-        </FormControl>
-
-        <FormControl size="sm">
-          <FormLabel>Sort By</FormLabel>
-          <Select
-            size="sm"
-            value={sortBy}
-            onChange={(_, v) => {
-              setSortBy(v || "createdAt");
-              setPage(1);
-            }}
-          >
-            <Option value="createdAt">Created At</Option>
-            <Option value="name">Name</Option>
-            <Option value="category_code">Category Code</Option>
-            <Option value="updatedAt">Updated At</Option>
-          </Select>
-        </FormControl>
-
-        <FormControl size="sm">
-          <FormLabel>Order</FormLabel>
-          <Select
-            size="sm"
-            value={sortOrder}
-            onChange={(_, v) => {
-              setSortOrder(v || "desc");
-              setPage(1);
-            }}
-          >
-            <Option value="asc">Asc</Option>
-            <Option value="desc">Desc</Option>
-          </Select>
-        </FormControl>
-
-        <FormControl size="sm">
-          <FormLabel>Items per page</FormLabel>
-          <Select
-            size="sm"
-            value={pageSize}
-            onChange={(_, v) => {
-              const n = Number(v || 10);
-              setPageSize(n);
-              setPage(1);
-            }}
-          >
-            {[5, 10, 20, 50, 100].map((n) => (
-              <Option key={n} value={n}>
-                {n}
-              </Option>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
-
-      {/* Tabs (like the image) */}
-      <Box
-        sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1.5,
-          alignItems: "center",
-        }}
-      >
+    <Box
+      sx={{
+        ml: {
+          lg: "var(--Sidebar-width)",
+        },
+        px: "0px",
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+      }}
+    >
+      <Box display={"flex"} justifyContent={"space-between"} pb={0.5}>
         <Box
+          display={"flex"}
+          justifyContent={"space-between"}
+          width={"100%"}
+          alignItems={"center"}
+        >
+          <Box
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 2,
+              bgcolor: "#F3F4F6",
+              borderRadius: 9999,
+              p: 0.5,
+              boxShadow: "xs",
+              minWidth: "fit-content",
+            }}
+          >
+            <TabPill value="all" label="All" />
+            <TabPill value="active" label="Active" />
+            <TabPill value="inactive" label="Inactive" />
+          </Box>
+        </Box>
+        <Box
+          className="SearchAndFilters-tabletUp"
           sx={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 2,
-            bgcolor: "#F3F4F6",
-            borderRadius: 9999,
-            p: 0.5,
-            boxShadow: "xs",
-            minWidth: "fit-content",
+            borderRadius: "sm",
+            py: 1,
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 1.5,
+            width: { lg: "100%" },
           }}
         >
-          <TabPill value="all" label="All" />
-          <TabPill value="active" label="Active" />
-          <TabPill value="inactive" label="Inactive" />
+          <FormControl sx={{ flex: 1 }} size="sm">
+            <Input
+              size="sm"
+              placeholder="Search by Name / Code / Description"
+              startDecorator={<SearchIcon />}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </FormControl>
         </Box>
       </Box>
 
       {/* Table */}
       <Sheet
+        className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: { xs: "none", sm: "initial" },
+          display: { xs: "none", sm: "block" },
           width: "100%",
           borderRadius: "sm",
-          overflow: "auto",
-          minHeight: 0,
-          marginLeft: { lg: "18%", xl: "15%" },
-          maxWidth: { lg: "85%", sm: "100%" },
+          maxHeight: "66vh",
+          overflowY: "auto",
         }}
       >
         <Box
@@ -526,41 +564,106 @@ function Categories_Table() {
 
       {/* Pagination */}
       <Box
+        className="Pagination-laptopUp"
         sx={{
-          pt: 2,
+          pt: 0.5,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: "flex",
           flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
-          justifyContent: "space-between",
-          marginLeft: { lg: "18%", xl: "15%" },
-          flexWrap: "wrap",
         }}
       >
-        <Box display={"flex"} alignItems={"center"} gap={2}>
-          <Button
-            size="sm"
-            variant="outlined"
-            color="neutral"
-            startDecorator={<KeyboardArrowLeftIcon />}
-            onClick={handlePrev}
-            disabled={page <= 1 || isFetching}
-          >
-            Previous
-          </Button>
+        <Button
+          size="sm"
+          variant="outlined"
+          color="neutral"
+          startDecorator={<KeyboardArrowLeftIcon />}
+          onClick={handlePrev}
+          disabled={page <= 1 || isFetching}
+        >
+          Previous
+        </Button>
 
-          <Box>
-            <Typography level="body-sm">
-              Showing {startIndex}–{endIndex} of {total} results
-            </Typography>
-          </Box>
-        </Box>
         <Box>
           <Typography level="body-sm">
-            Page {page} of {pageCount}
+            Showing {startIndex}–{endIndex} of {total} results
           </Typography>
         </Box>
+
+        {/* Numbered page buttons: prev / current / next / last */}
+        <Box
+          sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
+        >
+          {page > 1 && (
+            <IconButton
+              size="sm"
+              variant="outlined"
+              color="neutral"
+              onClick={() => handlePageChange(page - 1)}
+            >
+              {page - 1}
+            </IconButton>
+          )}
+
+          <IconButton size="sm" variant="contained" color="neutral">
+            {page}
+          </IconButton>
+
+          {page < pageCount && (
+            <IconButton
+              size="sm"
+              variant="outlined"
+              color="neutral"
+              onClick={() => handlePageChange(page + 1)}
+            >
+              {page + 1}
+            </IconButton>
+          )}
+
+          {page < pageCount - 1 && (
+            <>
+              <Typography level="body-sm" sx={{ alignSelf: "center" }}>
+                …
+              </Typography>
+              <IconButton
+                size="sm"
+                variant="outlined"
+                color="neutral"
+                onClick={() => handlePageChange(pageCount)}
+              >
+                {pageCount}
+              </IconButton>
+            </>
+          )}
+        </Box>
+
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={1}
+          sx={{ padding: "8px 16px" }}
+        >
+          <Select
+            size="sm"
+            value={pageSize}
+            onChange={(_, v) => {
+              const n = Number(v || 10);
+              setPageSize(n);
+              setPage(1);
+            }}
+            sx={{
+              minWidth: 80,
+            }}
+          >
+            {[5, 10, 20, 50, 100].map((n) => (
+              <Option key={n} value={n}>
+                {n}
+              </Option>
+            ))}
+          </Select>
+        </Box>
+
         <Button
           size="sm"
           variant="outlined"
@@ -643,7 +746,7 @@ function Categories_Table() {
           </Box>
         </ModalDialog>
       </Modal>
-    </>
+    </Box>
   );
 }
 

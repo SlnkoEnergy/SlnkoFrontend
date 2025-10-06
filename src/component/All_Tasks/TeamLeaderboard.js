@@ -4,7 +4,6 @@ import {
   Card,
   Box,
   Typography,
-  Avatar,
   Table,
   Sheet,
   IconButton,
@@ -23,16 +22,20 @@ const SortIcon = ({ dir }) =>
 export default function TeamLeaderboard({
   rows = [],
   title = "Team Leaderboard",
-  columns = [], // <-- column-driven
+  columns = [],
   initialSort = { key: "completion", dir: "desc" },
   searchValue = "",
   onSearchChange,
   searchPlaceholder = "Search user by name…",
   sx = {},
+
+  getRowHref,              
+  onRowClick,             
+  linkTarget = "_self",   
+  confirmExternal = false, 
 }) {
   const [sort, setSort] = React.useState(initialSort);
 
-  // normalize getValue (supports optional accessor)
   const getValue = React.useCallback((row, col) => {
     if (typeof col.accessor === "function") return col.accessor(row);
     return row?.[col.key];
@@ -44,12 +47,10 @@ export default function TeamLeaderboard({
       completion: pct(r.completed ?? 0, r.assigned ?? 0),
     }));
 
-
     const sorted = [...withPct].sort((a, b) => {
       const sortCol = columns.find((c) => c.key === sort.key);
       if (!sortCol) return 0;
 
-      // custom comparator if provided
       if (typeof sortCol.compare === "function") {
         return sort.dir === "asc" ? sortCol.compare(a, b) : -sortCol.compare(a, b);
       }
@@ -57,7 +58,6 @@ export default function TeamLeaderboard({
       let va = getValue(a, sortCol);
       let vb = getValue(b, sortCol);
 
-      // case-insensitive for strings
       if (typeof va === "string") va = va.toLowerCase();
       if (typeof vb === "string") vb = vb.toLowerCase();
 
@@ -107,6 +107,19 @@ export default function TeamLeaderboard({
         </Box>
       </th>
     );
+  };
+
+  // Unified row activation (click or keyboard)
+  const activateRow = (row, href) => {
+    if (onRowClick) onRowClick(row);
+    if (href) {
+      if (linkTarget === "_blank") {
+        // open in new tab with safe noopener
+        window.open(href, "_blank", "noopener,noreferrer");
+      } else {
+        window.location.assign(href);
+      }
+    }
   };
 
   return (
@@ -185,7 +198,7 @@ export default function TeamLeaderboard({
               "--TableCell-paddingY": "10px",
               "--TableCell-paddingX": "16px",
               "--Table-headerUnderlineThickness": "0px",
-              "--TableRow-hoverBackground": "rgba(2,6,23,0.02)",
+              "--TableRow-hoverBackground": "rgba(2,6,23,0.03)",
               "& thead th": {
                 textAlign: "left",
                 bgcolor: "#fff",
@@ -215,9 +228,31 @@ export default function TeamLeaderboard({
 
             <tbody>
               {data.map((r) => {
+                const href = typeof getRowHref === "function" ? getRowHref(r) : undefined;
+                const clickable = !!onRowClick || !!href;
+
+                const onKey = (e) => {
+                  if (!clickable) return;
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    activateRow(r, href);
+                  }
+                };
 
                 return (
-                  <tr key={r.id || r._id || r.name}>
+                  <tr
+                    key={r.id || r._id || r.name}
+                    onClick={clickable ? () => activateRow(r, href) : undefined}
+                    onKeyDown={onKey}
+                    role={clickable ? "button" : undefined}
+                    tabIndex={clickable ? 0 : undefined}
+                    title={clickable && href ? href : undefined}
+                    style={{
+                      cursor: clickable ? "pointer" : "default",
+                      userSelect: "none",
+                      transition: "background-color .12s ease",
+                    }}
+                  >
                     <td style={{ padding: "12px 16px", color: "#334155" }}>
                       {r.rank}
                     </td>
@@ -240,10 +275,10 @@ export default function TeamLeaderboard({
                             </Typography>
                           )}
                         </td>
-                      )
+                      );
                     })}
                   </tr>
-                )
+                );
               })}
             </tbody>
           </Table>

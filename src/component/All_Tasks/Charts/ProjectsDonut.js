@@ -1,5 +1,6 @@
 import { Card, Box, Typography } from "@mui/joy";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import * as React from "react";
 
 export default function ProjectsWorkedCard({
   title = "Task State",
@@ -8,10 +9,19 @@ export default function ProjectsWorkedCard({
   totalLabel = "Projects",
   sx = {},
 }) {
-  // fallback if someone forgets to pass total
+  const chartData = React.useMemo(
+    () =>
+      (Array.isArray(data) ? data : []).map(d => ({
+        name: String(d?.name ?? ""),
+        value: Number(d?.value) || 0,
+        color: d?.color || "#cbd5e1",
+      })),
+    [data]
+  );
+
   const totalToShow = Number.isFinite(total)
     ? total
-    : data.reduce((a, b) => a + (Number(b.value) || 0), 0);
+    : chartData.reduce((a, b) => a + (Number(b.value) || 0), 0);
 
   return (
     <Card
@@ -32,9 +42,9 @@ export default function ProjectsWorkedCard({
           boxShadow:
             "0 6px 16px rgba(15,23,42,0.10), 0 20px 36px rgba(15,23,42,0.08)",
         },
-        maxHeight: "500px",
+        maxHeight: 500,
         overflow: "auto",
-        height: "500px",
+        height: 500,
         gap: 0,
         ...sx,
       }}
@@ -61,16 +71,19 @@ export default function ProjectsWorkedCard({
           alignItems: "center",
         }}
       >
-        {/* Donut + centered text (absolute overlay) */}
+        {/* Donut + centered text */}
         <Box sx={{ width: "100%", height: 180, position: "relative" }}>
-          <ResponsiveContainer>
+          {/* ✅ Explicit width/height so container never measures to 0 */}
+          <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
-                data={data}
+                data={chartData}
                 dataKey="value"
                 nameKey="name"
                 innerRadius={58}
                 outerRadius={78}
+                // Optional tweaks to ensure tiny slices still show
+                minAngle={1}
                 startAngle={90}
                 endAngle={-270}
                 stroke="#fff"
@@ -78,7 +91,7 @@ export default function ProjectsWorkedCard({
                 cornerRadius={10}
                 isAnimationActive
               >
-                {data.map((entry, idx) => (
+                {chartData.map((entry, idx) => (
                   <Cell key={`cell-${idx}`} fill={entry.color} />
                 ))}
               </Pie>
@@ -108,7 +121,7 @@ export default function ProjectsWorkedCard({
 
         {/* Legend */}
         <Box sx={{ pl: { xs: 0, sm: 1 } }}>
-          {data.map((d) => (
+          {chartData.map((d) => (
             <Box
               key={d.name}
               sx={{

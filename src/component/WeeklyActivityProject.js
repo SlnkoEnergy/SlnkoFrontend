@@ -57,15 +57,14 @@ function isOnOrBefore(a, b) {
   return da.getTime() <= db.getTime();
 }
 
-/** NEW: compute duration in days given exclusive end */
+/** compute duration in days given exclusive end */
 function daysBetweenExclusive(start, end) {
-  // start & end are Dates (end is exclusive in dhtmlx rendering we use)
   if (!isValidDate(start) || !isValidDate(end)) return null;
   const msPerDay = 24 * 60 * 60 * 1000;
   const s = startOfDay(start);
   const e = startOfDay(end);
   const diff = Math.round((e - s) / msPerDay);
-  return diff > 0 ? diff : 1; // keep at least 1 day visible
+  return diff > 0 ? diff : 1;
 }
 
 function getMinMaxFromData(data) {
@@ -93,7 +92,6 @@ function getMinMaxFromData(data) {
 
 /* -------- Build tasks for dhtmlx-gantt ---------- */
 function buildTasksFromData(data) {
-  // Normalize to: [{ project_code, project_name, activities:[...] }]
   const isArray = Array.isArray(data);
   const looksNested =
     isArray && data.length > 0 && Array.isArray(data[0]?.activities);
@@ -163,13 +161,11 @@ function buildTasksFromData(data) {
     for (const a of proj.activities) {
       const parentActivityId = id++;
 
-      // compute baseline/actual once
       const bS = a.baselineStart ? new Date(a.baselineStart) : null;
       const bE = a.baselineEnd ? new Date(a.baselineEnd) : null;
       const sA = a.start ? new Date(a.start) : null;
       const eA = a.end ? new Date(a.end) : null;
 
-      // label row should run until baseline end (fallback: actual; fallback: 1 day)
       const seed =
         (isValidDate(bS) && bS) || (isValidDate(sA) && sA) || new Date();
 
@@ -197,7 +193,7 @@ function buildTasksFromData(data) {
           parent: parentActivityId,
           text: "Baseline",
           start_date: fmtISODate(bS),
-          end_date: fmtISODate(toExclusiveEnd(bE)), // exclusive
+          end_date: fmtISODate(toExclusiveEnd(bE)),
           readonly: true,
           _rowkind: "baseline",
         });
@@ -239,6 +235,75 @@ function buildTasksFromData(data) {
   return tasks;
 }
 
+/* ------- Filter for fullscreen legend clicks ------- */
+function filterTasksByLayer(tasks, layer) {
+  if (layer === "all") return tasks;
+
+  // index & parent->children
+  const byId = new Map(tasks.map((t) => [t.id, t]));
+  const children = new Map();
+  for (const t of tasks) {
+    if (!t.parent) continue;
+    if (!children.has(t.parent)) children.set(t.parent, []);
+    children.get(t.parent).push(t);
+  }
+
+  const selectedProjects = new Set();
+  const selectedLabels = new Set();
+  const selectedTasks = new Set();
+
+  const wantActualOnTime = layer === "actual_ontime";
+  const wantActualLate = layer === "actual_late";
+  const wantBaselineOnly = layer === "baseline";
+
+  for (const label of tasks) {
+    if (label._rowkind !== "activity-label") continue;
+
+    const kids = children.get(label.id) || [];
+    const baseline = kids.find((k) => k._rowkind === "baseline");
+    const actual = kids.find((k) => k._rowkind === "actual");
+
+    let include = false;
+    if (wantBaselineOnly && baseline) include = true;
+    if (wantActualOnTime && actual && actual._actual_state === "ontime")
+      include = true;
+    if (wantActualLate && actual && actual._actual_state === "late")
+      include = true;
+
+    if (!include) continue;
+
+    selectedLabels.add(label.id);
+    const projId = label.parent;
+    if (projId) selectedProjects.add(projId);
+
+    if (baseline) selectedTasks.add(baseline.id);
+    if (actual) {
+      if (
+        (!wantBaselineOnly &&
+          ((wantActualOnTime && actual._actual_state === "ontime") ||
+            (wantActualLate && actual._actual_state === "late"))) ||
+        (!wantActualOnTime && !wantActualLate && !wantBaselineOnly)
+      ) {
+        selectedTasks.add(actual.id);
+      }
+    }
+  }
+
+  const out = [];
+  for (const t of tasks) {
+    if (t._rowkind === "project") {
+      if (selectedProjects.has(t.id)) out.push(t);
+      continue;
+    }
+    if (t._rowkind === "activity-label") {
+      if (selectedLabels.has(t.id)) out.push(t);
+      continue;
+    }
+    if (selectedTasks.has(t.id)) out.push(t);
+  }
+  return out;
+}
+
 /* Scales */
 function makeScales(view) {
   const yyyy = new Date().getFullYear();
@@ -277,7 +342,6 @@ function makeScales(view) {
       { unit: "month", step: 1, format: "%M" },
     ];
   }
-  // 'all'
   return [
     { unit: "month", step: 1, format: "%F %Y" },
     {
@@ -292,8 +356,10 @@ function makeScales(view) {
 export default function WeeklyProjectTimelineCard({
   data = [],
   title = "Calendar — Selected Range",
-  range, // optional { start: Date|string, end: Date|string } inclusive
-  onRangeChange, // (baselineStart:string, baselineEnd:string) => void
+  range, // { start, end } inclusive
+  onRangeChange, // (baselineStart, baselineEnd)
+  layerFilter: layerFilterProp, // 'all' | 'baseline' | 'actual_ontime' | 'actual_late'
+  onLayerFilterChange, // (value) => void
 }) {
   const cardContainerRef = useRef(null);
   const modalContainerRef = useRef(null);
@@ -301,13 +367,23 @@ export default function WeeklyProjectTimelineCard({
   const [view, setView] = useState("week");
   const [open, setOpen] = useState(false);
 
-  // derive safe data min/max
+  const isControlled = typeof layerFilterProp === "string";
+  const [layerFilter, setLayerFilter] = useState(layerFilterProp ?? "all");
+  useEffect(() => {
+    if (isControlled) setLayerFilter(layerFilterProp);
+  }, [isControlled, layerFilterProp]);
+
+  const setFilter = (key) => {
+    const next = key; // no toggle; explicit pick incl. 'all'
+    if (!isControlled) setLayerFilter(next);
+    onLayerFilterChange?.(next);
+  };
+
   const { min: dataMin, max: dataMax } = useMemo(
     () => getMinMaxFromData(data),
     [data]
   );
 
-  // selection (safe defaults)
   const safeDefaultSelection = useMemo(() => {
     if (range?.start && range?.end) {
       const s = startOfDay(new Date(range.start));
@@ -324,7 +400,6 @@ export default function WeeklyProjectTimelineCard({
   const [rangeOpen, setRangeOpen] = useState(false);
   const [selection, setSelection] = useState(safeDefaultSelection);
 
-  // keep local selection synced if parent range changes (GUARDED)
   useEffect(() => {
     const nextS = safeDefaultSelection.startDate?.getTime?.() ?? null;
     const nextE = safeDefaultSelection.endDate?.getTime?.() ?? null;
@@ -334,13 +409,11 @@ export default function WeeklyProjectTimelineCard({
     if (nextS !== curS || nextE !== curE) {
       setSelection(safeDefaultSelection);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     safeDefaultSelection.startDate?.getTime?.(),
     safeDefaultSelection.endDate?.getTime?.(),
   ]);
 
-  // visible window for gantt (end must be exclusive)
   const baseRange = useMemo(() => {
     const s = selection?.startDate;
     const e = selection?.endDate;
@@ -355,7 +428,11 @@ export default function WeeklyProjectTimelineCard({
 
   const tasksMemo = useMemo(() => buildTasksFromData(data), [data]);
 
-  // lock body scroll in fullscreen
+  const displayTasks = useMemo(() => {
+    if (!open) return tasksMemo;
+    return filterTasksByLayer(tasksMemo, layerFilter);
+  }, [open, tasksMemo, layerFilter]);
+
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -365,7 +442,6 @@ export default function WeeklyProjectTimelineCard({
     };
   }, [open]);
 
-  // --- init-once per container to prevent flicker ---
   const initedWithRef = useRef(null);
 
   useEffect(() => {
@@ -376,7 +452,6 @@ export default function WeeklyProjectTimelineCard({
 
     const needInit = initedWithRef.current !== container;
     if (needInit) {
-      // one-time config per container
       gantt.plugins({ tooltip: true });
       gantt.config.xml_date = "%Y-%m-%d";
       gantt.config.readonly = true;
@@ -386,7 +461,6 @@ export default function WeeklyProjectTimelineCard({
 
       gantt.config.show_chart_scroll = true;
       gantt.config.show_grid_scroll = true;
-
       gantt.config.smart_rendering = true;
       gantt.config.preserve_scroll = true;
       gantt.config.row_height = 44;
@@ -436,11 +510,12 @@ export default function WeeklyProjectTimelineCard({
         return `<b>${task.text}</b>`;
       };
 
-      /** NEW: render "(X days)" inside each visible bar */
       gantt.templates.task_text = (start, end, task) => {
         const days = daysBetweenExclusive(start, end);
         const suffix =
-          typeof days === "number" ? ` (${days} day${days === 1 ? "" : "s"})` : "";
+          typeof days === "number"
+            ? ` (${days} day${days === 1 ? "" : "s"})`
+            : "";
         return `${task.text || ""}${suffix}`;
       };
 
@@ -465,18 +540,15 @@ export default function WeeklyProjectTimelineCard({
       initedWithRef.current = container;
     }
 
-    // always update window & scales before data
     gantt.batchUpdate(() => {
       gantt.config.scales = makeScales(view);
       gantt.config.start_date = baseRange.start;
       gantt.config.end_date = baseRange.end;
 
-      // refresh data
       gantt.clearAll();
-      gantt.parse({ data: tasksMemo });
+      gantt.parse({ data: displayTasks });
     });
 
-    // keep scroll position when toggling tree
     const keepScrollAndRender = () => {
       const area = gantt.$task_data;
       const x = area?.scrollLeft ?? 0;
@@ -497,18 +569,15 @@ export default function WeeklyProjectTimelineCard({
       window.removeEventListener("resize", onResize);
       gantt.detachEvent(h1);
       gantt.detachEvent(h2);
-      // do NOT clearAll() here; cleanup can race and blank the grid
     };
   }, [
-    data,
+    displayTasks,
     view,
     baseRange.start?.getTime?.(),
     baseRange.end?.getTime?.(),
     open,
-    tasksMemo,
   ]);
 
-  // Apply picked range (guard actual change)
   const applyRange = () => {
     const s = selection?.startDate;
     const e = selection?.endDate;
@@ -566,10 +635,50 @@ export default function WeeklyProjectTimelineCard({
             direction="row"
             alignItems="center"
             justifyContent="space-between"
+            gap={1.5}
+            flexWrap="wrap"
           >
             <Typography level="title-lg">{title}</Typography>
 
-            <Stack direction="row" gap={1} alignItems="center">
+            {/* Small header chips (also control backend filter) */}
+            <Stack direction="row" gap={1} alignItems="center" flexWrap="wrap">
+              <Chip
+                size="sm"
+                variant={layerFilter === "baseline" ? "solid" : "soft"}
+                color="neutral"
+                sx={{ fontWeight: 700, cursor: "pointer" }}
+                onClick={() => setFilter("baseline")}
+              >
+                Baseline
+              </Chip>
+              <Chip
+                size="sm"
+                variant={layerFilter === "actual_ontime" ? "solid" : "soft"}
+                color="success"
+                sx={{ fontWeight: 700, cursor: "pointer" }}
+                onClick={() => setFilter("actual_ontime")}
+              >
+                Actual (on time)
+              </Chip>
+              <Chip
+                size="sm"
+                variant={layerFilter === "actual_late" ? "solid" : "soft"}
+                color="danger"
+                sx={{ fontWeight: 700, cursor: "pointer" }}
+                onClick={() => setFilter("actual_late")}
+              >
+                Actual (late)
+              </Chip>
+              <Chip
+                size="sm"
+                variant={layerFilter === "all" ? "solid" : "soft"}
+                color="primary"
+                sx={{ fontWeight: 700, cursor: "pointer" }}
+                onClick={() => setFilter("all")}
+              >
+                All
+              </Chip>
+
               <Button
                 size="sm"
                 variant="soft"
@@ -691,31 +800,50 @@ export default function WeeklyProjectTimelineCard({
             justifyContent="space-between"
             sx={{ p: 1.25, pb: 0.75 }}
           >
-            <Stack direction="row" alignItems="center" gap={1.5}>
+            <Stack
+              direction="row"
+              alignItems="center"
+              gap={1.5}
+              flexWrap="wrap"
+            >
               <Typography level="title-md">{title}</Typography>
+
+              {/* LEGEND CHIPS — fullscreen filtering */}
               <Chip
                 size="sm"
-                variant="soft"
+                variant={layerFilter === "baseline" ? "solid" : "soft"}
                 color="neutral"
-                sx={{ fontWeight: 700 }}
+                sx={{ fontWeight: 700, cursor: "pointer" }}
+                onClick={() => setFilter("baseline")}
               >
                 Baseline
               </Chip>
               <Chip
                 size="sm"
-                variant="soft"
+                variant={layerFilter === "actual_ontime" ? "solid" : "soft"}
                 color="success"
-                sx={{ fontWeight: 700 }}
+                sx={{ fontWeight: 700, cursor: "pointer" }}
+                onClick={() => setFilter("actual_ontime")}
               >
                 Actual (on time)
               </Chip>
               <Chip
                 size="sm"
-                variant="soft"
+                variant={layerFilter === "actual_late" ? "solid" : "soft"}
                 color="danger"
-                sx={{ fontWeight: 700 }}
+                sx={{ fontWeight: 700, cursor: "pointer" }}
+                onClick={() => setFilter("actual_late")}
               >
                 Actual (late)
+              </Chip>
+              <Chip
+                size="sm"
+                variant={layerFilter === "all" ? "solid" : "soft"}
+                color="primary"
+                sx={{ fontWeight: 700, cursor: "pointer" }}
+                onClick={() => setFilter("all")}
+              >
+                All
               </Chip>
             </Stack>
 
@@ -786,7 +914,6 @@ export default function WeeklyProjectTimelineCard({
           background: #EF4444;
           border: 1px solid #B91C1C;
         }
-        /* Activity label spanning to baseline end */
         .gantt_task_line.row-activity {
           background: rgba(37, 99, 235, 0.40) !important;
           border: 1px solid #1D4ED8 !important;

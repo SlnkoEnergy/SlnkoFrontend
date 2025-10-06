@@ -308,9 +308,9 @@ function projectClientActuals(paList) {
 
   const out = new Map();
   map.forEach((n, id) => {
-    const start = n.actual_start || n._client_start || n.planned_start || null;
+    const start = n.actual_start || n._client_start || n.planned_start || null; 
     const finish =
-      n.actual_finish || n._client_finish || n.planned_finish || null;
+      n.actual_finish || n._client_finish || n.planned_finish || null; 
 
     const isCompleted = !!n.actual_finish;
     const onTime =
@@ -443,7 +443,7 @@ const RESOURCE_TYPES = [
 ];
 
 /* ---------- row for predecessors ---------- */
-function DepRow({ title, options, row, onChange, onRemove }) {
+function DepRow({ title, options, row, onChange, onRemove, disabled = false }) {
   return (
     <Stack
       direction="row"
@@ -464,12 +464,14 @@ function DepRow({ title, options, row, onChange, onRemove }) {
             activityName: val?.label || "",
           })
         }
+        disabled={disabled}
         sx={{ minWidth: 180, flex: 1 }}
         slotProps={{ listbox: { sx: { zIndex: 1401 } } }}
       />
       <Select
         size="sm"
         value={row.type}
+        disabled={disabled}
         onChange={(_, v) => onChange({ ...row, type: v || "FS" })}
         sx={{ width: 90 }}
         slotProps={{ listbox: { sx: { zIndex: 1401 } } }}
@@ -485,10 +487,17 @@ function DepRow({ title, options, row, onChange, onRemove }) {
         type="number"
         placeholder="Lag"
         value={row.lag}
+        disabled={disabled}
         onChange={(e) => onChange({ ...row, lag: Number(e.target.value || 0) })}
         sx={{ width: 80 }}
       />
-      <IconButton color="danger" size="sm" variant="soft" onClick={onRemove}>
+      <IconButton
+        color="danger"
+        size="sm"
+        variant="soft"
+        disabled={disabled}
+        onClick={onRemove}
+      >
         <Delete fontSize="small" />
       </IconButton>
     </Stack>
@@ -496,7 +505,7 @@ function DepRow({ title, options, row, onChange, onRemove }) {
 }
 
 /* ---------- row for resources ---------- */
-function ResourceRow({ row, onChange, onRemove }) {
+function ResourceRow({ row, onChange, onRemove, disabled = false }) {
   return (
     <Stack
       direction="row"
@@ -508,8 +517,9 @@ function ResourceRow({ row, onChange, onRemove }) {
         size="sm"
         placeholder="Type"
         value={row.type || ""}
+        disabled={disabled}
         onChange={(_, v) => onChange({ ...row, type: v || "" })}
-        sx={{ minWidth: 220 }}
+        sx={{ minWidth: "80%" }}
         slotProps={{ listbox: { sx: { zIndex: 1401 } } }}
       >
         {RESOURCE_TYPES.map((t) => (
@@ -528,13 +538,23 @@ function ResourceRow({ row, onChange, onRemove }) {
         inputMode="numeric"
         placeholder="Number"
         value={row.number ?? ""}
+        disabled={disabled}
         onChange={(e) =>
-          onChange({ ...row, number: Number(e.target.value || 0) })
+          onChange({
+            ...row,
+            number: Number(e.target.value) > 1 ? Number(e.target.value) : 1,
+          })
         }
-        sx={{ width: 120 }}
+        sx={{ width: "100%" }}
       />
 
-      <IconButton color="danger" size="sm" variant="soft" onClick={onRemove}>
+      <IconButton
+        color="danger"
+        size="sm"
+        variant="soft"
+        disabled={disabled}
+        onClick={onRemove}
+      >
         <Delete fontSize="small" />
       </IconButton>
     </Stack>
@@ -543,7 +563,7 @@ function ResourceRow({ row, onChange, onRemove }) {
 
 /* ---------------- main component ---------------- */
 const View_Project_Management = forwardRef(
-  ({ viewModeParam = "week" }, ref) => {
+  ({ viewModeParam = "week", onPlanStatus }, ref) => {
     const ganttContainer = useRef(null);
     const [viewMode, setViewMode] = useState(viewModeParam);
 
@@ -579,9 +599,7 @@ const View_Project_Management = forwardRef(
     };
 
     useEffect(() => {
-      // ensure URL reflects initial normalized state on first mount
       syncURL(actView, timelineMode);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // API hooks
@@ -603,6 +621,31 @@ const View_Project_Management = forwardRef(
       { skip: !activeDbId || !projectId }
     );
 
+    // Send current plan status to parent (freeze/unfreeze)
+    const lastSentRef = useRef("");
+    useEffect(() => {
+      const statusObj = apiData?.projectactivity?.current_status ?? null;
+      if (!statusObj) return;
+
+      const key = JSON.stringify({
+        status: statusObj.status ?? null,
+        remarks: statusObj.remarks ?? null,
+        user_id: statusObj.user_id ?? null,
+      });
+      if (key === lastSentRef.current) return;
+
+      lastSentRef.current = key;
+      onPlanStatus?.(statusObj);
+    }, [apiData, activityFetch, onPlanStatus]);
+
+    // Local flag for frozen state
+    const planStatus =
+      apiData?.projectactivity?.current_status?.status ??
+      apiData?.current_status?.status ??
+      null;
+    const isPlanFrozen = String(planStatus || "").toLowerCase() === "freeze";
+    const disableEditing = isPlanFrozen || isSaving;
+
     const paWrapper = apiData?.projectactivity || apiData || {};
     const paListRaw = Array.isArray(paWrapper.activities)
       ? paWrapper.activities
@@ -612,7 +655,6 @@ const View_Project_Management = forwardRef(
     const projectMeta = paWrapper.project_id || apiData?.project || {};
     const projectDbId = projectMeta?._id || projectId;
 
-    // FILTER by tab
     const paList = useMemo(() => {
       const mapType = (pa) =>
         (pa?.activity_id?.type || pa?.type || "").toLowerCase();
@@ -635,8 +677,7 @@ const View_Project_Management = forwardRef(
       const byMasterToSI = new Map();
       const _siToDbId = new Map();
 
-      const actualLookup =
-        mode === "actual" ? projectClientActuals(list) : null;
+      const actualLookup = projectClientActuals(list);
 
       const data = (list || []).map((pa, idx) => {
         const si = String(idx + 1);
@@ -650,22 +691,13 @@ const View_Project_Management = forwardRef(
           .toLowerCase()
           .trim();
 
-        // 🔵 Always compute BASELINE (planned) dates
+        // Baseline (planned) dates
         const baseStartISO = pa.planned_start || pa.start_date || null;
         const baseEndISO = pa.planned_finish || pa.end_date || null;
         const baseStartObj = baseStartISO
           ? parseISOAsLocalDate(baseStartISO)
           : null;
         const baseEndObj = baseEndISO ? parseISOAsLocalDate(baseEndISO) : null;
-
-        // 🟢 For ACTUAL mode, compute projected/actual dates for the timeline
-        let actualStartObj = null;
-        let actualEndObj = null;
-        if (mode === "actual") {
-          const proj = actualLookup?.get(masterId);
-          actualStartObj = proj?.start || null;
-          actualEndObj = proj?.finish || null;
-        }
 
         // Duration (fallback to calc from baseline if needed)
         let duration = 0;
@@ -677,45 +709,7 @@ const View_Project_Management = forwardRef(
             : 0;
         }
 
-        const isCompletedActual =
-          mode === "actual"
-            ? !!pa.actual_finish
-            : pa?.current_status?.status === "completed";
-
-        const status =
-          pa.current_status?.status ||
-          (mode === "actual" && (pa.actual_finish || actualEndObj)
-            ? "completed"
-            : "not started");
-
-        // 🔸 Normalize resources to array and compute total
-        let resourcesArray = [];
-        if (Array.isArray(pa.resources)) {
-          resourcesArray = pa.resources.map((r) => ({
-            type: r?.type || "",
-            number: Number(r?.number || 0),
-          }));
-        } else if (Array.isArray(pa.activity_resources)) {
-          resourcesArray = pa.activity_resources.map((r) => ({
-            type: r?.type || "",
-            number: Number(r?.number || 0),
-          }));
-        }
-        const resourcesTotal = resourcesArray.reduce(
-          (sum, r) => sum + (Number(r.number) || 0),
-          0
-        );
-
-        let onTime = null;
-        if (mode === "actual") {
-          const realFinish = pa.actual_finish
-            ? parseISOAsLocalDate(pa.actual_finish)
-            : null;
-          if (realFinish && baseEndObj)
-            onTime = !isAfter(realFinish, baseEndObj);
-        }
-
-        // Also compute pretty strings for baseline + actual (grid uses baseline)
+        // Real actuals from backend
         const aSISO =
           pa.actual_start_date || pa.actual_start || pa.actual_start_dt || null;
         const aFISO =
@@ -723,70 +717,128 @@ const View_Project_Management = forwardRef(
         const aStartObj = aSISO ? parseISOAsLocalDate(aSISO) : null;
         const aEndObj = aFISO ? parseISOAsLocalDate(aFISO) : null;
 
+        // Projected actuals
+        const proj = actualLookup?.get(masterId);
+        const projActualStartObj = proj?.start || null;
+        const projActualEndObj = proj?.finish || null;
+
+        // Grid display: real → projected → planned
+        const aStartForDisplay =
+          aStartObj || projActualStartObj || baseStartObj || null;
+        const aEndForDisplay =
+          aEndObj || projActualEndObj || baseEndObj || null;
+
         const base_start_dm = baseStartObj ? toDM(baseStartObj) : "";
         const base_end_dm = baseEndObj ? toDM(baseEndObj) : "";
-        const act_start_dm = aStartObj ? toDM(aStartObj) : "";
-        const act_end_dm = aEndObj ? toDM(aEndObj) : "";
+        const act_start_dm = aStartForDisplay ? toDM(aStartForDisplay) : "-";
+        const act_end_dm = aEndForDisplay ? toDM(aEndForDisplay) : "-";
 
-        // 🧠 What the timeline should draw:
-        // - Baseline mode: draw baseline
-        // - Actual mode: draw actual/projection
-        const timelineStart =
-          mode === "actual" ? actualStartObj || null : baseStartObj || null;
+        // === Decide what the Gantt BAR should draw ===
+        let timelineStart = null;
+        let timelineEndObj = null;
+        let drawDuration = duration;
 
-        const timelineEnd =
-          mode === "actual" ? actualEndObj || null : baseEndObj || null;
-
-        // If end missing but we have start+duration, let gantt compute
-        const endObjForTimeline =
-          timelineEnd ||
-          (timelineStart && Number(duration) > 0
-            ? gantt.calculateEndDate({
+        if (mode === "actual") {
+          if (aStartObj && aEndObj) {
+            timelineStart = aStartObj;
+            timelineEndObj = aEndObj;
+            drawDuration = durationFromStartFinish(aStartObj, aEndObj);
+          } else if (aStartObj && !aEndObj) {
+            const end = projActualEndObj || baseEndObj || null;
+            timelineStart = aStartObj;
+            timelineEndObj = end;
+            drawDuration = end
+              ? durationFromStartFinish(aStartObj, end)
+              : Math.max(1, Number(pa.duration) || 1);
+          } else {
+            timelineStart = projActualStartObj || baseStartObj || null;
+            timelineEndObj = projActualEndObj || baseEndObj || null;
+            if (!timelineEndObj && timelineStart && Number(drawDuration) > 0) {
+              timelineEndObj = gantt.calculateEndDate({
                 start_date: timelineStart,
-                duration,
+                duration: drawDuration,
                 task: {},
-              })
-            : null);
+              });
+            }
+          }
+        } else {
+          timelineStart = baseStartObj || null;
+          timelineEndObj = baseEndObj || null;
+          if (!timelineEndObj && timelineStart && Number(drawDuration) > 0) {
+            timelineEndObj = gantt.calculateEndDate({
+              start_date: timelineStart,
+              duration: drawDuration,
+              task: {},
+            });
+          }
+        }
+
+        // Status flags
+        const isCompletedActual =
+          !!aEndObj || pa?.current_status?.status === "completed";
+        const onTimeFlag =
+          aEndObj && baseEndObj ? !isAfter(aEndObj, baseEndObj) : null;
+        const status =
+          pa.current_status?.status ||
+          (isCompletedActual ? "completed" : "not started");
+
+        // Resources
+        let resourcesArray = [];
+        if (Array.isArray(pa.resources)) {
+          resourcesArray = pa.resources.map((r) => ({
+            type: r?.type || "",
+            number: Number(r?.number) || 0,
+          }));
+        } else if (Array.isArray(pa.activity_resources)) {
+          resourcesArray = pa.activity_resources.map((r) => ({
+            type: r?.type || "",
+            number: Number(r?.number) || 0,
+          }));
+        }
+        const resourcesTotal = resourcesArray.reduce(
+          (sum, r) => sum + (Number(r.number) || 0),
+          0
+        );
 
         return {
           id: si,
           _si: si,
           _dbId: masterId,
           text,
-          start_date: timelineStart || null, // timeline uses selected mode
-          _end_obj: endObjForTimeline || null, // timeline end (selected mode)
-          duration,
+          start_date: timelineStart || null,
+          _end_obj: timelineEndObj || null,
+          duration: drawDuration,
           progress:
             typeof pa.percent_complete === "number"
               ? pa.percent_complete / 100
-              : mode === "actual" && isCompletedActual
+              : isCompletedActual
               ? 1
               : 0,
           open: true,
-          _unscheduled: !timelineStart && !duration,
+          _unscheduled: !timelineStart && !drawDuration,
           _status: status,
           _mode: mode,
-          _actual_completed: mode === "actual" ? !!pa.actual_finish : false,
-          _actual_on_time: mode === "actual" ? onTime : null,
+          _actual_completed: !!aEndObj,
+          _actual_on_time: onTimeFlag,
           _type: typeLower,
 
-          // ✅ Baseline (always kept for grid)
+          // Baseline (grid)
           _base_start_obj: baseStartObj,
           _base_end_obj: baseEndObj,
           _base_start_dm: base_start_dm,
           _base_end_dm: base_end_dm,
 
-          // ℹ️ Actual (for the dedicated columns)
+          // Actual display strings (real → projected → planned)
           _a_start_dm: act_start_dm,
           _a_end_dm: act_end_dm,
 
-          // 🔸 Resources
+          // Resources
           _resources_total: resourcesTotal,
           _resources_arr: resourcesArray,
         };
       });
 
-      // Links unchanged
+      // Build links
       let lid = 1;
       const links = [];
       (list || []).forEach((pa, idx) => {
@@ -820,6 +872,7 @@ const View_Project_Management = forwardRef(
       const _dbIdToSi = new Map(
         Array.from(_siToDbId.entries()).map(([si, db]) => [db, si])
       );
+
       return { data, links, siToDbId: _siToDbId, dbIdToSi: _dbIdToSi };
     };
 
@@ -881,14 +934,12 @@ const View_Project_Management = forwardRef(
     );
 
     const onOpenModalForTask = (siId) => {
-      if (timelineMode === "actual") return; // read-only in actual view
       const task = gantt.getTask(siId);
       setSelectedId(String(siId));
       setSelectedTaskName(task?.text || "");
       setActiveDbId(task?._dbId || null);
     };
 
-    // --- recompute dates from current form predecessors + duration
     const recomputeDatesFromPredecessors = (predRows, durationDays) => {
       if (!Array.isArray(predRows) || !predRows.length) return null;
 
@@ -901,16 +952,8 @@ const View_Project_Management = forwardRef(
         const pt = gantt.getTask(si);
         if (!pt) return;
 
-        const pStart = pt.start_date instanceof Date ? pt.start_date : null;
-        const pEnd =
-          pt._end_obj ||
-          (pStart && Number(pt.duration) > 0
-            ? gantt.calculateEndDate({
-                start_date: pStart,
-                duration: pt.duration,
-                task: pt,
-              })
-            : null);
+        const pStart = pt._base_start_obj || null;
+        const pEnd = pt._base_end_obj || null;
 
         if (!pStart && !pEnd) return;
 
@@ -997,7 +1040,7 @@ const View_Project_Management = forwardRef(
       const resArrRaw = Array.isArray(act?.resources) ? act.resources : [];
       const uiResources = resArrRaw.map((r) => ({
         type: r?.type || "",
-        number: Number(r?.number || 0),
+        number: Number(r?.number) || 0,
       }));
 
       setForm({
@@ -1032,6 +1075,13 @@ const View_Project_Management = forwardRef(
 
     const saveFromModal = async () => {
       if (!selectedId) return;
+      if (isPlanFrozen) {
+        setSnack({
+          open: true,
+          msg: "Plan is frozen. Unfreeze to edit activities.",
+        });
+        return;
+      }
       const task = gantt.getTask(selectedId);
       const dbActivityId = task?._dbId;
       if (!projectId || !dbActivityId) return;
@@ -1054,7 +1104,7 @@ const View_Project_Management = forwardRef(
             .filter((r) => r && r.type)
             .map((r) => ({
               type: String(r.type),
-              number: Number(r.number || 0),
+              number: Number(r.number || 1),
             }))
         : [];
 
@@ -1224,7 +1274,7 @@ const View_Project_Management = forwardRef(
               resources: Array.isArray(t.resources_arr)
                 ? t.resources_arr.map((r) => ({
                     type: String(r?.type || ""),
-                    number: Number(r?.number || 0),
+                    number: Number(r?.number) || 0,
                   }))
                 : [],
               predecessors,
@@ -1323,7 +1373,24 @@ const View_Project_Management = forwardRef(
       gantt.config.min_column_width = 60;
       gantt.config.grid_width = 420;
 
+      // ---------- S.No helper
+      const rowIndex = (t) => {
+        try {
+          return gantt.getTaskIndex(t.id) + 1;
+        } catch {
+          return "";
+        }
+      };
+
+      // initial columns (with S.No)
       gantt.config.columns = [
+        {
+          name: "sno",
+          label: "S.No",
+          width: 60,
+          align: "center",
+          template: (t) => String(rowIndex(t)),
+        },
         {
           name: "text",
           label: "Activity",
@@ -1333,7 +1400,7 @@ const View_Project_Management = forwardRef(
         },
         {
           name: "duration",
-          label: "Duration",
+          label: timelineMode === "actual" ? "A. Duration" : "Duration",
           width: 90,
           align: "center",
           resize: true,
@@ -1350,19 +1417,19 @@ const View_Project_Management = forwardRef(
         },
         {
           name: "start",
-          label: "Start",
+          label: "B.Start",
           width: 100,
           align: "center",
           resize: true,
-          template: startCellTemplate, // baseline only
+          template: startCellTemplate,
         },
         {
           name: "end",
-          label: "End",
+          label: "B.End",
           width: 100,
           align: "center",
           resize: true,
-          template: endCellTemplate, // baseline only
+          template: endCellTemplate,
         },
         {
           name: "a_start",
@@ -1399,12 +1466,10 @@ const View_Project_Management = forwardRef(
         return false;
       });
 
-      // init
       if (ganttContainer.current) {
         gantt.init(ganttContainer.current);
       }
 
-      // keep grid ≈ 40% only on window resize (not on user resizer drags)
       const handleResize = () => {
         const host = gantt.$container;
         if (!host) return;
@@ -1413,16 +1478,93 @@ const View_Project_Management = forwardRef(
         gantt.render();
       };
       window.addEventListener("resize", handleResize);
-      handleResize(); // set once now
+      handleResize();
 
-      // cleanup
       return () => {
         window.removeEventListener("resize", handleResize);
         gantt.clearAll();
       };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    /* ---------- dim backend when actView === 'all' ---------- */
+    // ---------- S.No helper accessible here too
+    const rowIndex = (t) => {
+      try {
+        return gantt.getTaskIndex(t.id) + 1;
+      } catch {
+        return "";
+      }
+    };
+
+    const buildColumns = (mode) => [
+      {
+        name: "sno",
+        label: "S.No",
+        width: 60,
+        align: "center",
+        template: (t) => String(rowIndex(t)),
+      },
+      { name: "text", label: "Activity", tree: true, width: 260, resize: true },
+      {
+        name: "duration",
+        label: mode === "actual" ? "A. Duration" : "Duration",
+        width: 90,
+        align: "center",
+        resize: true,
+        template: durationTemplate,
+      },
+      {
+        name: "resources",
+        label: "Res.",
+        width: 60,
+        align: "center",
+        resize: true,
+        template: (t) =>
+          Number(t._resources_total) > 0 ? String(t._resources_total) : "",
+      },
+      {
+        name: "start",
+        label: "B.Start",
+        width: 100,
+        align: "center",
+        resize: true,
+        template: startCellTemplate,
+      },
+      {
+        name: "end",
+        label: "B.End",
+        width: 100,
+        align: "center",
+        resize: true,
+        template: endCellTemplate,
+      },
+      {
+        name: "a_start",
+        label: "A.Start",
+        width: 100,
+        align: "center",
+        resize: true,
+        template: (t) => t._a_start_dm || "-",
+      },
+      {
+        name: "a_end",
+        label: "A.End",
+        width: 100,
+        align: "center",
+        resize: true,
+        template: (t) => t._a_end_dm || "-",
+      },
+      {
+        name: "pred",
+        label: "Pred.",
+        width: 120,
+        align: "center",
+        resize: true,
+        template: predecessorTemplate,
+      },
+    ];
+
+    /* ---------- dim backend when actView === 'all' + COLORS ---------- */
     useEffect(() => {
       gantt.templates.task_class = (_, __, task) => {
         const classes = [];
@@ -1430,9 +1572,11 @@ const View_Project_Management = forwardRef(
 
         if (task._mode === "actual") {
           if (task._actual_completed) {
-            classes.push(
-              task._actual_on_time ? "gantt-task-ontime" : "gantt-task-late"
-            );
+            if (task._actual_on_time === false) {
+              classes.push("gantt-task-running");
+            } else {
+              classes.push("gantt-task-ontime");
+            }
           } else {
             classes.push("gantt-task-running");
           }
@@ -1455,11 +1599,64 @@ const View_Project_Management = forwardRef(
       gantt.render();
     }, [actView, timelineMode]);
 
+    /* ---------- Task text: late-tail overlay + centered activity name ---------- */
+    useEffect(() => {
+      gantt.templates.task_text = (start, end, task) => {
+        const parts = [];
+
+        if (
+          task._mode === "actual" &&
+          task._actual_completed &&
+          task._actual_on_time === false &&
+          task._base_end_obj &&
+          (task._end_obj || end)
+        ) {
+          const baseEnd = task._base_end_obj;
+          const actEnd = task._end_obj || end;
+
+          if (actEnd.getTime() > baseEnd.getTime()) {
+            const tailStart = addDays(baseEnd, 1);
+            const lateDays = durationFromStartFinish(tailStart, actEnd);
+            const totalDays = durationFromStartFinish(task.start_date, actEnd);
+
+            if (lateDays > 0 && totalDays > 0) {
+              const pct = Math.max(
+                0,
+                Math.min(100, (lateDays / totalDays) * 100)
+              );
+              parts.push(
+                `<div class="gantt_late_tail_overlay" style="width:${pct}%"></div>`
+              );
+            }
+          }
+        }
+
+        const label = task.text ? String(task.text) : "";
+        parts.push(
+          `<div class="gantt_bar_label" title="${label.replace(
+            /"/g,
+            "&quot;"
+          )}">${label}</div>`
+        );
+
+        return parts.join("");
+      };
+
+      gantt.render();
+    }, [timelineMode]);
+
     /* ---------- handle drag-drop reorder → API ---------- */
     useEffect(() => {
       if (!gantt.$container) return;
 
       const handlerId = gantt.attachEvent("onAfterTaskMove", async function () {
+        if (isPlanFrozen) {
+          setSnack({
+            open: true,
+            msg: "Plan is frozen. Unfreeze to change order.",
+          });
+          return;
+        }
         try {
           const ordered = [];
           gantt.eachTask((t) => ordered.push(String(t._dbId)));
@@ -1483,7 +1680,13 @@ const View_Project_Management = forwardRef(
       return () => {
         gantt.detachEvent(handlerId);
       };
-    }, [projectId, reorderProjectActivities]);
+    }, [projectId, reorderProjectActivities, isPlanFrozen]);
+
+    useEffect(() => {
+      if (!gantt.$container) return;
+      gantt.config.columns = buildColumns(timelineMode);
+      gantt.render();
+    }, [timelineMode]);
 
     /* ---------- defensively parse data ---------- */
     const parseSafe = (payload) => {
@@ -1500,12 +1703,6 @@ const View_Project_Management = forwardRef(
     // feed data whenever dataset or mode changes
     useEffect(() => {
       if (!ganttContainer.current || !gantt.$container) return;
-
-      if (timelineMode === "actual") {
-        setSelectedId(null);
-        setActiveDbId(null);
-        setSelectedTaskName("");
-      }
 
       const dataArr = Array.isArray(ganttData) ? ganttData : [];
       const linksArr = Array.isArray(ganttLinks) ? ganttLinks : [];
@@ -1553,17 +1750,46 @@ const View_Project_Management = forwardRef(
 
     const safeMsg = String(snack?.msg ?? "");
     const isError = /^(failed|invalid|error|server)/i.test(safeMsg);
-
     return (
       <Box sx={{ ml: "0px", width: "100%", p: 0 }}>
         <style>{`
         .gantt_task_line.gantt-task-unscheduled{display:none!important;}
         /* Baseline (grey) */
         .gantt_task_line.gantt-task-baseline { background:#9aa3b2; border-color:#9aa3b2; }
-        /* Actual: on-time (green), late (red), running (blue) */
+        /* Actual: on-time (green), late tail overlay (red), running (blue) */
         .gantt_task_line.gantt-task-ontime { background:#22c55e; border-color:#22c55e; }
-        .gantt_task_line.gantt-task-late { background:#ef4444; border-color:#ef4444; }
         .gantt_task_line.gantt-task-running { background:#3b82f6; border-color:#3b82f6; }
+
+        /* Red overlay for the late portion of completed tasks in Actual mode (drawn inside the bar) */
+        .gantt_late_tail_overlay{
+          position:absolute;
+          right:0;
+          top:0;
+          height:100%;
+          background:#ef4444;
+          opacity:0.95;
+          border-top-right-radius:4px;
+          border-bottom-right-radius:4px;
+          pointer-events:none;
+          z-index:0;
+        }
+
+        /* Centered label printed inside each bar */
+        .gantt_bar_label{
+          position:absolute;
+          left:0; right:0; top:50%;
+          transform: translateY(-50%);
+          text-align:center;
+          font-weight:600;
+          color:#fff;
+          white-space:nowrap;
+          overflow:hidden;
+          text-overflow:ellipsis;
+          padding:0 6px;
+          pointer-events:none;
+          z-index:1;
+        }
+
         .gantt_grid_scale, .gantt_task_scale { height: 28px; line-height: 28px; }
 
         /* Dim backend in "All" */
@@ -1581,6 +1807,7 @@ const View_Project_Management = forwardRef(
           transition: transform .12s ease;
         }
         .gantt_layout_cell.gantt_resizer:hover::after { transform: scaleX(1.6); }
+        
       `}</style>
 
         {/* Header row */}
@@ -1797,8 +2024,8 @@ const View_Project_Management = forwardRef(
           />
         </Box>
 
-        {/* Right panel: only in baseline mode */}
-        {selectedId && timelineMode === "baseline" && (
+        {/* Right panel: edit drawer (read-only while frozen) */}
+        {selectedId && (
           <>
             <Box
               onClick={() => {
@@ -1833,12 +2060,23 @@ const View_Project_Management = forwardRef(
               }}
             >
               <Stack spacing={1.5}>
-                {/* Title now includes activity name */}
                 <Typography level="title-sm">
                   Edit Activity
                   {selectedTaskName ? ` (${selectedTaskName})` : ""}{" "}
                   {isFetchingActivity ? "(loading…)" : ""}
                 </Typography>
+
+                {isPlanFrozen && (
+                  <Chip
+                    size="sm"
+                    color="danger"
+                    variant="soft"
+                    sx={{ fontWeight: 700 }}
+                  >
+                    Plan is frozen — read-only
+                  </Chip>
+                )}
+
                 <Divider />
 
                 <FormControl>
@@ -1871,6 +2109,7 @@ const View_Project_Management = forwardRef(
                       size="sm"
                       variant="soft"
                       startDecorator={<Add />}
+                      disabled={disableEditing}
                       onClick={() =>
                         setForm((f) => ({
                           ...f,
@@ -1920,6 +2159,7 @@ const View_Project_Management = forwardRef(
                             return { ...f, predecessors: arr };
                           })
                         }
+                        disabled={disableEditing}
                       />
                     ))}
                   </Stack>
@@ -1930,7 +2170,7 @@ const View_Project_Management = forwardRef(
                 <Stack direction="row" spacing={1}>
                   <FormControl sx={{ flex: 1 }}>
                     <FormLabel>
-                      Start date{" "}
+                      B.Start date{" "}
                       {form.predecessors?.length ? (
                         <Typography
                           level="body-xs"
@@ -1948,7 +2188,7 @@ const View_Project_Management = forwardRef(
                       size="sm"
                       type="date"
                       value={form.start}
-                      disabled={!!form.predecessors?.length}
+                      disabled={disableEditing || !!form.predecessors?.length}
                       onChange={(e) => {
                         const startISO = e.target.value;
                         setForm((f) => ({ ...f, start: startISO }));
@@ -1957,11 +2197,12 @@ const View_Project_Management = forwardRef(
                   </FormControl>
 
                   <FormControl>
-                    <FormLabel>Duration (days)</FormLabel>
+                    <FormLabel>B.Duration (days)</FormLabel>
                     <Input
                       size="sm"
                       type="number"
                       value={form.duration}
+                      disabled={disableEditing}
                       onChange={(e) =>
                         setForm((f) => ({
                           ...f,
@@ -1973,7 +2214,7 @@ const View_Project_Management = forwardRef(
                 </Stack>
 
                 <FormControl sx={{ flex: 1 }}>
-                  <FormLabel>End date</FormLabel>
+                  <FormLabel>B.End date</FormLabel>
                   <Input size="sm" type="date" value={form.end} disabled />
                 </FormControl>
 
@@ -1989,10 +2230,11 @@ const View_Project_Management = forwardRef(
                       size="sm"
                       variant="soft"
                       startDecorator={<Add />}
+                      disabled={disableEditing}
                       onClick={() =>
                         setForm((f) => ({
                           ...f,
-                          resources: [...f.resources, { type: "", number: 0 }],
+                          resources: [...f.resources, { type: "", number: 1 }],
                         }))
                       }
                     >
@@ -2027,15 +2269,28 @@ const View_Project_Management = forwardRef(
                             return { ...f, resources: arr };
                           })
                         }
+                        disabled={disableEditing}
                       />
                     ))}
                   </Stack>
                 </Stack>
 
                 <Stack direction="row" spacing={1}>
-                  <Button size="sm" onClick={saveFromModal} disabled={isSaving}>
-                    {isSaving ? "Saving…" : "Save"}
-                  </Button>
+                  <Tooltip
+                    title={
+                      isPlanFrozen ? "Plan is frozen — unfreeze to save" : ""
+                    }
+                  >
+                    <span>
+                      <Button
+                        size="sm"
+                        onClick={saveFromModal}
+                        disabled={disableEditing}
+                      >
+                        {isSaving ? "Saving…" : "Save"}
+                      </Button>
+                    </span>
+                  </Tooltip>
                   <Button
                     size="sm"
                     variant="soft"
