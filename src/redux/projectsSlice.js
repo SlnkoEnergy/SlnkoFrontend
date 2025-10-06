@@ -391,7 +391,7 @@ export const projectsApi = createApi({
         }
 
         const params = { window: windowKey };
-        if (project_id) params.project_id = project_id;
+        // if (project_id) params.project_id = project_id;
 
         return {
           url: "projectactivity/resources",
