@@ -308,9 +308,9 @@ function projectClientActuals(paList) {
 
   const out = new Map();
   map.forEach((n, id) => {
-    const start = n.actual_start || n._client_start || n.planned_start || null; // real → projected → planned
+    const start = n.actual_start || n._client_start || n.planned_start || null; 
     const finish =
-      n.actual_finish || n._client_finish || n.planned_finish || null; // real → projected → planned
+      n.actual_finish || n._client_finish || n.planned_finish || null; 
 
     const isCompleted = !!n.actual_finish;
     const onTime =
@@ -599,9 +599,7 @@ const View_Project_Management = forwardRef(
     };
 
     useEffect(() => {
-      // ensure URL reflects initial normalized state on first mount
       syncURL(actView, timelineMode);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // API hooks

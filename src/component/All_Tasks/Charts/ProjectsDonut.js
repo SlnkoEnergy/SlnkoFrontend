@@ -8,7 +8,6 @@ export default function ProjectsWorkedCard({
   totalLabel = "Projects",
   sx = {},
 }) {
-  // fallback if someone forgets to pass total
   const totalToShow = Number.isFinite(total)
     ? total
     : data.reduce((a, b) => a + (Number(b.value) || 0), 0);

@@ -198,6 +198,7 @@ function Dash_project() {
         : "-";
       return {
         id: p._id,
+        project_id: p.project_id ?? "",
         code: p.project_code ?? "NA",
         name: p.project_name ?? "-",
         current_activity: current?.activity_name ?? "-",
@@ -241,11 +242,8 @@ function Dash_project() {
   const baselineStart = ymd(range.startDate);
   const baselineEnd = ymd(range.endDate);
 
-  // NEW: fullscreen chip filter state for the timeline
-  // Values: 'all' | 'baseline' | 'actual_ontime' | 'actual_late'
   const [paFilter, setPaFilter] = useState("all");
 
-  // Map UI filter to backend query (omit when 'all')
   const apiFilter =
     paFilter === "baseline" ||
     paFilter === "actual_ontime" ||
@@ -253,7 +251,6 @@ function Dash_project() {
       ? paFilter
       : undefined;
 
-  // Fetch activities (refires when range or filter changes)
   const {
     data: paViewRes,
     isLoading: paLoading,
@@ -279,7 +276,7 @@ function Dash_project() {
     if (initialProjectId && initialProjectId !== projectId) {
       setProjectId(initialProjectId);
     }
-  }, [initialProjectId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [initialProjectId]);
 
   const handleProjectChange = (id) => {
     setProjectId(id || "");
@@ -310,13 +307,12 @@ function Dash_project() {
     ...(projectId ? { project_id: projectId } : {}),
   });
 
-  // Use resource_types returned by backend when available
   const resourceTypesFromApi =
-    Array.isArray(resourcesRes?.resource_types) && resourcesRes.resource_types.length
+    Array.isArray(resourcesRes?.resource_types) &&
+    resourcesRes.resource_types.length
       ? resourcesRes.resource_types
       : RESOURCE_TYPES;
 
-  // Convert backend series -> logs [{date,type,count}]
   const resourceLogs = useMemo(() => {
     const series = Array.isArray(resourcesRes?.series)
       ? resourcesRes.series
@@ -324,7 +320,7 @@ function Dash_project() {
 
     const out = [];
     for (const row of series) {
-      const date = row.date; // already YYYY-MM-DD from API
+      const date = row.date;
       for (const t of resourceTypesFromApi) {
         out.push({
           date,
@@ -348,7 +344,7 @@ function Dash_project() {
         <Grid xs={12} md={3}>
           <CloudStatCard
             loading={isLoading || isFetching}
-            value={stats["to be started"] ?? 0}
+            value={stats["ongoing"] ?? 0}
             title="In Progress Projects"
             subtitle="Projects that is still ongoing"
             accent="#60a5fa"
@@ -362,7 +358,7 @@ function Dash_project() {
             onAction={() => {
               const params = new URLSearchParams();
               params.set("page", "1");
-              params.set("tab", "In Progress");
+              params.set("tab", "Ongoing");
               navigate(`/project_management?${params.toString()}`);
             }}
           />
@@ -446,6 +442,7 @@ function Dash_project() {
             columns={ProjectDetailColumns}
             searchValue={userSearch}
             onSearchChange={setUserSearch}
+            getRowHref={(row) => `/project_detail?project_id=${row.project_id}`}
           />
         </Grid>
 
@@ -485,7 +482,9 @@ function Dash_project() {
             onItemClick={(it) => {
               if (it.project_id) {
                 navigate(
-                  `/project_detail?project_id=${encodeURIComponent(it.project_id)}`
+                  `/project_detail?project_id=${encodeURIComponent(
+                    it.project_id
+                  )}`
                 );
               }
             }}
@@ -516,8 +515,8 @@ function Dash_project() {
         <Grid xs={12} md={12}>
           <ResourceBarGraph
             title="Resources by Type"
-            resourceTypes={resourceTypesFromApi}  
-            logs={resourceLogs}                     
+            resourceTypes={resourceTypesFromApi}
+            logs={resourceLogs}
             initialRange={resRange}
             onRangeChange={(startY, endY) => {
               const s = parseYMD(startY);
