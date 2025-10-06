@@ -1,3 +1,5 @@
+// Dash_project.jsx
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Grid } from "@mui/joy";
 import CloudStatCard from "./All_Tasks/TaskDashboardCards";
 import PlayCircleFilledRoundedIcon from "@mui/icons-material/PlayCircleFilledRounded";
@@ -5,7 +7,6 @@ import TaskAltRoundedIcon from "@mui/icons-material/TaskAltRounded";
 import DoNotDisturbOnRoundedIcon from "@mui/icons-material/DoNotDisturbOnRounded";
 import { PauseCircleRounded } from "@mui/icons-material";
 import TeamLeaderboard from "./All_Tasks/TeamLeaderboard";
-import { useEffect, useMemo, useState } from "react";
 import ProjectsWorkedCard from "./All_Tasks/Charts/ProjectsDonut";
 import {
   useGetActivityLineByProjectIdQuery,
@@ -25,7 +26,35 @@ import ActivityFeedCard from "../component/All_Tasks/ActivityCard";
 import SearchPickerModal from "./SearchPickerModal";
 import ResourceBarGraph from "./ResourceBarGraph";
 
-/* ---------------- date helpers ---------------- */
+/* ---------------- Hoisted constants (stable references) ---------------- */
+const DONUT_COLORS = [
+  "#f59e0b", "#22c55e", "#ef4444", "#3b82f6", "#8b5cf6",
+  "#14b8a6", "#e11d48", "#84cc16", "#f97316", "#06b6d4",
+  "#d946ef", "#0ea5e9", "#65a30d", "#dc2626", "#7c3aed",
+  "#10b981", "#ca8a04", "#2563eb", "#f43f5e", "#0891b2",
+  "#a16207", "#15803d", "#4f46e5", "#ea580c", "#db2777",
+  "#047857", "#1d4ed8", "#9333ea", "#b91c1c", "#0d9488",
+];
+
+const RESOURCE_TYPES_FALLBACK = [
+  "surveyor",
+  "civil engineer",
+  "civil i&c",
+  "electric engineer",
+  "electric i&c",
+  "soil testing team",
+  "tline engineer",
+  "tline subcontractor",
+];
+
+const PROJECT_DETAIL_COLUMNS = [
+  { key: "code", label: "Project Code" },
+  { key: "name", label: "Project Name" },
+  { key: "current_activity", label: "Current Activity" },
+  { key: "project_state", label: "Project State" },
+];
+
+/* ---------------- Hoisted helpers ---------------- */
 const ymd = (d) => {
   const dt = new Date(d);
   const y = dt.getFullYear();
@@ -55,13 +84,43 @@ const parseYMD = (s) => {
   dt.setHours(0, 0, 0, 0);
   return Number.isNaN(dt.getTime()) ? null : dt;
 };
+const fmtDate = (d) => {
+  if (!d) return "-";
+  const dt = new Date(d);
+  if (Number.isNaN(dt.getTime())) return "-";
+  const yyyy = dt.getFullYear();
+  const mm = String(dt.getMonth() + 1).padStart(2, "0");
+  const dd = String(dt.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+};
 
+const IconBadge = ({ color = "#2563eb", bg = "#eff6ff", icon }) => (
+  <div
+    style={{
+      width: 42,
+      height: 26,
+      borderRadius: 999,
+      background: bg,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color,
+      fontWeight: 700,
+      boxShadow: "0 1px 0 rgba(0,0,0,0.04) inset, 0 6px 14px rgba(2,6,23,0.06)",
+      border: "1px solid rgba(2,6,23,0.06)",
+    }}
+  >
+    {icon}
+  </div>
+);
+
+/* ---------------- Component ---------------- */
 function Dash_project({ projectIds }) {
   const navigate = useNavigate();
   const { projectId: paramId } = useParams();
   const [sp] = useSearchParams();
 
-  /* ---------- status cards data ---------- */
+  /* ---------- Status cards ---------- */
   const { data: statusData, isLoading, isFetching } = useGetProjectStatusFilterQuery();
   const stats = statusData?.data || {
     completed: 0,
@@ -71,38 +130,40 @@ function Dash_project({ projectIds }) {
     pending: 0,
   };
 
-  /* ---------- selected projects (multi) ---------- */
+  /* ---------- Multi selection ---------- */
   const [selectedIds, setSelectedIds] = useState(projectIds || []);
   useEffect(() => {
     setSelectedIds(projectIds || []);
   }, [projectIds]);
 
-  /* ---------- single "active" project (for some queries) ---------- */
+  /* ---------- Single active project ---------- */
   const searchProjectId = sp.get("project_id") || "";
   const initialProjectId =
     searchProjectId ||
     paramId ||
     (Array.isArray(projectIds) && projectIds.length ? String(projectIds[0]) : "");
-
   const [projectId, setProjectId] = useState(initialProjectId);
+
   useEffect(() => {
     if (initialProjectId && initialProjectId !== projectId) {
       setProjectId(initialProjectId);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialProjectId]);
+  }, [initialProjectId, projectId]);
 
-  const handleProjectChangeSingle = (id) => {
-    if (!id) return;
-    const sId = String(id);
-    setProjectId(sId);
-    setSelectedIds((prev) => [sId, ...prev.filter((x) => x !== sId)]);
-    const params = new URLSearchParams(sp);
-    params.set("project_id", sId);
-    navigate({ search: params.toString() }, { replace: true });
-  };
+  const handleProjectChangeSingle = useCallback(
+    (id) => {
+      if (!id) return;
+      const sId = String(id);
+      setProjectId(sId);
+      setSelectedIds((prev) => [sId, ...prev.filter((x) => x !== sId)]);
+      const params = new URLSearchParams(sp);
+      params.set("project_id", sId);
+      navigate({ search: params.toString() }, { replace: true });
+    },
+    [navigate, sp]
+  );
 
-  /* ---------- team leaderboard: project detail rows ---------- */
+  /* ---------- Team leaderboard (project details) ---------- */
   const [userSearch, setUserSearch] = useState("");
   const [debouncedQ, setDebouncedQ] = useState(userSearch);
   useEffect(() => {
@@ -111,30 +172,23 @@ function Dash_project({ projectIds }) {
   }, [userSearch]);
 
   const {
-    data: projectData,
+    data: projectDetailData,
     isLoading: perfLoading,
     isFetching: perfFetching,
-  } = useGetProjectDetailQuery({ q: debouncedQ });
-
-  const fmtDate = (d) => {
-    if (!d) return "-";
-    const dt = new Date(d);
-    if (Number.isNaN(dt.getTime())) return "-";
-    const yyyy = dt.getFullYear();
-    const mm = String(dt.getMonth() + 1).padStart(2, "0");
-    const dd = String(dt.getDate()).padStart(2, "0");
-    return `${yyyy}-${mm}-${dd}`;
-  };
-
-  const ProjectDetailColumns = [
-    { key: "code", label: "Project Code" },
-    { key: "name", label: "Project Name" },
-    { key: "current_activity", label: "Current Activity" },
-    { key: "project_state", label: "Project State" },
-  ];
+  } = useGetProjectDetailQuery(
+    { q: debouncedQ },
+    {
+      // subscribe only to the nested .data to limit re-renders
+      selectFromResult: ({ data, isLoading, isFetching }) => ({
+        data: data?.data,
+        isLoading,
+        isFetching,
+      }),
+    }
+  );
 
   const projectDetailRows = useMemo(() => {
-    const list = projectData?.data ?? [];
+    const list = Array.isArray(projectDetailData) ? projectDetailData : [];
     return list.map((p) => {
       const acts = Array.isArray(p.activities) ? p.activities : [];
       const current =
@@ -165,6 +219,7 @@ function Dash_project({ projectIds }) {
       const completion_date = current?.actual_end_date ? fmtDate(current.actual_end_date) : "-";
       return {
         id: p._id,
+        project_id: p.project_id ?? "",
         code: p.project_code ?? "NA",
         name: p.project_name ?? "-",
         current_activity: current?.activity_name ?? "-",
@@ -173,39 +228,46 @@ function Dash_project({ projectIds }) {
         project_state: p.state ?? "-",
       };
     });
-  }, [projectData]);
+  }, [projectDetailData]);
 
-  /* ---------- donut (states distribution) ---------- */
-  const DONUT_COLORS = [
-    "#f59e0b", "#22c55e", "#ef4444", "#3b82f6", "#8b5cf6",
-    "#14b8a6", "#e11d48", "#84cc16", "#f97316", "#06b6d4",
-    "#d946ef", "#0ea5e9", "#65a30d", "#dc2626", "#7c3aed",
-    "#10b981", "#ca8a04", "#2563eb", "#f43f5e", "#0891b2",
-    "#a16207", "#15803d", "#4f46e5", "#ea580c", "#db2777",
-    "#047857", "#1d4ed8", "#9333ea", "#b91c1c", "#0d9488",
-  ];
-  const { data: stateRes, isLoading: pbsLoading, isFetching: pbsFetching } =
-    useGetProjectStatesFilterQuery();
+  /* ---------- Donut (states distribution) ---------- */
+  const {
+    data: stateRes,
+    isLoading: pbsLoading,
+    isFetching: pbsFetching,
+  } = useGetProjectStatesFilterQuery();
+
   const donutData = useMemo(() => {
     const dist = stateRes?.data || [];
+    const total = stateRes?.total || 0;
+    if (!total) return [];
     return dist.map((d, i) => ({
       name: d._id,
-      value: Number(((d.count / stateRes?.total) * 100).toFixed(2)),
+      value: Number(((d.count / total) * 100).toFixed(2)),
       color: DONUT_COLORS[i % DONUT_COLORS.length],
     }));
   }, [stateRes]);
 
-  /* ---------- activity feed ---------- */
-  const { data: feedRes, isLoading: feedLoading, isFetching: feedFetching } =
-    useGetPostsActivityFeedQuery();
-  const feedItems = Array.isArray(feedRes?.data) ? feedRes.data : [];
+  /* ---------- Activity feed ---------- */
+  const {
+    data: feedRes,
+    isLoading: feedLoading,
+    isFetching: feedFetching,
+  } = useGetPostsActivityFeedQuery();
 
-  /* ---------- weekly timeline (baseline/actual filters) ---------- */
-  const defaultStart = startOfWeek(new Date());
-  const defaultEnd = addDays(defaultStart, 6);
+  const feedItems = useMemo(
+    () => (Array.isArray(feedRes?.data) ? feedRes.data : []),
+    [feedRes?.data]
+  );
+
+  /* ---------- Weekly timeline (baseline/actual) ---------- */
+  const defaultStart = useMemo(() => startOfWeek(new Date()), []);
+  const defaultEnd = useMemo(() => addDays(startOfWeek(new Date()), 6), []);
   const [range, setRange] = useState({ startDate: defaultStart, endDate: defaultEnd });
-  const baselineStart = ymd(range.startDate);
-  const baselineEnd = ymd(range.endDate);
+
+  const baselineStart = useMemo(() => ymd(range.startDate), [range.startDate]);
+  const baselineEnd = useMemo(() => ymd(range.endDate), [range.endDate]);
+
   const [paFilter, setPaFilter] = useState("all");
   const apiFilter =
     paFilter === "baseline" || paFilter === "actual_ontime" || paFilter === "actual_late"
@@ -221,12 +283,23 @@ function Dash_project({ projectIds }) {
     baselineEnd,
     filter: apiFilter,
   });
+
   const timelineData = useMemo(
     () => (Array.isArray(paViewRes?.data) ? paViewRes.data : []),
-    [paViewRes]
+    [paViewRes?.data]
   );
 
-  /* ---------- multi project line charts ---------- */
+  const handleTimelineRangeChange = useCallback((startDate, endDate) => {
+    const s = new Date(startDate); s.setHours(0, 0, 0, 0);
+    const e = new Date(endDate);  e.setHours(0, 0, 0, 0);
+    setRange((prev) =>
+      prev.startDate.getTime() === s.getTime() && prev.endDate.getTime() === e.getTime()
+        ? prev
+        : { startDate: s, endDate: e }
+    );
+  }, []);
+
+  /* ---------- Multi-project line chart ---------- */
   const {
     data: LineData,
     isLoading: isLoadingLineData,
@@ -235,7 +308,7 @@ function Dash_project({ projectIds }) {
     skip: selectedIds.length === 0,
   });
 
-  /* ---------- project search / dropdown & labels ---------- */
+  /* ---------- Project dropdown / search (kept stable) ---------- */
   const { data: projectResponse } = useGetProjectDropdownForDashboardQuery({
     page: 1,
     pageSize: 7,
@@ -248,21 +321,21 @@ function Dash_project({ projectIds }) {
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [labelCache, setLabelCache] = useState({});
 
-  const labelFromRow = (row) =>
-    row.code
-      ? `${row.code}${row.name ? ` - ${row.name}` : ""}`
-      : row.name || String(row._id);
+  const labelFromRow = useCallback(
+    (row) => (row.code ? `${row.code}${row.name ? ` - ${row.name}` : ""}` : row.name || String(row._id)),
+    []
+  );
 
-  const onPickProject = (row) => {
+  const onPickProject = useCallback((row) => {
     if (!row) return;
     setProjectModalOpen(false);
     const id = String(row._id || "");
     if (!id) return;
     setLabelCache((prev) => ({ ...prev, [id]: labelFromRow(row) }));
     setSelectedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
-  };
+  }, [labelFromRow]);
 
-  const getLabelForId = (id) => {
+  const getLabelForId = useCallback((id) => {
     if (labelCache[id]) return labelCache[id];
     const p = (projects || []).find((x) => String(x._id) === String(id));
     return p
@@ -270,7 +343,7 @@ function Dash_project({ projectIds }) {
         ? `${p.code}${p.name ? ` - ${p.name}` : ""}`
         : p.name || id
       : id;
-  };
+  }, [labelCache, projects]);
 
   const optionRows = useMemo(() => {
     const seen = new Set();
@@ -290,52 +363,56 @@ function Dash_project({ projectIds }) {
     return out;
   }, [projects, selectedIds, labelCache]);
 
-  const fetchProjectsPage = async ({ search = "", page = 1, pageSize = 7 }) => {
-    const res = await triggerProjectSearch({ search, page, limit: pageSize }, true);
-    const d = res?.data;
-    return {
-      rows: d?.data || [],
-      total: d?.pagination?.total || 0,
-      page: d?.pagination?.page || page,
-      pageSize: d?.pagination?.pageSize || pageSize,
-    };
-  };
+  const fetchProjectsPage = useCallback(
+    async ({ search = "", page = 1, pageSize = 7 }) => {
+      const res = await triggerProjectSearch({ search, page, limit: pageSize }, true);
+      const d = res?.data;
+      return {
+        rows: d?.data || [],
+        total: d?.pagination?.total || 0,
+        page: d?.pagination?.page || page,
+        pageSize: d?.pagination?.pageSize || pageSize,
+      };
+    },
+    [triggerProjectSearch]
+  );
 
-  /* ---------- resources (bar chart) ---------- */
-  const RESOURCE_TYPES = [
-    "surveyor",
-    "civil engineer",
-    "civil i&c",
-    "electric engineer",
-    "electric i&c",
-    "soil testing team",
-    "tline engineer",
-    "tline subcontractor",
-  ];
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  /* ---------- Resources (bar chart) ---------- */
+  const today = useMemo(() => {
+    const t = new Date();
+    t.setHours(0, 0, 0, 0);
+    return t;
+  }, []);
   const [resRange, setResRange] = useState({
     startDate: today,
     endDate: addDays(today, 6),
   });
 
-  const { data: resourcesRes } = useGetResourcesQuery({
-    start: ymd(resRange.startDate),
-    end: ymd(resRange.endDate),
-    ...(projectId ? { project_id: projectId } : {}),
+  const resArgs = useMemo(
+    () => ({
+      start: ymd(resRange.startDate),
+      end: ymd(resRange.endDate),
+      ...(projectId ? { project_id: projectId } : {}),
+    }),
+    [resRange.startDate, resRange.endDate, projectId]
+  );
+
+  const { data: resourcesRes } = useGetResourcesQuery(resArgs, {
+    refetchOnFocus: false,
+    refetchOnReconnect: false,
   });
 
-  const resourceTypesFromApi =
-    Array.isArray(resourcesRes?.resource_types) && resourcesRes.resource_types.length
+  const resourceTypesFromApi = useMemo(() => {
+    return Array.isArray(resourcesRes?.resource_types) && resourcesRes.resource_types.length
       ? resourcesRes.resource_types
-      : RESOURCE_TYPES;
+      : RESOURCE_TYPES_FALLBACK;
+  }, [resourcesRes?.resource_types]);
 
   const resourceLogs = useMemo(() => {
     const series = Array.isArray(resourcesRes?.series) ? resourcesRes.series : [];
     const out = [];
     for (const row of series) {
-      const date = row.date; // YYYY-MM-DD from API
+      const date = row.date; // YYYY-MM-DD
       for (const t of resourceTypesFromApi) {
         out.push({
           date,
@@ -345,27 +422,29 @@ function Dash_project({ projectIds }) {
       }
     }
     return out;
-  }, [resourcesRes, resourceTypesFromApi]);
+  }, [resourcesRes?.series, resourceTypesFromApi]);
 
-  /* ---------- small UI helper ---------- */
-  const IconBadge = ({ color = "#2563eb", bg = "#eff6ff", icon }) => (
-    <div
-      style={{
-        width: 42,
-        height: 26,
-        borderRadius: 999,
-        background: bg,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color,
-        fontWeight: 700,
-        boxShadow: "0 1px 0 rgba(0,0,0,0.04) inset, 0 6px 14px rgba(2,6,23,0.06)",
-        border: "1px solid rgba(2,6,23,0.06)",
-      }}
-    >
-      {icon}
-    </div>
+  const safeSetResRange = useCallback((s, e) => {
+    setResRange((prev) =>
+      prev.startDate.getTime() === s.getTime() && prev.endDate.getTime() === e.getTime()
+        ? prev
+        : { startDate: s, endDate: e }
+    );
+  }, []);
+
+  const handleResRangeChange = useCallback(
+    (startY, endY) => {
+      const s = parseYMD(startY) || resRange.startDate;
+      const e = parseYMD(endY) || resRange.endDate;
+      safeSetResRange(s, e);
+    },
+    [resRange.startDate, resRange.endDate, safeSetResRange]
+  );
+
+  /* ---------- Stable row link for Leaderboard ---------- */
+  const getRowHref = useCallback(
+    (row) => `/project_detail?project_id=${row.project_id}`,
+    []
   );
 
   return (
@@ -381,9 +460,9 @@ function Dash_project({ projectIds }) {
         <Grid xs={12} md={3}>
           <CloudStatCard
             loading={isLoading || isFetching}
-            value={stats.pending ?? 0}
-            title="Pending Projects"
-            subtitle="Awaiting or in progress"
+            value={stats["ongoing"] ?? 0}
+            title="In Progress Projects"
+            subtitle="Projects that is still ongoing"
             accent="#60a5fa"
             illustration={
               <IconBadge
@@ -395,7 +474,7 @@ function Dash_project({ projectIds }) {
             onAction={() => {
               const params = new URLSearchParams();
               params.set("page", "1");
-              params.set("tab", "Pending");
+              params.set("tab", "Ongoing");
               navigate(`/project_management?${params.toString()}`);
             }}
           />
@@ -429,7 +508,7 @@ function Dash_project({ projectIds }) {
             loading={isLoading || isFetching}
             value={stats.delayed ?? 0}
             title="Delayed Projects"
-            subtitle="Running behind schedule"
+            subtitle="Project Delayed"
             accent="#fca5a5"
             illustration={
               <IconBadge
@@ -451,8 +530,8 @@ function Dash_project({ projectIds }) {
           <CloudStatCard
             loading={isLoading || isFetching}
             value={stats.cancelled ?? 0}
-            title="On Hold / Cancelled"
-            subtitle="Paused or cancelled"
+            title="On Hold Projects"
+            subtitle="Tasks cancelled"
             accent="#fca5a5"
             illustration={
               <IconBadge
@@ -477,9 +556,10 @@ function Dash_project({ projectIds }) {
           <TeamLeaderboard
             rows={perfLoading || perfFetching ? [] : projectDetailRows}
             title="Project Detail Dashboard"
-            columns={ProjectDetailColumns}
+            columns={PROJECT_DETAIL_COLUMNS}
             searchValue={userSearch}
             onSearchChange={setUserSearch}
+            getRowHref={getRowHref}
           />
         </Grid>
 
@@ -501,13 +581,7 @@ function Dash_project({ projectIds }) {
             loading={paLoading || paFetching}
             title="Calendar — Selected Range"
             range={range}
-            onRangeChange={(startDate, endDate) => {
-              const s = new Date(startDate);
-              const e = new Date(endDate);
-              s.setHours(0, 0, 0, 0);
-              e.setHours(0, 0, 0, 0);
-              setRange({ startDate: s, endDate: e });
-            }}
+            onRangeChange={handleTimelineRangeChange}
             layerFilter={paFilter}
             onLayerFilterChange={setPaFilter}
           />
@@ -546,15 +620,8 @@ function Dash_project({ projectIds }) {
             resourceTypes={resourceTypesFromApi}
             logs={resourceLogs}
             initialRange={resRange}
-            onRangeChange={(startY, endY) => {
-              const s = parseYMD(startY);
-              const e = parseYMD(endY);
-              setResRange({
-                startDate: s || resRange.startDate,
-                endDate: e || resRange.endDate,
-              });
-            }}
-            onBarClick={() => { }}
+            onRangeChange={handleResRangeChange}
+            onBarClick={() => {}}
           />
         </Grid>
       </Grid>
@@ -580,7 +647,17 @@ function Dash_project({ projectIds }) {
         </Grid>
       ) : null}
 
-      
+      <SearchPickerModal
+        open={false && projectModalOpen}
+        onClose={() => setProjectModalOpen(false)}
+        title="Pick Projects"
+        rows={optionRows}
+        total={optionRows.length}
+        getRowKey={(r) => String(r._id)}
+        getRowLabel={labelFromRow}
+        fetchPage={fetchProjectsPage}
+        onPick={onPickProject}
+      />
     </Box>
   );
 }
