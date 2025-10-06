@@ -2286,6 +2286,15 @@ function Sidebar() {
                 user?.emp_id === "SE-212" ||
                 user?.emp_id === "SE-205" ||
                 user?.emp_id === "SE-010") && (
+                <>
+                 <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/project_dash")}>
+                <BuildIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Projects</Typography>
+                </ListItemContent>
+              </ListItemButton>
+            </ListItem>
                 <ListItem sx={{ mt: 0.5 }}>
                   <ListItemButton onClick={() => navigate("/eng_dash")}>
                     <BuildIcon />
@@ -2294,6 +2303,7 @@ function Sidebar() {
                     </ListItemContent>
                   </ListItemButton>
                 </ListItem>
+                </>
               )}
             </List>
           </>
