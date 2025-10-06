@@ -79,8 +79,8 @@ function ProjectManagement() {
         hasCompletionFormula,
         completion_formula,
       } = normalizeFromModal(payload || {});
-
-      if (payload) {
+      console.log({ payload });
+      if (payload && payload.__mode === "existing") {
         const id =
           payload.activityId ||
           payload.id ||
