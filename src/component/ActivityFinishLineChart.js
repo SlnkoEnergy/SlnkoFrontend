@@ -93,6 +93,23 @@ function OngoingSpans({ xAxisMap, yAxisMap, data = [], nowMs = Date.now() }) {
     );
 }
 
+// --- day-diff helpers (local-calendar based) ---
+const ONE_DAY = 24 * 60 * 60 * 1000;
+const startOfLocalDay = (ms) => {
+    if (ms == null) return null;
+    const d = new Date(ms);
+    // Local midnight
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+};
+const diffCalendarDays = (plannedMs, actualMs) => {
+    const p0 = startOfLocalDay(plannedMs);
+    const a0 = startOfLocalDay(actualMs);
+    if (p0 == null || a0 == null) return 0;
+    // exact calendar-day difference (local)
+    return Math.round((a0 - p0) / ONE_DAY);
+};
+
+
 /** Legend/meta for tooltip + markers */
 const SERIES = [
     { key: "actual_finish_ms", label: "Actual Finish", color: "#16a34a", shape: "square" },
@@ -129,6 +146,53 @@ function CustomTooltip({ active, label, payload }) {
     const row = payload[0]?.payload || {};
     const items = SERIES.filter((s) => row[s.key] != null);
 
+    // --- Schedule status (Actual vs Planned Finish) using calendar-day diff ---
+    let statusEl = null;
+    if (row.planned_finish_ms != null && row.actual_finish_ms != null) {
+        const diffDays = diffCalendarDays(row.planned_finish_ms, row.actual_finish_ms);
+
+        let text = "On time";
+        let color = "#16a34a"; // green
+        let bg = "rgba(22,163,74,0.08)";
+
+        if (diffDays > 0) {
+            text = `Delayed ${diffDays} day${diffDays > 1 ? "s" : ""}`;
+            color = "#dc2626"; // red
+            bg = "rgba(220,38,38,0.10)";
+        } else if (diffDays < 0) {
+            const daysEarly = Math.abs(diffDays);
+            text = `Early ${daysEarly} day${daysEarly > 1 ? "s" : ""}`;
+            color = "#0ea5e9"; // blue
+            bg = "rgba(14,165,233,0.10)";
+        }
+
+        statusEl = (
+            <div
+                style={{
+                    marginTop: 8,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    fontWeight: 700,
+                    padding: "4px 8px",
+                    borderRadius: 999,
+                    background: bg,
+                    color,
+                }}
+            >
+                <span
+                    style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: "50%",
+                        background: color,
+                    }}
+                />
+                <span>{text}</span>
+            </div>
+        );
+    }
+
     return (
         <div
             style={{
@@ -141,6 +205,7 @@ function CustomTooltip({ active, label, payload }) {
             }}
         >
             <div style={{ fontWeight: 600, marginBottom: 6 }}>{label}</div>
+
             {items.map((it) => (
                 <div
                     key={it.key}
@@ -151,9 +216,13 @@ function CustomTooltip({ active, label, payload }) {
                     <span style={{ color: "#0f172a" }}>{fmt(row[it.key])}</span>
                 </div>
             ))}
+
+            {statusEl}
         </div>
     );
 }
+
+
 
 /* ---------- custom dot renderers for start markers ---------- */
 const DotCircle = (props) => {
@@ -309,12 +378,12 @@ export default function ActivityFinishLineChart({
                         <Legend />
 
                         {/* Today line */}
-                        <ReferenceLine
+                        {/* <ReferenceLine
                             y={nowMs}
                             stroke="#94a3b8"
                             strokeDasharray="4 4"
                             label={{ value: "Today", fill: "#475569", position: "right" }}
-                        />
+                        /> */}
 
                         {/* Finish lines */}
                         {hasPlannedFinish && (
