@@ -320,43 +320,13 @@ function Sidebar() {
               </ListItemButton>
             </ListItem>
 
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <MiscellaneousServicesIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">CAM</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/cam_dash")}>
-                      Dashboard
-                    </ListItemButton>
-                  </ListItem>
-                  <ListItem>
-                    <ListItemButton
-                      onClick={() => navigate("/purchase_request")}
-                    >
-                      Purchase Request
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/cam_dash")}>
+                <MiscellaneousServicesIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">CAM</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
 
             <ListItem sx={{ mt: 0.5 }}>
@@ -480,42 +450,13 @@ function Sidebar() {
               </ListItemButton>
             </ListItem>
 
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <DatabaseIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">My Databases</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/categories")}>
-                      Categories
-                    </ListItemButton>
-                  </ListItem>
-
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/products")}>
-                      Products
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/categories")}>
+                <DatabaseIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">My Databases</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
 
             <ListItem sx={{ mt: 0.5 }}>
@@ -790,15 +731,17 @@ function Sidebar() {
                       User Dashboard
                     </ListItemButton>
                   </ListItem>
-                  {user?.department === "BD" && (user?.emp_id === "SE-277" || user?.emp_id === "SE-099") && (
-                    <ListItem>
-                      <ListItemButton
-                        onClick={() => navigate("/expense_approval")}
-                      >
-                        Expense Approval
-                      </ListItemButton>
-                    </ListItem>
-                  )}
+                  {user?.department === "BD" &&
+                    (user?.emp_id === "SE-277" ||
+                      user?.emp_id === "SE-046") && (
+                      <ListItem>
+                        <ListItemButton
+                          onClick={() => navigate("/expense_approval")}
+                        >
+                          Expense Approval
+                        </ListItemButton>
+                      </ListItem>
+                    )}
                 </List>
               </Toggler>
             </ListItem>
@@ -1391,10 +1334,8 @@ function Sidebar() {
                 )}
               >
                 <List sx={{ gap: 0.5 }}>
-                   <ListItem>
-                    <ListItemButton
-                      onClick={() => navigate("/cam_dash")}
-                    >
+                  <ListItem>
+                    <ListItemButton onClick={() => navigate("/cam_dash")}>
                       Dashboard
                     </ListItemButton>
                   </ListItem>
@@ -1889,8 +1830,7 @@ function Sidebar() {
               </ListItemButton>
             </ListItem>
           </List>
-        ) : user?.department === "CAM" && user?.name!== "Shantanu Sameer"
-           ? (
+        ) : user?.department === "CAM" && user?.name !== "Shantanu Sameer" ? (
           <List
             size="sm"
             sx={{

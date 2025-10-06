@@ -194,14 +194,13 @@ export const projectsApi = createApi({
           : [{ type: "Activity", id: "LIST" }],
     }),
 
-    // in projectsSlice
     getAllModules: builder.query({
       query: ({ search = "", page = 1, limit = 10 } = {}) => ({
         url: "engineering/get-module-paginated",
         method: "GET",
         params: { search, page, limit },
       }),
-      // preserve backend { data, pagination } so callers can see totals
+
       transformResponse: (res) => ({
         data: Array.isArray(res?.data) ? res.data : [],
         pagination: res?.pagination ?? {
@@ -224,7 +223,6 @@ export const projectsApi = createApi({
           : [{ type: "Module", id: "LIST" }],
     }),
 
-    // ⬇️ Name Search Activities by Project (paginated + searchable)
     nameSearchActivityByProjectId: builder.query({
       query: ({ projectId, page = 1, limit = 7, search = "" }) => ({
         url: "projectactivity/namesearchactivitybyprojectid",
@@ -235,7 +233,6 @@ export const projectsApi = createApi({
           search,
         },
       }),
-      // Optional: normalize the response so UI is predictable
       transformResponse: (res) => ({
         ok: !!res?.ok,
         page: res?.page ?? 1,
@@ -247,11 +244,10 @@ export const projectsApi = createApi({
       providesTags: ["Project"],
     }),
 
-    // ⬇️ Name Search Material Categories (paginated + searchable)
     namesearchMaterialCategories: builder.query({
       query: ({ search = "", page = 1, limit = 7 } = {}) => ({
         url: "products/category",
-        params: { search, page, limit }, // ← no pr / project_id
+        params: { search, page, limit },
       }),
       transformResponse: (res) => ({
         data: Array.isArray(res?.data) ? res.data : [],
@@ -293,7 +289,6 @@ export const projectsApi = createApi({
     }),
 
     createApproval: builder.mutation({
-      // UPDATE the URL below if your route differs (e.g. "approval/create" or "approval")
       query: (payload) => ({
         url: "approvals/approval",
         method: "POST",
@@ -303,14 +298,12 @@ export const projectsApi = createApi({
     }),
 
     getRejectedOrNotAllowedDependencies: builder.query({
-      // usage: useGetRejectedOrNotAllowedDependenciesQuery({ projectId, activityId })
       query: ({ projectId, activityId }) => ({
         url: `projectactivity/${encodeURIComponent(
           projectId
         )}/dependencies/${encodeURIComponent(activityId)}`,
         method: "GET",
       }),
-      // tag by project+activity so caches are distinct per pair
       providesTags: (result, error, args) => {
         const key =
           args && args.projectId && args.activityId
@@ -356,7 +349,7 @@ export const projectsApi = createApi({
     }),
 
     getProjectDropdownForDashboard: builder.query({
-      query: () => `/project-dropdown-detail`
+      query: () => `/project-dropdown-detail`,
     }),
 
     getPostsActivityFeed: builder.query({
@@ -365,13 +358,57 @@ export const projectsApi = createApi({
     }),
 
     getProjectActivityForView: builder.query({
-      query: ({ baselineStart, baselineEnd }) =>
-        `projectactivity/allprojectactivityforview?baselineStart=${baselineStart}&baselineEnd=${baselineEnd}`,
+      query: ({ baselineStart, baselineEnd, filter }) =>
+        `projectactivity/allprojectactivityforview?baselineStart=${baselineStart}&baselineEnd=${baselineEnd}&filter=${filter}`,
       providesTags: ["Project"],
     }),
-  })
 
-})
+    getResources: builder.query({
+      query: (args = {}) => {
+        const { window: windowKeyIn, start, end, project_id } = args || {};
+        let windowKey = windowKeyIn;
+        if (!windowKey) {
+          if (start && end) {
+            const toDate = (s) => {
+              const [y, m, d] = String(s).split("-").map(Number);
+              const dt = new Date(y, (m || 1) - 1, d || 1);
+              dt.setHours(0, 0, 0, 0);
+              return dt;
+            };
+            const s = toDate(start);
+            const e = toDate(end);
+            const days = Math.max(1, Math.round((e - s) / 86400000) + 1);
+
+            if (days <= 7) windowKey = "1w";
+            else if (days <= 14) windowKey = "2w";
+            else if (days <= 21) windowKey = "3w";
+            else if (days <= 30) windowKey = "1m";
+            else if (days <= 90) windowKey = "3m";
+            else windowKey = "6m";
+          } else {
+            windowKey = "1w";
+          }
+        }
+
+        const params = { window: windowKey };
+        if (project_id) params.project_id = project_id;
+
+        return {
+          url: "projectactivity/resources",
+          params,
+        };
+      },
+    }),
+    updateStatusOfPlan: builder.mutation({
+      query: ({ projectId, status }) => ({
+        url: `projectactivity/${projectId}/updateStatusOfPlan`,
+        method: "PUT",
+        body: { status },
+      }),
+      invalidatesTags: ["Project"],
+    }),
+  }),
+});
 
 export const {
   useGetProjectsQuery,
@@ -421,4 +458,7 @@ export const {
   useGetActivityLineByProjectIdQuery,
   useGetPostsActivityFeedQuery,
   useGetProjectActivityForViewQuery,
+  useGetResourcesQuery,
+  useLazyGetResourcesQuery,
+  useUpdateStatusOfPlanMutation,
 } = projectsApi;

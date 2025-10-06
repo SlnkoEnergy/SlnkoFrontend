@@ -27,20 +27,13 @@ function ProjectManagement() {
 
   const isLoading = isPushing || isUpdatingDeps;
 
-  /** Normalize payload bits coming from the modal:
-   *  - dependencies: always plural array
-   *  - predecessors: array; or build from activity_id/type/lag fallback
-   *  - completion_formula: pass-through if provided (string/empty string allowed)
-   */
   const normalizeFromModal = (payload = {}) => {
-    // --- dependencies (ensure plural key for backend) ---
     const dependencies = Array.isArray(payload.dependencies)
       ? payload.dependencies
       : Array.isArray(payload.dependency)
       ? payload.dependency
       : [];
 
-    // --- predecessors: prefer array, else fallback to single fields ---
     let predecessors = Array.isArray(payload.predecessors)
       ? payload.predecessors
       : [];
@@ -62,14 +55,20 @@ function ProjectManagement() {
       ];
     }
 
-    // --- completion formula (optional, global-only on backend) ---
-    const hasCompletionFormula =
-      Object.prototype.hasOwnProperty.call(payload, "completion_formula");
+    const hasCompletionFormula = Object.prototype.hasOwnProperty.call(
+      payload,
+      "completion_formula"
+    );
     const completion_formula = hasCompletionFormula
       ? String(payload.completion_formula ?? "")
       : undefined;
 
-    return { dependencies, predecessors, hasCompletionFormula, completion_formula };
+    return {
+      dependencies,
+      predecessors,
+      hasCompletionFormula,
+      completion_formula,
+    };
   };
 
   const handleCreate = async (payload) => {
@@ -82,7 +81,6 @@ function ProjectManagement() {
       } = normalizeFromModal(payload || {});
 
       if (payload && payload.__mode === "existing") {
-        // ---- Update GLOBAL/PROJECT activity master ----
         const id =
           payload.activityId ||
           payload.id ||
@@ -106,17 +104,18 @@ function ProjectManagement() {
           return;
         }
 
-        // At least one change must be present for update
-        if (!dependencies.length && !predecessors.length && !hasCompletionFormula) {
+        if (
+          !dependencies.length &&
+          !predecessors.length &&
+          !hasCompletionFormula
+        ) {
           toast.error("Nothing to update.");
           return;
         }
 
         const body = {
-          // backend expects 'dependencies'
           ...(dependencies.length ? { dependencies } : {}),
           ...(predecessors.length ? { predecessors } : {}),
-          // only send completion_formula for global updates
           ...(isGlobal && hasCompletionFormula ? { completion_formula } : {}),
         };
 
@@ -132,7 +131,6 @@ function ProjectManagement() {
         return;
       }
 
-      // ---- NEW activity: push into project ----
       if (!payload?.project_id) {
         toast.error("Pick a project first.");
         return;
@@ -150,7 +148,6 @@ function ProjectManagement() {
       toast.success("Activity added to project");
       setOpenAdd(false);
     } catch (err) {
-      console.error("Create/update error:", err);
       toast.error(
         err?.data?.message ||
           err?.error ||

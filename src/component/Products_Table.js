@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import SearchIcon from "@mui/icons-material/Search";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
@@ -9,7 +9,7 @@ import FormControl from "@mui/joy/FormControl";
 import FormLabel from "@mui/joy/FormLabel";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
-import { iconButtonClasses } from "@mui/joy/IconButton";
+import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import NoData from "../assets/alert-bell.svg";
 import { useGetProductsQuery } from "../redux/productsSlice";
 import { Chip, Option, Select, Tooltip, Typography } from "@mui/joy";
@@ -17,19 +17,47 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 
 function Products_Table() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  const readInt = (v, fallback) => {
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0 ? n : fallback;
+  };
+
+  const setParams = (patch, replace = true) => {
+    const next = new URLSearchParams(searchParams);
+    Object.entries(patch).forEach(([k, v]) => {
+      if (v === "" || v == null) next.delete(k);
+      else next.set(k, String(v));
+    });
+    setSearchParams(next, { replace });
+  };
+
   const category = searchParams.get("category") || "";
   const [currentPage, setCurrentPage] = useState(
-    Number(searchParams.get("page")) || 1
+    readInt(searchParams.get("page"), 1)
   );
   const [searchTerm, setSearchTerm] = useState(
     searchParams.get("search") || ""
   );
-  const options = [1, 5, 10, 20, 50, 100];
   const [rowsPerPage, setRowsPerPage] = useState(
-    () => Number(searchParams.get("pageSize")) || 10
+    readInt(searchParams.get("pageSize"), 10)
   );
-  const navigate = useNavigate();
 
+  // Keep local state in sync if the URL changes (back/forward/manual edit)
+  useEffect(() => {
+    const p = readInt(searchParams.get("page"), 1);
+    if (p !== currentPage) setCurrentPage(p);
+
+    const ps = readInt(searchParams.get("pageSize"), 10);
+    if (ps !== rowsPerPage) setRowsPerPage(ps);
+
+    const q = searchParams.get("search") || "";
+    if (q !== searchTerm) setSearchTerm(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // Reflect local changes to the URL (omit defaults)
   useEffect(() => {
     setSearchParams((prev) => {
       const p = new URLSearchParams(prev);
@@ -73,6 +101,19 @@ function Products_Table() {
     }
   };
 
+  // NEW: numeric page jump handler (for middle pager)
+  const handlePageChange = (n) => {
+    if (!n) return;
+    const totalPages =
+      getProducts?.meta?.totalPages ||
+      Math.max(
+        1,
+        Math.ceil((getProducts?.meta?.total || 0) / Math.max(1, rowsPerPage))
+      );
+    const clamped = Math.max(1, Math.min(totalPages, Number(n)));
+    setCurrentPage(clamped);
+  };
+
   const getValue = (product, fieldName) => {
     const field = product.data.find((f) => f.name === fieldName);
     return field?.values?.[0]?.input_values || "-";
@@ -87,7 +128,7 @@ function Products_Table() {
         sx={{
           maxWidth: 320,
           whiteSpace: "pre-line",
-          wordBreak: "break-word",
+          wordBreak: "word-break",
         }}
       >
         <Typography sx={{ fontSize: 12, lineHeight: 1.5, color: "#fff" }}>
@@ -125,8 +166,16 @@ function Products_Table() {
   // ---------- Derived pagination numbers ----------
   const rows = getProducts?.data || [];
   const total = getProducts?.meta?.total || 0;
+  const totalPages =
+    getProducts?.meta?.totalPages ||
+    Math.max(1, Math.ceil(total / Math.max(1, rowsPerPage)));
   const page = getProducts?.meta?.page || currentPage;
   const limit = getProducts?.meta?.limit || rowsPerPage;
+
+  // Clamp page if backend says fewer pages (e.g., user typed ?page=999)
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
 
   // start & end indices (0 when there are no results)
   const startIndex = total === 0 ? 0 : (page - 1) * limit + 1;
@@ -134,82 +183,51 @@ function Products_Table() {
     total === 0 ? 0 : Math.min((page - 1) * limit + rows.length, total);
 
   return (
-    <>
-      {/* Search / Rows-per-page */}
-      <Box
-        sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          py: 1,
-          display: "flex",
-          gap: 1.5,
-        }}
-      >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search</FormLabel>
-          <Input
-            size="sm"
-            placeholder="Search by SKU, Product Category, Name, Make or GST"
-            startDecorator={<SearchIcon />}
-            value={searchTerm}
-            onChange={(e) => {
-              setCurrentPage(1);
-              setSearchTerm(e.target.value);
-            }}
-          />
-        </FormControl>
-
+    <Box
+      sx={{
+        ml: {
+          lg: "var(--Sidebar-width)",
+        },
+        px: "0px",
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+      }}
+    >
+      <Box display={"flex"} justifyContent={"flex-end"} pb={0.5}>
         <Box
-          display="flex"
-          alignItems="center"
-          gap={1}
+          className="SearchAndFilters-tabletUp"
           sx={{
-            padding: "8px 16px",
-            mt: 2,
+            borderRadius: "sm",
+            py: 1,
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 1.5,
+            width: { lg: "50%" },
           }}
         >
-          <Typography level="body-sm">Rows Per Page:</Typography>
-          <Select
-            value={rowsPerPage}
-            onChange={(_e, newValue) => {
-              if (newValue !== null) {
-                setRowsPerPage(newValue);
-                setCurrentPage(1);
-                setSearchParams((prev) => {
-                  const params = new URLSearchParams(prev);
-                  params.set("pageSize", newValue);
-                  params.delete("page");
-                  return params;
-                });
-              }
-            }}
-            size="sm"
-            variant="outlined"
-            sx={{
-              minWidth: 80,
-              borderRadius: "md",
-              boxShadow: "sm",
-            }}
-          >
-            {[1, 5, 10, 20, 50, 100].map((value) => (
-              <Option key={value} value={value}>
-                {value}
-              </Option>
-            ))}
-          </Select>
+          <FormControl sx={{ flex: 1 }} size="sm">
+            <Input
+              size="sm"
+              placeholder="Search by SKU, Product Category, Name, Make or GST"
+              startDecorator={<SearchIcon />}
+              value={searchTerm}
+              onChange={(e) => {
+                setCurrentPage(1); // reset only on user search change
+                setSearchTerm(e.target.value);
+              }}
+            />
+          </FormControl>
         </Box>
       </Box>
-
       {/* Table */}
       <Sheet
+        className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: { xs: "none", sm: "initial" },
+          display: { xs: "none", sm: "block" },
           width: "100%",
           borderRadius: "sm",
-          overflow: "auto",
-          minHeight: 0,
-          marginLeft: { lg: "18%", xl: "15%" },
-          maxWidth: { lg: "85%", sm: "100%" },
+          maxHeight: "66vh",
+          overflowY: "auto",
         }}
       >
         <Box
@@ -350,16 +368,14 @@ function Products_Table() {
 
       {/* Pagination */}
       <Box
+        className="Pagination-laptopUp"
         sx={{
-          pt: 2,
+          pt: 0.5,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: "flex",
           flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
-          marginLeft: { lg: "18%", xl: "15%" },
-          justifyContent: "space-between",
-          flexWrap: "wrap",
         }}
       >
         <Box display={"flex"} alignItems="center" gap={2}>
@@ -383,8 +399,75 @@ function Products_Table() {
 
         <Box>
           <Typography level="body-sm">
-            Page {page} of {getProducts?.meta?.totalPages || 1}
+            Page {page} of {totalPages}
           </Typography>
+        </Box>
+
+        {/* NEW: Centered numeric pager (prev / current / next) */}
+        <Box
+          sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
+        >
+          {currentPage > 1 && (
+            <IconButton
+              size="sm"
+              variant="outlined"
+              color="neutral"
+              onClick={() => handlePageChange(currentPage - 1)}
+            >
+              {currentPage - 1}
+            </IconButton>
+          )}
+
+          <IconButton size="sm" variant="contained" color="neutral">
+            {currentPage}
+          </IconButton>
+
+          {currentPage + 1 <= totalPages && (
+            <IconButton
+              size="sm"
+              variant="outlined"
+              color="neutral"
+              onClick={() => handlePageChange(currentPage + 1)}
+            >
+              {currentPage + 1}
+            </IconButton>
+          )}
+        </Box>
+
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={1}
+          sx={{ padding: "8px 16px" }}
+        >
+          <Select
+            value={rowsPerPage}
+            onChange={(_e, newValue) => {
+              if (newValue !== null) {
+                setRowsPerPage(newValue);
+                setCurrentPage(1);
+                setSearchParams((prev) => {
+                  const params = new URLSearchParams(prev);
+                  params.set("pageSize", newValue);
+                  params.delete("page");
+                  return params;
+                });
+              }
+            }}
+            size="sm"
+            variant="outlined"
+            sx={{
+              minWidth: 80,
+              borderRadius: "md",
+              boxShadow: "sm",
+            }}
+          >
+            {[1, 5, 10, 20, 50, 100].map((value) => (
+              <Option key={value} value={value}>
+                {value}
+              </Option>
+            ))}
+          </Select>
         </Box>
 
         <Button
@@ -398,7 +481,7 @@ function Products_Table() {
           Next
         </Button>
       </Box>
-    </>
+    </Box>
   );
 }
 
