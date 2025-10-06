@@ -1393,18 +1393,12 @@ export default function AddActivityModal({
                     onBlur={() =>
                       setTouched((t) => ({ ...t, dependencies: true }))
                     }
-                    /* --- fixes --- */
                     menuPortalTarget={document.body}
-                    menuPosition="fixed"
-                    menuShouldScrollIntoView={false}
-                    // optional: stop bubbling menu scroll events
-                    onMenuScrollToTop={(e) => e.stopPropagation()}
-                    onMenuScrollToBottom={(e) => e.stopPropagation()}
                     styles={{
-                      menuPortal: (base) => ({ ...base, zIndex: 2400 }),
-                      menu: (base) => ({ ...base, zIndex: 2400 }), 
+                      menuPortal: (base) => ({ ...base, zIndex: 2000 }),
                       control: (base) => ({ ...base, minHeight: 36 }),
                     }}
+                    isLoading={isFetchingScm || isSubmitting}
                   />
                 </FormControl>
               )}
