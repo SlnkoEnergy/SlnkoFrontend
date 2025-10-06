@@ -80,7 +80,7 @@ function ProjectManagement() {
         completion_formula,
       } = normalizeFromModal(payload || {});
 
-      if (payload && payload.__mode === "existing") {
+      if (payload) {
         const id =
           payload.activityId ||
           payload.id ||
