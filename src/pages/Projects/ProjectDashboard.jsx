@@ -38,7 +38,7 @@ function ProjectDashBoard() {
     searchParams.get("projects")?.split(",") || []
   );
 
-  // ✅ Keep URL in sync when selectedIds 
+  // ✅ Keep URL in sync when selectedIds
   useEffect(() => {
     if (selectedIds.length > 0) {
       setSearchParams({ projects: selectedIds.join(",") });
@@ -46,7 +46,6 @@ function ProjectDashBoard() {
       setSearchParams({});
     }
   }, [selectedIds, setSearchParams]);
-
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -124,7 +123,7 @@ function ProjectDashBoard() {
             onOpenChange={setOpen}
             fields={fields}
             title="Filters"
-            values={{ projects: selectedIds }}    // 👈 controlled values
+            values={{ projects: selectedIds }} // 👈 controlled values
             onApply={(values) => {
               setSelectedIds(values?.projects || []);
               setOpen(false);
@@ -133,7 +132,6 @@ function ProjectDashBoard() {
               setSelectedIds([]);
             }}
           />
-
         </SubHeader>
         <Box
           component="main"

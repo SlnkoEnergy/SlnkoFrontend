@@ -28,12 +28,36 @@ import ResourceBarGraph from "./ResourceBarGraph";
 
 /* ---------------- Hoisted constants (stable references) ---------------- */
 const DONUT_COLORS = [
-  "#f59e0b", "#22c55e", "#ef4444", "#3b82f6", "#8b5cf6",
-  "#14b8a6", "#e11d48", "#84cc16", "#f97316", "#06b6d4",
-  "#d946ef", "#0ea5e9", "#65a30d", "#dc2626", "#7c3aed",
-  "#10b981", "#ca8a04", "#2563eb", "#f43f5e", "#0891b2",
-  "#a16207", "#15803d", "#4f46e5", "#ea580c", "#db2777",
-  "#047857", "#1d4ed8", "#9333ea", "#b91c1c", "#0d9488",
+  "#f59e0b",
+  "#22c55e",
+  "#ef4444",
+  "#3b82f6",
+  "#8b5cf6",
+  "#14b8a6",
+  "#e11d48",
+  "#84cc16",
+  "#f97316",
+  "#06b6d4",
+  "#d946ef",
+  "#0ea5e9",
+  "#65a30d",
+  "#dc2626",
+  "#7c3aed",
+  "#10b981",
+  "#ca8a04",
+  "#2563eb",
+  "#f43f5e",
+  "#0891b2",
+  "#a16207",
+  "#15803d",
+  "#4f46e5",
+  "#ea580c",
+  "#db2777",
+  "#047857",
+  "#1d4ed8",
+  "#9333ea",
+  "#b91c1c",
+  "#0d9488",
 ];
 
 const RESOURCE_TYPES_FALLBACK = [
@@ -121,7 +145,11 @@ function Dash_project({ projectIds }) {
   const [sp] = useSearchParams();
 
   /* ---------- Status cards ---------- */
-  const { data: statusData, isLoading, isFetching } = useGetProjectStatusFilterQuery();
+  const {
+    data: statusData,
+    isLoading,
+    isFetching,
+  } = useGetProjectStatusFilterQuery();
   const stats = statusData?.data || {
     completed: 0,
     cancelled: 0,
@@ -141,7 +169,9 @@ function Dash_project({ projectIds }) {
   const initialProjectId =
     searchProjectId ||
     paramId ||
-    (Array.isArray(projectIds) && projectIds.length ? String(projectIds[0]) : "");
+    (Array.isArray(projectIds) && projectIds.length
+      ? String(projectIds[0])
+      : "");
   const [projectId, setProjectId] = useState(initialProjectId);
 
   useEffect(() => {
@@ -212,11 +242,14 @@ function Dash_project({ projectIds }) {
       if (!upcoming) {
         upcoming =
           acts.find(
-            (a) => !a?.actual_start_date && a?.activity_id !== current?.activity_id
+            (a) =>
+              !a?.actual_start_date && a?.activity_id !== current?.activity_id
           ) || null;
       }
 
-      const completion_date = current?.actual_end_date ? fmtDate(current.actual_end_date) : "-";
+      const completion_date = current?.actual_end_date
+        ? fmtDate(current.actual_end_date)
+        : "-";
       return {
         id: p._id,
         project_id: p.project_id ?? "",
@@ -263,14 +296,19 @@ function Dash_project({ projectIds }) {
   /* ---------- Weekly timeline (baseline/actual) ---------- */
   const defaultStart = useMemo(() => startOfWeek(new Date()), []);
   const defaultEnd = useMemo(() => addDays(startOfWeek(new Date()), 6), []);
-  const [range, setRange] = useState({ startDate: defaultStart, endDate: defaultEnd });
+  const [range, setRange] = useState({
+    startDate: defaultStart,
+    endDate: defaultEnd,
+  });
 
   const baselineStart = useMemo(() => ymd(range.startDate), [range.startDate]);
   const baselineEnd = useMemo(() => ymd(range.endDate), [range.endDate]);
 
   const [paFilter, setPaFilter] = useState("all");
   const apiFilter =
-    paFilter === "baseline" || paFilter === "actual_ontime" || paFilter === "actual_late"
+    paFilter === "baseline" ||
+    paFilter === "actual_ontime" ||
+    paFilter === "actual_late"
       ? paFilter
       : undefined;
 
@@ -290,10 +328,13 @@ function Dash_project({ projectIds }) {
   );
 
   const handleTimelineRangeChange = useCallback((startDate, endDate) => {
-    const s = new Date(startDate); s.setHours(0, 0, 0, 0);
-    const e = new Date(endDate);  e.setHours(0, 0, 0, 0);
+    const s = new Date(startDate);
+    s.setHours(0, 0, 0, 0);
+    const e = new Date(endDate);
+    e.setHours(0, 0, 0, 0);
     setRange((prev) =>
-      prev.startDate.getTime() === s.getTime() && prev.endDate.getTime() === e.getTime()
+      prev.startDate.getTime() === s.getTime() &&
+      prev.endDate.getTime() === e.getTime()
         ? prev
         : { startDate: s, endDate: e }
     );
@@ -322,28 +363,37 @@ function Dash_project({ projectIds }) {
   const [labelCache, setLabelCache] = useState({});
 
   const labelFromRow = useCallback(
-    (row) => (row.code ? `${row.code}${row.name ? ` - ${row.name}` : ""}` : row.name || String(row._id)),
+    (row) =>
+      row.code
+        ? `${row.code}${row.name ? ` - ${row.name}` : ""}`
+        : row.name || String(row._id),
     []
   );
 
-  const onPickProject = useCallback((row) => {
-    if (!row) return;
-    setProjectModalOpen(false);
-    const id = String(row._id || "");
-    if (!id) return;
-    setLabelCache((prev) => ({ ...prev, [id]: labelFromRow(row) }));
-    setSelectedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
-  }, [labelFromRow]);
+  const onPickProject = useCallback(
+    (row) => {
+      if (!row) return;
+      setProjectModalOpen(false);
+      const id = String(row._id || "");
+      if (!id) return;
+      setLabelCache((prev) => ({ ...prev, [id]: labelFromRow(row) }));
+      setSelectedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    },
+    [labelFromRow]
+  );
 
-  const getLabelForId = useCallback((id) => {
-    if (labelCache[id]) return labelCache[id];
-    const p = (projects || []).find((x) => String(x._id) === String(id));
-    return p
-      ? p.code
-        ? `${p.code}${p.name ? ` - ${p.name}` : ""}`
-        : p.name || id
-      : id;
-  }, [labelCache, projects]);
+  const getLabelForId = useCallback(
+    (id) => {
+      if (labelCache[id]) return labelCache[id];
+      const p = (projects || []).find((x) => String(x._id) === String(id));
+      return p
+        ? p.code
+          ? `${p.code}${p.name ? ` - ${p.name}` : ""}`
+          : p.name || id
+        : id;
+    },
+    [labelCache, projects]
+  );
 
   const optionRows = useMemo(() => {
     const seen = new Set();
@@ -365,7 +415,10 @@ function Dash_project({ projectIds }) {
 
   const fetchProjectsPage = useCallback(
     async ({ search = "", page = 1, pageSize = 7 }) => {
-      const res = await triggerProjectSearch({ search, page, limit: pageSize }, true);
+      const res = await triggerProjectSearch(
+        { search, page, limit: pageSize },
+        true
+      );
       const d = res?.data;
       return {
         rows: d?.data || [],
@@ -403,13 +456,16 @@ function Dash_project({ projectIds }) {
   });
 
   const resourceTypesFromApi = useMemo(() => {
-    return Array.isArray(resourcesRes?.resource_types) && resourcesRes.resource_types.length
+    return Array.isArray(resourcesRes?.resource_types) &&
+      resourcesRes.resource_types.length
       ? resourcesRes.resource_types
       : RESOURCE_TYPES_FALLBACK;
   }, [resourcesRes?.resource_types]);
 
   const resourceLogs = useMemo(() => {
-    const series = Array.isArray(resourcesRes?.series) ? resourcesRes.series : [];
+    const series = Array.isArray(resourcesRes?.series)
+      ? resourcesRes.series
+      : [];
     const out = [];
     for (const row of series) {
       const date = row.date; // YYYY-MM-DD
@@ -426,7 +482,8 @@ function Dash_project({ projectIds }) {
 
   const safeSetResRange = useCallback((s, e) => {
     setResRange((prev) =>
-      prev.startDate.getTime() === s.getTime() && prev.endDate.getTime() === e.getTime()
+      prev.startDate.getTime() === s.getTime() &&
+      prev.endDate.getTime() === e.getTime()
         ? prev
         : { startDate: s, endDate: e }
     );
@@ -593,11 +650,21 @@ function Dash_project({ projectIds }) {
             items={feedItems}
             onItemClick={(it) => {
               if (it.project_id) {
-                navigate(`/project_detail?project_id=${encodeURIComponent(it.project_id)}`);
+                navigate(
+                  `/project_detail?project_id=${encodeURIComponent(
+                    it.project_id
+                  )}`
+                );
               }
             }}
             renderRight={(it) => (
-              <span style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748b" }}>
+              <span
+                style={{
+                  fontSize: "0.7rem",
+                  fontWeight: 600,
+                  color: "#64748b",
+                }}
+              >
                 {it.ago}
               </span>
             )}
