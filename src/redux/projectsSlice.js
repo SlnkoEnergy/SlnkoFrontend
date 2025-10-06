@@ -364,42 +364,79 @@ export const projectsApi = createApi({
       providesTags: ["Project"],
     }),
 
-    getResources: builder.query({
-      query: (args = {}) => {
-        const { window: windowKeyIn, start, end, project_id } = args || {};
-        let windowKey = windowKeyIn;
-        if (!windowKey) {
-          if (start && end) {
-            const toDate = (s) => {
-              const [y, m, d] = String(s).split("-").map(Number);
-              const dt = new Date(y, (m || 1) - 1, d || 1);
-              dt.setHours(0, 0, 0, 0);
-              return dt;
-            };
-            const s = toDate(start);
-            const e = toDate(end);
-            const days = Math.max(1, Math.round((e - s) / 86400000) + 1);
-
-            if (days <= 7) windowKey = "1w";
-            else if (days <= 14) windowKey = "2w";
-            else if (days <= 21) windowKey = "3w";
-            else if (days <= 30) windowKey = "1m";
-            else if (days <= 90) windowKey = "3m";
-            else windowKey = "6m";
-          } else {
-            windowKey = "1w";
-          }
-        }
-
-        const params = { window: windowKey };
-        if (project_id) params.project_id = project_id;
-
-        return {
-          url: "projectactivity/resources",
-          params,
+   getResources: builder.query({
+  // 1) Normalize the cache key to only what matters server-side
+  serializeQueryArgs: ({ queryArgs }) => {
+    const q = queryArgs || {};
+    const windowKey =
+      q.window ||
+      (() => {
+        // derive exactly like your current code
+        const toDate = (s) => {
+          const [y, m, d] = String(s || "").split("-").map(Number);
+          const dt = new Date(y, (m || 1) - 1, d || 1);
+          dt.setHours(0, 0, 0, 0);
+          return dt;
         };
-      },
-    }),
+        if (q.start && q.end) {
+          const s = toDate(q.start);
+          const e = toDate(q.end);
+          const days = Math.max(1, Math.round((e - s) / 86400000) + 1);
+          if (days <= 7) return "1w";
+          if (days <= 14) return "2w";
+          if (days <= 21) return "3w";
+          if (days <= 30) return "1m";
+          if (days <= 90) return "3m";
+          return "6m";
+        }
+        return "1w";
+      })();
+
+    // cache key ONLY depends on window + project_id
+    return JSON.stringify({
+      window: windowKey,
+      project_id: q.project_id || null,
+    });
+  },
+
+  // 2) Keep one copy around so multiple mounts don't thrash the cache
+  keepUnusedDataFor: 300,
+
+  // 3) The actual request (unchanged)
+  query: (args = {}) => {
+    const { window: windowIn, start, end, project_id } = args || {};
+    // compute window if not passed
+    let windowKey = windowIn;
+    if (!windowKey) {
+      const toDate = (s) => {
+        const [y, m, d] = String(s).split("-").map(Number);
+        const dt = new Date(y, (m || 1) - 1, d || 1);
+        dt.setHours(0, 0, 0, 0);
+        return dt;
+      };
+      if (start && end) {
+        const s = toDate(start);
+        const e = toDate(end);
+        const days = Math.max(1, Math.round((e - s) / 86400000) + 1);
+        if (days <= 7) windowKey = "1w";
+        else if (days <= 14) windowKey = "2w";
+        else if (days <= 21) windowKey = "3w";
+        else if (days <= 30) windowKey = "1m";
+        else if (days <= 90) windowKey = "3m";
+        else windowKey = "6m";
+      } else {
+        windowKey = "1w";
+      }
+    }
+
+    const params = { window: windowKey };
+    if (project_id) params.project_id = project_id;
+
+    return { url: "projectactivity/resources", params };
+  },
+}),
+
+
      updateStatusOfPlan: builder.mutation({
       query: ({ projectId, status }) => ({
         url: `projectactivity/${projectId}/updateStatusOfPlan`,
