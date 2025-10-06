@@ -49,6 +49,7 @@ export default function AddActivityModal({
     activityId: "",
     type: "frontend",
     description: "",
+    order: null,
     // shown only for global scope (but fine to keep in form)
     completion_formula: "",
     dependencies: {
@@ -275,6 +276,7 @@ export default function AddActivityModal({
       type: a.type || "",
       dependency: a.dependency || [],
       predecessors: a.predecessors || [],
+      order: Number.isFinite(+a.order) ? Number(a.order) : null,
       // If your API returns completion_formula on activity, map it:
       completion_formula: a.completion_formula || "",
     }));
@@ -556,6 +558,7 @@ export default function AddActivityModal({
       name: form.activityName.trim(),
       description: form.description.trim(),
       type: form.type.toLowerCase(),
+      ...(form.order != null ? { order: Number(form.order) } : {}),
       ...(scope === "project" && form.projectId
         ? { project_id: form.projectId, project_name: form.projectName }
         : {}),
@@ -651,6 +654,7 @@ export default function AddActivityModal({
         description: a.description || "",
         dependency: a.dependency || [],
         predecessors: a.predecessors || [],
+        order: Number.isFinite(+a.order) ? Number(a.order) : null,
         completion_formula: a.completion_formula || "",
       }));
       return { rows, total: total ?? rows.length };
@@ -669,6 +673,7 @@ export default function AddActivityModal({
       description: a.description || "",
       dependency: a.dependency || [],
       predecessors: a.predecessors || [],
+      order: Number.isFinite(+a.order) ? Number(a.order) : null, 
       completion_formula: a.completion_formula || "",
     }));
     const total = pagination?.total ?? rows.length;
@@ -857,6 +862,7 @@ export default function AddActivityModal({
                         activityName: "",
                         type: "frontend",
                         description: "",
+                        order: null,
                         completion_formula: "",
                         dependencies: {
                           ...form.dependencies,
@@ -969,6 +975,7 @@ export default function AddActivityModal({
                         type: "frontend",
                         description: "",
                         completion_formula: "",
+                        order: null,
                         dependencies: {
                           ...p.dependencies,
                           engineeringEnabled: false,
@@ -999,6 +1006,7 @@ export default function AddActivityModal({
                       description: opt.description || "",
                       // prefill completion_formula if backend supplied it on activity
                       completion_formula: opt.completion_formula || "",
+                      order: Number.isFinite(+opt.order) ? Number(opt.order) : null,
                       dependencies: {
                         ...p.dependencies,
                         engineeringEnabled: engOpts.length > 0,
@@ -1043,6 +1051,27 @@ export default function AddActivityModal({
                 </Typography>
               )}
             </FormControl>
+{/*Order */}
+            <FormControl size="sm">
+  <FormLabel>Order</FormLabel>
+  <Input
+    size="sm"
+    type="number"
+    inputMode="numeric"
+    placeholder="Enter order"
+    value={form.order ?? ""}
+    onChange={(e) => {
+      const n = Number(e.target.value);
+      setForm((p) => ({
+        ...p,
+        order: Number.isFinite(n) ? n : 0, // keep it fully editable; remove Math.max if negatives are allowed
+      }));
+    }}
+    slotProps={{ input: { min: 0 } }} // drop this line if negatives are allowed
+  />
+</FormControl>
+
+
 
             {/* Predecessors (GLOBAL only UI) */}
             {scope === "global" && (
@@ -1501,6 +1530,7 @@ export default function AddActivityModal({
             type: row?.type || "frontend",
             description: row?.description || "",
             completion_formula: row?.completion_formula || "",
+            order: Number.isFinite(+row?.order) ? Number(row.order) : null,
             dependencies: {
               ...prev.dependencies,
               engineeringEnabled: engOpts.length > 0,
