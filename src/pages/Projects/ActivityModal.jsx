@@ -49,7 +49,6 @@ export default function AddActivityModal({
     activityId: "",
     type: "frontend",
     description: "",
-    order: null,
     // shown only for global scope (but fine to keep in form)
     completion_formula: "",
     dependencies: {
@@ -558,7 +557,6 @@ export default function AddActivityModal({
       name: form.activityName.trim(),
       description: form.description.trim(),
       type: form.type.toLowerCase(),
-      ...(form.order != null ? { order: Number(form.order) } : {}),
       ...(scope === "project" && form.projectId
         ? { project_id: form.projectId, project_name: form.projectName }
         : {}),
@@ -575,7 +573,7 @@ export default function AddActivityModal({
       scope === "global"
         ? { ...base, completion_formula: form.completion_formula ?? "" }
         : base;
-
+console.log(payload);
     return Promise.resolve(onCreate?.(payload))
       .then(() => {
         resetForm();
@@ -673,7 +671,6 @@ export default function AddActivityModal({
       description: a.description || "",
       dependency: a.dependency || [],
       predecessors: a.predecessors || [],
-      order: Number.isFinite(+a.order) ? Number(a.order) : null, 
       completion_formula: a.completion_formula || "",
     }));
     const total = pagination?.total ?? rows.length;
@@ -719,6 +716,7 @@ export default function AddActivityModal({
   const activityPickerColumns = [
     { key: "name", label: "Activity Name", width: 250 },
     { key: "type", label: "Type", width: 140 },
+    { key: "order", label: "Order", width: 90 },
     { key: "description", label: "Description" },
   ];
   const modulePickerColumns = [
@@ -864,6 +862,7 @@ export default function AddActivityModal({
                         description: "",
                         order: null,
                         completion_formula: "",
+                        order: null,
                         dependencies: {
                           ...form.dependencies,
                           engineeringEnabled: false,
@@ -1051,27 +1050,6 @@ export default function AddActivityModal({
                 </Typography>
               )}
             </FormControl>
-{/*Order */}
-            <FormControl size="sm">
-  <FormLabel>Order</FormLabel>
-  <Input
-    size="sm"
-    type="number"
-    inputMode="numeric"
-    placeholder="Enter order"
-    value={form.order ?? ""}
-    onChange={(e) => {
-      const n = Number(e.target.value);
-      setForm((p) => ({
-        ...p,
-        order: Number.isFinite(n) ? n : 0, // keep it fully editable; remove Math.max if negatives are allowed
-      }));
-    }}
-    slotProps={{ input: { min: 0 } }} // drop this line if negatives are allowed
-  />
-</FormControl>
-
-
 
             {/* Predecessors (GLOBAL only UI) */}
             {scope === "global" && (

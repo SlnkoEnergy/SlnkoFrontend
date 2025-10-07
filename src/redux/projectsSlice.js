@@ -188,9 +188,9 @@ export const projectsApi = createApi({
       providesTags: (result) =>
         result?.items
           ? [
-            ...result.items.map((a) => ({ type: "Activity", id: a._id })),
-            { type: "Activity", id: "LIST" },
-          ]
+              ...result.items.map((a) => ({ type: "Activity", id: a._id })),
+              { type: "Activity", id: "LIST" },
+            ]
           : [{ type: "Activity", id: "LIST" }],
     }),
 
@@ -217,9 +217,9 @@ export const projectsApi = createApi({
       providesTags: (result) =>
         result?.data
           ? [
-            ...result.data.map((m) => ({ type: "Module", id: m._id })),
-            { type: "Module", id: "LIST" },
-          ]
+              ...result.data.map((m) => ({ type: "Module", id: m._id })),
+              { type: "Module", id: "LIST" },
+            ]
           : [{ type: "Module", id: "LIST" }],
     }),
 
@@ -265,12 +265,12 @@ export const projectsApi = createApi({
       providesTags: (result) =>
         result?.data
           ? [
-            ...result.data.map((m) => ({
-              type: "MaterialCategory",
-              id: m._id,
-            })),
-            { type: "MaterialCategory", id: "LIST" },
-          ]
+              ...result.data.map((m) => ({
+                type: "MaterialCategory",
+                id: m._id,
+              })),
+              { type: "MaterialCategory", id: "LIST" },
+            ]
           : [{ type: "MaterialCategory", id: "LIST" }],
     }),
 
@@ -391,7 +391,7 @@ export const projectsApi = createApi({
         }
 
         const params = { window: windowKey };
-        if (project_id) params.project_id = project_id;
+        // if (project_id) params.project_id = project_id;
 
         return {
           url: "projectactivity/resources",

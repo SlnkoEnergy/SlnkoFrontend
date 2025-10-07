@@ -27,6 +27,7 @@ function ProjectManagement() {
 
   const isLoading = isPushing || isUpdatingDeps;
 
+  // --- Normalize only what comes from the modal that we pass through as-is ---
   const normalizeFromModal = (payload = {}) => {
     const dependencies = Array.isArray(payload.dependencies)
       ? payload.dependencies
@@ -34,26 +35,10 @@ function ProjectManagement() {
       ? payload.dependency
       : [];
 
-    let predecessors = Array.isArray(payload.predecessors)
+    // use predecessors only if provided; do NOT synthesize from payload.type
+    const predecessors = Array.isArray(payload.predecessors)
       ? payload.predecessors
       : [];
-
-    if (
-      predecessors.length === 0 &&
-      payload.activity_id &&
-      (payload.type || payload.lag !== undefined)
-    ) {
-      predecessors = [
-        {
-          activity_id: String(payload.activity_id),
-          type: String(payload.type || "FS").toUpperCase(),
-          lag:
-            Number.isFinite(+payload.lag) && payload.lag !== ""
-              ? Number(payload.lag)
-              : 0,
-        },
-      ];
-    }
 
     const hasCompletionFormula = Object.prototype.hasOwnProperty.call(
       payload,
@@ -79,8 +64,10 @@ function ProjectManagement() {
         hasCompletionFormula,
         completion_formula,
       } = normalizeFromModal(payload || {});
+      console.log({ payload });
 
-      if (payload) {
+      // --- UPDATE EXISTING (global or project embedded) ---
+      if (payload && payload.__mode === "existing") {
         const id =
           payload.activityId ||
           payload.id ||
@@ -89,10 +76,7 @@ function ProjectManagement() {
           "";
 
         if (!id) {
-          console.error(
-            "Missing master Activity _id for update. Payload:",
-            payload
-          );
+          console.error("Missing master Activity _id for update. Payload:", payload);
           toast.error("Missing activity id for existing activity.");
           return;
         }
@@ -104,20 +88,28 @@ function ProjectManagement() {
           return;
         }
 
-        if (
-          !dependencies.length &&
-          !predecessors.length &&
-          !hasCompletionFormula
-        ) {
-          toast.error("Nothing to update.");
-          return;
-        }
-
+        // Build update body. Include type & order if present.
         const body = {
+          ...(payload.type
+            ? { type: String(payload.type).toLowerCase() }
+            : {}),
+          ...(Number.isFinite(+payload.order) ? { order: +payload.order } : {}),
           ...(dependencies.length ? { dependencies } : {}),
           ...(predecessors.length ? { predecessors } : {}),
           ...(isGlobal && hasCompletionFormula ? { completion_formula } : {}),
         };
+
+        // Guard: truly nothing to update?
+        if (
+          !("type" in body) &&
+          !("order" in body) &&
+          !("dependencies" in body) &&
+          !("predecessors" in body) &&
+          !("completion_formula" in body)
+        ) {
+          toast.error("Nothing to update.");
+          return;
+        }
 
         await updateDependency({
           id,
@@ -131,6 +123,7 @@ function ProjectManagement() {
         return;
       }
 
+      // --- CREATE NEW (push to project) ---
       if (!payload?.project_id) {
         toast.error("Pick a project first.");
         return;
@@ -140,7 +133,8 @@ function ProjectManagement() {
         projectId: payload.project_id,
         name: payload.name,
         description: payload.description,
-        type: payload.type,
+        type: String(payload.type || "frontend").toLowerCase(),
+        ...(Number.isFinite(+payload.order) ? { order: +payload.order } : {}),
         dependencies,
         ...(predecessors.length ? { predecessors } : {}),
       }).unwrap();

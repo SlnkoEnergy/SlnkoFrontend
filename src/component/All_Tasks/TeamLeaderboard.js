@@ -29,10 +29,10 @@ export default function TeamLeaderboard({
   searchPlaceholder = "Search user by name…",
   sx = {},
 
-  getRowHref,              
-  onRowClick,             
-  linkTarget = "_self",   
-  confirmExternal = false, 
+  getRowHref,
+  onRowClick,
+  linkTarget = "_self",
+  confirmExternal = false,
 }) {
   const [sort, setSort] = React.useState(initialSort);
 
@@ -52,7 +52,9 @@ export default function TeamLeaderboard({
       if (!sortCol) return 0;
 
       if (typeof sortCol.compare === "function") {
-        return sort.dir === "asc" ? sortCol.compare(a, b) : -sortCol.compare(a, b);
+        return sort.dir === "asc"
+          ? sortCol.compare(a, b)
+          : -sortCol.compare(a, b);
       }
 
       let va = getValue(a, sortCol);
@@ -228,7 +230,8 @@ export default function TeamLeaderboard({
 
             <tbody>
               {data.map((r) => {
-                const href = typeof getRowHref === "function" ? getRowHref(r) : undefined;
+                const href =
+                  typeof getRowHref === "function" ? getRowHref(r) : undefined;
                 const clickable = !!onRowClick || !!href;
 
                 const onKey = (e) => {
