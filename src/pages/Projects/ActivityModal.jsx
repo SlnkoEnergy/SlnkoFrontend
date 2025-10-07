@@ -49,7 +49,7 @@ export default function AddActivityModal({
     activityId: "",
     type: "frontend",
     description: "",
-    // shown only for global scope (but fine to keep in form)
+    order: null,
     completion_formula: "",
     dependencies: {
       engineeringEnabled: false,
@@ -275,6 +275,7 @@ export default function AddActivityModal({
       type: a.type || "",
       dependency: a.dependency || [],
       predecessors: a.predecessors || [],
+      order: Number.isFinite(+a.order) ? Number(a.order) : null,
       // If your API returns completion_formula on activity, map it:
       completion_formula: a.completion_formula || "",
     }));
@@ -552,27 +553,30 @@ export default function AddActivityModal({
           }
         : {};
 
-    const base = {
-      name: form.activityName.trim(),
-      description: form.description.trim(),
-      type: form.type.toLowerCase(),
-      ...(scope === "project" && form.projectId
-        ? { project_id: form.projectId, project_name: form.projectName }
-        : {}),
-      ...(dependencies.length ? { dependencies } : {}),
-      ...(predecessorsArr.length ? { predecessors: predecessorsArr } : {}),
-      ...legacy,
-      activityId: form.activityId || "",
-      __mode: mode,
-      __scope: scope,
-    };
+ const base = {
+   // put legacy FIRST so your activity fields overwrite it
+   ...legacy,                 // ✅ any legacy.type won't clobber below
+   name: (form.activityName || "").trim(),
+   description: (form.description || "").trim(),
+   type: String(form.type || "frontend").toLowerCase(),   // activity type wins
+   order: Number.isFinite(form.order) ? form.order : 0,
+   ...(scope === "project" && form.projectId
+     ? { project_id: form.projectId, project_name: form.projectName }
+     : {}),
+   ...(dependencies.length ? { dependencies } : {}),
+   ...(predecessorsArr.length ? { predecessors: predecessorsArr } : {}),
+   activityId: form.activityId || "",
+   __mode: mode,
+   __scope: scope,
+ };
+
 
     // Only attach completion_formula for global scope (empty is allowed, server decides)
     const payload =
       scope === "global"
         ? { ...base, completion_formula: form.completion_formula ?? "" }
         : base;
-
+console.log(payload);
     return Promise.resolve(onCreate?.(payload))
       .then(() => {
         resetForm();
@@ -651,6 +655,7 @@ export default function AddActivityModal({
         description: a.description || "",
         dependency: a.dependency || [],
         predecessors: a.predecessors || [],
+        order: Number.isFinite(+a.order) ? Number(a.order) : null,
         completion_formula: a.completion_formula || "",
       }));
       return { rows, total: total ?? rows.length };
@@ -669,6 +674,7 @@ export default function AddActivityModal({
       description: a.description || "",
       dependency: a.dependency || [],
       predecessors: a.predecessors || [],
+      order: Number.isFinite(+a.order) ? Number(a.order) : null,
       completion_formula: a.completion_formula || "",
     }));
     const total = pagination?.total ?? rows.length;
@@ -714,6 +720,7 @@ export default function AddActivityModal({
   const activityPickerColumns = [
     { key: "name", label: "Activity Name", width: 250 },
     { key: "type", label: "Type", width: 140 },
+    { key: "order", label: "Order", width: 90 },
     { key: "description", label: "Description" },
   ];
   const modulePickerColumns = [
@@ -858,6 +865,7 @@ export default function AddActivityModal({
                         type: "frontend",
                         description: "",
                         completion_formula: "",
+                        order: null,
                         dependencies: {
                           ...form.dependencies,
                           engineeringEnabled: false,
@@ -969,6 +977,7 @@ export default function AddActivityModal({
                         type: "frontend",
                         description: "",
                         completion_formula: "",
+                        order: null,
                         dependencies: {
                           ...p.dependencies,
                           engineeringEnabled: false,
@@ -999,6 +1008,7 @@ export default function AddActivityModal({
                       description: opt.description || "",
                       // prefill completion_formula if backend supplied it on activity
                       completion_formula: opt.completion_formula || "",
+                      order: Number.isFinite(+opt.order) ? Number(opt.order) : null,
                       dependencies: {
                         ...p.dependencies,
                         engineeringEnabled: engOpts.length > 0,
@@ -1043,6 +1053,28 @@ export default function AddActivityModal({
                 </Typography>
               )}
             </FormControl>
+
+            {/*Order */}
+            <FormControl size="sm">
+  <FormLabel>Order</FormLabel>
+  <Input
+    size="sm"
+    type="number"
+    inputMode="numeric"
+    placeholder="Enter order"
+    value={form.order ?? ""}
+    onChange={(e) => {
+      const n = Number(e.target.value);
+      setForm((p) => ({
+        ...p,
+        order: Number.isFinite(n) ? n : 0, // keep it fully editable; remove Math.max if negatives are allowed
+      }));
+    }}
+    slotProps={{ input: { min: 0 } }} // drop this line if negatives are allowed
+  />
+</FormControl>
+
+
 
             {/* Predecessors (GLOBAL only UI) */}
             {scope === "global" && (
@@ -1501,6 +1533,7 @@ export default function AddActivityModal({
             type: row?.type || "frontend",
             description: row?.description || "",
             completion_formula: row?.completion_formula || "",
+            order: Number.isFinite(+row?.order) ? Number(row.order) : null,
             dependencies: {
               ...prev.dependencies,
               engineeringEnabled: engOpts.length > 0,
