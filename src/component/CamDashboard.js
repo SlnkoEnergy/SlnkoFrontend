@@ -7,6 +7,8 @@ import SearchIcon from "@mui/icons-material/Search";
 import {
   Chip,
   CircularProgress,
+  DialogContent,
+  DialogTitle,
   Option,
   Select,
   Tab,
@@ -41,9 +43,9 @@ import {
   useCreatePurchaseRequestMutation,
 } from "../redux/camsSlice";
 import { toast } from "react-toastify";
-function Dash_cam() {
+
+function Dash_cam({selected, setSelected}) {
   const navigate = useNavigate();
-  const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(null);
@@ -130,8 +132,6 @@ function Dash_cam() {
       delivery_date: null,
       items: formattedItems,
     };
-
-    console.log("Payload being sent:", payload);
 
     try {
       const response = await createPurchaseRequest(payload).unwrap();
@@ -377,132 +377,99 @@ function Dash_cam() {
   const totalCols = 1 + baseHeaders.length;
 
   return (
-    <>
-      {/* Tablet and Up Filters */}
-      <Box
-        className="SearchAndFilters-tabletUp"
-        sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          borderRadius: "sm",
-          py: 1,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1,
-          "& > *": {
-            minWidth: { xs: "120px", md: "160px" },
-          },
-        }}
-      >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <Input
-            size="sm"
-            placeholder="Search by Project ID, Customer"
-            startDecorator={<SearchIcon />}
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-        </FormControl>
-      </Box>
-      <Box
-        display={"flex"}
-        sx={{ marginLeft: { xl: "15%", lg: "18%" } }}
-        justifyContent={"space-between"}
-        width={"full"}
-        alignItems={"center"}
-      >
-        <Box>
-          <Tabs
-            value={selectedTab}
-            onChange={(event, newValue) => {
-              setSelectedTab(newValue);
-              setSearchParams((prev) => {
-                const newParams = new URLSearchParams(prev);
-                newParams.set("tab", newValue);
-                newParams.set("page", 1);
-                return newParams;
-              });
-            }}
-            indicatorPlacement="none"
-            sx={{
-              bgcolor: "background.level1",
-              borderRadius: 9999,
-              boxShadow: "sm",
-              width: "fit-content",
-            }}
-          >
-            <TabList sx={{ gap: 1 }}>
-              {["All", "Handover Pending", "Scope Pending", "Scope Open"].map(
-                (label, index) => (
-                  <Tab
-                    key={index}
-                    value={label}
-                    disableIndicator
-                    sx={{
-                      borderRadius: 9999,
-                      fontWeight: "md",
-                      "&.Mui-selected": {
-                        bgcolor: "background.surface",
-                        boxShadow: "sm",
-                      },
-                    }}
-                  >
-                    {label}
-                  </Tab>
-                )
-              )}
-            </TabList>
-          </Tabs>
-        </Box>
-
+    <Box
+      sx={{
+        ml: {
+          lg: "var(--Sidebar-width)",
+        },
+        px: "0px",
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+      }}
+    >
+      <Box display={"flex"} justifyContent={"space-between"} pb={0.5}>
+        {/* Tablet and Up Filters */}
         <Box
-          display="flex"
-          alignItems="center"
-          gap={1}
-          sx={{ padding: "8px 16px" }}
+          display={"flex"}
+          justifyContent={"space-between"}
+          width={"100%"}
+          alignItems={"center"}
         >
-          <Typography level="body-sm">Rows Per Page:</Typography>
-          <Select
-            value={rowsPerPage}
-            onChange={(e, newValue) => {
-              if (newValue !== null) {
-                setRowsPerPage(newValue);
+       
+            <Tabs
+              value={selectedTab}
+              onChange={(event, newValue) => {
+                setSelectedTab(newValue);
                 setSearchParams((prev) => {
-                  const params = new URLSearchParams(prev);
-                  params.set("pageSize", newValue);
-                  return params;
+                  const newParams = new URLSearchParams(prev);
+                  newParams.set("tab", newValue);
+                  newParams.set("page", 1);
+                  return newParams;
                 });
-              }
-            }}
-            size="sm"
-            variant="outlined"
-            sx={{
-              minWidth: 80,
-              borderRadius: "md",
-              boxShadow: "sm",
-            }}
-          >
-            {options.map((value) => (
-              <Option key={value} value={value}>
-                {value}
-              </Option>
-            ))}
-          </Select>
+              }}
+              indicatorPlacement="none"
+              sx={{
+                bgcolor: "background.level1",
+                borderRadius: 9999,
+                boxShadow: "sm",
+                width: "fit-content",
+              }}
+            >
+              <TabList sx={{ gap: 1 }}>
+                {["All", "Handover Pending", "Scope Pending", "Scope Open"].map(
+                  (label, index) => (
+                    <Tab
+                      key={index}
+                      value={label}
+                      disableIndicator
+                      sx={{
+                        borderRadius: 9999,
+                        fontWeight: "md",
+                        "&.Mui-selected": {
+                          bgcolor: "background.surface",
+                          boxShadow: "sm",
+                        },
+                      }}
+                    >
+                      {label}
+                    </Tab>
+                  )
+                )}
+              </TabList>
+            </Tabs>
+         
+        </Box>
+        <Box
+          className="SearchAndFilters-tabletUp"
+          sx={{
+            borderRadius: "sm",
+            py: 1,
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 1,
+            width: { lg: "100%" },
+          }}
+        >
+          <FormControl sx={{ flex: 1 }} size="sm">
+            <Input
+              size="sm"
+              placeholder="Search by Project ID, Customer"
+              startDecorator={<SearchIcon />}
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+          </FormControl>
         </Box>
       </Box>
-
       {/* Table */}
       <Sheet
         className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: { xs: "none", sm: "initial" },
+          display: { xs: "none", sm: "block" },
           width: "100%",
           borderRadius: "sm",
-          flexShrink: 1,
-          overflow: "auto",
-          minHeight: 0,
-          marginLeft: { lg: "18%", xl: "15%" },
-          maxWidth: { lg: "85%", sm: "100%" },
+          maxHeight: "66vh",
+          overflowY: "auto",
         }}
       >
         <Box
@@ -730,7 +697,6 @@ function Dash_cam() {
                       _id={project._id}
                     />
                   </td>
-
                   {/* Purchase Request (only if allowed) */}
                   {!cannotSeePR && (
                     <td
@@ -805,13 +771,12 @@ function Dash_cam() {
       <Box
         className="Pagination-laptopUp"
         sx={{
-          pt: 2,
+          pt: 0.5,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: "flex",
           flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
-          marginLeft: { lg: "18%", xl: "15%" },
         }}
       >
         {/* Previous Button */}
@@ -846,7 +811,6 @@ function Dash_cam() {
             {currentPage}
           </IconButton>
 
-          {/* Show next page button if current page has any data (not empty) */}
           {currentPage + 1 <= totalPages && (
             <IconButton
               size="sm"
@@ -857,6 +821,40 @@ function Dash_cam() {
               {currentPage + 1}
             </IconButton>
           )}
+        </Box>
+
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={1}
+          sx={{ padding: "8px 16px" }}
+        >
+          <Select
+            value={rowsPerPage}
+            onChange={(e, newValue) => {
+              if (newValue !== null) {
+                setRowsPerPage(newValue);
+                setSearchParams((prev) => {
+                  const params = new URLSearchParams(prev);
+                  params.set("pageSize", newValue);
+                  return params;
+                });
+              }
+            }}
+            size="sm"
+            variant="outlined"
+            sx={{
+              minWidth: 80,
+              borderRadius: "md",
+              boxShadow: "sm",
+            }}
+          >
+            {options.map((value) => (
+              <Option key={value} value={value}>
+                {value}
+              </Option>
+            ))}
+          </Select>
         </Box>
 
         {/* Next Button */}
@@ -950,7 +948,7 @@ function Dash_cam() {
           </ModalDialog>
         </Modal>
       </Box>
-    </>
+    </Box>
   );
 }
 export default Dash_cam;

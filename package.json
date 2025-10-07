@@ -25,6 +25,7 @@
     "axios": "^1.7.4",
     "date-fns": "^2.30.0",
     "dayjs": "^1.11.13",
+    "dhtmlx-gantt": "^9.0.14",
     "file-saver": "^2.0.5",
     "formik": "^2.4.6",
     "framer-motion": "^12.6.0",

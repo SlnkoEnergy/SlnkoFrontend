@@ -225,9 +225,12 @@ const CategoryForm = () => {
   return (
     <Box
       sx={{
-        maxWidth: 1100,
-        p: { xs: 2, md: 3 },
-        ml: { xs: 0, lg: "21%", xl: "14%" },
+        ml: {
+          lg: "calc(10% + var(--Sidebar-width))",
+        },
+        mt: { lg: "60px" },
+        px: "0px",
+        width: { xs: "100%", lg: "calc(80% - var(--Sidebar-width))" },
       }}
     >
       {/* Header */}

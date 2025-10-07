@@ -26,7 +26,7 @@ import Typography from "@mui/joy/Typography";
 import { Calendar } from "lucide-react";
 import { forwardRef, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useGetAllExpenseQuery } from "../../redux/Expense/expenseSlice";
+import { useGetAllExpenseQuery } from "../../redux/expenseSlice";
 
 const AllExpense = forwardRef((props, ref) => {
   const navigate = useNavigate();

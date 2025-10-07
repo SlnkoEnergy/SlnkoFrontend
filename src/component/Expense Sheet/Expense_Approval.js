@@ -23,7 +23,7 @@ import { skipToken } from "@reduxjs/toolkit/query";
 import { Calendar } from "lucide-react";
 import { forwardRef, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useGetAllExpenseQuery } from "../../redux/Expense/expenseSlice";
+import { useGetAllExpenseQuery } from "../../redux/expenseSlice";
 import { useGetLoginsQuery } from "../../redux/loginSlice";
 
 const ExpenseApproval = forwardRef(() => {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Sheet from "@mui/joy/Sheet";
 import Box from "@mui/joy/Box";
 import Typography from "@mui/joy/Typography";
@@ -49,7 +49,7 @@ const buildAvatarUrl = (src) => {
 
 export default function MainHeader({ title, children }) {
   const navigate = useNavigate();
-
+  const location = useLocation();
   const [user, setUser] = useState(() => readUser());
   const [avatarErr, setAvatarErr] = useState(false);
 
@@ -120,7 +120,7 @@ export default function MainHeader({ title, children }) {
       : baseSrc;
 
   const avatarInitial = (user?.name?.[0] || "U").toUpperCase();
-
+  const isProjectsPage = location.pathname === "/view_pm";
   return (
     <Sheet
       variant="primary"
@@ -132,9 +132,11 @@ export default function MainHeader({ title, children }) {
         backgroundColor: "#1f487c",
         borderBottom: `1px solid ${theme.vars.palette.neutral.outlinedBorder}`,
         boxShadow: "sm",
-        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+        width: isProjectsPage
+          ? "100%"
+          : { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
         height: "60px",
-        ml: { md: "0px", lg: "var(--Sidebar-width)" },
+        ml: isProjectsPage ? "0px" : { md: "0px", lg: "var(--Sidebar-width)" },
       })}
     >
       <Box
@@ -154,7 +156,7 @@ export default function MainHeader({ title, children }) {
             size="sm"
             sx={{
               "@media print": { display: "none!important" },
-              display: { sm: "flex", lg: "none" },
+              display: isProjectsPage ? "flex" : { sm: "flex", lg: "none" },
               borderColor: "#fff",
               "&:hover": {
                 backgroundColor: "rgba(255,255,255,0.12)",
@@ -208,7 +210,6 @@ export default function MainHeader({ title, children }) {
             overflowX: { xs: "auto", sm: "visible" },
           }}
         >
-      
           <Dropdown>
             <MenuButton
               variant="plain"

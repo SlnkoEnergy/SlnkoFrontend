@@ -1,47 +1,45 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { CssVarsProvider } from '@mui/joy/styles';
-import CssBaseline from '@mui/joy/CssBaseline';
-import Box from '@mui/joy/Box';
-import Button from '@mui/joy/Button';
-import Breadcrumbs from '@mui/joy/Breadcrumbs';
-import Link from '@mui/joy/Link';
-import Typography from '@mui/joy/Typography';
+import React, { useRef, useState, useEffect } from "react";
+import { CssVarsProvider } from "@mui/joy/styles";
+import CssBaseline from "@mui/joy/CssBaseline";
+import Box from "@mui/joy/Box";
+import Button from "@mui/joy/Button";
+import Breadcrumbs from "@mui/joy/Breadcrumbs";
+import Link from "@mui/joy/Link";
+import Typography from "@mui/joy/Typography";
 
-import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
-import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
-import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
+import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
+import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
+import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 
-import Sidebar from '../../component/Partials/Sidebar';
+import Sidebar from "../../component/Partials/Sidebar";
 // import OrderTable from '../../component/OrderTable';
 // import OrderList from '../../component/OrderList';
-import Header from '../../component/Partials/Header';
-import AllProject from '../../component/AllProject';
+import Header from "../../component/Partials/Header";
+import AllProject from "../../component/AllProject";
 
 function ProjectBalance() {
-      const allProjectRef = useRef();
-    
-  
-      const handleExportToCSV = () => {
-        if (allProjectRef.current) {
-          allProjectRef.current.exportToCSV();
-        }
-      };
-      const [user, setUser] = useState(null);
-            
-              
-              useEffect(() => {
-               const userData = getUserData();
-               setUser(userData);
-             }, []);
-             
-             const getUserData = () => {
-               const userData = localStorage.getItem("userDetails");
-               if (userData) {
-                 return JSON.parse(userData);
-               }
-               return null;
-             };
-      
+  const allProjectRef = useRef();
+
+  const handleExportToCSV = () => {
+    if (allProjectRef.current) {
+      allProjectRef.current.exportToCSV();
+    }
+  };
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
+
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -78,7 +76,7 @@ function ProjectBalance() {
               size="sm"
               aria-label="breadcrumbs"
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0, marginTop: {md:"4%", lg:"0%"} }}
+              sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
             >
               {/* <Link
                 underline="none"
@@ -125,34 +123,34 @@ function ProjectBalance() {
               user?.name === "Prachi Singh" ||
               user?.department === "admin" ||
               user?.name === "Naresh Kumar") && (
-            <Box
-              sx={{
-                display: "flex",
-                mb: 1,
-                gap: 1,
-                flexDirection: { xs: "column", sm: "row" },
-                alignItems: { xs: "start", sm: "center" },
-                flexWrap: "wrap",
-                justifyContent: "center",
-              }}
-            >
-              {/* <Button
+              <Box
+                sx={{
+                  display: "flex",
+                  mb: 1,
+                  gap: 1,
+                  flexDirection: { xs: "column", sm: "row" },
+                  alignItems: { xs: "start", sm: "center" },
+                  flexWrap: "wrap",
+                  justifyContent: "center",
+                }}
+              >
+                {/* <Button
               color="primary"
               
               size="sm"
             >
               Add New Project +
             </Button> */}
-              <Button
-                color="primary"
-                startDecorator={<DownloadRoundedIcon />}
-                size="sm"
-                onClick={handleExportToCSV} 
-              >
-                Export to CSV
-              </Button>
-            </Box>
-              )}
+                <Button
+                  color="primary"
+                  startDecorator={<DownloadRoundedIcon />}
+                  size="sm"
+                  onClick={handleExportToCSV}
+                >
+                  Export to CSV
+                </Button>
+              </Box>
+            )}
           </Box>
           <AllProject ref={allProjectRef} />
           {/* <OrderTable /> */}
