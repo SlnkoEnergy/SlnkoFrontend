@@ -92,7 +92,6 @@ export default function AllTaskDashboard() {
     isFetching: feedFetching,
   } = useGetActivityFeedQuery();
   const feedItems = Array.isArray(feedRes?.data) ? feedRes.data : [];
-
   /* ---- leaderboard ---- */
   const [userSearch, setUserSearch] = React.useState("");
   const [debouncedQ, setDebouncedQ] = React.useState(userSearch);
@@ -332,6 +331,15 @@ export default function AllTaskDashboard() {
             items={feedLoading || feedFetching ? [] : feedItems}
             height={320}
             onSeeAll={() => { }}
+             onItemClick={(it) => {
+              if (it.id) {
+                navigate(
+                  `/view_task?task=${encodeURIComponent(
+                    it.task_id
+                  )}`
+                );
+              }
+            }}
           />
         </Grid>
       </Grid>
@@ -344,7 +352,7 @@ export default function AllTaskDashboard() {
               perfLoading || perfFetching
                 ? []
                 : leaderboardRows.map((u) => ({
-                  id: u._id,           // keep an id for React key
+                  id: u._id,           
                   name: u.name,
                   avatar: u.avatar,
                   assigned: u.assigned,
