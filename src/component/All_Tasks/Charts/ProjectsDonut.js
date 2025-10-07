@@ -3,12 +3,36 @@ import { Card, Box, Typography } from "@mui/joy";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 const PALETTE = [
-  "#f59e0b", "#22c55e", "#ef4444", "#3b82f6", "#8b5cf6",
-  "#14b8a6", "#e11d48", "#84cc16", "#f97316", "#06b6d4",
-  "#d946ef", "#0ea5e9", "#65a30d", "#dc2626", "#7c3aed",
-  "#10b981", "#ca8a04", "#2563eb", "#f43f5e", "#0891b2",
-  "#a16207", "#15803d", "#4f46e5", "#ea580c", "#db2777",
-  "#047857", "#1d4ed8", "#9333ea", "#b91c1c", "#0d9488",
+  "#f59e0b",
+  "#22c55e",
+  "#ef4444",
+  "#3b82f6",
+  "#8b5cf6",
+  "#14b8a6",
+  "#e11d48",
+  "#84cc16",
+  "#f97316",
+  "#06b6d4",
+  "#d946ef",
+  "#0ea5e9",
+  "#65a30d",
+  "#dc2626",
+  "#7c3aed",
+  "#10b981",
+  "#ca8a04",
+  "#2563eb",
+  "#f43f5e",
+  "#0891b2",
+  "#a16207",
+  "#15803d",
+  "#4f46e5",
+  "#ea580c",
+  "#db2777",
+  "#047857",
+  "#1d4ed8",
+  "#9333ea",
+  "#b91c1c",
+  "#0d9488",
 ];
 
 export default function ProjectsWorkedCard({
@@ -158,7 +182,6 @@ export default function ProjectsWorkedCard({
                 level="body-sm"
                 sx={{ color: "#0f172a", fontWeight: 600 }}
               >
-                {/* If you're passing percentage values, append %; otherwise show raw */}
                 {Number.isFinite(d.value) ? `${d.value}%` : d.value}
               </Typography>
             </Box>
