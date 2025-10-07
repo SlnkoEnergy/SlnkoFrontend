@@ -2298,6 +2298,15 @@ function Sidebar() {
                 </ListItemContent>
               </ListItemButton>
             </ListItem>
+            
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/project_dash")}>
+                <BuildIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Projects</Typography>
+                </ListItemContent>
+              </ListItemButton>
+            </ListItem>
 
             <ListItem nested>
               <Toggler
@@ -2332,7 +2341,7 @@ function Sidebar() {
                 </List>
               </Toggler>
             </ListItem>
-
+             
             <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/task_dashboard")}>
                 <TaskIcon />
