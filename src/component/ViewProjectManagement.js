@@ -1140,13 +1140,46 @@ const View_Project_Management = forwardRef(
       }
     };
 
-    useImperativeHandle(ref, () => ({
+     useImperativeHandle(ref, () => ({
       saveAsTemplate: async (meta = {}) => {
         const { name, description } = meta || {};
         const rows = [];
         const siToDb = new Map();
 
-        // 1) Gather visible tasks in order
+        /* --- Build lookups from current dataset (backend data) --- */
+        const orderByDb = new Map();
+        const depByDb = new Map();
+
+        (paList || []).forEach((pa) => {
+          const master = pa.activity_id || pa.master_activity_id || {};
+          const dbId = String(master?._id || pa.activity_id || "");
+          if (!dbId) return;
+
+          // order coming from backend
+          const orderNum =
+            Number(pa?.order) ||
+            Number(pa?.order_no) ||
+            Number(pa?.sequence) ||
+            null;
+          if (Number.isFinite(orderNum)) orderByDb.set(dbId, orderNum);
+
+          // dependency normalization (array, keep as-is keys)
+          const depsRaw = Array.isArray(pa.dependency)
+            ? pa.dependency
+            : Array.isArray(pa.dependencies)
+            ? pa.dependencies
+            : [];
+          const normalized = depsRaw.map((d) => ({
+            model: d?.model,
+            model_id: d?.model_id,
+            model_id_name: d?.model_id_name,
+            updatedAt: d?.updatedAt || d?.updated_at,
+            updated_by: d?.updated_by,
+          }));
+          depByDb.set(dbId, normalized);
+        });
+
+        // 1) Gather visible tasks in order (current UI order)
         gantt.eachTask((t) => {
           const start = t.start_date instanceof Date ? t.start_date : null;
           const end =
@@ -1162,7 +1195,7 @@ const View_Project_Management = forwardRef(
           const startISO = start ? start.toISOString() : null;
           const endISO = end ? end.toISOString() : null;
 
-          const order_no = rows.length + 1;
+          const order_no = rows.length + 1; // UI order fallback
           const duration =
             Number(t.duration || 0) ||
             (start && end ? durationFromStartFinish(start, end) : 0);
@@ -1198,6 +1231,7 @@ const View_Project_Management = forwardRef(
           if (t._dbId) siToDb.set(String(t.id), String(t._dbId));
         });
 
+        // 2) Predecessors/SUCCESSORS based on current links
         const predsBySi = new Map();
         const succsBySi = new Map();
 
@@ -1217,31 +1251,7 @@ const View_Project_Management = forwardRef(
           succsBySi.get(srcSi).push({ trgSi, trgDb, type: typeLabel, lag });
         });
 
-        const depByDb = new Map();
-        (paList || []).forEach((pa) => {
-          const master = pa.activity_id || pa.master_activity_id || {};
-          const dbId = String(master?._id || pa.activity_id || "");
-          if (!dbId) return;
-
-          const deps = Array.isArray(pa.dependency) ? pa.dependency : [];
-          const normalized = deps.map((d) => ({
-            model: d?.model || undefined,
-            model_id: d?.model_id || undefined,
-            model_id_name: d?.model_id_name || undefined,
-            updatedAt: d?.updatedAt || d?.updated_at || undefined,
-            updated_by: d?.updated_by || undefined,
-            status_history: [],
-            current_status: d?.current_status
-              ? {
-                  status: "not allowed",
-                  remarks: " ",
-                }
-              : undefined,
-          }));
-
-          depByDb.set(dbId, normalized);
-        });
-
+        // 3) Final activities payload
         const activities = rows
           .filter((r) => r.dbId)
           .map((t) => {
@@ -1261,9 +1271,14 @@ const View_Project_Management = forwardRef(
               }))
               .filter((x) => !!x.activity_id);
 
+            // Map backend order if available, else fallback to UI order_no
+            const mappedOrder =
+              (orderByDb.has(t.dbId) ? orderByDb.get(t.dbId) : null) ??
+              t.order_no;
+
             return {
               activity_id: t.dbId,
-              order: t.order_no,
+              order: mappedOrder, // <-- FIX: use backend order if present
               planned_start: t.start_iso || null,
               planned_finish: t.end_iso || null,
               actual_start: null,
@@ -1281,6 +1296,7 @@ const View_Project_Management = forwardRef(
                 : [],
               predecessors,
               successors,
+              // ensure dependency is passed exactly as BE expects
               dependency: depByDb.get(t.dbId) || [],
             };
           });
