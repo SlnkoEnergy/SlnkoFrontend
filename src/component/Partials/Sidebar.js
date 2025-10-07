@@ -1152,39 +1152,14 @@ function Sidebar() {
 
             {/* Ops Section */}
             {user?.name === "Prachi Singh" && (
-              <ListItem nested>
-                <Toggler
-                  renderToggle={({ open, setOpen }) => (
-                    <ListItemButton onClick={() => setOpen(!open)}>
-                      <SettingsSuggestIcon />
-                      <ListItemContent>
-                        <Typography level="title-sm">Internal Ops</Typography>
-                      </ListItemContent>
-                      <KeyboardArrowDownIcon
-                        sx={[
-                          open
-                            ? {
-                                transform: "rotate(180deg)",
-                              }
-                            : {
-                                transform: "none",
-                              },
-                        ]}
-                      />
-                    </ListItemButton>
-                  )}
-                >
-                  <List>
-                    <ListItem>
-                      <ListItemButton
-                        onClick={() => navigate("/handover_dash")}
-                      >
-                        HandOver Approval
-                      </ListItemButton>
-                    </ListItem>
-                  </List>
-                </Toggler>
-              </ListItem>
+               <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/handover_dash")}>
+                <SettingsSuggestIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Internal Operation</Typography>
+                </ListItemContent>
+              </ListItemButton>
+            </ListItem>
             )}
 
             <ListItem nested>
@@ -1988,6 +1963,15 @@ function Sidebar() {
                 <BuildIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Engineering</Typography>
+                </ListItemContent>
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/project_dash")}>
+                <BuildIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Projects</Typography>
                 </ListItemContent>
               </ListItemButton>
             </ListItem>
