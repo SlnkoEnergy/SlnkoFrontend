@@ -18,9 +18,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
 import { useGetHandOverQuery } from "../redux/camsSlice";
 import Axios from "../utils/Axios";
-
 import { toast } from "react-toastify";
-import { useGetEntireLeadsQuery } from "../redux/leadsSlice";
 
 function Dash_cam() {
   const navigate = useNavigate();
@@ -32,18 +30,20 @@ function Dash_cam() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(null);
 
-
-const itemsPerPage = 10;
+  const itemsPerPage = 10;
 
   const {
     data: getHandOverSheet = {},
     isLoading,
     refetch,
-  } = useGetHandOverQuery({ page: currentPage,search: searchQuery, status: "draft" });
+  } = useGetHandOverQuery({
+    page: currentPage,
+    search: searchQuery,
+    status: "draft",
+  });
 
   const HandOverSheet = Array.isArray(getHandOverSheet?.data)
     ? getHandOverSheet.data.map((entry) => {
-   
         return {
           ...entry,
           ...entry.customer_details,
@@ -57,22 +57,14 @@ const itemsPerPage = 10;
       })
     : [];
 
-console.log("HandOverSheet Data:", HandOverSheet);
-    
-    
-
-    const totalCount = getHandOverSheet.total || 0;
-
+  const totalCount = getHandOverSheet.total || 0;
 
   useEffect(() => {
     const storedUser = localStorage.getItem("userDetails");
     if (storedUser) {
       setUser(JSON.parse(storedUser));
-      // console.log("User Loaded:", JSON.parse(storedUser));
     }
   }, []);
-
- 
 
   const RowMenu1 = ({ currentPage, p_id, _id, id }) => {
     const [openModal, setOpenModal] = useState(false);
@@ -90,7 +82,7 @@ console.log("HandOverSheet Data:", HandOverSheet);
         const token = localStorage.getItem("authToken");
 
         await Axios.put(
-          `/update-status/${ID}`,
+          `/handover/update-status/${ID}`,
           {
             status_of_handoversheet: "Rejected",
             comment: comment,
@@ -186,8 +178,6 @@ console.log("HandOverSheet Data:", HandOverSheet);
     );
   };
 
-  
-
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
   };
@@ -221,7 +211,6 @@ console.log("HandOverSheet Data:", HandOverSheet);
     );
   };
   const totalPages = Math.ceil(totalCount / itemsPerPage);
-
 
   const generatePageNumbers = (currentPage, totalPages) => {
     const pages = [];
@@ -271,48 +260,48 @@ console.log("HandOverSheet Data:", HandOverSheet);
 
   const draftPayments = paginatedPayments;
 
-
   return (
-    <>
-      {/* Tablet and Up Filters */}
-      <Box
-        className="SearchAndFilters-tabletUp"
-        sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          borderRadius: "sm",
-          py: 2,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1.5,
-          "& > *": {
-            minWidth: { xs: "120px", md: "160px" },
-          },
-        }}
-      >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search here</FormLabel>
-          <Input
-            size="sm"
-            placeholder="Search by Pay ID, Customer, or Name"
-            startDecorator={<SearchIcon />}
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-        </FormControl>
+    <Box
+      sx={{
+        ml: {
+          lg: "var(--Sidebar-width)",
+        },
+        px: "0px",
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+      }}
+    >
+      <Box display={"flex"} justifyContent={"flex-end"} pb={0.5}>
+        <Box
+          className="SearchAndFilters-tabletUp"
+          sx={{
+            borderRadius: "sm",
+            py: 1,
+            display: "flex",
+            gap: 1.5,
+            width: "50%",
+          }}
+        >
+          <FormControl sx={{ flex: 1 }} size="sm">
+            <Input
+              size="sm"
+              placeholder="Search by Pay ID, Customer, or Name"
+              startDecorator={<SearchIcon />}
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+          </FormControl>
+        </Box>
       </Box>
       {/* Table */}
       <Sheet
         className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: { xs: "none", sm: "initial" },
+          display: { xs: "none", sm: "block" },
           width: "100%",
           borderRadius: "sm",
-          flexShrink: 1,
-          overflow: "auto",
-          minHeight: 0,
-          marginLeft: { lg: "18%", xl: "15%" },
-          maxWidth: { lg: "85%", sm: "100%" },
+          maxHeight: "66vh",
+          overflowY: "auto",
         }}
       >
         <Box
@@ -323,9 +312,14 @@ console.log("HandOverSheet Data:", HandOverSheet);
             <tr style={{ backgroundColor: "neutral.softBg" }}>
               <th
                 style={{
+                  position: "sticky",
+                  top: 0,
+                  background: "#e0e0e0",
+                  zIndex: 2,
                   borderBottom: "1px solid #ddd",
                   padding: "8px",
-                  textAlign: "center",
+                  textAlign: "left",
+                  fontWeight: "bold",
                 }}
               >
                 <Checkbox
@@ -352,9 +346,13 @@ console.log("HandOverSheet Data:", HandOverSheet);
                 <th
                   key={index}
                   style={{
+                    position: "sticky",
+                    top: 0,
+                    background: "#e0e0e0",
+                    zIndex: 2,
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
-                    textAlign: "center",
+                    textAlign: "left",
                     fontWeight: "bold",
                   }}
                 >
@@ -456,8 +454,6 @@ console.log("HandOverSheet Data:", HandOverSheet);
                   >
                     {project.scheme || "-"}
                   </td>
-               
-                  
 
                   <td
                     style={{
@@ -546,7 +542,6 @@ console.log("HandOverSheet Data:", HandOverSheet);
           display: "flex",
           flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
-          marginLeft: { lg: "18%", xl: "15%" },
         }}
       >
         {/* Previous Button */}
@@ -564,8 +559,6 @@ console.log("HandOverSheet Data:", HandOverSheet);
         {/* Showing X Results (no total because backend paginates) */}
         <Box>Showing {draftPayments.length} results</Box>
 
-        {/* Page Numbers: Only show current, prev, next for backend-driven pagination */}
-        {/* Page Numbers: Only show current, prev, next for backend-driven pagination */}
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
@@ -609,7 +602,7 @@ console.log("HandOverSheet Data:", HandOverSheet);
           Next
         </Button>
       </Box>
-    </>
+    </Box>
   );
 }
 export default Dash_cam;

@@ -22,7 +22,6 @@ import * as Yup from "yup";
 import Img1 from "../../../assets/HandOverSheet_Icon.jpeg";
 import {
   useGetHandOverByIdQuery,
-  useGetHandOverQuery,
   useUpdateHandOverMutation,
 } from "../../../redux/camsSlice";
 import {
@@ -104,6 +103,8 @@ const OpsHandoverSheetForm = ({ onBack }) => {
       project_component_other: "",
       transmission_scope: "",
       loan_scope: "",
+      ppa_expiry_date: "",
+      bd_commitment_date: "",
     },
 
     commercial_details: {
@@ -120,13 +121,9 @@ const OpsHandoverSheetForm = ({ onBack }) => {
       project_status: "incomplete",
       remark: "",
       remarks_for_slnko: "",
-      submitted_by_BD: "",
     },
-    submitted_by: "",
     status_of_handoversheet: "draft",
   });
-
-  // const [handoverId, setHandoverId] = useState(null);
 
   const { data: getModuleMaster = [] } = useGetModuleMasterQuery();
   const ModuleMaster = useMemo(
@@ -134,15 +131,11 @@ const OpsHandoverSheetForm = ({ onBack }) => {
     [getModuleMaster?.data]
   );
 
-  console.log(ModuleMaster);
-
   const { data: getMasterInverter = [] } = useGetMasterInverterQuery();
   const MasterInverter = useMemo(
     () => getMasterInverter?.data ?? [],
     [getMasterInverter?.data]
   );
-
-  console.log(MasterInverter);
 
   useEffect(() => {}, [ModuleMaster, MasterInverter]);
 
@@ -184,29 +177,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
     }),
   });
 
-  // useEffect(() => {
-  //   const userData = getUserData();
-  //   if (userData && userData.name) {
-  //     setFormData((prev) => ({
-  //       ...prev,
-  //       other_details: {
-  //         ...prev.other_details,
-  //         submitted_by_BD: userData.name,
-  //       },
-  //       submitted_by: userData.name,
-  //     }));
-  //   }
-  //   setUser(userData);
-  // }, []);
-
-  // const getUserData = () => {
-  //   const userData = localStorage.getItem("userDetails");
-  //   return userData ? JSON.parse(userData) : null;
-  // };
-
   const LeadId = sessionStorage.getItem("approvalInfo");
-
-  // console.log("LeadId:", LeadId);
 
   const {
     data: getHandOverSheet,
@@ -220,22 +191,9 @@ const OpsHandoverSheetForm = ({ onBack }) => {
     }
   );
 
-  const handoverData = getHandOverSheet?.data ?? null;
-
-  console.log("Handover Data:", handoverData);
-
-  useEffect(() => {
-    if (!handoverData && !isLoading && !error) {
-      console.warn("No matching handover data found.");
-    } else if (handoverData) {
-      console.log("Fetched handover data:", handoverData);
-    }
-  }, [handoverData, isLoading, error]);
-
   useEffect(() => {
     if (getHandOverSheet?.data) {
       setFormData((prev) => ({
-        // _id: getHandOverSheet.data._id,
         ...prev,
         ...getHandOverSheet.data,
 
@@ -304,25 +262,6 @@ const OpsHandoverSheetForm = ({ onBack }) => {
         service: calculated,
       },
     }));
-    //    if (!isNaN(serviceAmount)) {
-    //   let gstPercentage = 0;
-    //   if (billingType === "Composite") {
-    //     gstPercentage = 13.8;
-    //   } else if (billingType === "Individual") {
-    //     gstPercentage = 18;
-    //   }
-
-    //   if (gstPercentage > 0) {
-    //     const totalGST = Math.round(serviceAmount * (1 + gstPercentage / 100));
-    //     setFormData((prev) => ({
-    //       ...prev,
-    //       other_details: {
-    //         ...prev.other_details,
-    //         total_gst: totalGST,
-    //       },
-    //     }));
-    //   }
-    // }
 
     if (!isNaN(serviceAmount)) {
       let gstPercentage = 0;
@@ -370,7 +309,6 @@ const OpsHandoverSheetForm = ({ onBack }) => {
 
       const updatedFormData = {
         _id: formData._id,
-        // p_id: formData.p_id,
         customer_details: { ...formData.customer_details },
         order_details: { ...formData.order_details },
         project_detail: {
@@ -528,8 +466,8 @@ const OpsHandoverSheetForm = ({ onBack }) => {
                 {formData?.other_details?.billing_type === "Composite"
                   ? "Total Slnko Service Charge(with GST)"
                   : formData?.other_details?.billing_type === "Individual"
-                    ? "Total Slnko Service Charge(with GST)"
-                    : "Total Slnko Service Charge(with GST)"}
+                  ? "Total Slnko Service Charge(with GST)"
+                  : "Total Slnko Service Charge(with GST)"}
               </Typography>
               <Input
                 fullWidth
@@ -1132,6 +1070,49 @@ const OpsHandoverSheetForm = ({ onBack }) => {
                 }
               />
             </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                PPA Expiry Date
+                <span style={{ color: "red" }}>*</span>
+              </Typography>
+              <Input
+                value={(() => {
+                  const val = formData.project_detail.ppa_expiry_date;
+                  if (!val) return "";
+                  const d = new Date(val);
+                  if (isNaN(d)) return val;
+                  const day = String(d.getDate()).padStart(2, "0");
+                  const month = String(d.getMonth() + 1).padStart(2, "0");
+                  const year = d.getFullYear();
+                  return `${day}-${month}-${year}`;
+                })()}
+                placeholder="PPA Expiry Date"
+                readOnly
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                BD Commitment Date
+                <span style={{ color: "red" }}>*</span>
+              </Typography>
+              <Input
+                value={(() => {
+                  const val = formData.project_detail.bd_commitment_date;
+                  if (!val) return "";
+                  const d = new Date(val);
+                  if (isNaN(d)) return val;
+                  const day = String(d.getDate()).padStart(2, "0");
+                  const month = String(d.getMonth() + 1).padStart(2, "0");
+                  const year = d.getFullYear();
+                  return `${day}-${month}-${year}`;
+                })()}
+                placeholder="BD Commitment Date"
+                readOnly
+              />
+            </Grid>
+
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 Slnko Service Charges (Without GST)/MWp{" "}

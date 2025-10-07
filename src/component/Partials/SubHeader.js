@@ -1,5 +1,5 @@
 // src/components/Header.js
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Sheet from "@mui/joy/Sheet";
 import Box from "@mui/joy/Box";
 import Typography from "@mui/joy/Typography";
@@ -12,11 +12,13 @@ export default function SubHeader({
   onBack,
   sticky = true,
   sidebarWidth = { lg: 30, xl: 30 },
+  rightSlot = null,
   children,
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const handleBack = () => (onBack ? onBack() : navigate(-1));
-
+  const isProjectsPage = location.pathname === "/view_pm";
   return (
     <Sheet
       variant="primary"
@@ -28,51 +30,56 @@ export default function SubHeader({
         backgroundColor: "#f8f9fa",
         borderBottom: `1px solid ${theme.vars.palette.neutral.outlinedBorder}`,
         boxShadow: "sm",
-        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+        width: isProjectsPage
+          ? "100%"
+          : { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
         height: "48px",
-        ml: {
-          md: "0px",
-          lg: "var(--Sidebar-width)",
-        },
+        ml: isProjectsPage
+          ? "0px"
+          : {
+              md: "0px",
+              lg: "var(--Sidebar-width)",
+            },
       })}
     >
       {/* Main row */}
       <Box
         sx={{
-          display: "grid",
-          gridTemplateColumns: "auto 1fr auto",
+          display: "flex",
           alignItems: "center",
-          gap: { xs: 1, sm: 1.5, md: 1 },
+          justifyContent: "space-between",
           px: { xs: 1, sm: 2, md: 2.2 },
           py: { xs: 1, md: 1 },
+          height: "100%",
         }}
       >
-        {/* Left: Back button */}
-        <Box sx={{ display: "flex", alignItems: "center" }}>
-          {isBackEnabled ? (
-            <IconButton size="sm" onClick={handleBack} aria-label="Go back">
-              <ArrowBackIosNewRounded fontSize="small" />
-            </IconButton>
-          ) : (
-            <Box sx={{ display: "none" }} />
-          )}
-        </Box>
+        <Box display={"flex"} gap={1}>
+          {/* Left: Back button */}
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            {isBackEnabled ? (
+              <IconButton size="sm" onClick={handleBack} aria-label="Go back">
+                <ArrowBackIosNewRounded fontSize="small" />
+              </IconButton>
+            ) : (
+              <Box sx={{ display: "none" }} />
+            )}
+          </Box>
 
-        {/* Center: Title */}
-        <Box sx={{ display: "flex", alignItems: "center" }}>
-          <Typography
-            level="h5"
-            sx={{
-              fontWeight: 600,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            {title}
-          </Typography>
+          {/* Center: Title */}
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <Typography
+              level="h5"
+              sx={{
+                fontWeight: 600,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {title}
+            </Typography>
+          </Box>
         </Box>
-
         {/* Right: Actions */}
         <Box
           sx={{
@@ -86,7 +93,7 @@ export default function SubHeader({
             "& > *": { flexShrink: 0 },
           }}
         >
-          {children}
+          {rightSlot || children || null}
         </Box>
       </Box>
     </Sheet>

@@ -26,7 +26,6 @@ function TaskDashboard() {
   const [openAddTaskModal, setOpenAddTaskModal] = useState(false);
 
   const [user, setUser] = useState(null);
-  const [selectedIds, setSelectedIds] = useState([]);
   const [open, setOpen] = useState(false);
 
   const { data: deptApiData, isLoading: isDeptLoading } = useGetAllDeptQuery();
@@ -39,8 +38,8 @@ function TaskDashboard() {
     Array.isArray(usersResp?.data)
       ? usersResp.data
       : Array.isArray(usersResp)
-      ? usersResp
-      : []
+        ? usersResp
+        : []
   )
     .filter(Boolean)
     .map((u) => ({ label: u?.name || "User", value: u?._id || "" }))
@@ -50,30 +49,6 @@ function TaskDashboard() {
     const userData = localStorage.getItem("userDetails");
     if (userData) setUser(JSON.parse(userData));
   }, []);
-
-  const [exportTasksToCsv] = useExportTasksToCsvMutation();
-
-  const handleExport = async (selectedIds) => {
-    try {
-      if (!selectedIds?.length) {
-        alert("No tasks selected for export.");
-        return;
-      }
-      const response = await exportTasksToCsv(selectedIds).unwrap();
-      const blob = new Blob([response], { type: "text/csv" });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "tasks_export.csv";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Export failed:", error);
-      alert("Failed to export tasks to CSV.");
-    }
-  };
 
   const fields = [
     {

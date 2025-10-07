@@ -29,11 +29,13 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Main_Logo from "../../assets/durgapuja_logoprotrac.png";
 import { closeSidebar } from "../../utils/utils";
-
 import DatabaseIcon from "@mui/icons-material/Storage";
-import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
+import FactCheckIcon from "@mui/icons-material/FactCheck";
 import ColorSchemeToggle from "./ColorSchemeToggle";
-import { NovuProvider, PopoverNotificationCenter } from "@novu/notification-center";
+import {
+  NovuProvider,
+  PopoverNotificationCenter,
+} from "@novu/notification-center";
 import AppNotification from "./Notification";
 
 function Toggler({ defaultExpanded = false, renderToggle, children }) {
@@ -86,13 +88,14 @@ function Sidebar() {
   };
 
   const isSalesPage = location.pathname === "/sales";
+  const isProjecsPage = location.pathname === "/view_pm";
   return (
     <Sheet
       className="Sidebar"
       sx={{
         position: "fixed",
         transition: "transform 0.4s, width 0.4s",
-        zIndex: {xs:201, lg:200},
+        zIndex: { xs: 201, lg: 202 },
         height: "100dvh",
         width: "var(--Sidebar-width)",
         top: 0,
@@ -104,12 +107,12 @@ function Sidebar() {
         borderRight: "1px solid",
         borderColor: "divider",
         "@media print": { display: "none" },
-
         transform: {
           xs: "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1)))",
-          lg: isSalesPage
-            ? "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1)))"
-            : "none",
+          lg:
+            isSalesPage || isProjecsPage
+              ? "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1)))"
+              : "none",
         },
       }}
     >
@@ -139,9 +142,10 @@ function Sidebar() {
             xs: "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1) + var(--SideNavigation-slideIn, 0) * var(--Sidebar-width, 0px)))",
             sm: "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1) + var(--SideNavigation-slideIn, 0) * var(--Sidebar-width, 0px)))",
             md: "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1) + var(--SideNavigation-slideIn, 0) * var(--Sidebar-width, 0px)))",
-            lg: isSalesPage
-              ? "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1) + var(--SideNavigation-slideIn, 0) * var(--Sidebar-width, 0px)))"
-              : "translateX(-100%)",
+            lg:
+              isSalesPage || isProjecsPage
+                ? "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1) + var(--SideNavigation-slideIn, 0) * var(--Sidebar-width, 0px)))"
+                : "translateX(-100%)",
           },
         }}
         onClick={() => closeSidebar()}
@@ -171,8 +175,7 @@ function Sidebar() {
             display: { xs: "none", sm: "none", md: "none", lg: "block" },
           }}
         >
-        
-          <AppNotification/>
+          <AppNotification />
         </Box>
       </Box>
 
@@ -203,47 +206,10 @@ function Sidebar() {
                     level="title-sm"
                     onClick={() => navigate("/dashboard")}
                   >
-                    Dashboard
+                    Home
                   </Typography>
                 </ListItemContent>
               </ListItemButton>
-            </ListItem>
-
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <AccountCircleIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm"> User</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                            transform: "rotate(180deg)",
-                          }
-                          : {
-                            transform: "none",
-                          },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/add_user")}>
-                      Add User
-                    </ListItemButton>
-                  </ListItem>
-                  <ListItem>
-                    <ListItemButton onClick={() => navigate("/edit_user")}>
-                      Edit User
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
             </ListItem>
 
             <ListItem nested>
@@ -258,11 +224,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -302,11 +268,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -345,75 +311,22 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <SettingsSuggestIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Internal Ops</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                            transform: "rotate(180deg)",
-                          }
-                          : {
-                            transform: "none",
-                          },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List>
-                  <ListItem>
-                    <ListItemButton onClick={() => navigate("/handover_dash")}>
-                      HandOver Approval
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/handover_dash")}>
+                <SettingsSuggestIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Internal Operation</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
 
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <MiscellaneousServicesIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">CAM</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                            transform: "rotate(180deg)",
-                          }
-                          : {
-                            transform: "none",
-                          },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/cam_dash")}>
-                      Dashboard
-                    </ListItemButton>
-                  </ListItem>
-                  <ListItem>
-                    <ListItemButton
-                      onClick={() => navigate("/purchase_request")}
-                    >
-                      Purchase Request
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/cam_dash")}>
+                <MiscellaneousServicesIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">CAM</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
 
             <ListItem sx={{ mt: 0.5 }}>
@@ -437,11 +350,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -467,41 +380,13 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <SolarPowerIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Projects</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                            transform: "rotate(180deg)",
-                          }
-                          : {
-                            transform: "none",
-                          },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all-project")}>
-                      All Projects
-                    </ListItemButton>
-                  </ListItem>
-                  <ListItem>
-                    <ListItemButton onClick={() => navigate("#")}>
-                      Site Projects
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/project_dash")}>
+                <BuildIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Projects</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
 
             <ListItem nested>
@@ -516,11 +401,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -565,42 +450,22 @@ function Sidebar() {
               </ListItemButton>
             </ListItem>
 
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <DatabaseIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">My Databases</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                            transform: "rotate(180deg)",
-                          }
-                          : {
-                            transform: "none",
-                          },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/categories")}>
-                      Categories
-                    </ListItemButton>
-                  </ListItem>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/categories")}>
+                <DatabaseIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">My Databases</Typography>
+                </ListItemContent>
+              </ListItemButton>
+            </ListItem>
 
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/products")}>
-                      Products
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/approval_dashboard")}>
+                <FactCheckIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Approvals</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
           </List>
         ) : user?.department === "Accounts" &&
@@ -632,11 +497,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -713,11 +578,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -751,11 +616,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -804,11 +669,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -848,11 +713,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -866,15 +731,17 @@ function Sidebar() {
                       User Dashboard
                     </ListItemButton>
                   </ListItem>
-                  {user?.department === "BD" && (user?.emp_id === "SE-277" || user?.emp_id === "SE-046") && (
-                    <ListItem>
-                      <ListItemButton
-                        onClick={() => navigate("/expense_approval")}
-                      >
-                        Expense Approval
-                      </ListItemButton>
-                    </ListItem>
-                  )}
+                  {user?.department === "BD" &&
+                    (user?.emp_id === "SE-277" ||
+                      user?.emp_id === "SE-046") && (
+                      <ListItem>
+                        <ListItemButton
+                          onClick={() => navigate("/expense_approval")}
+                        >
+                          Expense Approval
+                        </ListItemButton>
+                      </ListItem>
+                    )}
                 </List>
               </Toggler>
             </ListItem>
@@ -910,11 +777,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -965,11 +832,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1010,11 +877,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1070,11 +937,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1107,11 +974,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1162,11 +1029,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1202,11 +1069,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1233,41 +1100,13 @@ function Sidebar() {
             </ListItem>
 
             {/* Projects Section */}
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <SolarPowerIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Projects</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                            transform: "rotate(180deg)",
-                          }
-                          : {
-                            transform: "none",
-                          },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all-project")}>
-                      All Projects
-                    </ListItemButton>
-                  </ListItem>
-                  {/* <ListItem>
-                <ListItemButton onClick={() => navigate("#")}>
-                  Site Projects
-                </ListItemButton>
-              </ListItem> */}
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/project_dash")}>
+                <BuildIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Projects</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
 
             <ListItem sx={{ mt: 0.5 }}>
@@ -1291,11 +1130,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1325,11 +1164,11 @@ function Sidebar() {
                         sx={[
                           open
                             ? {
-                              transform: "rotate(180deg)",
-                            }
+                                transform: "rotate(180deg)",
+                              }
                             : {
-                              transform: "none",
-                            },
+                                transform: "none",
+                              },
                         ]}
                       />
                     </ListItemButton>
@@ -1360,11 +1199,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1392,7 +1231,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
           </List>
-        ) : user?.role === "purchase"  ? (
+        ) : user?.role === "purchase" ? (
           <List
             size="sm"
             sx={{
@@ -1413,11 +1252,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1456,21 +1295,19 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
                 )}
               >
                 <List sx={{ gap: 0.5 }}>
-                   <ListItem>
-                    <ListItemButton
-                      onClick={() => navigate("/cam_dash")}
-                    >
+                  <ListItem>
+                    <ListItemButton onClick={() => navigate("/cam_dash")}>
                       Dashboard
                     </ListItemButton>
                   </ListItem>
@@ -1498,11 +1335,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1540,11 +1377,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1592,11 +1429,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1633,11 +1470,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1667,11 +1504,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1709,11 +1546,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1747,11 +1584,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1808,11 +1645,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1857,11 +1694,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1927,11 +1764,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -1965,8 +1802,7 @@ function Sidebar() {
               </ListItemButton>
             </ListItem>
           </List>
-        ) : user?.department === "CAM" && user?.name!== "Shantanu Sameer"
-           ? (
+        ) : user?.department === "CAM" && user?.name !== "Shantanu Sameer" ? (
           <List
             size="sm"
             sx={{
@@ -1987,11 +1823,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2029,11 +1865,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2086,6 +1922,15 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/project_dash")}>
+                <BuildIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Projects</Typography>
+                </ListItemContent>
+              </ListItemButton>
+            </ListItem>
+
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -2098,11 +1943,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2159,11 +2004,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2218,11 +2063,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2282,11 +2127,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2316,78 +2161,24 @@ function Sidebar() {
           user?.department === "Infra" ||
           user?.department === "Marketing" ||
           user?.department === "Internal" ||
-          user?.department === "Loan"  ||
+          user?.department === "Loan" ||
           (user?.department === "CAM" && user?.name !== "Shantanu Sameer") ? (
           <>
-          <List
-            size="sm"
-            sx={{
-              gap: 1,
-              "--List-nestedInsetStart": "30px",
-              "--ListItem-radius": (theme) => theme.vars.radius.sm,
-            }}
-          >
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <AccountBalanceWalletIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Expense Sheet</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                            transform: "rotate(180deg)",
-                          }
-                          : {
-                            transform: "none",
-                          },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton
-                      onClick={() => navigate("/expense_dashboard")}
-                    >
-                      User Dashboard
-                    </ListItemButton>
-                  </ListItem>
-                  {((user?.department === "Projects" &&
-                    (user?.emp_id === "SE-203" || user?.emp_id === "SE-212" || user?.emp_id === "SE-205" || user?.emp_id === "SE-010")) ||
-                    user?.name === "Disha Sharma") && (
-                      <ListItem>
-                        <ListItemButton
-                          onClick={() => navigate("/expense_approval")}
-                        >
-                          Expense Approval
-                        </ListItemButton>
-                      </ListItem>
-                    )}
-                </List>
-              </Toggler>
-            </ListItem>
-
-            <ListItem sx={{ mt: 0.5 }}>
-              <ListItemButton onClick={() => navigate("/task_dashboard")}>
-                <TaskIcon />
-                <ListItemContent>
-                  <Typography level="title-sm">Task</Typography>
-                </ListItemContent>
-              </ListItemButton>
-            </ListItem>
-            {user?.emp_id === "SE-203" && (
+            <List
+              size="sm"
+              sx={{
+                gap: 1,
+                "--List-nestedInsetStart": "30px",
+                "--ListItem-radius": (theme) => theme.vars.radius.sm,
+              }}
+            >
               <ListItem nested>
                 <Toggler
                   renderToggle={({ open, setOpen }) => (
                     <ListItemButton onClick={() => setOpen(!open)}>
-                      <AccountBalanceIcon />
+                      <AccountBalanceWalletIcon />
                       <ListItemContent>
-                        <Typography level="title-sm">Accounting</Typography>
+                        <Typography level="title-sm">Expense Sheet</Typography>
                       </ListItemContent>
                       <KeyboardArrowDownIcon
                         sx={[
@@ -2404,28 +2195,98 @@ function Sidebar() {
                   )}
                 >
                   <List sx={{ gap: 0.5 }}>
-                    <ListItem>
+                    <ListItem sx={{ mt: 0.5 }}>
                       <ListItemButton
-                        onClick={() => navigate("/daily-payment-request")}
+                        onClick={() => navigate("/expense_dashboard")}
                       >
-                        Daily Payment Request
+                        User Dashboard
                       </ListItemButton>
                     </ListItem>
+                    {((user?.department === "Projects" &&
+                      (user?.emp_id === "SE-203" ||
+                        user?.emp_id === "SE-212" ||
+                        user?.emp_id === "SE-205" ||
+                        user?.emp_id === "SE-010")) ||
+                      user?.name === "Disha Sharma") && (
+                      <ListItem>
+                        <ListItemButton
+                          onClick={() => navigate("/expense_approval")}
+                        >
+                          Expense Approval
+                        </ListItemButton>
+                      </ListItem>
+                    )}
                   </List>
                 </Toggler>
               </ListItem>
-            )}
-            {(user?.emp_id === "SE-203" || user?.emp_id === "SE-212" || user?.emp_id === "SE-205" || user?.emp_id === "SE-010") && (
-               <ListItem sx={{ mt: 0.5 }}>
-              <ListItemButton onClick={() => navigate("/eng_dash")}>
-                <BuildIcon />
-                <ListItemContent>
-                  <Typography level="title-sm">Engineering</Typography>
-                </ListItemContent>
-              </ListItemButton>
-            </ListItem>
-            )}
-          </List>
+
+              <ListItem sx={{ mt: 0.5 }}>
+                <ListItemButton onClick={() => navigate("/task_dashboard")}>
+                  <TaskIcon />
+                  <ListItemContent>
+                    <Typography level="title-sm">Task</Typography>
+                  </ListItemContent>
+                </ListItemButton>
+              </ListItem>
+              {user?.emp_id === "SE-203" && (
+                <ListItem nested>
+                  <Toggler
+                    renderToggle={({ open, setOpen }) => (
+                      <ListItemButton onClick={() => setOpen(!open)}>
+                        <AccountBalanceIcon />
+                        <ListItemContent>
+                          <Typography level="title-sm">Accounting</Typography>
+                        </ListItemContent>
+                        <KeyboardArrowDownIcon
+                          sx={[
+                            open
+                              ? {
+                                  transform: "rotate(180deg)",
+                                }
+                              : {
+                                  transform: "none",
+                                },
+                          ]}
+                        />
+                      </ListItemButton>
+                    )}
+                  >
+                    <List sx={{ gap: 0.5 }}>
+                      <ListItem>
+                        <ListItemButton
+                          onClick={() => navigate("/daily-payment-request")}
+                        >
+                          Daily Payment Request
+                        </ListItemButton>
+                      </ListItem>
+                    </List>
+                  </Toggler>
+                </ListItem>
+              )}
+              {(user?.emp_id === "SE-203" ||
+                user?.emp_id === "SE-212" ||
+                user?.emp_id === "SE-205" ||
+                user?.emp_id === "SE-010") && (
+                <>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/project_dash")}>
+                      <BuildIcon />
+                      <ListItemContent>
+                        <Typography level="title-sm">Projects</Typography>
+                      </ListItemContent>
+                    </ListItemButton>
+                  </ListItem>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/eng_dash")}>
+                      <BuildIcon />
+                      <ListItemContent>
+                        <Typography level="title-sm">Engineering</Typography>
+                      </ListItemContent>
+                    </ListItemButton>
+                  </ListItem>
+                </>
+              )}
+            </List>
           </>
         ) : user?.department === "Engineering" ? (
           <List>
@@ -2434,6 +2295,15 @@ function Sidebar() {
                 <BuildIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Engineering</Typography>
+                </ListItemContent>
+              </ListItemButton>
+            </ListItem>
+            
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/project_dash")}>
+                <BuildIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Projects</Typography>
                 </ListItemContent>
               </ListItemButton>
             </ListItem>
@@ -2450,11 +2320,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2471,7 +2341,7 @@ function Sidebar() {
                 </List>
               </Toggler>
             </ListItem>
-
+             
             <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/task_dashboard")}>
                 <TaskIcon />
@@ -2502,11 +2372,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2545,11 +2415,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2587,11 +2457,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2644,6 +2514,15 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
+           <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/project_dash")}>
+                <BuildIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Projects</Typography>
+                </ListItemContent>
+              </ListItemButton>
+            </ListItem>
+
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -2656,11 +2535,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2709,11 +2588,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2747,11 +2626,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2799,11 +2678,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>
@@ -2841,11 +2720,11 @@ function Sidebar() {
                       sx={[
                         open
                           ? {
-                            transform: "rotate(180deg)",
-                          }
+                              transform: "rotate(180deg)",
+                            }
                           : {
-                            transform: "none",
-                          },
+                              transform: "none",
+                            },
                       ]}
                     />
                   </ListItemButton>

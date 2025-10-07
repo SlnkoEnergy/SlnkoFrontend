@@ -32,7 +32,7 @@ import {
   useGetExpenseByIdQuery,
   useExportExpenseToPDFMutation,
   useExportExpenseToCSVMutation,
-} from "../../../redux/Expense/expenseSlice";
+} from "../../../redux/expenseSlice";
 import PieChartByCategory from "./Expense_Chart";
 import CircularProgress from "@mui/joy/CircularProgress";
 const UpdateExpenseAccounts = () => {

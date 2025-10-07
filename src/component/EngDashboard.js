@@ -17,6 +17,7 @@ import { CircularProgress, Option, Select, Tab, TabList, Tabs } from "@mui/joy";
 import NoData from "../assets/alert-bell.svg";
 import { useGetHandOverQuery } from "../redux/camsSlice";
 import { useTheme } from "@emotion/react";
+import { Add } from "@mui/icons-material";
 
 function Dash_eng() {
   const navigate = useNavigate();
@@ -292,7 +293,7 @@ function Dash_eng() {
                 "Customer",
                 "Mobile",
                 "State",
-                "Capacity(AC/DC)",
+                "Capacity(AC/DC)"
               ].map((header, index) => (
                 <th
                   key={index}

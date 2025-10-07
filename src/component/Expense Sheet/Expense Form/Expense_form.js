@@ -25,7 +25,7 @@ import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { useAddExpenseMutation } from "../../../redux/Expense/expenseSlice";
+import { useAddExpenseMutation } from "../../../redux/expenseSlice";
 
 const Expense_Form = () => {
   const navigate = useNavigate();

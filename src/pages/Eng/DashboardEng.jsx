@@ -41,7 +41,7 @@ function DashboardENG() {
 
             <Button
               size="sm"
-              onClick={()=> navigate(`/inspection`)}
+              onClick={() => navigate(`/inspection`)}
               sx={{
                 color: "white",
                 bgcolor: "transparent",
