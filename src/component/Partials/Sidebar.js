@@ -1100,41 +1100,13 @@ function Sidebar() {
             </ListItem>
 
             {/* Projects Section */}
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <SolarPowerIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">Projects</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/all-project")}>
-                      All Projects
-                    </ListItemButton>
-                  </ListItem>
-                  {/* <ListItem>
-                <ListItemButton onClick={() => navigate("#")}>
-                  Site Projects
-                </ListItemButton>
-              </ListItem> */}
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/project_dash")}>
+                <BuildIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Projects</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
 
             <ListItem sx={{ mt: 0.5 }}>
@@ -1950,6 +1922,15 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/project_dash")}>
+                <BuildIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Projects</Typography>
+                </ListItemContent>
+              </ListItemButton>
+            </ListItem>
+
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -2522,6 +2503,15 @@ function Sidebar() {
                   </ListItem>
                 </List>
               </Toggler>
+            </ListItem>
+
+           <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/project_dash")}>
+                <BuildIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Projects</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
 
             <ListItem nested>
