@@ -21,17 +21,15 @@ import {
   useCreateTaskMutation,
   useGetAllDeptQuery,
   useGetAllUserQuery,
-  useGetAllowedModuleQuery, // Engineering modules
-  useLazyNamesearchMaterialCategoriesQuery, // SCM categories (allowed-only)
+  useGetAllowedModuleQuery,
+  useLazyNamesearchMaterialCategoriesQuery,
 } from "../../redux/globalTaskSlice";
 import { toast } from "react-toastify";
 import Select, { components } from "react-select";
 import SelectRS from "react-select";
 import SearchPickerModal from "../../component/SearchPickerModal";
 
-/* ---------------------------------------------------
-   Shared react-select styles (Joy-like blue border)
---------------------------------------------------- */
+
 const joySelectStyles = {
   control: (base, state) => ({
     ...base,
@@ -57,7 +55,6 @@ const joySelectStyles = {
 
 const RS_MORE = { label: "Search more…", value: "__more__" };
 
-// Safely get an array whether the API returns [] or { data: [] }
 const toArray = (res) =>
   Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
 
@@ -70,23 +67,21 @@ const AddTask = () => {
   const [title, setTitle] = useState("");
   const [deadlineDT, setDeadlineDT] = useState(null);
   const [note, setNote] = useState("");
-  const [assignedTo, setAssignedTo] = useState([]); // array for individuals; string for team
+  const [assignedTo, setAssignedTo] = useState([]);
   const [subtype, setSubType] = useState("");
 
   // Category + pickers
   const [category, setCategory] = useState("Engineering");
-  const [openModulePicker, setOpenModulePicker] = useState(false); // Engineering
-  const [openScmPicker, setOpenScmPicker] = useState(false); // SCM
+  const [openModulePicker, setOpenModulePicker] = useState(false);
+  const [openScmPicker, setOpenScmPicker] = useState(false); 
 
   const { data: getProjectDropdown, isLoading } = useGetProjectDropdownQuery();
   const [createTask, { isLoading: isSubmitting }] = useCreateTaskMutation();
 
-  /* ---------------- Department-based user filtering ---------------- */
-  // Use title case; many backends are case-sensitive here.
   const deptFilter = useMemo(() => {
     if (category === "Engineering") return "Engineering";
     if (category === "SCM") return "SCM";
-    return ""; // Other -> all users
+    return "Other"; 
   }, [category]);
 
   const {
@@ -110,10 +105,8 @@ const AddTask = () => {
     [deptsResp]
   );
 
-  /* ---------------- First selected project id ---------------- */
   const projectId = selectedProject?.[0]?._id || "";
 
-  /* ---------------- Engineering: allowed modules ---------------- */
   const {
     data: allowedModulesResp,
     isLoading: isLoadingModules,
@@ -132,7 +125,6 @@ const AddTask = () => {
     }));
   }, [allowedModulesResp]);
 
-  // Quick list (first 7) + “Search more…”
   const moduleQuickOptions = useMemo(() => {
     const quick = allowedModules.slice(0, 7).map((m) => ({
       value: String(m._id),
@@ -142,7 +134,6 @@ const AddTask = () => {
     return [...quick, RS_MORE];
   }, [allowedModules]);
 
-  /* ---------------- SCM: allowed material categories (lazy search) ---------------- */
   const [triggerScmSearch, { isFetching: isFetchingScm }] =
     useLazyNamesearchMaterialCategoriesQuery();
   const [scmQuickOptions, setScmQuickOptions] = useState([]);
@@ -154,7 +145,7 @@ const AddTask = () => {
           search: q,
           page: 1,
           limit: 7,
-          pr: true, // project-scoped & allowed-only (backend enforces allowed ids)
+          pr: true,
           project_id: projectId,
         },
         true
@@ -173,7 +164,6 @@ const AddTask = () => {
     }
   };
 
-  /* ---------------- Submit ---------------- */
   const handleSubmit = async () => {
     const isProjectTab = tab === "project";
     const isHelpdeskTab = tab === "helpdesk";
@@ -201,7 +191,6 @@ const AddTask = () => {
       priority: String(priority),
       type: tab,
       sub_type: isHelpdeskTab ? subtype : null,
-      // category, // uncomment if backend expects it
     };
 
     try {
@@ -230,14 +219,11 @@ const AddTask = () => {
     }
   };
 
-  /* ---------------- Project options ---------------- */
   const optionsProject = (toArray(getProjectDropdown) || []).map((project) => ({
     value: project.code,
     label: project.code,
   }));
 
-  /* ---------------- Assign To (users/teams) ---------------- */
-  // Build options robustly for either individuals (filtered by department) or teams (departments list)
   const userOptions = useMemo(
     () =>
       usersList
@@ -262,13 +248,11 @@ const AddTask = () => {
     if (assignToTeam) {
       return assignedTo ? { value: assignedTo, label: assignedTo } : null;
     }
-    // individuals: assignedTo is an array of ids
     if (!Array.isArray(assignedTo) || assignedTo.length === 0) return [];
     const map = new Map(currentOptions.map((o) => [String(o.value), o]));
     return assignedTo.map((id) => map.get(String(id)) || null).filter(Boolean);
   }, [assignToTeam, assignedTo, currentOptions]);
 
-  /* ---------------- Priority react-select ---------------- */
   const priorityMeta = {
     1: { label: "High", bg: "#d32f2f" },
     2: { label: "Medium", bg: "#ed6c02" },
