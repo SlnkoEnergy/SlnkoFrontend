@@ -405,8 +405,6 @@ export default function Purchase_Request_Form() {
   const [productModalOpen, setProductModalOpen] = useState(false);
   const [activeLineId, setActiveLineId] = useState(null);
 
-  // Show SKU, Product Name, and Category in the modal
-  // Show SKU, Product Name, Category, and Make in the modal
   const productColumns = [
     { key: "sku_code", label: "Code", width: 160 },
     {
