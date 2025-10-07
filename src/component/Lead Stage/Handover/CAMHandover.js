@@ -1241,6 +1241,7 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
                 }
               />
             </Grid>
+
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 LOA Number

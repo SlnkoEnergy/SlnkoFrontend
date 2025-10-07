@@ -49,7 +49,7 @@ export default function AddActivityModal({
     activityId: "",
     type: "frontend",
     description: "",
-    order: null,
+    // shown only for global scope (but fine to keep in form)
     completion_formula: "",
     dependencies: {
       engineeringEnabled: false,
@@ -553,23 +553,20 @@ export default function AddActivityModal({
           }
         : {};
 
- const base = {
-   // put legacy FIRST so your activity fields overwrite it
-   ...legacy,                 // ✅ any legacy.type won't clobber below
-   name: (form.activityName || "").trim(),
-   description: (form.description || "").trim(),
-   type: String(form.type || "frontend").toLowerCase(),   // activity type wins
-   order: Number.isFinite(form.order) ? form.order : 0,
-   ...(scope === "project" && form.projectId
-     ? { project_id: form.projectId, project_name: form.projectName }
-     : {}),
-   ...(dependencies.length ? { dependencies } : {}),
-   ...(predecessorsArr.length ? { predecessors: predecessorsArr } : {}),
-   activityId: form.activityId || "",
-   __mode: mode,
-   __scope: scope,
- };
-
+    const base = {
+      name: form.activityName.trim(),
+      description: form.description.trim(),
+      type: form.type.toLowerCase(),
+      ...(scope === "project" && form.projectId
+        ? { project_id: form.projectId, project_name: form.projectName }
+        : {}),
+      ...(dependencies.length ? { dependencies } : {}),
+      ...(predecessorsArr.length ? { predecessors: predecessorsArr } : {}),
+      ...legacy,
+      activityId: form.activityId || "",
+      __mode: mode,
+      __scope: scope,
+    };
 
     // Only attach completion_formula for global scope (empty is allowed, server decides)
     const payload =
@@ -674,7 +671,6 @@ console.log(payload);
       description: a.description || "",
       dependency: a.dependency || [],
       predecessors: a.predecessors || [],
-      order: Number.isFinite(+a.order) ? Number(a.order) : null,
       completion_formula: a.completion_formula || "",
     }));
     const total = pagination?.total ?? rows.length;
@@ -864,6 +860,7 @@ console.log(payload);
                         activityName: "",
                         type: "frontend",
                         description: "",
+                        order: null,
                         completion_formula: "",
                         order: null,
                         dependencies: {
@@ -1053,28 +1050,6 @@ console.log(payload);
                 </Typography>
               )}
             </FormControl>
-
-            {/*Order */}
-            <FormControl size="sm">
-  <FormLabel>Order</FormLabel>
-  <Input
-    size="sm"
-    type="number"
-    inputMode="numeric"
-    placeholder="Enter order"
-    value={form.order ?? ""}
-    onChange={(e) => {
-      const n = Number(e.target.value);
-      setForm((p) => ({
-        ...p,
-        order: Number.isFinite(n) ? n : 0, // keep it fully editable; remove Math.max if negatives are allowed
-      }));
-    }}
-    slotProps={{ input: { min: 0 } }} // drop this line if negatives are allowed
-  />
-</FormControl>
-
-
 
             {/* Predecessors (GLOBAL only UI) */}
             {scope === "global" && (
