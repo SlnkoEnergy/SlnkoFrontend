@@ -1244,22 +1244,6 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
 
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                CAM Member Name
-              </Typography>
-              <Input
-                value={formData.other_details.cam_member_name}
-                placeholder="CAM Member Name"
-                onChange={(e) =>
-                  handleChange(
-                    "other_details",
-                    "cam_member_name",
-                    e.target.value
-                  )
-                }
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 LOA Number
               </Typography>
               <Input
