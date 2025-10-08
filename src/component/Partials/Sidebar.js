@@ -1152,14 +1152,14 @@ function Sidebar() {
 
             {/* Ops Section */}
             {user?.name === "Prachi Singh" && (
-               <ListItem sx={{ mt: 0.5 }}>
-              <ListItemButton onClick={() => navigate("/handover_dash")}>
-                <SettingsSuggestIcon />
-                <ListItemContent>
-                  <Typography level="title-sm">Internal Operation</Typography>
-                </ListItemContent>
-              </ListItemButton>
-            </ListItem>
+              <ListItem sx={{ mt: 0.5 }}>
+                <ListItemButton onClick={() => navigate("/handover_dash")}>
+                  <SettingsSuggestIcon />
+                  <ListItemContent>
+                    <Typography level="title-sm">Internal Operation</Typography>
+                  </ListItemContent>
+                </ListItemButton>
+              </ListItem>
             )}
 
             <ListItem nested>
@@ -1596,6 +1596,15 @@ function Sidebar() {
                 </ListItemContent>
               </ListItemButton>
             </ListItem>
+
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/approval_dashboard")}>
+                <FactCheckIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Approvals</Typography>
+                </ListItemContent>
+              </ListItemButton>
+            </ListItem>
           </List>
         ) : user?.role === "visitor" &&
           (user?.name === "Sanjiv Kumar" ||
@@ -1776,6 +1785,15 @@ function Sidebar() {
                 </ListItemContent>
               </ListItemButton>
             </ListItem>
+
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/approval_dashboard")}>
+                <FactCheckIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Approvals</Typography>
+                </ListItemContent>
+              </ListItemButton>
+            </ListItem>
           </List>
         ) : user?.department === "CAM" && user?.name !== "Shantanu Sameer" ? (
           <List
@@ -1945,6 +1963,15 @@ function Sidebar() {
                 <TaskIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Task</Typography>
+                </ListItemContent>
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/approval_dashboard")}>
+                <FactCheckIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Approvals</Typography>
                 </ListItemContent>
               </ListItemButton>
             </ListItem>
@@ -2212,6 +2239,15 @@ function Sidebar() {
                   </ListItemContent>
                 </ListItemButton>
               </ListItem>
+
+              <ListItem sx={{ mt: 0.5 }}>
+                <ListItemButton onClick={() => navigate("/approval_dashboard")}>
+                  <FactCheckIcon />
+                  <ListItemContent>
+                    <Typography level="title-sm">Approvals</Typography>
+                  </ListItemContent>
+                </ListItemButton>
+              </ListItem>
               {user?.emp_id === "SE-203" && (
                 <ListItem nested>
                   <Toggler
@@ -2282,7 +2318,7 @@ function Sidebar() {
                 </ListItemContent>
               </ListItemButton>
             </ListItem>
-            
+
             <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/project_dash")}>
                 <BuildIcon />
@@ -2325,7 +2361,7 @@ function Sidebar() {
                 </List>
               </Toggler>
             </ListItem>
-             
+
             <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/task_dashboard")}>
                 <TaskIcon />
@@ -2498,7 +2534,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-           <ListItem sx={{ mt: 0.5 }}>
+            <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/project_dash")}>
                 <BuildIcon />
                 <ListItemContent>
@@ -2546,6 +2582,15 @@ function Sidebar() {
                 <TaskIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Task</Typography>
+                </ListItemContent>
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/approval_dashboard")}>
+                <FactCheckIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Approvals</Typography>
                 </ListItemContent>
               </ListItemButton>
             </ListItem>
