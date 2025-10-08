@@ -29,7 +29,6 @@ import Select, { components } from "react-select";
 import SelectRS from "react-select";
 import SearchPickerModal from "../../component/SearchPickerModal";
 
-
 const joySelectStyles = {
   control: (base, state) => ({
     ...base,
@@ -70,10 +69,14 @@ const AddTask = () => {
   const [assignedTo, setAssignedTo] = useState([]);
   const [subtype, setSubType] = useState("");
 
+  // NEW: multi-select state for Title (Engineering & SCM)
+  const [selectedModules, setSelectedModules] = useState([]); // array of {value,label,raw}
+  const [selectedScmCats, setSelectedScmCats] = useState([]); // array of {value,label,raw}
+
   // Category + pickers
   const [category, setCategory] = useState("Engineering");
   const [openModulePicker, setOpenModulePicker] = useState(false);
-  const [openScmPicker, setOpenScmPicker] = useState(false); 
+  const [openScmPicker, setOpenScmPicker] = useState(false);
 
   const { data: getProjectDropdown, isLoading } = useGetProjectDropdownQuery();
   const [createTask, { isLoading: isSubmitting }] = useCreateTaskMutation();
@@ -81,7 +84,7 @@ const AddTask = () => {
   const deptFilter = useMemo(() => {
     if (category === "Engineering") return "Engineering";
     if (category === "SCM") return "SCM";
-    return "Other"; 
+    return "Other";
   }, [category]);
 
   const {
@@ -164,12 +167,25 @@ const AddTask = () => {
     }
   };
 
+  // Compose Title from multi selections (Engineering & SCM)
+  const updateTitleFromSelections = (mods, cats) => {
+    if (category === "Engineering") {
+      const labels = (mods || []).map((o) => o?.label).filter(Boolean);
+      setTitle(labels.join(", "));
+    } else if (category === "SCM") {
+      const labels = (cats || []).map((o) => o?.label).filter(Boolean);
+      setTitle(labels.join(", "));
+    }
+  };
+
   const handleSubmit = async () => {
     const isProjectTab = tab === "project";
     const isHelpdeskTab = tab === "helpdesk";
 
     if (!title || !priority || (isProjectTab && selectedProject.length === 0)) {
-      return toast.error("Required fields missing (Title, Priority, Project).");
+      return toast.error(
+        "Required fields missing (Title, Priority, Project)."
+      );
     }
 
     const projectIds = isProjectTab
@@ -177,7 +193,7 @@ const AddTask = () => {
       : undefined;
 
     const payload = {
-      title,
+      title, // comma-joined string when multi-selected
       description: note,
       deadline: deadlineDT ? new Date(deadlineDT).toISOString() : null,
       project_id: projectIds,
@@ -214,6 +230,8 @@ const AddTask = () => {
       setAssignedTo([]);
       setSubType("");
       setCategory("Engineering");
+      setSelectedModules([]);
+      setSelectedScmCats([]);
     } catch (error) {
       toast.error("Error creating task");
     }
@@ -342,6 +360,16 @@ const AddTask = () => {
     return { rows, total };
   };
 
+  // Helper to dedupe option arrays by value
+  const dedupeOptions = (arr) => {
+    const map = new Map();
+    for (const o of arr || []) {
+      if (!o) continue;
+      map.set(String(o.value), o);
+    }
+    return Array.from(map.values());
+  };
+
   return (
     <Card
       sx={{
@@ -355,7 +383,17 @@ const AddTask = () => {
         Add Task
       </Typography>
 
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
+      <Tabs
+        value={tab}
+        onChange={(_, v) => {
+          setTab(v);
+          // reset title selections when switching tabs
+          setSelectedModules([]);
+          setSelectedScmCats([]);
+          setTitle("");
+        }}
+        sx={{ mb: 3 }}
+      >
         <TabList>
           <Tab value="project">Project</Tab>
           <Tab value="internal">Internal</Tab>
@@ -375,10 +413,12 @@ const AddTask = () => {
                   name="task-category"
                   value={category}
                   onChange={(e, v) => {
-                    const next = v ?? e?.target?.value; // Joy versions fallback
+                    const next = v ?? e?.target?.value;
                     setCategory(next);
-                    setTitle(""); // reset dependent title
-                    setAssignedTo([]); // reset users to match new category filter
+                    setTitle("");
+                    setAssignedTo([]); // realign user filter
+                    setSelectedModules([]);
+                    setSelectedScmCats([]);
                   }}
                   sx={{ gap: 2 }}
                 >
@@ -420,9 +460,12 @@ const AddTask = () => {
                       setSelectedProject([]);
                     }
                     setSearchText("");
-                    // Clear Title for Engineering/SCM when switching project
-                    if (category === "Engineering" || category === "SCM")
+                    // Clear Title & picks for Engineering/SCM when switching project
+                    if (category === "Engineering" || category === "SCM") {
                       setTitle("");
+                      setSelectedModules([]);
+                      setSelectedScmCats([]);
+                    }
                   }}
                   onInputChange={(inputValue, { action }) => {
                     if (action === "input-change") setSearchText(inputValue);
@@ -445,31 +488,29 @@ const AddTask = () => {
           <FormControl fullWidth>
             <FormLabel>Title</FormLabel>
 
-            {/* Engineering: allowed modules */}
+            {/* Engineering: allowed modules (MULTI) */}
             {tab === "project" && category === "Engineering" ? (
               <SelectRS
                 placeholder={
                   projectId
                     ? isLoadingModules || isFetchingModules
                       ? "Loading modules…"
-                      : "Search or pick module"
+                      : "Search or pick modules"
                     : "Select a Project first"
                 }
                 isDisabled={!projectId || isLoadingModules || isFetchingModules}
-                value={title ? { value: "__title__", label: title } : null}
+                isMulti
+                value={selectedModules}
                 options={moduleQuickOptions}
                 isClearable
                 isSearchable
-                onChange={(opt) => {
-                  if (!opt) {
-                    setTitle("");
-                    return;
-                  }
-                  if (opt.value === "__more__") {
-                    setOpenModulePicker(true);
-                    return;
-                  }
-                  setTitle(opt.label || "");
+                onChange={(opts, meta) => {
+                  const arr = Array.isArray(opts) ? opts : [];
+                  const hasMore = arr.some((o) => o?.value === "__more__");
+                  const cleaned = arr.filter((o) => o?.value !== "__more__");
+                  setSelectedModules(dedupeOptions(cleaned));
+                  updateTitleFromSelections(dedupeOptions(cleaned), selectedScmCats);
+                  if (hasMore) setOpenModulePicker(true);
                 }}
                 menuPortalTarget={document.body}
                 styles={{
@@ -478,17 +519,18 @@ const AddTask = () => {
                 }}
               />
             ) : tab === "project" && category === "SCM" ? (
-              // SCM: allowed material categories (server search + modal)
+              // SCM: allowed material categories (server search + modal) — MULTI
               <SelectRS
                 placeholder={
                   projectId
                     ? isFetchingScm
                       ? "Loading categories…"
-                      : "Search or pick material category"
+                      : "Search or pick categories"
                     : "Select a Project first"
                 }
                 isDisabled={!projectId}
-                value={title ? { value: "__title__", label: title } : null}
+                isMulti
+                value={selectedScmCats}
                 options={scmQuickOptions}
                 isClearable
                 isSearchable
@@ -497,16 +539,13 @@ const AddTask = () => {
                   if (meta.action === "input-change") loadScmQuick(input || "");
                   return input;
                 }}
-                onChange={(opt) => {
-                  if (!opt) {
-                    setTitle("");
-                    return;
-                  }
-                  if (opt.value === "__more__") {
-                    setOpenScmPicker(true);
-                    return;
-                  }
-                  setTitle(opt.label || "");
+                onChange={(opts) => {
+                  const arr = Array.isArray(opts) ? opts : [];
+                  const hasMore = arr.some((o) => o?.value === "__more__");
+                  const cleaned = arr.filter((o) => o?.value !== "__more__");
+                  setSelectedScmCats(dedupeOptions(cleaned));
+                  updateTitleFromSelections(selectedModules, dedupeOptions(cleaned));
+                  if (hasMore) setOpenScmPicker(true);
                 }}
                 menuPortalTarget={document.body}
                 styles={{
@@ -516,7 +555,7 @@ const AddTask = () => {
                 isLoading={isFetchingScm}
               />
             ) : (
-              // Other/internal/helpdesk
+              // Other/internal/helpdesk — free text
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -554,7 +593,7 @@ const AddTask = () => {
             <FormLabel>Deadline</FormLabel>
             <Input
               type="datetime-local"
-              value={deadlineDT}
+              value={deadlineDT || ""}
               onChange={(e) => setDeadlineDT(e.target.value)}
               placeholder="dd-mm-yyyy hh:mm"
             />
@@ -695,6 +734,8 @@ const AddTask = () => {
                 setAssignedTo([]);
                 setSubType("");
                 setCategory("Engineering");
+                setSelectedModules([]);
+                setSelectedScmCats([]);
               }
             }}
             sx={{
@@ -742,8 +783,15 @@ const AddTask = () => {
         searchKey="name or code"
         fetchPage={fetchAllowedModulePage}
         onPick={(row) => {
-          if (row?.name)
-            setTitle(row.code ? `${row.name} (${row.code})` : row.name);
+          if (!row) return;
+          const opt = {
+            value: String(row._id),
+            label: row.name || "Untitled",
+            raw: row,
+          };
+          const next = dedupeOptions([...selectedModules, opt]);
+          setSelectedModules(next);
+          updateTitleFromSelections(next, selectedScmCats);
           setOpenModulePicker(false);
         }}
       />
@@ -762,7 +810,15 @@ const AddTask = () => {
         searchKey="name"
         fetchPage={fetchScmPage}
         onPick={(row) => {
-          if (row?.name) setTitle(row.name);
+          if (!row) return;
+          const opt = {
+            value: String(row._id),
+            label: row.name || "Unnamed",
+            raw: row,
+          };
+          const next = dedupeOptions([...selectedScmCats, opt]);
+          setSelectedScmCats(next);
+          updateTitleFromSelections(selectedModules, next);
           setOpenScmPicker(false);
         }}
       />
