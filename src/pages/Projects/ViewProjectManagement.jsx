@@ -42,6 +42,8 @@ function ViewProjectManagement() {
   const [snack, setSnack] = useState({ open: false, msg: "" });
   const ganttRef = useRef(null);
 
+  const timeline = searchParams.get("timeline");
+  const type = searchParams.get("type");
   const [planStatus, setPlanStatus] = useState(null);
   const [updatePlanStatus, { isLoading: isUpdatingPlanStatus }] =
     useUpdateStatusOfPlanMutation();
@@ -211,7 +213,7 @@ function ViewProjectManagement() {
 
   const handleExportCsv = async () => {
     try {
-      const blob = await triggerExport({ projectId }).unwrap();
+      const blob = await triggerExport({ projectId, type, timeline }).unwrap();
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -231,7 +233,7 @@ function ViewProjectManagement() {
   const handleExportPdf = async () => {
     try {
 
-      const blob = await fetchPdf(projectId).unwrap();
+      const blob = await fetchPdf({ projectId }).unwrap();
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");

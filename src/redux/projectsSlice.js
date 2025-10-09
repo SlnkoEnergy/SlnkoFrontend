@@ -408,9 +408,9 @@ export const projectsApi = createApi({
       invalidatesTags: ["Project"],
     }),
     exportProjectSchedule: builder.mutation({
-      query: ({ projectId }) => {
+      query: ({ projectId, type, timeline }) => {
         return {
-          url: `/projectactivity/get-project-csv?projectId=${projectId}`,
+          url: `/projectactivity/get-project-csv?projectId=${projectId}&type=${type}&timeline=${timeline}`,
           method: "GET",
           responseHandler: (response) => response.blob(),
         };
