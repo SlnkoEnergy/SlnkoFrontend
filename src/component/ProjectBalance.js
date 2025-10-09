@@ -1,178 +1,354 @@
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
-import ContentPasteGoIcon from "@mui/icons-material/ContentPasteGo";
-import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
-import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
-import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
-import SearchIcon from "@mui/icons-material/Search";
-import { Card, Checkbox, Chip, CircularProgress, Tooltip } from "@mui/joy";
-import Box from "@mui/joy/Box";
-import Button from "@mui/joy/Button";
-import Divider from "@mui/joy/Divider";
-import Dropdown from "@mui/joy/Dropdown";
-import FormControl from "@mui/joy/FormControl";
-import RefreshIcon from "@mui/icons-material/Refresh";
-import FormLabel from "@mui/joy/FormLabel";
-import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
-import Input from "@mui/joy/Input";
-import Menu from "@mui/joy/Menu";
-import MenuButton from "@mui/joy/MenuButton";
-import MenuItem from "@mui/joy/MenuItem";
-import Option from "@mui/joy/Option";
-import Select from "@mui/joy/Select";
-import Sheet from "@mui/joy/Sheet";
-import { useColorScheme, useTheme } from "@mui/joy/styles";
-import Typography from "@mui/joy/Typography";
-import { forwardRef, useEffect, useState } from "react";
-import Skeleton from "react-loading-skeleton";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { toast } from "react-toastify";
-import NoData from "../assets/alert-bell.svg";
-import { useGetProjectBalanceQuery } from "../redux/Accounts";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import {
+  Box,
+  Sheet,
+  Button,
+  Tooltip,
+  Input,
+  Select,
+  Option,
+  Chip,
+  Typography,
+  Divider,
+  CircularProgress,
+  Drawer,
+  Skeleton,
+  IconButton,
+  Checkbox,
+} from "@mui/joy";
+import {
+  Download as DownloadIcon,
+  RefreshCcw,
+  ArrowUpRight,
+  ArrowDownRight,
+  Activity as ActivityIcon,
+  Wallet,
+  Scale,
+  IndianRupee,
   AlertTriangle,
+  Search,
+  Lightbulb,
   ArrowDownUp,
   Banknote,
-  Building2,
-  CircleUser,
-  DownloadIcon,
-  IndianRupee,
-  Lightbulb,
-  Scale,
   ShieldCheck,
-  SquareChartGantt,
-  Sun,
-  UsersRound,
-  Wallet,
 } from "lucide-react";
-import AnimatedNumber from "./AnimatedBalance";
 import axios from "axios";
 import Axios from "../utils/Axios";
+import AnimatedNumber from "./AnimatedBalance";
+import { useGetProjectBalanceQuery } from "../redux/Accounts";
 
-const ProjectBalances = forwardRef(() => {
-  const theme = useTheme();
+/* -------------------- helpers -------------------- */
+const trim2 = (s) => s.replace(/\.00$/, "").replace(/(\.\d)0$/, "$1");
+const toCompactINR2dp = (n) => {
+  const abs = Math.abs(Number(n) || 0);
+  if (abs >= 1e7) return `${trim2((abs / 1e7).toFixed(2))}Cr`;
+  if (abs >= 1e5) return `${trim2((abs / 1e5).toFixed(2))}L`;
+  if (abs >= 1e3) return `${trim2((abs / 1e3).toFixed(2))}K`;
+  return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(
+    abs
+  );
+};
+const rupeeCompact = (n) => {
+  const num = Number(n) || 0;
+  const sign = num < 0 ? "-" : "";
+  return `${sign}₹${toCompactINR2dp(num)}`;
+};
+const fullTooltipINR = (n) => {
+  const num = Number(n) || 0;
+  const sign = num < 0 ? "-" : "";
+  const abs = Math.round(Math.abs(num));
+  const indian = new Intl.NumberFormat("en-IN", {
+    maximumFractionDigits: 0,
+  }).format(abs);
+  return `${sign}₹${indian} (${toCompactINR2dp(num)})`;
+};
+function timeAgoLabel(dateLike) {
+  if (!dateLike) return null;
+  const then = new Date(dateLike).getTime();
+  if (!Number.isFinite(then)) return null;
+  const diff = Math.max(0, Date.now() - then);
+  const min = Math.floor(diff / 60000);
+  const hr = Math.floor(min / 60);
+  const day = Math.floor(hr / 24);
+  if (day > 0) return `${day}d ago`;
+  if (hr > 0) return `${hr}h ago`;
+  if (min > 0) return `${min}m ago`;
+  return `just now`;
+}
+
+const MONEY_KEYS = new Set([
+  "totalCredited",
+  "totalDebited",
+  "totalAdjustment",
+  "amountAvailable",
+  "balanceSlnko",
+  "balancePayable",
+  "balanceRequired",
+]);
+const isMoneyKey = (k) => MONEY_KEYS.has(k);
+
+const tdLabelStyle = {
+  padding: "8px 10px",
+  borderBottom: "1px solid var(--joy-palette-divider)",
+  fontSize: 13,
+  whiteSpace: "nowrap",
+};
+const tdValueStyle = {
+  padding: "8px 10px",
+  borderBottom: "1px solid var(--joy-palette-divider)",
+  textAlign: "right",
+};
+
+function mergedRecent(row) {
+  const credits = Array.isArray(row?.recentCredits) ? row.recentCredits : [];
+  const debits = Array.isArray(row?.recentDebits) ? row.recentDebits : [];
+
+  const items = [
+    ...credits.map((c, i) => ({
+      kind: "credit",
+      amount: Number(c?.cr_amount) || 0,
+      date: c?.cr_date || c?.date || c?.createdAt || null,
+      remarks: c?.remarks ?? null,
+      by: c?.added_by ?? null,
+      _i: i,
+    })),
+    ...debits.map((d, i) => ({
+      kind: "debit",
+      amount: Number(d?.amount_paid) || 0,
+      date: d?.dbt_date || d?.date || d?.createdAt || null,
+      remarks: d?.remarks ?? null,
+      by: d?.paid_for ?? null,
+      _i: credits.length + i,
+    })),
+  ];
+
+  return items
+    .map((x) => {
+      const ts = x.date ? new Date(x.date).getTime() : NaN;
+      return { ...x, _ts: Number.isFinite(ts) ? ts : -Infinity };
+    })
+    .sort((a, b) => b._ts - a._ts || a._i - b._i);
+}
+
+function computeLatestSignal(project) {
+  const rec = mergedRecent(project);
+  if (rec.length) {
+    const latest = rec[0];
+    return {
+      type: latest.kind === "credit" ? "credited" : "debited",
+      amount: latest.amount,
+      at: latest.date ?? null,
+      source: "recent",
+    };
+  }
+  const credit = Number(project?.totalCredited || 0);
+  const debit = Number(project?.totalDebited || 0);
+  const net = credit - debit;
+  return {
+    type: net >= 0 ? "credited" : "debited",
+    amount: Math.abs(net),
+    at: null,
+    source: "net",
+  };
+}
+
+/* ---------- tiny layout cells ---------- */
+function HeaderCell({ children, minWidth, flex, align = "left" }) {
+  return (
+    <Box
+      sx={{
+        px: 1.5,
+        py: 1,
+        minWidth,
+        flexGrow: flex ? 1 : 0,
+        flexBasis: flex ? 0 : "auto",
+        textAlign: align,
+        fontWeight: 700,
+        fontSize: 13,
+        borderBottom: "1px solid",
+        borderColor: "divider",
+        position: "sticky",
+        top: 0,
+        bgcolor: "background.surface",
+        zIndex: 1,
+      }}
+    >
+      {children}
+    </Box>
+  );
+}
+function Cell({ children, minWidth, flex, align = "left" }) {
+  return (
+    <Box
+      sx={{
+        px: 1.5,
+        py: 1,
+        minWidth,
+        flexGrow: flex ? 1 : 0,
+        flexBasis: flex ? 0 : "auto",
+        textAlign: align,
+        fontSize: 13,
+        borderBottom: "1px solid",
+        borderColor: "divider",
+      }}
+    >
+      {children}
+    </Box>
+  );
+}
+
+const canAddMoney = (user) =>
+  Boolean(
+    user &&
+      (user.name === "IT Team" ||
+        user.name === "Guddu Rani Dubey" ||
+        user.name === "Varun Mishra" ||
+        user.name === "Prachi Singh" ||
+        user.department === "admin" ||
+        user.department === "Accounts")
+  );
+
+/* -------------------- main page -------------------- */
+export default function ProjectBalancesJoy() {
   const navigate = useNavigate();
-  const [selected, setSelected] = useState([]);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const initialPage = parseInt(searchParams.get("page")) || 1;
-  const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
-  const [perPage, setPerPage] = useState(initialPageSize);
-  const [currentPage, setCurrentPage] = useState(initialPage);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [user, setUser] = useState(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const initialPage = parseInt(params.get("page")) || 1;
+  const initialSize = parseInt(params.get("pageSize")) || 10;
+
+  const [page, setPage] = useState(initialPage);
+  const [pageSize, setPageSize] = useState(initialSize);
+  const [query, setQuery] = useState("");
   const [isExporting, setIsExporting] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [drawerRow, setDrawerRow] = useState(null);
+  const [selected, setSelected] = useState(() => new Set());
+
   const {
     data: responseData,
     isLoading,
     refetch,
-    error,
   } = useGetProjectBalanceQuery(
-    {
-      page: currentPage,
-      pageSize: perPage,
-      search: searchQuery,
-    },
+    { page, pageSize, search: query },
     { refetchOnMountOrArgChange: true }
   );
 
-  const paginatedData = responseData?.data || [];
-  const paginatedDataTotals = responseData?.totals || {};
-  const total = responseData?.total || 0;
-  const count = responseData?.count || paginatedData.length;
+  const rows = responseData?.data || [];
+  const totals = responseData?.totals || {};
+  const total = responseData?.total ?? 0;
 
-  const totalPages = Math.ceil(total / perPage);
-
-  const startIndex = (currentPage - 1) * perPage + 1;
-  const endIndex = Math.min(startIndex + count - 1, total);
-
-  const getPaginationRange = () => {
-    const siblings = 1;
-    const pages = [];
-
-    if (totalPages <= 5 + siblings * 2) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i);
-    } else {
-      const left = Math.max(currentPage - siblings, 2);
-      const right = Math.min(currentPage + siblings, totalPages - 1);
-
-      pages.push(1);
-      if (left > 2) pages.push("...");
-
-      for (let i = left; i <= right; i++) pages.push(i);
-
-      if (right < totalPages - 1) pages.push("...");
-      pages.push(totalPages);
-    }
-
-    return pages;
-  };
+  const totalPages = Math.max(1, Math.ceil(total / Math.max(1, pageSize)));
+  const start = total ? (page - 1) * pageSize + 1 : 0;
+  const end = total ? Math.min(start + rows.length - 1, total) : 0;
 
   useEffect(() => {
-    const userData = getUserData();
-    setUser(userData);
+    setParams({ page: String(page), pageSize: String(pageSize) });
+    setSelected(new Set());
+  }, [page, pageSize, setParams]);
+
+  const [user, setUser] = useState(null);
+  useEffect(() => {
+    try {
+      setUser(JSON.parse(localStorage.getItem("userDetails") || "null"));
+    } catch {
+      setUser(null);
+    }
   }, []);
 
-  const getUserData = () => {
-    const userData = localStorage.getItem("userDetails");
-    if (userData) {
-      return JSON.parse(userData);
-    }
-    return null;
-  };
+  // Use project "code" as selection id (backend expects this)
+  const pageIds = rows
+    .map((r) => (r?.code ? String(r.code) : null))
+    .filter(Boolean);
+  const allChecked =
+    pageIds.length > 0 && pageIds.every((id) => selected.has(id));
+  const someChecked = !allChecked && pageIds.some((id) => selected.has(id));
 
-  const exportProjectBalance = async ({ selectedIds, selectAll }) => {
+  // -------- EXPORT (only on button click) --------
+  const exportProjectBalance = async ({
+    selectedIds = [],
+    selectAll = false,
+    search = "",
+  }) => {
+    const token = localStorage.getItem("authToken");
+    const base = (process.env.REACT_APP_API_URL || "").replace(/\/+$/, "");
+    const url = `${base}/accounting/export-project-balance`;
+
     try {
-      const token = localStorage.getItem("authToken");
-
-      const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}accounting/export-project-balance`,
-        { selectedIds, selectAll },
-        {
-          responseType: "blob",
-          headers: {
-            "x-auth-token": token,
-          },
-        }
+      const res = await axios.post(
+        url,
+        { selectedIds, selectAll, search },
+        { responseType: "blob", headers: { "x-auth-token": token } }
       );
 
-      const contentDisposition = response.headers["content-disposition"];
-      const filename = contentDisposition
-        ? contentDisposition.split("filename=")[1].replace(/"/g, "")
-        : "project-balance.csv";
+      const contentType = (res.headers["content-type"] || "").toLowerCase();
+      if (contentType.includes("application/json")) {
+        const text = await res.data.text();
+        try {
+          const err = JSON.parse(text);
+          throw new Error(err.message || "Export failed");
+        } catch {
+          throw new Error(text || "Export failed");
+        }
+      }
 
-      const blob = new Blob([response.data], { type: "text/csv" });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", filename);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+      const cd = res.headers["content-disposition"] || "";
+      let filename = "project-balance.csv";
+      const match = /filename\*=UTF-8''([^;]+)|filename="?([^"]+)"?/i.exec(cd);
+      if (match) filename = decodeURIComponent(match[1] || match[2]);
+
+      const blob = new Blob([res.data], { type: "text/csv;charset=utf-8" });
+      const urlBlob = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = urlBlob;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(urlBlob);
     } catch (err) {
-      console.error("CSV Export Error:", err);
-      throw err;
+      const resp = err?.response;
+      if (resp?.data instanceof Blob) {
+        try {
+          const text = await resp.data.text();
+          let msg = text;
+          try {
+            msg = JSON.parse(text).message || msg;
+          } catch {}
+          alert(msg);
+          return;
+        } catch {}
+      }
+      console.error("Export error:", err);
+      alert(err?.message || "Export failed");
+    }
+  };
+
+  const exportAllFiltered = async () => {
+    try {
+      setIsExporting(true);
+      await exportProjectBalance({
+        selectedIds: [],
+        selectAll: true,
+        search: query,
+      });
+    } finally {
+      setIsExporting(false);
     }
   };
 
   const handleExport = async () => {
-    if (selected.length === 0) {
+    if (selected.size === 0) {
       alert("Please select at least one project to export.");
       return;
     }
-
     try {
       setIsExporting(true);
-      const selectedCodes = paginatedData
-        .filter((row) => selected.includes(row._id))
-        .map((row) => row.code);
-
       await exportProjectBalance({
-        selectedIds: selectedCodes,
+        selectedIds: [...selected],
         selectAll: false,
+        search: "",
       });
-    } catch (error) {
-      console.error("Export failed:", error);
     } finally {
       setIsExporting(false);
     }
@@ -186,493 +362,125 @@ const ProjectBalances = forwardRef(() => {
         {},
         { withCredentials: true }
       );
-    } catch (err) {
-      console.error("Error refreshing balances:", err);
+      await refetch();
     } finally {
       setIsRefreshing(false);
     }
   };
-  const renderFilters = () => {
+
+  function StatusChips({ project }) {
+    const latest = useMemo(() => computeLatestSignal(project), [project]);
+    const isCredited = latest.type === "credited";
+    const PrimaryIcon = isCredited ? ArrowUpRight : ArrowDownRight;
+    const primaryLabel = isCredited ? "Credited" : "Debited";
+    const when = timeAgoLabel(latest.at);
+
     return (
       <Box
-        sx={{
-          position: "relative",
-          display: "flex",
-          alignItems: "center",
-          gap: 1.5,
-        }}
+        sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}
       >
-        <FormControl size="sm" sx={{ minWidth: 150 }}>
-          <FormLabel>Rows Per Page</FormLabel>
-          <Select
-            value={perPage}
-            onChange={(e, newValue) => {
-              setPerPage(newValue);
-              setCurrentPage(1);
-            }}
+        <Tooltip
+          title={[
+            `${primaryLabel}${latest.source === "recent" ? "" : " (net)"}`,
+            `Amount: ${fullTooltipINR(latest.amount)}`,
+            when ? `When: ${when}` : null,
+          ]
+            .filter(Boolean)
+            .join(" • ")}
+          arrow
+        >
+          <Chip
+            variant="soft"
+            size="sm"
+            color={isCredited ? "success" : "danger"}
+            startDecorator={<PrimaryIcon size={14} />}
           >
-            {[10, 30, 60, 100].map((num) => (
-              <Option key={num} value={num}>
-                {num}/Page
-              </Option>
-            ))}
-          </Select>
-        </FormControl>
-
-        <Box mt={3} sx={{ display: "flex", gap: 1 }}>
-          {/* Export Button */}
-          {(user?.name === "IT Team" ||
-            user?.name === "Guddu Rani Dubey" ||
-            user?.name === "Varun Mishra" ||
-            user?.name === "Prachi Singh" ||
-            user?.department === "admin" ||
-            user?.name === "Naresh Kumar" ||
-            user?.department === "Accounts") && (
-            <Button
-              variant="soft"
-              size="sm"
-              color="neutral"
-              onClick={handleExport}
-              disabled={selected.length === 0 || isExporting}
-              startDecorator={
-                isExporting ? <CircularProgress size="sm" /> : <DownloadIcon />
-              }
-            >
-              {isExporting ? "Exporting..." : "Export to CSV"}
-            </Button>
-          )}
-         <Tooltip title="Refresh page (sync balances)" placement="top" arrow>
-          <span>
-            <Button
-              variant="outlined"
-              size="sm"
-              color="primary"
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              startDecorator={
-                isRefreshing ? <CircularProgress size="sm" /> : <RefreshIcon />
-              }
-            >
-              {/* {isRefreshing ? "Refreshing..." : "Refresh"} */}
-            </Button>
-          </span>
+            {primaryLabel} · {rupeeCompact(latest.amount)}
+          </Chip>
         </Tooltip>
-        </Box>
+
+        {(Array.isArray(project?.recentCredits) ||
+          Array.isArray(project?.recentDebits)) && (
+          <Tooltip title="Open to view recent activity" arrow>
+            <Chip
+              size="sm"
+              variant="soft"
+              color="neutral"
+              startDecorator={<ActivityIcon size={14} />}
+            >
+              Recent activity
+            </Chip>
+          </Tooltip>
+        )}
       </Box>
     );
-  };
+  }
 
-  const RowMenu = ({ currentPage, p_id }) => {
-    // console.log("currentPage:", currentPage, "Row menu p_id:", p_id);
-    const [user, setUser] = useState(null);
-
-    useEffect(() => {
-      const userData = getUserData();
-      setUser(userData);
-    }, []);
-
-    const getUserData = () => {
-      const userData = localStorage.getItem("userDetails");
-      if (userData) {
-        return JSON.parse(userData);
-      }
-      return null;
-    };
-
-    return (
-      <>
-        <Dropdown>
-          <MenuButton
-            slots={{ root: IconButton }}
-            slotProps={{
-              root: { variant: "plain", color: "neutral", size: "sm" },
-            }}
-          >
-            <MoreHorizRoundedIcon />
-          </MenuButton>
-
-          <Menu size="sm" sx={{ minWidth: 100 }}>
-            {(user?.name === "IT Team" ||
-              user?.name === "Guddu Rani Dubey" ||
-              user?.name === "Varun Mishra" ||
-              user?.name === "Prachi Singh" ||
-              user?.department === "admin" ||
-              user?.department === "Accounts") && (
-              <MenuItem
-                color="primary"
-                onClick={() => {
-                  const page = currentPage;
-                  const projectId = p_id;
-                  localStorage.setItem("add_money", projectId);
-                  navigate(`/add_money?page=${page}&p_id=${projectId}`);
-                }}
-              >
-                <AddCircleOutlineIcon />
-                <Typography>Add Money</Typography>
-              </MenuItem>
-            )}
-          </Menu>
-        </Dropdown>
-      </>
-    );
-  };
-
-  const ProjectName = ({ currentPage, _id,p_id, name }) => {
-    // console.log("currentPage:", currentPage, "p_id:", p_id);
-
-    return (
-      <>
-        <span
-          style={{
-            cursor: "pointer",
-            color: theme.vars.palette.text.primary,
-            textDecoration: "none",
-          }}
-          onClick={() => {
-            navigate(`/view_detail?page=${currentPage}&_id=${_id}&p_id=${p_id}`);
-          }}
-        >
-          {name || "-"}
-        </span>
-      </>
-    );
-  };
-
-  const AddMoney = ({ currentPage, p_id }) => {
-    // console.log("currentPage:", currentPage, "p_id:", p_id);
-
-    return (
-      <>
-        <IconButton
-          color="primary"
-          onClick={() => {
-            localStorage.setItem("add_money", p_id);
-            navigate(`/add_money?page=${currentPage}&p_id=${p_id}`);
-          }}
-        >
-          <AddCircleOutlineIcon />
-        </IconButton>
-      </>
-    );
-  };
-
-  const handleSearch = (query) => {
-    setSearchQuery(query.toLowerCase());
-  };
-
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setSearchParams((prev) => {
-        return {
-          ...Object.fromEntries(prev.entries()),
-          page: String(page),
-        };
-      });
-    }
-  };
+  const containerRef = useRef(null);
+  const [scrollTop, setScrollTop] = useState(0);
+  const rowHeight = 88;
+  const buffer = 6;
+  const visibleCount =
+    Math.ceil((containerRef.current?.clientHeight || 480) / rowHeight) + buffer;
 
   useEffect(() => {
-    const page = parseInt(searchParams.get("page")) || 1;
-    setCurrentPage(page);
-  }, [searchParams]);
+    const el = containerRef.current;
+    if (!el) return;
+    const onScroll = () => setScrollTop(el.scrollTop);
+    el.addEventListener("scroll", onScroll);
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
 
-  const handleSelectAll = (event) => {
-    const allVisibleCodes = paginatedData.map((row) => row.code);
-    if (event.target.checked) {
-      setSelected(allVisibleCodes);
-    } else {
-      setSelected([]);
+  const startIdx = Math.max(0, Math.floor(scrollTop / rowHeight) - buffer);
+  const endIdx = Math.min(rows.length, startIdx + visibleCount);
+  const visibleRows = rows.slice(startIdx, endIdx);
+  const topSpacer = startIdx * rowHeight;
+  const bottomSpacer = Math.max(0, (rows.length - endIdx) * rowHeight);
+
+  const GRID_COLS = "48px 56px minmax(260px,1.2fr) 220px 120px 340px 300px";
+
+  const toggleRow = (e, code) => {
+    e.stopPropagation();
+    const willCheck = !!e.target.checked;
+
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (willCheck) next.add(code);
+      else next.delete(code);
+      return next;
+    });
+  };
+
+  const toggleAll = async (e) => {
+    e.stopPropagation();
+    const willCheck = !!e.target.checked;
+
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (willCheck) pageIds.forEach((id) => next.add(id));
+      else pageIds.forEach((id) => next.delete(id));
+      return next;
+    });
+    if (willCheck) {
+      await exportAllFiltered();
     }
   };
 
-  const handleRowSelect = (code) => {
-    setSelected((prev) =>
-      prev.includes(code)
-        ? prev.filter((item) => item !== code)
-        : [...prev, code]
-    );
-  };
-
-  const fontStyleBold = {
-    fontFamily: "Inter, sans-serif",
-    fontSize: 13,
-    fontWeight: 600,
-  };
-
-  const fontStyleNormal = {
-    fontFamily: "Inter, sans-serif",
-    fontSize: 13,
-    fontWeight: 400,
-  };
-
-  const headerStyle = {
-    position: "sticky",
-    top: 0,
-    zIndex: 2,
-    backgroundColor: "background.surface",
-    fontSize: 14,
-    fontWeight: 600,
-    padding: "12px 16px",
-    textAlign: "left",
-    color: "text.primary",
-    borderBottom: "1px solid",
-    borderColor: "divider",
-  };
-
-  const cellStyle = {
-    padding: "12px 16px",
-    verticalAlign: "top",
-    fontSize: 13,
-    fontWeight: 400,
-    borderBottom: "1px solid",
-    borderColor: "divider",
-  };
-
-  const ProjectID = ({ code, name, p_id, _id, currentPage }) => {
-    const navigate = useNavigate();
-
-    return (
-      <>
-        {code && (
-          <Box>
-            <Chip
-              variant="solid"
-              color="success"
-              size="md"
-              onClick={() =>
-                navigate(`/view_detail?page=${currentPage}&_id=${_id}&p_id=${p_id}`)
-              }
-              sx={{
-                cursor: "pointer",
-                fontWeight: 500,
-                textDecoration: "none",
-                "&:hover": {
-                  opacity: 0.9,
-                  boxShadow: "md",
-                  textDecoration: "underline",
-                },
-              }}
-            >
-              {code || "N/A"}
-            </Chip>
-          </Box>
-        )}
-
-        {name && (
-          <Box display="flex" alignItems="center" mt={0.5}>
-            📊 &nbsp;
-            <Typography sx={fontStyleBold}>Project Name:</Typography>&nbsp;
-            <Typography sx={fontStyleNormal}>{name}</Typography>
-          </Box>
-        )}
-      </>
-    );
-  };
-
-  const ClientDetail = ({ customer, p_group }) => {
-    return (
-      <>
-        <Box display="flex" alignItems="center" mt={0.5}>
-          🧑‍💼 &nbsp;
-          <Typography sx={fontStyleBold}>Client Name:</Typography>&nbsp;
-          <Typography sx={fontStyleNormal}>{customer || "N/A"}</Typography>
-        </Box>
-
-        <Box display="flex" alignItems="center" mt={0.5}>
-          👥 &nbsp;
-          <Typography sx={fontStyleBold}>Group Name:</Typography>&nbsp;
-          <Typography sx={fontStyleNormal}>{p_group || "N/A"}</Typography>
-        </Box>
-      </>
-    );
-  };
-
-  const BalanceData = ({
-    project_kwp,
-    totalCredit,
-    totalDebit,
-    totalAdjustment,
-    amountAvailable,
-  }) => {
-    const formatINR = (value) => {
-      const number = Number(value || 0);
-      return number.toLocaleString("en-IN", {
-        style: "currency",
-        currency: "INR",
-        minimumFractionDigits: number % 1 === 0 ? 0 : 2,
-        maximumFractionDigits: 2,
-      });
-    };
-
-    return (
-      <>
-        {project_kwp && (
-          <Box display="flex" alignItems="center" mt={0.5}>
-            🔋 &nbsp;
-            <Typography sx={fontStyleBold}>
-              Project Capacity (MW AC):
-            </Typography>
-            &nbsp;
-            <Typography sx={fontStyleNormal}>{project_kwp}</Typography>
-          </Box>
-        )}
-
-        <Box display="flex" alignItems="center" mt={0.5}>
-          💰 &nbsp;
-          <Typography sx={fontStyleBold}>Total Credit:</Typography>&nbsp;
-          <Typography sx={fontStyleNormal}>{formatINR(totalCredit)}</Typography>
-        </Box>
-
-        <Box display="flex" alignItems="center" mt={0.5}>
-          💸 &nbsp;
-          <Typography sx={fontStyleBold}>Total Debit:</Typography>&nbsp;
-          <Typography sx={fontStyleNormal}>{formatINR(totalDebit)}</Typography>
-        </Box>
-
-        <Box display="flex" alignItems="center" mt={0.5}>
-          🔄 &nbsp;
-          <Typography sx={fontStyleBold}>Total Adjustment:</Typography>&nbsp;
-          <Typography sx={fontStyleNormal}>
-            {formatINR(totalAdjustment)}
-          </Typography>
-        </Box>
-
-        <Box display="flex" alignItems="center" mt={0.5}>
-          🧾 &nbsp;
-          <Typography sx={fontStyleBold}>Amount Available (Old):</Typography>
-          &nbsp;
-          <Typography sx={fontStyleNormal}>
-            {formatINR(amountAvailable)}
-          </Typography>
-        </Box>
-      </>
-    );
-  };
-
-  const OtherBalance = ({ balanceSlnko, balancePayable, balanceRequired }) => {
-    const formatINR = (value) => {
-      const number = Number(value || 0);
-      return number.toLocaleString("en-IN", {
-        style: "currency",
-        currency: "INR",
-        minimumFractionDigits: number % 1 === 0 ? 0 : 2,
-        maximumFractionDigits: 2,
-      });
-    };
-
-    return (
-      <>
-        <Box display="flex" alignItems="center" mt={0.5}>
-          🏦 &nbsp;
-          <Typography sx={fontStyleBold}>Balance with Slnko:</Typography>&nbsp;
-          <Typography sx={fontStyleNormal}>
-            {formatINR(balanceSlnko)}
-          </Typography>
-        </Box>
-
-        <Box display="flex" alignItems="center" mt={0.5}>
-          📤 &nbsp;
-          <Typography sx={fontStyleBold}>
-            Balance Payable to Vendors:
-          </Typography>
-          &nbsp;
-          <Typography sx={fontStyleNormal}>
-            {formatINR(balancePayable)}
-          </Typography>
-        </Box>
-
-        <Box display="flex" alignItems="center" mt={0.5}>
-          ⚠️ &nbsp;
-          <Typography sx={fontStyleBold}>Balance Required:</Typography>&nbsp;
-          <Typography sx={fontStyleNormal}>
-            {formatINR(balanceRequired)}
-          </Typography>
-        </Box>
-      </>
-    );
-  };
-
-  const trim2 = (s) => s.replace(/\.00$/, "").replace(/(\.\d)0$/, "$1");
-
-  const toCompactINR2dp = (n) => {
-    const abs = Math.abs(Number(n) || 0);
-    if (abs >= 1e7) return `${trim2((abs / 1e7).toFixed(2))}Cr`;
-    if (abs >= 1e5) return `${trim2((abs / 1e5).toFixed(2))}L`;
-    if (abs >= 1e3) return `${trim2((abs / 1e3).toFixed(2))}K`;
-    return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(
-      abs
-    );
-  };
-
-  const rupeeCompact = (n) => {
-    const num = Number(n) || 0;
-    const sign = num < 0 ? "-" : "";
-    return `${sign}₹${toCompactINR2dp(num)}`;
-  };
-
-  const fullTooltipINR = (n) => {
-    const num = Number(n) || 0;
-    const sign = num < 0 ? "-" : "";
-    const abs = Math.round(Math.abs(num));
-    const indian = new Intl.NumberFormat("en-IN", {
-      maximumFractionDigits: 0,
-    }).format(abs);
-    return `${sign}₹${indian} (${toCompactINR2dp(num)})`;
-  };
-
-  const isMoneyKey = (key = "") =>
-    /(Credit|Debit|Adjustment|Available|Balance|Payable|Required)/i.test(key);
-
-  const tdLabelStyle = {
-    padding: "10px",
-    borderBottom: "1px solid #eee",
-    fontWeight: 600,
-    fontSize: "0.9rem",
-  };
-  const tdValueStyle = {
-    padding: "10px",
-    borderBottom: "1px solid #eee",
-    textAlign: "right",
-    fontVariantNumeric: "tabular-nums",
-    whiteSpace: "nowrap",
-  };
-
+  /* -------------------- render -------------------- */
   return (
-    <>
-      {/* Tablet and Up Filters */}
-      <Box
-        className="SearchAndFilters-tabletUp"
-        sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          borderRadius: "sm",
-          py: 2,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1.5,
-          "& > *": { minWidth: { xs: "120px", md: "160px" } },
-        }}
-      >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search</FormLabel>
-          <Input
-            size="sm"
-            placeholder="Search by Project ID, Customer, or Name"
-            startDecorator={<SearchIcon />}
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-        </FormControl>
-        {renderFilters()}
-      </Box>
-
+    <Box sx={{ px: { xs: 1, md: 3 }, py: 2 }}>
+      {/* Totals block */}
       <Box
         sx={{
-          marginLeft: { xl: "15%", lg: "18%", xs: "0%" },
-          maxWidth: { xl: "85%", xs: "100%" },
+          marginLeft: { xl: "12%", lg: "15%", xs: "0%" },
+          maxWidth: "100%",
           p: 2,
           bgcolor: "background.surface",
           borderRadius: "md",
           boxShadow: "lg",
+          mb: 1.5,
+          border: "1px solid",
+          borderColor: "divider",
         }}
       >
         <Box
@@ -689,7 +497,7 @@ const ProjectBalances = forwardRef(() => {
                 label: "Total Plant Capacity (MW AC)",
                 icon: <Lightbulb size={16} />,
                 key: "totalProjectMw",
-                format: (val) => `${(val ?? 0).toLocaleString("en-IN")} MW AC`,
+                format: (v) => `${(v ?? 0).toLocaleString("en-IN")} MW AC`,
               },
               {
                 label: "Total Credit",
@@ -752,16 +560,20 @@ const ProjectBalances = forwardRef(() => {
             >
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <tbody>
-                  {section.map(({ label, icon, key, format, unit }, i) => {
-                    const value = paginatedDataTotals?.[key] || 0;
+                  {section.map(({ label, icon, key, format }, i) => {
+                    const value = totals?.[key] || 0;
                     const money = isMoneyKey(key);
-
                     const isRed =
-                      key.includes("Debit") || key.includes("Required");
+                      key.includes("Debited") ||
+                      key.includes("Required") ||
+                      key === "totalDebited" ||
+                      key === "balanceRequired";
                     const isGreen =
                       key.includes("Credit") ||
                       key.includes("Available") ||
-                      key.includes("Balance");
+                      key.includes("Balance") ||
+                      key === "totalCredited" ||
+                      key === "balanceSlnko";
 
                     const chipColor = isRed
                       ? "#d32f2f"
@@ -769,20 +581,20 @@ const ProjectBalances = forwardRef(() => {
                       ? "#2e7d32"
                       : "#0052cc";
                     const bgColor = isRed
-                      ? "rgba(211, 47, 47, 0.1)"
+                      ? "rgba(211,47,47,.1)"
                       : isGreen
-                      ? "rgba(46, 125, 50, 0.08)"
-                      : "rgba(0, 82, 204, 0.08)";
+                      ? "rgba(46,125,50,.08)"
+                      : "rgba(0,82,204,.08)";
 
                     const chipInner = money ? (
                       <AnimatedNumber
                         value={value}
                         formattingFn={rupeeCompact}
                       />
-                    ) : format ? (
+                    ) : typeof format === "function" ? (
                       format(value)
                     ) : (
-                      value.toLocaleString("en-IN")
+                      (value ?? 0).toLocaleString("en-IN")
                     );
 
                     const chip = (
@@ -805,16 +617,13 @@ const ProjectBalances = forwardRef(() => {
                     return (
                       <tr key={i}>
                         <td style={tdLabelStyle}>
-                          {icon} {label}
+                          {icon} <span style={{ marginLeft: 6 }}>{label}</span>
                         </td>
                         <td style={tdValueStyle}>
                           {isLoading ? (
                             <Skeleton width={60} height={18} />
                           ) : money ? (
-                            <Tooltip
-                              title={fullTooltipINR(value)}
-                              placement="top"
-                            >
+                            <Tooltip title={fullTooltipINR(value)}>
                               {chip}
                             </Tooltip>
                           ) : (
@@ -829,455 +638,717 @@ const ProjectBalances = forwardRef(() => {
             </Box>
           ))}
         </Box>
+      </Box>
 
-        <Box sx={{ display: { xs: "block", sm: "none" } }}>
-          {isLoading
-            ? Array.from({ length: 7 }).map((_, i) => (
-                <Box
-                  key={i}
-                  sx={{ padding: "12px 15px", borderBottom: "1px solid #ddd" }}
-                >
-                  <Skeleton height={20} width="50%" />
-                  <Skeleton height={20} width="30%" />
-                </Box>
-              ))
-            : [
-                {
-                  label: "Total Plant Capacity (MW AC)",
-                  key: "totalProjectMw",
-                  render: (v) => `${(v ?? 0).toLocaleString("en-IN")} MW AC`,
-                },
-                { label: "Total Credit", key: "totalCredited", money: true },
-                { label: "Total Debit", key: "totalDebited", money: true },
-                {
-                  label: "Total Adjustment",
-                  key: "totalAdjustment",
-                  money: true,
-                },
-                {
-                  label: "Available Amount (Old)",
-                  key: "amountAvailable",
-                  money: true,
-                },
-                {
-                  label: "Balance with Slnko",
-                  key: "balanceSlnko",
-                  money: true,
-                },
-                {
-                  label: "Balance Payable to Vendors",
-                  key: "balancePayable",
-                  money: true,
-                },
-                {
-                  label: "Balance Required",
-                  key: "balanceRequired",
-                  money: true,
-                },
-              ].map((item, index) => {
-                const raw = paginatedDataTotals?.[item.key] ?? 0;
-
-                const valueNode = item.money ? (
-                  <AnimatedNumber value={raw} formattingFn={rupeeCompact} />
-                ) : item.render ? (
-                  item.render(raw)
+      {/* Toolbar */}
+      <Box
+        sx={{
+          display: "flex",
+          gap: 1,
+          alignItems: "center",
+          flexWrap: "wrap",
+          p: 1,
+          borderRadius: "md",
+          bgcolor: "background.surface",
+          border: "1px solid",
+          borderColor: "divider",
+          marginLeft: { xl: "12%", lg: "15%", xs: "0%" },
+          maxWidth: "100%",
+        }}
+      >
+        <Input
+          size="sm"
+          placeholder="Search by Project ID, Customer, or Name"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setPage(1);
+          }}
+          startDecorator={<Search size={16} />}
+          sx={{ flex: 1, minWidth: 280 }}
+        />
+        <Select
+          size="sm"
+          value={pageSize}
+          onChange={(e, v) => {
+            setPageSize(v);
+            setPage(1);
+          }}
+          sx={{ width: 140 }}
+        >
+          {[10, 30, 60, 100].map((n) => (
+            <Option key={n} value={n}>
+              {n}/Page
+            </Option>
+          ))}
+        </Select>
+        <Tooltip title="Refresh (sync balances)">
+          <span>
+            <Button
+              size="sm"
+              variant="outlined"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              startDecorator={
+                isRefreshing ? (
+                  <CircularProgress size="sm" />
                 ) : (
-                  (raw ?? 0).toLocaleString("en-IN")
-                );
-
-                const content = item.money ? (
-                  <Tooltip title={fullTooltipINR(raw)} placement="top">
-                    <Box>{valueNode}</Box>
-                  </Tooltip>
-                ) : (
-                  <Box>{valueNode}</Box>
-                );
-
-                return (
-                  <Box
-                    key={index}
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      padding: "12px 15px",
-                      borderBottom: "1px solid #ddd",
-                    }}
-                  >
-                    <Box sx={{ fontWeight: "bold" }}>{item.label}</Box>
-                    {valueNode}
-                  </Box>
-                );
-              })}
-        </Box>
+                  <RefreshCcw size={16} />
+                )
+              }
+            >
+              {isRefreshing ? "Syncing…" : "Refresh"}
+            </Button>
+          </span>
+        </Tooltip>
+        <Button
+          size="sm"
+          variant="soft"
+          color="neutral"
+          onClick={handleExport}
+          startDecorator={
+            isExporting ? (
+              <CircularProgress size="sm" />
+            ) : (
+              <DownloadIcon size={16} />
+            )
+          }
+        >
+          {isExporting ? "Exporting..." : "Export CSV"}
+        </Button>
       </Box>
 
       {/* Table */}
-
       <Sheet
-        className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: "flex",
-          flexDirection: "column",
-          width: "100%",
-          borderRadius: "sm",
-          flexShrink: 1,
-          overflowX: "auto",
-          minHeight: 0,
-          marginLeft: { xl: "15%", lg: "18%" },
-          maxWidth: { lg: "85%", sm: "100%" },
-          minHeight: { xs: "fit-content", lg: "0%" },
+          mt: 1,
+          borderRadius: "md",
+          overflow: "auto",
+          marginLeft: { xl: "12%", lg: "15%", xs: "0%" },
+          maxWidth: "100%",
+          maxHeight: 450,
         }}
       >
-        {error ? (
-          <Typography color="danger" textAlign="center">
-            {error}
-          </Typography>
-        ) : isLoading ? (
-          <>
-            {/* Mobile Skeleton */}
-            <Box sx={{ display: { xs: "block", sm: "none" }, padding: 2 }}>
-              {[...Array(2)].map((_, i) => (
-                <Card
-                  key={i}
-                  variant="outlined"
-                  sx={{ borderRadius: 2, padding: 2, mb: 2 }}
-                >
-                  <Skeleton height={20} width="40%" />
-                  <Skeleton height={20} width="60%" />
-                  <Skeleton height={20} width="50%" />
-                  <Divider sx={{ my: 1 }} />
-                  {[...Array(6)].map((_, j) => (
-                    <Box
-                      key={j}
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        py: 0.5,
-                      }}
-                    >
-                      <Skeleton height={16} width="40%" />
-                      <Skeleton height={16} width="40%" />
-                    </Box>
-                  ))}
-                </Card>
-              ))}
-            </Box>
+        {/* header */}
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: GRID_COLS,
+            columnGap: 0,
+            borderBottom: "1px solid",
+            borderColor: "divider",
+            position: "sticky",
+            top: 0,
+            zIndex: 2,
+            bgcolor: "background.surface",
+            overflow: "auto",
+          }}
+        >
+          <HeaderCell minWidth={48} align="center">
+            <Checkbox
+              size="sm"
+              checked={allChecked}
+              indeterminate={someChecked}
+              onChange={toggleAll}
+              onClick={(e) => e.stopPropagation()}
+              variant="soft"
+            />
+          </HeaderCell>
 
-            {/* Desktop Skeleton */}
-            <Box sx={{ display: { xs: "none", sm: "block" }, padding: 2 }}>
-              {[...Array(3)].map((_, rowIdx) => (
-                <Box key={rowIdx} sx={{ display: "flex", gap: 1, mb: 2 }}>
-                  {[...Array(7)].map((__, colIdx) => (
-                    <Skeleton key={colIdx} height={30} width={200} />
-                  ))}
-                </Box>
-              ))}
-            </Box>
-          </>
-        ) : (
-          <>
-            {/* Mobile View */}
-            <Box
-              sx={{
-                display: { xs: "flex", sm: "none" },
-                flexDirection: "column",
-                gap: 2,
-              }}
-            >
-              {paginatedData.map((project, index) => (
-                <Card
-                  key={index}
-                  variant="outlined"
-                  sx={{ borderRadius: 2, padding: 2, boxShadow: "sm" }}
-                >
-                  <Typography fontWeight={600} fontSize="1rem" gutterBottom>
-                    <ProjectID
-                      currentPage={currentPage}
-                      _id={project._id}
-                      p_id={project.p_id}
-                      code={project.code}
-                      name={project.name}
-                    />
-                  </Typography>
-                  <Typography fontSize="0.9rem" color="text.secondary">
-                    Client:{" "}
-                    <ProjectName
-                      currentPage={currentPage}
-                      _id={project._id}
-                      p_id={project.p_id}
-                      name={project.name}
-                    />
-                  </Typography>
-                  <Typography fontSize="0.9rem" color="text.secondary">
-                    Capacity: {project.project_kwp || "-"} MW AC
-                  </Typography>
-                  <Divider sx={{ my: 1 }} />
-                  {[
-                    { label: "Credit", value: project.totalCredited },
-                    { label: "Debit", value: project.totalDebited },
-                    { label: "Adjustment", value: project.totalAdjustment },
-                    {
-                      label: "Available Amount (Old)",
-                      value: project.amountAvailable,
-                    },
-                    {
-                      label: "Balance with SLnko",
-                      value: project.balanceSlnko,
-                    },
-                    {
-                      label: "Balance Payable to Vendors",
-                      value: project.balancePayable,
-                    },
-                    {
-                      label: "Balance Required",
-                      value: project.balanceRequired,
-                    },
-                  ].map(({ label, value }) => (
-                    <Box
-                      key={label}
-                      display="flex"
-                      justifyContent="space-between"
-                      py={0.5}
-                    >
-                      <Typography fontSize="0.85rem" color="text.secondary">
-                        {label}
-                      </Typography>
-                      <Typography fontSize="0.85rem">
-                        ₹{" "}
-                        {new Intl.NumberFormat("en-IN", {
-                          maximumFractionDigits: 2,
-                        }).format(value || 0)}
-                      </Typography>
-                    </Box>
-                  ))}
-                  <Box mt={2} display="flex" justifyContent="flex-end">
-                    <RowMenu currentPage={currentPage} p_id={project.p_id} />
-                  </Box>
-                </Card>
-              ))}
-            </Box>
+          <HeaderCell minWidth={56} align="center">
+            <AddCircleOutlineIcon fontSize="small" />
+          </HeaderCell>
 
-            {/* Desktop View */}
-            <Box sx={{ display: { xs: "none", sm: "block" } }}>
+          <HeaderCell minWidth={260}>Project</HeaderCell>
+          <HeaderCell minWidth={220}>Client</HeaderCell>
+          <HeaderCell minWidth={120} align="right">
+            Capacity (MW AC)
+          </HeaderCell>
+          <HeaderCell minWidth={340}>Totals</HeaderCell>
+          <HeaderCell minWidth={300}>Slnko Balances</HeaderCell>
+        </Box>
+
+        {/* body (virtualized) */}
+        <Box
+          ref={containerRef}
+          sx={{
+            maxHeight: 450,
+            overflow: "auto",
+            "&::-webkit-scrollbar": { height: 10, width: 10 },
+          }}
+        >
+          <Box sx={{ height: topSpacer }} />
+
+          {isLoading ? (
+            [...Array(6)].map((_, i) => (
               <Box
-                component="table"
+                key={`s-${i}`}
                 sx={{
-                  width: "100%",
-                  borderCollapse: "separate",
-                  borderSpacing: "0 8px",
-                  minWidth: "1000px",
+                  display: "grid",
+                  gridTemplateColumns: GRID_COLS,
+                  columnGap: 0,
+                  borderBottom: "1px solid",
+                  borderColor: "divider",
+                  px: 1.5,
+                  py: 1.25,
                 }}
               >
-                <Box component="thead">
-                  <Box
-                    component="tr"
-                    sx={{ backgroundColor: "neutral.softBg" }}
-                  >
-                    <Box component="th" sx={headerStyle}>
-                      <Checkbox
-                        checked={
-                          paginatedData.length > 0 &&
-                          selected.length === paginatedData.length
-                        }
-                        indeterminate={
-                          selected.length > 0 &&
-                          selected.length < paginatedData.length
-                        }
-                        onChange={handleSelectAll}
-                      />
-                    </Box>
-                    {[
-                      "",
-                      "Project ID",
-                      "Client Name",
-                      "Plant Capacity (MW AC)",
-                      "Slnko Balance",
-                    ].map((label, idx) => (
-                      <Box key={idx} component="th" sx={headerStyle}>
-                        {label}
-                      </Box>
-                    ))}
-                  </Box>
+                {/* checkbox */}
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Skeleton variant="circular" width={16} height={16} />
                 </Box>
-                <Box component="tbody">
-                  {isLoading ? (
-                    [...Array(3)].map((_, rowIndex) => (
-                      <Box component="tr" key={rowIndex}>
-                        {[...Array(6)].map((__, colIndex) => (
-                          <Box
-                            component="td"
-                            key={colIndex}
-                            sx={{ padding: "8px" }}
-                          >
-                            <Skeleton height={24} width="100%" />
-                          </Box>
-                        ))}
-                      </Box>
-                    ))
-                  ) : paginatedData.length === 0 ? (
-                    <Box component="tr">
-                      <Box
-                        component="td"
-                        colSpan={14}
-                        sx={{ textAlign: "center", py: 4 }}
-                      >
-                        <img
-                          src={NoData}
-                          alt="No data"
-                          style={{ width: "50px", height: "50px" }}
-                        />
-                        <Typography fontStyle="italic">
-                          No Balance available
-                        </Typography>
-                      </Box>
-                    </Box>
-                  ) : (
-                    paginatedData.map((project, index) => {
-                      // console.log("Paginated Data", paginatedData);
 
-                      return (
-                        <Box
-                          component="tr"
-                          key={index}
-                          sx={{
-                            backgroundColor: "background.surface",
-                            borderRadius: "8px",
-                            boxShadow: "xs",
-                            transition: "all 0.2s",
-                            "&:hover": {
-                              backgroundColor: "neutral.softHoverBg",
-                            },
+                {/* + add */}
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Skeleton width={20} height={20} />
+                </Box>
+
+                {/* Project (chip + 2 lines) */}
+                <Box sx={{ minWidth: 0 }}>
+                  <Skeleton width={90} height={22} sx={{ borderRadius: 999 }} />
+                  <Skeleton width="70%" height={14} sx={{ mt: 0.5 }} />
+                </Box>
+
+                {/* Client */}
+                <Box sx={{ minWidth: 0 }}>
+                  <Skeleton width="80%" height={14} />
+                  <Skeleton width="60%" height={14} sx={{ mt: 0.5 }} />
+                </Box>
+
+                {/* Capacity */}
+                <Box sx={{ textAlign: "right" }}>
+                  <Skeleton width={80} height={18} sx={{ ml: "auto" }} />
+                </Box>
+
+                {/* Totals */}
+                <Box sx={{ minWidth: 0 }}>
+                  <Skeleton width="75%" height={16} />
+                  <Skeleton width="65%" height={16} sx={{ mt: 0.5 }} />
+                  <Skeleton width="70%" height={16} sx={{ mt: 0.5 }} />
+                  <Skeleton width="60%" height={16} sx={{ mt: 0.5 }} />
+                </Box>
+
+                {/* Slnko balances */}
+                <Box sx={{ minWidth: 0 }}>
+                  <Skeleton width="75%" height={16} />
+                  <Skeleton width="65%" height={16} sx={{ mt: 0.5 }} />
+                  <Skeleton width="70%" height={16} sx={{ mt: 0.5 }} />
+                </Box>
+              </Box>
+            ))
+          ) : rows.length === 0 ? (
+            <Box sx={{ px: 2, py: 5, textAlign: "center" }}>
+              <Typography level="title-sm" sx={{ opacity: 0.7 }}>
+                No balance available
+              </Typography>
+            </Box>
+          ) : (
+            visibleRows.map((row) => {
+              const credit = Number(row.totalCredited || 0);
+              const debit = Number(row.totalDebited || 0);
+              const adj = Number(row.totalAdjustment || 0);
+              const avail = Number(row.amountAvailable || 0);
+              const slnko = Number(row.balanceSlnko || 0);
+              const payable = Number(row.balancePayable || 0);
+              const need = Number(row.balanceRequired || 0);
+
+              const rowKey = row?.code ? String(row.code) : ""; // use code for selection/export
+              const checked = rowKey && selected.has(rowKey);
+
+              return (
+                <Box
+                  key={row._id || row.code || row.p_id}
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: GRID_COLS,
+                    columnGap: 0,
+                    borderBottom: "1px solid",
+                    borderColor: "divider",
+                    cursor: "pointer",
+                    "&:hover": { bgcolor: "neutral.softHoverBg" },
+                  }}
+                  onClick={() => setDrawerRow(row)}
+                >
+                  {/* Row checkbox */}
+                  <Cell minWidth={48} align="center">
+                    <Checkbox
+                      size="sm"
+                      checked={checked}
+                      disabled={!rowKey} // if no code, disable selection
+                      onChange={(e) => rowKey && toggleRow(e, rowKey)}
+                      onClick={(e) => e.stopPropagation()}
+                      variant="soft"
+                    />
+                  </Cell>
+
+                  {/* + Add Money */}
+                  <Cell minWidth={56} align="center">
+                    <Tooltip
+                      title={canAddMoney(user) ? "Add Money" : "No permission"}
+                      arrow
+                    >
+                      <span>
+                        <IconButton
+                          aria-label="Add Money"
+                          size="sm"
+                          variant="soft"
+                          color="success"
+                          disabled={!canAddMoney(user)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            localStorage.setItem("add_money", row.p_id);
+                            navigate(
+                              `/add_money?page=${page}&p_id=${row.p_id}`
+                            );
                           }}
                         >
-                          <Box component="td" sx={cellStyle}>
-                            <Checkbox
-                              checked={selected.includes(project.code)}
-                              onChange={() => handleRowSelect(project.code)}
-                            />
-                          </Box>
+                          <AddCircleOutlineIcon fontSize="small" />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                  </Cell>
 
-                          <Box component="td" sx={cellStyle}>
-                            <AddMoney
-                              currentPage={currentPage}
-                              p_id={project.p_id}
-                            />
-                          </Box>
+                  {/* Project */}
+                  <Cell minWidth={260}>
+                    <Chip
+                      size="sm"
+                      variant="solid"
+                      color="success"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(
+                          `/view_detail?page=${page}&_id=${row._id}&p_id=${row.p_id}`
+                        );
+                      }}
+                      sx={{
+                        cursor: "pointer",
+                        fontWeight: 600,
+                        width: "fit-content",
+                      }}
+                    >
+                      {row.code || "N/A"}
+                    </Chip>
+                    <Typography level="body-sm" sx={{ mt: 0.5 }}>
+                      <b>Project Name:</b> {row.name || "—"}
+                    </Typography>
+                  </Cell>
 
-                          <Box component="td" sx={cellStyle}>
-                            <Tooltip title="View More Detail" arrow>
-                              <Box>
-                                <ProjectID
-                                  name={project.name}
-                                  code={project.code}
-                                  _id={project._id}
-                                   p_id={project.p_id}
-                                  currentPage={currentPage}
-                                />
-                              </Box>
-                            </Tooltip>
-                          </Box>
+                  {/* Client */}
+                  <Cell minWidth={220}>
+                    <Typography level="body-sm">
+                      <b>Client:</b> {row.customer || "—"}
+                    </Typography>
+                    <Typography level="body-sm" sx={{ mt: 0.25 }}>
+                      <b>Group:</b> {row.p_group || "—"}
+                    </Typography>
+                  </Cell>
 
-                          <Box component="td" sx={cellStyle}>
-                            <ClientDetail
-                              customer={project.customer}
-                              p_group={project.p_group}
-                            />
-                          </Box>
+                  {/* Capacity */}
+                  <Cell minWidth={120} align="right">
+                    {(row.project_kwp ?? 0).toLocaleString("en-IN")}
+                  </Cell>
 
-                          <Box component="td" sx={cellStyle}>
-                            <BalanceData
-                              project_kwp={project.project_kwp}
-                              totalCredit={project.totalCredited}
-                              totalDebit={project.totalDebited}
-                              totalAdjustment={project.totalAdjustment}
-                              amountAvailable={project.amountAvailable}
-                            />
-                          </Box>
+                  {/* Totals */}
+                  <Cell minWidth={340} sx={{ minWidth: 0 }}>
+                    <Box
+                      sx={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        rowGap: 0.5,
+                        columnGap: 1,
+                        alignItems: "center",
+                      }}
+                    >
+                      <Typography level="body-sm" noWrap sx={{ minWidth: 0 }}>
+                        Credit
+                      </Typography>
+                      <Tooltip title={fullTooltipINR(credit)}>
+                        <Chip
+                          size="sm"
+                          variant="soft"
+                          color="success"
+                          sx={{ justifySelf: "flex-start" }}
+                        >
+                          {rupeeCompact(credit)}
+                        </Chip>
+                      </Tooltip>
 
-                          <Box component="td" sx={cellStyle}>
-                            <OtherBalance
-                              balanceSlnko={project.balanceSlnko}
-                              balancePayable={project.balancePayable}
-                              balanceRequired={project.balanceRequired}
-                            />
-                          </Box>
-                        </Box>
-                      );
-                    })
-                  )}
+                      <Typography level="body-sm" noWrap sx={{ minWidth: 0 }}>
+                        Debit
+                      </Typography>
+                      <Tooltip title={fullTooltipINR(debit)}>
+                        <Chip
+                          size="sm"
+                          variant="soft"
+                          color="danger"
+                          sx={{ justifySelf: "flex-start" }}
+                        >
+                          {rupeeCompact(debit)}
+                        </Chip>
+                      </Tooltip>
+
+                      <Typography level="body-sm" noWrap sx={{ minWidth: 0 }}>
+                        Adjustment
+                      </Typography>
+                      <Tooltip title={fullTooltipINR(adj)}>
+                        <Chip
+                          size="sm"
+                          variant="soft"
+                          color="neutral"
+                          sx={{ justifySelf: "flex-start" }}
+                        >
+                          {rupeeCompact(adj)}
+                        </Chip>
+                      </Tooltip>
+
+                      <Typography level="body-sm" noWrap sx={{ minWidth: 0 }}>
+                        Available (Old)
+                      </Typography>
+                      <Tooltip title={fullTooltipINR(avail)}>
+                        <Chip
+                          size="sm"
+                          variant="soft"
+                          color="primary"
+                          sx={{ justifySelf: "flex-start" }}
+                        >
+                          {rupeeCompact(avail)}
+                        </Chip>
+                      </Tooltip>
+                    </Box>
+                  </Cell>
+
+                  {/* Slnko balances */}
+                  <Cell minWidth={300} sx={{ minWidth: 0 }}>
+                    <Box
+                      sx={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        rowGap: 0.5,
+                        columnGap: 1,
+                        alignItems: "center",
+                      }}
+                    >
+                      <Typography
+                        level="body-sm"
+                        noWrap
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 0.5,
+                          minWidth: 0,
+                        }}
+                      >
+                        <Wallet size={14} /> With Slnko
+                      </Typography>
+                      <Tooltip title={fullTooltipINR(slnko)}>
+                        <Chip
+                          size="sm"
+                          variant="soft"
+                          color="primary"
+                          sx={{ justifySelf: "flex-start" }}
+                        >
+                          {rupeeCompact(slnko)}
+                        </Chip>
+                      </Tooltip>
+
+                      <Typography
+                        level="body-sm"
+                        noWrap
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 0.5,
+                          minWidth: 0,
+                        }}
+                      >
+                        <Scale size={14} /> Payable
+                      </Typography>
+                      <Tooltip title={fullTooltipINR(payable)}>
+                        <Chip
+                          size="sm"
+                          variant="soft"
+                          color="neutral"
+                          sx={{ justifySelf: "flex-start" }}
+                        >
+                          {rupeeCompact(payable)}
+                        </Chip>
+                      </Tooltip>
+
+                      <Typography
+                        level="body-sm"
+                        noWrap
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 0.5,
+                          minWidth: 0,
+                        }}
+                      >
+                        <AlertTriangle size={14} /> Required
+                      </Typography>
+                      <Tooltip title={fullTooltipINR(need)}>
+                        <Chip
+                          size="sm"
+                          variant="soft"
+                          color="danger"
+                          sx={{ justifySelf: "flex-start" }}
+                        >
+                          {rupeeCompact(need)}
+                        </Chip>
+                      </Tooltip>
+                    </Box>
+                  </Cell>
                 </Box>
-              </Box>
-            </Box>
-          </>
-        )}
+              );
+            })
+          )}
+          <Box sx={{ height: bottomSpacer }} />
+        </Box>
       </Sheet>
 
-      {/* Pagination */}
+      {/* Footer mini summary + pagination */}
       <Box
-        className="Pagination-laptopUp"
         sx={{
-          pt: 2,
-          gap: 1,
-          [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
+          mt: 1.25,
           display: "flex",
           alignItems: "center",
-          flexDirection: { xs: "column", md: "row" },
-          marginLeft: { xl: "15%", lg: "18%" },
+          gap: 1,
+          flexWrap: "wrap",
+          marginLeft: { xl: "12%", lg: "15%", xs: "0%" },
+          maxWidth: "100%",
         }}
       >
-        <Button
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          startDecorator={<KeyboardArrowLeftIcon />}
-          onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-        >
-          Previous
-        </Button>
-
-        <Box>
-          {/* Showing page {currentPage} of {totalPages} ({total} results) */}
-          <Typography level="body-sm">
-            Showing {startIndex}–{endIndex} of {total} results
-          </Typography>
-        </Box>
-
-        <Box
-          sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
-        >
-          {getPaginationRange().map((page, idx) =>
-            page === "..." ? (
-              <Box key={`ellipsis-${idx}`} sx={{ px: 1 }}>
-                ...
-              </Box>
-            ) : (
-              <IconButton
-                key={page}
-                size="sm"
-                variant={page === currentPage ? "contained" : "outlined"}
-                color="neutral"
-                onClick={() => handlePageChange(page)}
-              >
-                {page}
-              </IconButton>
-            )
+        <Typography level="body-sm">
+          {total ? (
+            <>
+              Showing {Math.min(start, total)}–{Math.min(end, total)} of {total}{" "}
+              results
+            </>
+          ) : (
+            <>Showing 0 results</>
           )}
-        </Box>
+        </Typography>
 
-        <Button
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          endDecorator={<KeyboardArrowRightIcon />}
-          onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
-        >
-          Next
-        </Button>
+        <Box sx={{ ml: "auto", display: "flex", gap: 0.5 }}>
+          <Button
+            size="sm"
+            variant="outlined"
+            disabled={!total || page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            aria-label="Previous page"
+          >
+            Prev
+          </Button>
+          <Chip size="sm" variant="soft">
+            {total ? page : 0} / {total ? Math.max(1, totalPages) : 0}
+          </Chip>
+          <Button
+            size="sm"
+            variant="outlined"
+            disabled={!total || page >= totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            aria-label="Next page"
+          >
+            Next
+          </Button>
+        </Box>
       </Box>
-    </>
+
+      {/* Drawer — merged Recent Activity (last 3 overall) */}
+      <Drawer
+        anchor="right"
+        size="md"
+        open={Boolean(drawerRow)}
+        onClose={() => setDrawerRow(null)}
+      >
+        {drawerRow && (
+          <Box sx={{ p: 2 }}>
+            <Typography level="h5" sx={{ mb: 1 }}>
+              {drawerRow.code}
+            </Typography>
+            <Typography level="title-sm" sx={{ mb: 1 }}>
+              {drawerRow.name}
+            </Typography>
+            <Divider sx={{ my: 1 }} />
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: "auto 1fr",
+                gap: 0.75,
+              }}
+            >
+              <Typography level="body-sm">
+                <b>Client:</b>
+              </Typography>
+              <Typography level="body-sm">
+                {drawerRow.customer || "—"}
+              </Typography>
+              <Typography level="body-sm">
+                <b>Group:</b>
+              </Typography>
+              <Typography level="body-sm">
+                {drawerRow.p_group || "—"}
+              </Typography>
+              <Typography level="body-sm">
+                <b>Capacity (MW AC):</b>
+              </Typography>
+              <Typography level="body-sm">
+                {(drawerRow.project_kwp ?? 0).toLocaleString("en-IN")}
+              </Typography>
+            </Box>
+
+            <Divider sx={{ my: 1.25 }} />
+            <Typography level="title-sm" sx={{ mb: 0.5 }}>
+              Status
+            </Typography>
+            <StatusChips project={drawerRow} />
+
+            <Divider sx={{ my: 1.25 }} />
+            <Typography level="title-sm" sx={{ mb: 0.5 }}>
+              Money
+            </Typography>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: "auto 1fr",
+                gap: 0.5,
+              }}
+            >
+              <Typography level="body-sm">Total Credit</Typography>
+              <Typography level="body-sm">
+                {fullTooltipINR(drawerRow.totalCredited)}
+              </Typography>
+              <Typography level="body-sm">Total Debit</Typography>
+              <Typography level="body-sm">
+                {fullTooltipINR(drawerRow.totalDebited)}
+              </Typography>
+              <Typography level="body-sm">Adjustment</Typography>
+              <Typography level="body-sm">
+                {fullTooltipINR(drawerRow.totalAdjustment)}
+              </Typography>
+              <Typography level="body-sm">Available (Old)</Typography>
+              <Typography level="body-sm">
+                {fullTooltipINR(drawerRow.amountAvailable)}
+              </Typography>
+              <Typography level="body-sm">With Slnko</Typography>
+              <Typography level="body-sm">
+                {fullTooltipINR(drawerRow.balanceSlnko)}
+              </Typography>
+              <Typography level="body-sm">Payable to Vendors</Typography>
+              <Typography level="body-sm">
+                {fullTooltipINR(drawerRow.balancePayable)}
+              </Typography>
+              <Typography level="body-sm">Required</Typography>
+              <Typography level="body-sm">
+                {fullTooltipINR(drawerRow.balanceRequired)}
+              </Typography>
+            </Box>
+
+            <Divider sx={{ my: 1.25 }} />
+            <Typography level="title-sm" sx={{ mb: 0.5 }}>
+              Recent Activity
+            </Typography>
+            {(() => {
+              const list = mergedRecent(drawerRow).slice(0, 3);
+              if (!list.length)
+                return (
+                  <Typography level="body-sm" sx={{ opacity: 0.7 }}>
+                    No recent transactions
+                  </Typography>
+                );
+
+              return (
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 0.5,
+                    maxHeight: 320,
+                    overflow: "auto",
+                  }}
+                >
+                  {list.map((a, i) => {
+                    const isCredit = a.kind === "credit";
+                    return (
+                      <Box
+                        key={`ra-${i}`}
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          border: "1px dashed",
+                          borderColor: "divider",
+                          p: 0.75,
+                          borderRadius: "8px",
+                        }}
+                      >
+                        <Chip
+                          size="sm"
+                          variant="soft"
+                          color={isCredit ? "success" : "danger"}
+                          startDecorator={
+                            isCredit ? (
+                              <ArrowUpRight size={14} />
+                            ) : (
+                              <ArrowDownRight size={14} />
+                            )
+                          }
+                        >
+                          {isCredit ? "Credited" : "Debited"} ·{" "}
+                          {rupeeCompact(a.amount)}
+                        </Chip>
+                        <Box sx={{ textAlign: "right" }}>
+                          {a.date && (
+                            <Typography level="body-xs" sx={{ opacity: 0.8 }}>
+                              {new Date(a.date).toLocaleString("en-IN")} ·{" "}
+                              {timeAgoLabel(a.date)}
+                            </Typography>
+                          )}
+                          {(a.by || a.remarks) && (
+                            <Typography level="body-xs" sx={{ opacity: 0.7 }}>
+                              {a.by || a.remarks}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              );
+            })()}
+
+            <Divider sx={{ my: 1.25 }} />
+            <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
+              <Button variant="outlined" onClick={() => setDrawerRow(null)}>
+                Close
+              </Button>
+              <Button
+                variant="solid"
+                onClick={() =>
+                  navigate(
+                    `/view_detail?page=${page}&_id=${drawerRow._id}&p_id=${drawerRow.p_id}`
+                  )
+                }
+              >
+                Open Project
+              </Button>
+            </Box>
+          </Box>
+        )}
+      </Drawer>
+    </Box>
   );
-});
-export default ProjectBalances;
+}
