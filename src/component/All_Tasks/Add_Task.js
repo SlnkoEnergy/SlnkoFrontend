@@ -70,8 +70,8 @@ const AddTask = () => {
   const [subtype, setSubType] = useState("");
 
   // NEW: multi-select state for Title (Engineering & SCM)
-  const [selectedModules, setSelectedModules] = useState([]); // array of {value,label,raw}
-  const [selectedScmCats, setSelectedScmCats] = useState([]); // array of {value,label,raw}
+  const [selectedModules, setSelectedModules] = useState([]); 
+  const [selectedScmCats, setSelectedScmCats] = useState([]); 
 
   // Category + pickers
   const [category, setCategory] = useState("Engineering");
@@ -255,21 +255,33 @@ const AddTask = () => {
     [usersList]
   );
 
-  const teamOptions = useMemo(
-    () => deptsList.map((d) => ({ value: d, label: d })),
-    [deptsList]
-  );
+const teamOptions = useMemo(() => {
+  if (!Array.isArray(deptsList)) return [];
+  if (category === "Engineering") {
+    return [{ value: "Engineering", label: "Engineering" }];
+  }
+  if (category === "SCM") {
+    return [{ value: "SCM", label: "SCM" }];
+  }
+  return deptsList
+    .filter((d) => d && d !== "Engineering" && d !== "SCM")
+    .map((d) => ({ value: d, label: d }));
+}, [deptsList, category]);
+
 
   const currentOptions = assignToTeam ? teamOptions : userOptions;
 
-  const assignValue = useMemo(() => {
-    if (assignToTeam) {
-      return assignedTo ? { value: assignedTo, label: assignedTo } : null;
-    }
-    if (!Array.isArray(assignedTo) || assignedTo.length === 0) return [];
-    const map = new Map(currentOptions.map((o) => [String(o.value), o]));
-    return assignedTo.map((id) => map.get(String(id)) || null).filter(Boolean);
-  }, [assignToTeam, assignedTo, currentOptions]);
+const assignValue = useMemo(() => {
+  if (assignToTeam) {
+    if (!assignedTo) return null;
+    const found = teamOptions.find((o) => String(o.value) === String(assignedTo));
+    return found || null; 
+  }
+  if (!Array.isArray(assignedTo) || assignedTo.length === 0) return [];
+  const map = new Map(currentOptions.map((o) => [String(o.value), o]));
+  return assignedTo.map((id) => map.get(String(id)) || null).filter(Boolean);
+}, [assignToTeam, assignedTo, currentOptions, teamOptions]);
+
 
   const priorityMeta = {
     1: { label: "High", bg: "#d32f2f" },
