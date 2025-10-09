@@ -1017,43 +1017,13 @@ function Sidebar() {
               </Toggler>
             </ListItem>
             {/* CAM */}
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <MiscellaneousServicesIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">CAM</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/cam_dash")}>
-                      Dashboard
-                    </ListItemButton>
-                  </ListItem>
-                  <ListItem>
-                    <ListItemButton
-                      onClick={() => navigate("/purchase_request")}
-                    >
-                      Purchase Request
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+             <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/cam_dash")}>
+                <MiscellaneousServicesIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">CAM</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
 
             {/* SCM Section */}
@@ -1152,14 +1122,14 @@ function Sidebar() {
 
             {/* Ops Section */}
             {user?.name === "Prachi Singh" && (
-               <ListItem sx={{ mt: 0.5 }}>
-              <ListItemButton onClick={() => navigate("/handover_dash")}>
-                <SettingsSuggestIcon />
-                <ListItemContent>
-                  <Typography level="title-sm">Internal Operation</Typography>
-                </ListItemContent>
-              </ListItemButton>
-            </ListItem>
+              <ListItem sx={{ mt: 0.5 }}>
+                <ListItemButton onClick={() => navigate("/handover_dash")}>
+                  <SettingsSuggestIcon />
+                  <ListItemContent>
+                    <Typography level="title-sm">Internal Operation</Typography>
+                  </ListItemContent>
+                </ListItemButton>
+              </ListItem>
             )}
 
             <ListItem nested>
@@ -1258,43 +1228,13 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <MiscellaneousServicesIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">CAM</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem>
-                    <ListItemButton onClick={() => navigate("/cam_dash")}>
-                      Dashboard
-                    </ListItemButton>
-                  </ListItem>
-                  <ListItem>
-                    <ListItemButton
-                      onClick={() => navigate("/purchase_request")}
-                    >
-                      Purchase Request
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/cam_dash")}>
+                <MiscellaneousServicesIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">CAM</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
 
             {/* SCM Section */}
@@ -1433,38 +1373,13 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <MiscellaneousServicesIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">CAM</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={[
-                        open
-                          ? {
-                              transform: "rotate(180deg)",
-                            }
-                          : {
-                              transform: "none",
-                            },
-                      ]}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List sx={{ gap: 0.5 }}>
-                  <ListItem>
-                    <ListItemButton
-                      onClick={() => navigate("/purchase_request")}
-                    >
-                      Purchase Request
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+             <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/cam_dash")}>
+                <MiscellaneousServicesIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">CAM</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
 
             <ListItem nested>
@@ -1596,6 +1511,15 @@ function Sidebar() {
                 </ListItemContent>
               </ListItemButton>
             </ListItem>
+
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/approval_dashboard")}>
+                <FactCheckIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Approvals</Typography>
+                </ListItemContent>
+              </ListItemButton>
+            </ListItem>
           </List>
         ) : user?.role === "visitor" &&
           (user?.name === "Sanjiv Kumar" ||
@@ -1700,31 +1624,22 @@ function Sidebar() {
             </ListItem>
 
             {/* CAM Section */}
+             <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/cam_dash")}>
+                <MiscellaneousServicesIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">CAM</Typography>
+                </ListItemContent>
+              </ListItemButton>
+            </ListItem>
 
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <MiscellaneousServicesIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">CAM</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={{
-                        transform: open ? "rotate(180deg)" : "none",
-                      }}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/cam_dash")}>
-                      Dashboard
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/project_dash")}>
+                <BuildIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Projects</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
 
             <ListItem nested>
@@ -1773,6 +1688,15 @@ function Sidebar() {
                 <TaskIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Task</Typography>
+                </ListItemContent>
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/approval_dashboard")}>
+                <FactCheckIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Approvals</Typography>
                 </ListItemContent>
               </ListItemButton>
             </ListItem>
@@ -1871,30 +1795,13 @@ function Sidebar() {
             </ListItem>
 
             {/* CAM Section */}
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <MiscellaneousServicesIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">CAM</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={{
-                        transform: open ? "rotate(180deg)" : "none",
-                      }}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/cam_dash")}>
-                      Dashboard
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+             <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/cam_dash")}>
+                <MiscellaneousServicesIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">CAM</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
 
             <ListItem sx={{ mt: 0.5 }}>
@@ -1945,6 +1852,15 @@ function Sidebar() {
                 <TaskIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Task</Typography>
+                </ListItemContent>
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/approval_dashboard")}>
+                <FactCheckIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Approvals</Typography>
                 </ListItemContent>
               </ListItemButton>
             </ListItem>
@@ -2212,6 +2128,15 @@ function Sidebar() {
                   </ListItemContent>
                 </ListItemButton>
               </ListItem>
+
+              <ListItem sx={{ mt: 0.5 }}>
+                <ListItemButton onClick={() => navigate("/approval_dashboard")}>
+                  <FactCheckIcon />
+                  <ListItemContent>
+                    <Typography level="title-sm">Approvals</Typography>
+                  </ListItemContent>
+                </ListItemButton>
+              </ListItem>
               {user?.emp_id === "SE-203" && (
                 <ListItem nested>
                   <Toggler
@@ -2282,7 +2207,7 @@ function Sidebar() {
                 </ListItemContent>
               </ListItemButton>
             </ListItem>
-            
+
             <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/project_dash")}>
                 <BuildIcon />
@@ -2325,7 +2250,7 @@ function Sidebar() {
                 </List>
               </Toggler>
             </ListItem>
-             
+
             <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/task_dashboard")}>
                 <TaskIcon />
@@ -2472,33 +2397,16 @@ function Sidebar() {
             </ListItem>
 
             {/* CAM Section */}
-            <ListItem nested>
-              <Toggler
-                renderToggle={({ open, setOpen }) => (
-                  <ListItemButton onClick={() => setOpen(!open)}>
-                    <MiscellaneousServicesIcon />
-                    <ListItemContent>
-                      <Typography level="title-sm">CAM</Typography>
-                    </ListItemContent>
-                    <KeyboardArrowDownIcon
-                      sx={{
-                        transform: open ? "rotate(180deg)" : "none",
-                      }}
-                    />
-                  </ListItemButton>
-                )}
-              >
-                <List>
-                  <ListItem sx={{ mt: 0.5 }}>
-                    <ListItemButton onClick={() => navigate("/cam_dash")}>
-                      Dashboard
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-              </Toggler>
+             <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/cam_dash")}>
+                <MiscellaneousServicesIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">CAM</Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
 
-           <ListItem sx={{ mt: 0.5 }}>
+            <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/project_dash")}>
                 <BuildIcon />
                 <ListItemContent>
@@ -2546,6 +2454,15 @@ function Sidebar() {
                 <TaskIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Task</Typography>
+                </ListItemContent>
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/approval_dashboard")}>
+                <FactCheckIcon />
+                <ListItemContent>
+                  <Typography level="title-sm">Approvals</Typography>
                 </ListItemContent>
               </ListItemButton>
             </ListItem>
