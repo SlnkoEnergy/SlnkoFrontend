@@ -984,7 +984,7 @@ const View_Project_Management = forwardRef(
     // Auto-calc start/end whenever predecessors or duration change
     useEffect(() => {
       const hasPreds = (form.predecessors || []).length > 0;
-      const dur = Number(form.duration - 1 || 0);
+      const dur = Number(form.duration || 0);
 
       if (hasPreds && dur > 0) {
         const res = recomputeDatesFromPredecessors(form.predecessors, dur);
