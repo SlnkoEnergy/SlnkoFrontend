@@ -407,6 +407,14 @@ export const projectsApi = createApi({
       }),
       invalidatesTags: ["Project"],
     }),
+
+    updateReorderfromActivity: builder.mutation({
+      query: ({ projectId }) => ({
+        url: `projectactivity/reorderfromactivity/${projectId}`,
+        method: "PUT",
+      }),
+      invalidatesTags: ["Project"],
+    }),
   }),
 });
 
@@ -461,4 +469,5 @@ export const {
   useGetResourcesQuery,
   useLazyGetResourcesQuery,
   useUpdateStatusOfPlanMutation,
+  useUpdateReorderfromActivityMutation
 } = projectsApi;
