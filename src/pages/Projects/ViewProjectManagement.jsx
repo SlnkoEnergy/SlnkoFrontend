@@ -262,15 +262,15 @@ function ViewProjectManagement() {
           rightSlot={
             <>
               {/* Freeze / Unfreeze button */}
-              <Button
-                size="sm"
-                color="danger"
-                variant="outlined"
-                onClick={handleExportPdf}
-                disabled={isExportingPdf}
-              >
-                {isExporting ? "Generating..." : "PDF"}
-              </Button>
+              {/* <Button */}
+              {/* //   size="sm"
+              //   color="danger"
+              //   variant="outlined"
+              //   onClick={handleExportPdf}
+              //   disabled={isExportingPdf}
+              // >
+              //   {isExporting ? "Generating..." : "PDF"}
+              // </Button> */}
               <Button
                 size="sm"
                 color="danger"
