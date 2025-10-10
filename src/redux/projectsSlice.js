@@ -188,9 +188,9 @@ export const projectsApi = createApi({
       providesTags: (result) =>
         result?.items
           ? [
-              ...result.items.map((a) => ({ type: "Activity", id: a._id })),
-              { type: "Activity", id: "LIST" },
-            ]
+            ...result.items.map((a) => ({ type: "Activity", id: a._id })),
+            { type: "Activity", id: "LIST" },
+          ]
           : [{ type: "Activity", id: "LIST" }],
     }),
 
@@ -217,9 +217,9 @@ export const projectsApi = createApi({
       providesTags: (result) =>
         result?.data
           ? [
-              ...result.data.map((m) => ({ type: "Module", id: m._id })),
-              { type: "Module", id: "LIST" },
-            ]
+            ...result.data.map((m) => ({ type: "Module", id: m._id })),
+            { type: "Module", id: "LIST" },
+          ]
           : [{ type: "Module", id: "LIST" }],
     }),
 
@@ -265,12 +265,12 @@ export const projectsApi = createApi({
       providesTags: (result) =>
         result?.data
           ? [
-              ...result.data.map((m) => ({
-                type: "MaterialCategory",
-                id: m._id,
-              })),
-              { type: "MaterialCategory", id: "LIST" },
-            ]
+            ...result.data.map((m) => ({
+              type: "MaterialCategory",
+              id: m._id,
+            })),
+            { type: "MaterialCategory", id: "LIST" },
+          ]
           : [{ type: "MaterialCategory", id: "LIST" }],
     }),
 
@@ -407,7 +407,24 @@ export const projectsApi = createApi({
       }),
       invalidatesTags: ["Project"],
     }),
-
+    exportProjectSchedule: builder.mutation({
+      query: ({ projectId, type, timeline }) => {
+        return {
+          url: `/projectactivity/get-project-csv?projectId=${projectId}&type=${type}&timeline=${timeline}`,
+          method: "GET",
+          responseHandler: (response) => response.blob(),
+        };
+      },
+    }),
+    exportProjectSchedulePdf: builder.query({
+      query: ({ projectId }) => {
+        return {
+          url: `/projectactivity/get-project-pdf?projectId=${projectId}`,
+          method: "GET",
+          responseHandler: (response) => response.blob(),
+        }
+      }
+    }),
     updateReorderfromActivity: builder.mutation({
       query: ({ projectId }) => ({
         url: `projectactivity/reorderfromactivity/${projectId}`,
@@ -469,5 +486,8 @@ export const {
   useGetResourcesQuery,
   useLazyGetResourcesQuery,
   useUpdateStatusOfPlanMutation,
+  useExportProjectScheduleMutation,
+  useExportProjectSchedulePdfQuery,
+  useLazyExportProjectSchedulePdfQuery,
   useUpdateReorderfromActivityMutation
 } = projectsApi;
