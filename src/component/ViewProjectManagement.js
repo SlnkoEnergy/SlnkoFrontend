@@ -923,7 +923,7 @@ const View_Project_Management = forwardRef(
       end: "",
       duration: "",
       predecessors: [],
-      resources: [], 
+      resources: [],
     });
 
     const activityOptions = useMemo(
@@ -1002,13 +1002,14 @@ const View_Project_Management = forwardRef(
       if (!hasPreds && form.start && dur > 0) {
         const s = parseISOAsLocalDate(form.start);
         if (s && !Number.isNaN(s)) {
-          const e = gantt.calculateEndDate({ start_date: s, duration: dur });
+          const e = finishFromStartAndDuration(s, dur);
           const nextEnd = toYMD(e);
           if (form.end !== nextEnd) {
             setForm((f) => ({ ...f, end: nextEnd }));
           }
         }
       }
+
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [form.predecessors, form.duration, form.start]);
 
@@ -1138,7 +1139,7 @@ const View_Project_Management = forwardRef(
       }
     };
 
-     useImperativeHandle(ref, () => ({
+    useImperativeHandle(ref, () => ({
       saveAsTemplate: async (meta = {}) => {
         const { name, description } = meta || {};
         const rows = [];
