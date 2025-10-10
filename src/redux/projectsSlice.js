@@ -424,7 +424,14 @@ export const projectsApi = createApi({
           responseHandler: (response) => response.blob(),
         }
       }
-    })
+    }),
+    updateReorderfromActivity: builder.mutation({
+      query: ({ projectId }) => ({
+        url: `projectactivity/reorderfromactivity/${projectId}`,
+        method: "PUT",
+      }),
+      invalidatesTags: ["Project"],
+    }),
   }),
 });
 
@@ -482,4 +489,5 @@ export const {
   useExportProjectScheduleMutation,
   useExportProjectSchedulePdfQuery,
   useLazyExportProjectSchedulePdfQuery
+  useUpdateReorderfromActivityMutation
 } = projectsApi;

@@ -15,6 +15,7 @@ import {
   Textarea,
   Typography,
   Checkbox,
+  CircularProgress,
 } from "@mui/joy";
 import { Save, ContentPasteGo } from "@mui/icons-material";
 import Sidebar from "../../component/Partials/Sidebar";
@@ -32,8 +33,10 @@ import {
   useLazyGetAllTemplateNameSearchQuery,
   useUpdateProjectActivityFromTemplateMutation,
   useUpdateStatusOfPlanMutation,
+  useUpdateReorderfromActivityMutation,
 } from "../../redux/projectsSlice";
 import AppSnackbar from "../../component/AppSnackbar";
+import { ArrowDownUp } from "lucide-react";
 
 function ViewProjectManagement() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -44,6 +47,7 @@ function ViewProjectManagement() {
 
   const timeline = searchParams.get("timeline");
   const type = searchParams.get("type");
+  const [loading, setLoading] = useState(false);
   const [planStatus, setPlanStatus] = useState(null);
   const [updatePlanStatus, { isLoading: isUpdatingPlanStatus }] =
     useUpdateStatusOfPlanMutation();
@@ -138,6 +142,25 @@ function ViewProjectManagement() {
   const [applyTemplate, { isLoading: isApplyingTemplate }] =
     useUpdateProjectActivityFromTemplateMutation();
 
+  const [reorderFromActivity, { isLoading: isReordering }] =
+    useUpdateReorderfromActivityMutation();
+
+  const handleReorderFromActivity = async () => {
+    if (!projectId) return;
+    try {
+      await reorderFromActivity({ projectId }).unwrap();
+      ganttRef.current?.refetch?.(); // refresh the gantt
+      setSnack({ open: true, msg: "Activities reordered successfully." });
+    } catch (e) {
+      const msg =
+        e?.data?.message ||
+        e?.error ||
+        e?.message ||
+        "Failed to reorder activities.";
+      setSnack({ open: true, msg: `Error: ${msg}` });
+    }
+  };
+
   const templateColumns = useMemo(
     () => [
       { key: "template_code", label: "Template Code", width: "18%" },
@@ -202,7 +225,6 @@ function ViewProjectManagement() {
     }
   };
 
-  // Compute button visuals from planStatus
   const isUnfreeze = (planStatus || "").toLowerCase() === "unfreeze";
   const freezeBtnLabel = isUnfreeze ? "Freeze" : "Unfreeze";
   const freezeBtnProps = isUnfreeze
@@ -280,6 +302,30 @@ function ViewProjectManagement() {
               >
                 {isExporting ? "Generating..." : "CSV"}
               </Button>
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={handleReorderFromActivity}
+                disabled={isReordering || !projectId}
+                sx={{
+                  width: 36,
+                  height: 36,
+                  p: 0,
+                  minWidth: 36,
+                }}
+                title={
+                  isReordering
+                    ? "Reordering…"
+                    : "Reorder activities from Activity order"
+                }
+              >
+                {isReordering ? (
+                  <CircularProgress size="sm" thickness={3} />
+                ) : (
+                  <ArrowDownUp size={18} />
+                )}
+              </Button>
+
               <Button
                 {...freezeBtnProps}
                 size="sm"
