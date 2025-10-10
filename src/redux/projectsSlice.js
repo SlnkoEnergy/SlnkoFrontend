@@ -488,6 +488,6 @@ export const {
   useUpdateStatusOfPlanMutation,
   useExportProjectScheduleMutation,
   useExportProjectSchedulePdfQuery,
-  useLazyExportProjectSchedulePdfQuery
+  useLazyExportProjectSchedulePdfQuery,
   useUpdateReorderfromActivityMutation
 } = projectsApi;
