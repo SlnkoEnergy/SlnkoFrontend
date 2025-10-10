@@ -150,6 +150,7 @@ const AddTask = () => {
           limit: 7,
           pr: true,
           project_id: projectId,
+          activity: "true",
         },
         true
       ).unwrap();
@@ -364,6 +365,7 @@ const assignValue = useMemo(() => {
         limit: pageSize,
         pr: true,
         project_id: projectId,
+        activity:"true"
       },
       true
     ).unwrap();
