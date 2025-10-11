@@ -25,6 +25,7 @@ import {
   Divider,
   Autocomplete,
   Tooltip,
+  Textarea,
 } from "@mui/joy";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import EventOutlinedIcon from "@mui/icons-material/EventOutlined";
@@ -640,6 +641,10 @@ const View_Project_Management = forwardRef(
       onPlanStatus?.(statusObj);
     }, [apiData, activityFetch, onPlanStatus]);
 
+
+    const initialStatusRef = useRef("");
+    const fetchedRemarksRef = useRef("");
+
     // Local flag for frozen state
     const planStatus =
       apiData?.projectactivity?.current_status?.status ??
@@ -923,8 +928,26 @@ const View_Project_Management = forwardRef(
       end: "",
       duration: "",
       predecessors: [],
-      resources: [], // array of { type, number }
+      resources: [],
+      remarks: "",
     });
+
+    const statusChanged = form.status !== initialStatusRef.current;
+
+    useEffect(() => {
+  if (statusChanged) {
+    // Clear remarks so the user can type a fresh one for the new status
+    if (form.remarks !== "") {
+      setForm((f) => ({ ...f, remarks: "" }));
+    }
+  } else {
+    // Status reverted to the original — restore the fetched remarks
+    if (form.remarks !== fetchedRemarksRef.current) {
+      setForm((f) => ({ ...f, remarks: fetchedRemarksRef.current }));
+    }
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [statusChanged]);
 
     const activityOptions = useMemo(
       () =>
@@ -1017,6 +1040,15 @@ const View_Project_Management = forwardRef(
       const act = activityFetch.activity || activityFetch.data || activityFetch;
       const preds = Array.isArray(act?.predecessors) ? act.predecessors : [];
 
+      const fetchedStatus = act?.current_status?.status || "not started";
+      initialStatusRef.current = fetchedStatus;
+      fetchedRemarksRef.current =act?.current_status?.remarks ?? act?.remarks ?? "";
+
+      
+ const updatedByName =
+  act?.current_status?.user_id?.name ??
+  act?.user_id?.name ?? // optional fallback if BE also sends a top-level user
+  "";
       const uiPreds = preds
         .map((p) => {
           const db = String(p.activity_id || "");
@@ -1046,12 +1078,14 @@ const View_Project_Management = forwardRef(
       }));
 
       setForm({
-        status: act?.current_status?.status || "not started",
+        status: fetchedStatus,
         start: startISO ? toYMD(parseISOAsLocalDate(startISO)) : "",
         end: finishISO ? toYMD(parseISOAsLocalDate(finishISO)) : "",
         duration: durStr,
         predecessors: uiPreds,
         resources: uiResources,
+          remarks: fetchedRemarksRef.current,
+ updatedByName,
       });
 
       // If activity has predecessors and duration, auto-calc to avoid BE errors
@@ -1117,6 +1151,7 @@ const View_Project_Management = forwardRef(
         status: form.status,
         predecessors: predsPayload,
         resources: resourcesPayload,
+        remarks: form.remarks || "",
       };
 
       try {
@@ -1140,7 +1175,7 @@ const View_Project_Management = forwardRef(
       }
     };
 
-     useImperativeHandle(ref, () => ({
+    useImperativeHandle(ref, () => ({
       saveAsTemplate: async (meta = {}) => {
         const { name, description } = meta || {};
         const rows = [];
@@ -2113,6 +2148,33 @@ const View_Project_Management = forwardRef(
                   </Select>
                 </FormControl>
 
+                
+
+
+               {statusChanged && (
+  <FormControl>
+    <FormLabel>
+      Remarks <Typography level="body-xs" sx={{ color: "text.tertiary", ml: 0.5 }}>(optional)</Typography>
+    </FormLabel>
+    <Textarea
+      minRows={3}
+      size="sm"
+      placeholder="Reason for status change (optional)…"
+      value={form.remarks}
+      onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))}
+      disabled={disableEditing}
+    />
+  </FormControl>
+)}
+{!statusChanged && form.remarks ? (
+  <FormControl>
+    <FormLabel>
+      Last Remarks{form.updatedByName ? ` — by ${form.updatedByName}` : ""} 
+   </FormLabel>
+    <Textarea minRows={3} size="sm" value={form.remarks} disabled />
+  </FormControl>
+) : null}
+
                 <Divider />
 
                 {/* Predecessors */}
@@ -2235,6 +2297,8 @@ const View_Project_Management = forwardRef(
                   <FormLabel>B.End date</FormLabel>
                   <Input size="sm" type="date" value={form.end} disabled />
                 </FormControl>
+
+                
 
                 <Divider />
                 <Stack spacing={1}>
