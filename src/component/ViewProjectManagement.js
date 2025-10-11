@@ -1008,7 +1008,7 @@ const View_Project_Management = forwardRef(
     // Auto-calc start/end whenever predecessors or duration change
     useEffect(() => {
       const hasPreds = (form.predecessors || []).length > 0;
-      const dur = Number(form.duration - 1 || 0);
+      const dur = Number(form.duration || 0);
 
       if (hasPreds && dur > 0) {
         const res = recomputeDatesFromPredecessors(form.predecessors, dur);
@@ -1026,13 +1026,14 @@ const View_Project_Management = forwardRef(
       if (!hasPreds && form.start && dur > 0) {
         const s = parseISOAsLocalDate(form.start);
         if (s && !Number.isNaN(s)) {
-          const e = gantt.calculateEndDate({ start_date: s, duration: dur });
+          const e = finishFromStartAndDuration(s, dur);
           const nextEnd = toYMD(e);
           if (form.end !== nextEnd) {
             setForm((f) => ({ ...f, end: nextEnd }));
           }
         }
       }
+
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [form.predecessors, form.duration, form.start]);
 
