@@ -215,8 +215,10 @@ function Logistics() {
             flexDirection: "column",
             gap: 1,
             mt: "108px",
-            p: "16px",
-            px: "24px",
+            mr:"28px",
+            pr: "20px",
+            ml: "24px",
+            overflow: "hidden"
           }}
         >
           <LogisticsTable />

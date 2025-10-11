@@ -33,6 +33,10 @@ import {
   useUpdateLogisticStatusMutation,
 } from "../redux/purchasesSlice";
 
+const HEADER_STACK = 108;      // MainHeader + SubHeader sticky stack
+const FILTERS_APPROX = 120;    // ~height of your filters row
+const PADDING_FIX = 24;
+
 /* ---------------- helpers ---------------- */
 const formatINR = (v) =>
   Number(v ?? 0).toLocaleString("en-IN", {
@@ -158,15 +162,15 @@ function StatusCard({ row, onUpdated }) {
     current === "delivered"
       ? "Delivered"
       : current === "out_for_delivery"
-      ? "Out for Delivery"
-      : "Ready to Dispatch";
+        ? "Out for Delivery"
+        : "Ready to Dispatch";
 
   const color =
     current === "delivered"
       ? "success"
       : current === "out_for_delivery"
-      ? "warning"
-      : "neutral";
+        ? "warning"
+        : "neutral";
 
   const ddmmyyyy = (d) => {
     if (!d) return "dd - mm - yyyy";
@@ -548,243 +552,254 @@ export default function LogisticsDashboard() {
         }}
       >
         <Box
-          component="table"
+          className="PO-TableScroller"
           sx={{
-            width: "100%",
-            borderCollapse: "collapse",
-            fontSize: "14px",
-            "& thead th": {
-              position: "sticky",
-              top: 0,
-              background: "#e0e0e0",
-              zIndex: 2,
-              borderBottom: "1px solid #ddd",
-              padding: "8px",
-              textAlign: "left",
-              fontWeight: "bold",
-            },
-            "& tbody td": {
-              borderBottom: "1px solid #ddd",
-              padding: "8px",
-              textAlign: "left",
-            },
-            "& tbody tr:hover": {
-              backgroundColor: "var(--joy-palette-neutral-plainHoverBg)",
-            },
+            overflowX: "auto",
+            overflowY: "auto",
+            maxHeight: `calc(100dvh - ${HEADER_STACK + FILTERS_APPROX + PADDING_FIX}px)`,
+            WebkitOverflowScrolling: "touch",
           }}
         >
-          <thead>
-            <tr>
-              <th>
-                <Checkbox
-                  size="sm"
-                  checked={rows.length > 0 && selected.length === rows.length}
-                  indeterminate={
-                    selected.length > 0 && selected.length < rows.length
-                  }
-                  onChange={handleSelectAll}
-                />
-              </th>
-              {[
-                "Logistics Code",
-                "Transportation PO",
-                "PO Number with Item",
-                "Vehicle No.",
-                "Transport PO Value",
-                "Total Weight (Ton)",
-                "Status",
-              ].map((header) => (
-                <th key={header}>{header}</th>
-              ))}
-            </tr>
-          </thead>
-
-          <tbody>
-            {isLoading ? (
+          <Box
+            component="table"
+            sx={{
+              width: "100%",
+              borderCollapse: "collapse",
+              fontSize: "14px",
+              "& thead th": {
+                position: "sticky",
+                top: 0,
+                background: "#e0e0e0",
+                zIndex: 2,
+                borderBottom: "1px solid #ddd",
+                padding: "8px",
+                textAlign: "left",
+                fontWeight: "bold",
+              },
+              "& tbody td": {
+                borderBottom: "1px solid #ddd",
+                padding: "8px",
+                textAlign: "left",
+              },
+              "& tbody tr:hover": {
+                backgroundColor: "var(--joy-palette-neutral-plainHoverBg)",
+              },
+            }}
+          >
+            <thead>
               <tr>
-                <td colSpan={8} style={{ padding: "8px", textAlign: "center" }}>
-                  <Box
-                    sx={{
-                      fontStyle: "italic",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <CircularProgress size="sm" sx={{ mb: 1 }} />
-                    <Typography fontStyle="italic">Loading...</Typography>
-                  </Box>
-                </td>
+                <th>
+                  <Checkbox
+                    size="sm"
+                    checked={rows.length > 0 && selected.length === rows.length}
+                    indeterminate={
+                      selected.length > 0 && selected.length < rows.length
+                    }
+                    onChange={handleSelectAll}
+                  />
+                </th>
+                {[
+                  "Logistics Code",
+                  "Transportation PO",
+                  "PO Number with Item",
+                  "Vehicle No.",
+                  "Transport PO Value",
+                  "Total Weight (Ton)",
+                  "Status",
+                ].map((header) => (
+                  <th key={header}>{header}</th>
+                ))}
               </tr>
-            ) : rows.length ? (
-              rows.map((row) => {
-                const poNumbers = getPoNumbers(row);
-                const firstPO = poNumbers[0] || "-";
-                const extraPO = Math.max(0, poNumbers.length - 1);
+            </thead>
 
-                const { grouped, firstLabel, extraCount } =
-                  buildPoCategorySummary(row.items);
+            <tbody>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={8} style={{ padding: "8px", textAlign: "center" }}>
+                    <Box
+                      sx={{
+                        fontStyle: "italic",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <CircularProgress size="sm" sx={{ mb: 1 }} />
+                      <Typography fontStyle="italic">Loading...</Typography>
+                    </Box>
+                  </td>
+                </tr>
+              ) : rows.length ? (
+                rows.map((row) => {
+                  const poNumbers = getPoNumbers(row);
+                  const firstPO = poNumbers[0] || "-";
+                  const extraPO = Math.max(0, poNumbers.length - 1);
 
-                const totalWeight =
-                  row?.total_ton ??
-                  (Array.isArray(row.items)
-                    ? row.items.reduce(
+                  const { grouped, firstLabel, extraCount } =
+                    buildPoCategorySummary(row.items);
+
+                  const totalWeight =
+                    row?.total_ton ??
+                    (Array.isArray(row.items)
+                      ? row.items.reduce(
                         (sum, it) => sum + (Number(it.weight) || 0),
                         0
                       )
-                    : "-");
+                      : "-");
 
-                return (
-                  <tr key={row._id}>
-                    {/* checkbox */}
-                    <td>
-                      <Checkbox
-                        size="sm"
-                        checked={selected.includes(row._id)}
-                        onChange={() => handleRowSelect(row._id)}
-                      />
-                    </td>
+                  return (
+                    <tr key={row._id}>
+                      {/* checkbox */}
+                      <td>
+                        <Checkbox
+                          size="sm"
+                          checked={selected.includes(row._id)}
+                          onChange={() => handleRowSelect(row._id)}
+                        />
+                      </td>
 
-                    {/* Logistics Code */}
-                    <td>
-                      <Tooltip title="View Logistics Detail" arrow>
-                        <span>
-                          <Link
-                            underline="none"
-                            sx={{ fontWeight: 600, cursor: "pointer" }}
-                            onClick={() =>
-                              navigate(
-                                `/logistics-form?mode=edit&id=${row._id}`
-                              )
-                            }
-                          >
-                            {safe(row.logistic_code)}
-                          </Link>
-                        </span>
-                      </Tooltip>
-                    </td>
-
-                    {/* Transportation PO */}
-                    <td>
-                      <Tooltip
-                        variant="soft"
-                        placement="top-start"
-                        title={
-                          <Box sx={{ p: 0.5 }}>
-                            <Typography
-                              level="body-xs"
-                              sx={{ mb: 0.5, fontWeight: 700 }}
+                      {/* Logistics Code */}
+                      <td>
+                        <Tooltip title="View Logistics Detail" arrow>
+                          <span>
+                            <Link
+                              underline="none"
+                              sx={{ fontWeight: 600, cursor: "pointer" }}
+                              onClick={() =>
+                                navigate(
+                                  `/logistics-form?mode=edit&id=${row._id}`
+                                )
+                              }
                             >
-                              Transportation POs
-                            </Typography>
-                            {poNumbers.length ? (
-                              poNumbers.map((p, idx) => (
-                                <Typography key={idx} level="body-xs">
-                                  • {p}
-                                </Typography>
-                              ))
-                            ) : (
-                              <Typography level="body-xs">-</Typography>
-                            )}
-                          </Box>
-                        }
-                      >
-                        <Box
-                          sx={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 0.5,
-                          }}
-                        >
-                          <Typography level="body-sm" fontWeight="md">
-                            {firstPO}
-                          </Typography>
-                          <MorePill n={extraPO} />
-                        </Box>
-                      </Tooltip>
-                    </td>
+                              {safe(row.logistic_code)}
+                            </Link>
+                          </span>
+                        </Tooltip>
+                      </td>
 
-                    {/* PO Number with Item */}
-                    <td>
-                      <Tooltip
-                        variant="soft"
-                        placement="top-start"
-                        title={
-                          <Box sx={{ p: 0.5, maxWidth: 360 }}>
-                            <Typography
-                              level="body-xs"
-                              sx={{ mb: 0.5, fontWeight: 700 }}
-                            >
-                              POs & Categories
-                            </Typography>
-                            {grouped.size ? (
-                              Array.from(grouped.entries()).map(([po, arr]) => (
-                                <Box key={po} sx={{ mb: 0.5 }}>
-                                  <Typography
-                                    level="body-xs"
-                                    sx={{ fontWeight: 600 }}
-                                  >
-                                    {po}
+                      {/* Transportation PO */}
+                      <td>
+                        <Tooltip
+                          variant="soft"
+                          placement="top-start"
+                          title={
+                            <Box sx={{ p: 0.5 }}>
+                              <Typography
+                                level="body-xs"
+                                sx={{ mb: 0.5, fontWeight: 700 }}
+                              >
+                                Transportation POs
+                              </Typography>
+                              {poNumbers.length ? (
+                                poNumbers.map((p, idx) => (
+                                  <Typography key={idx} level="body-xs">
+                                    • {p}
                                   </Typography>
-                                  {arr.map(({ category, count }, idx) => (
-                                    <Typography
-                                      key={idx}
-                                      level="body-xs"
-                                      sx={{ pl: 1 }}
-                                    >
-                                      • {category}{" "}
-                                      {count > 1 ? `(${count})` : ""}
-                                    </Typography>
-                                  ))}
-                                </Box>
-                              ))
-                            ) : (
-                              <Typography level="body-xs">-</Typography>
-                            )}
-                          </Box>
-                        }
-                      >
-                        <Box
-                          sx={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 0.5,
-                          }}
+                                ))
+                              ) : (
+                                <Typography level="body-xs">-</Typography>
+                              )}
+                            </Box>
+                          }
                         >
-                          <Typography level="body-sm">
-                            {safe(firstLabel)}
-                          </Typography>
-                          <MorePill n={extraCount} />
-                        </Box>
-                      </Tooltip>
-                    </td>
+                          <Box
+                            sx={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 0.5,
+                            }}
+                          >
+                            <Typography level="body-sm" fontWeight="md">
+                              {firstPO}
+                            </Typography>
+                            <MorePill n={extraPO} />
+                          </Box>
+                        </Tooltip>
+                      </td>
 
-                    {/* Vehicle No. */}
-                    <td>{safe(row.vehicle_number)}</td>
+                      {/* PO Number with Item */}
+                      <td>
+                        <Tooltip
+                          variant="soft"
+                          placement="top-start"
+                          title={
+                            <Box sx={{ p: 0.5, maxWidth: 360 }}>
+                              <Typography
+                                level="body-xs"
+                                sx={{ mb: 0.5, fontWeight: 700 }}
+                              >
+                                POs & Categories
+                              </Typography>
+                              {grouped.size ? (
+                                Array.from(grouped.entries()).map(([po, arr]) => (
+                                  <Box key={po} sx={{ mb: 0.5 }}>
+                                    <Typography
+                                      level="body-xs"
+                                      sx={{ fontWeight: 600 }}
+                                    >
+                                      {po}
+                                    </Typography>
+                                    {arr.map(({ category, count }, idx) => (
+                                      <Typography
+                                        key={idx}
+                                        level="body-xs"
+                                        sx={{ pl: 1 }}
+                                      >
+                                        • {category}{" "}
+                                        {count > 1 ? `(${count})` : ""}
+                                      </Typography>
+                                    ))}
+                                  </Box>
+                                ))
+                              ) : (
+                                <Typography level="body-xs">-</Typography>
+                              )}
+                            </Box>
+                          }
+                        >
+                          <Box
+                            sx={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 0.5,
+                            }}
+                          >
+                            <Typography level="body-sm">
+                              {safe(firstLabel)}
+                            </Typography>
+                            <MorePill n={extraCount} />
+                          </Box>
+                        </Tooltip>
+                      </td>
 
-                    {/* Transport PO Value */}
-                    <td>{formatINR(row.total_transport_po_value)}</td>
+                      {/* Vehicle No. */}
+                      <td>{safe(row.vehicle_number)}</td>
 
-                    {/* Total Weight */}
-                    <td>{safe(totalWeight)}</td>
+                      {/* Transport PO Value */}
+                      <td>{formatINR(row.total_transport_po_value)}</td>
 
-                    {/* Status */}
-                    <td>
-                      <StatusCard row={row} onUpdated={refetch} />
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td colSpan={8} style={{ padding: "8px", textAlign: "center" }}>
-                  <Typography fontStyle="italic">No Logistics Found</Typography>
-                </td>
-              </tr>
-            )}
-          </tbody>
+                      {/* Total Weight */}
+                      <td>{safe(totalWeight)}</td>
+
+                      {/* Status */}
+                      <td>
+                        <StatusCard row={row} onUpdated={refetch} />
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={8} style={{ padding: "8px", textAlign: "center" }}>
+                    <Typography fontStyle="italic">No Logistics Found</Typography>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </Box>
         </Box>
+
       </Sheet>
 
       {/* Pagination */}

@@ -190,8 +190,10 @@ function Bill_History() {
             flexDirection: "column",
             gap: 1,
             mt: "108px",
-            p: "16px",
-            px: "24px",
+            mr:"28px",
+            pr: "30px",
+            ml: "24px",
+            overflow: "hidden"
           }}
         >
           <VendorBill />

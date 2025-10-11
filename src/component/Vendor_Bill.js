@@ -25,6 +25,10 @@ import {
 import Axios from "../utils/Axios";
 import dayjs from "dayjs";
 
+const HEADER_STACK = 108;      // MainHeader + SubHeader sticky stack
+const FILTERS_APPROX = 120;    // ~height of your filters row
+const PADDING_FIX = 24;
+
 function VendorBillSummary() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
@@ -455,155 +459,164 @@ function VendorBillSummary() {
         }}
       >
         <Box
-          component="table"
+          className="PO-TableScroller"
           sx={{
-            width: "100%",
-            borderCollapse: "collapse",
-            fontSize: "14px",
+            overflowX: "auto",
+            overflowY: "auto",
+            maxHeight: `calc(100dvh - ${HEADER_STACK + FILTERS_APPROX + PADDING_FIX}px)`,
+            WebkitOverflowScrolling: "touch",
           }}
         >
           <Box
-            component="thead"
+            component="table"
             sx={{
-              backgroundColor: "neutral.softBg",
+              width: "100%",
+              borderCollapse: "collapse",
+              fontSize: "14px",
             }}
           >
-            <Box component="tr">
-              {[
-                "Bill No.",
-                "Bill Date",
-                "Bill Value",
-                "Total Billed",
-                "Category",
-                "Project ID",
-                "PO NO.",
-                "Vendor",
-                "PO Value",
-                "PO Status",
-                "Received",
-                "Created On",
-              ]?.map((header, index) => (
-                <Box
-                  component="th"
-                  key={index}
-                  sx={{
-                    position: "sticky",
-                    top: 0,
-                    background: "#e0e0e0",
-                    zIndex: 2,
-                    borderBottom: "1px solid #ddd",
-                    padding: "8px",
-                    textAlign: "left",
-                    fontWeight: "bold",
-                  }}
-                >
-                  {header}
-                </Box>
-              ))}
-            </Box>
-          </Box>
-
-          <Box component="tbody">
-            {isLoading ? (
+            <Box
+              component="thead"
+              sx={{
+                backgroundColor: "neutral.softBg",
+              }}
+            >
               <Box component="tr">
-                <Box
-                  component="td"
-                  colSpan={14}
-                  sx={{
-                    py: 5,
-                    textAlign: "center",
-                  }}
-                >
+                {[
+                  "Bill No.",
+                  "Bill Date",
+                  "Bill Value",
+                  "Total Billed",
+                  "Category",
+                  "Project ID",
+                  "PO NO.",
+                  "Vendor",
+                  "PO Value",
+                  "PO Status",
+                  "Received",
+                  "Created On",
+                ]?.map((header, index) => (
                   <Box
+                    component="th"
+                    key={index}
                     sx={{
-                      fontStyle: "italic",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
+                      position: "sticky",
+                      top: 0,
+                      background: "#e0e0e0",
+                      zIndex: 2,
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "left",
+                      fontWeight: "bold",
                     }}
                   >
-                    <CircularProgress size="sm" sx={{ color: "primary.500" }} />
-                    <Typography fontStyle="italic">
-                      Loading bills… please hang tight ⏳
-                    </Typography>
+                    {header}
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+
+            <Box component="tbody">
+              {isLoading ? (
+                <Box component="tr">
+                  <Box
+                    component="td"
+                    colSpan={14}
+                    sx={{
+                      py: 5,
+                      textAlign: "center",
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        fontStyle: "italic",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <CircularProgress size="sm" sx={{ color: "primary.500" }} />
+                      <Typography fontStyle="italic">
+                        Loading bills… please hang tight ⏳
+                      </Typography>
+                    </Box>
                   </Box>
                 </Box>
-              </Box>
-            ) : bills.length > 0 ? (
-              bills.map((bill, index) => (
-                <Box
-                  component="tr"
-                  key={bill.bill_no || index}
-                  sx={{
-                    borderBottom: "1px solid #ddd",
-                    padding: "8px",
-                    textAlign: "left",
-                  }}
-                >
+              ) : bills.length > 0 ? (
+                bills.map((bill, index) => (
                   <Box
-                    component="td"
+                    component="tr"
+                    key={bill.bill_no || index}
                     sx={{
                       borderBottom: "1px solid #ddd",
                       padding: "8px",
                       textAlign: "left",
                     }}
                   >
-                    <Chip
-                      variant="outlined"
-                      color="primary"
-                      sx={{ cursor: "pointer" }}
-                      onClick={() =>
-                        navigate(`/add_bill?mode=edit&_id=${bill._id}`)
-                      }
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "left",
+                      }}
                     >
-                      {bill.bill_no}
-                    </Chip>
-                  </Box>
+                      <Chip
+                        variant="outlined"
+                        color="primary"
+                        sx={{ cursor: "pointer" }}
+                        onClick={() =>
+                          navigate(`/add_bill?mode=edit&_id=${bill._id}`)
+                        }
+                      >
+                        {bill.bill_no}
+                      </Chip>
+                    </Box>
 
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    {dayjs(bill.bill_date).format("DD/MM/YYYY")}
-                  </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "left",
+                      }}
+                    >
+                      {dayjs(bill.bill_date).format("DD/MM/YYYY")}
+                    </Box>
 
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    ₹{Number(bill.bill_value).toFixed(2)}
-                  </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "left",
+                      }}
+                    >
+                      ₹{Number(bill.bill_value).toFixed(2)}
+                    </Box>
 
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    ₹{Number(bill.total_billed).toFixed(2)}
-                  </Box>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "left",
+                      }}
+                    >
+                      ₹{Number(bill.total_billed).toFixed(2)}
+                    </Box>
 
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    {Array.isArray(bill.item) && bill.item.length > 0
-                      ? (() => {
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "left",
+                      }}
+                    >
+                      {Array.isArray(bill.item) && bill.item.length > 0
+                        ? (() => {
                           const uniqueNames = [
                             ...new Set(
                               bill.item
@@ -646,97 +659,99 @@ function VendorBillSummary() {
                             </>
                           );
                         })()
-                      : bill.item?.category_name || "-"}
+                        : bill.item?.category_name || "-"}
+                    </Box>
+
+                    <RenderTableCell cell={bill.project_id} />
+
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "12px",
+                        textAlign: "left",
+                      }}
+                    >
+                      {bill.po_no}
+                    </Box>
+
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "left",
+                      }}
+                    >
+                      {bill.vendor}
+                    </Box>
+
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "left",
+                      }}
+                    >
+                      ₹{bill.po_value}
+                    </Box>
+
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "left",
+                      }}
+                    >
+                      <BillingStatusChip
+                        status={bill.po_status}
+                        balance={(bill.po_value - bill.total_billed).toFixed(2)}
+                      />
+                    </Box>
+
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "left",
+                      }}
+                    >
+                      <BillAcceptance
+                        billNumber={bill.bill_no}
+                        approvedBy={bill.approved_by_name}
+                      />
+                    </Box>
+
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "left",
+                      }}
+                    >
+                      {dayjs(bill.created_on).format("DD/MM/YYYY")}
+                    </Box>
                   </Box>
-
-                  <RenderTableCell cell={bill.project_id} />
-
+                ))
+              ) : (
+                <Box component="tr">
                   <Box
                     component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "12px",
-                      textAlign: "left",
-                    }}
+                    colSpan={14}
+                    sx={{ textAlign: "center", p: 2 }}
                   >
-                    {bill.po_no}
-                  </Box>
-
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    {bill.vendor}
-                  </Box>
-
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    ₹{bill.po_value}
-                  </Box>
-
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    <BillingStatusChip
-                      status={bill.po_status}
-                      balance={(bill.po_value - bill.total_billed).toFixed(2)}
-                    />
-                  </Box>
-
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    <BillAcceptance
-                      billNumber={bill.bill_no}
-                      approvedBy={bill.approved_by_name}
-                    />
-                  </Box>
-
-                  <Box
-                    component="td"
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    {dayjs(bill.created_on).format("DD/MM/YYYY")}
+                    No bills found.
                   </Box>
                 </Box>
-              ))
-            ) : (
-              <Box component="tr">
-                <Box
-                  component="td"
-                  colSpan={14}
-                  sx={{ textAlign: "center", p: 2 }}
-                >
-                  No bills found.
-                </Box>
-              </Box>
-            )}
+              )}
+            </Box>
           </Box>
         </Box>
+
       </Sheet>
 
       {/* Pagination */}

@@ -69,15 +69,19 @@ import {
 } from "../redux/productsSlice";
 import SearchPickerModal from "../component/SearchPickerModal";
 
+const HEADER_STACK = 108;      // MainHeader + SubHeader sticky stack
+const FILTERS_APPROX = 120;    // ~height of your filters row
+const PADDING_FIX = 24;
+
 const PurchaseOrderSummary = forwardRef((props, ref) => {
-  const { project_code, onSelectionChange = () => {}} = props;
+  const { project_code, onSelectionChange = () => { } } = props;
   const [po, setPO] = useState("");
   const [selectedpo, setSelectedpo] = useState("");
   const [selectedtype, setSelectedtype] = useState("");
   const [selected, setSelected] = useState([]);
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
- const [bulkRemarks, setBulkRemarks] = useState("");
- const [bulkDate, setBulkDate] = useState("");
+  const [bulkRemarks, setBulkRemarks] = useState("");
+  const [bulkDate, setBulkDate] = useState("");
   const [selectedPoNumber, setSelectedPoNumber] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -244,30 +248,30 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
   const handleOpenBulkModal = () => setBulkModalOpen(true);
 
- const handleCloseBulkModal = () => {
-   setBulkModalOpen(false);
-   setBulkRemarks("");
-   setBulkDate("");
- };
+  const handleCloseBulkModal = () => {
+    setBulkModalOpen(false);
+    setBulkRemarks("");
+    setBulkDate("");
+  };
 
- const handleConfirmBulkDeliver = async () => {
-  try {
-    if (!selected.length) {
-      toast.error("Please select at least one PO.");
-      return;
+  const handleConfirmBulkDeliver = async () => {
+    try {
+      if (!selected.length) {
+        toast.error("Please select at least one PO.");
+        return;
+      }
+      await bulkDeliverPOs({
+        ids: selected,          // we selected by _id; backend accepts _id or po_number
+        remarks: bulkRemarks || "Bulk marked as delivered",
+        date: bulkDate || undefined, // if empty, backend uses IST now
+      }).unwrap();
+      toast.success("Selected POs marked as Delivered");
+      setSelected([]);      // clear selection
+      handleCloseBulkModal();
+    } catch (e) {
+      toast.error(e?.data?.message || "Bulk deliver failed");
     }
-    await bulkDeliverPOs({
-      ids: selected,          // we selected by _id; backend accepts _id or po_number
-      remarks: bulkRemarks || "Bulk marked as delivered",
-      date: bulkDate || undefined, // if empty, backend uses IST now
-    }).unwrap();
-    toast.success("Selected POs marked as Delivered");
-    setSelected([]);      // clear selection
-    handleCloseBulkModal();
-  } catch (e) {
-    toast.error(e?.data?.message || "Bulk deliver failed");
-  }
- };
+  };
 
   const formatStatus = (status, etd) => {
     if (status?.toLowerCase() === "draft") {
@@ -530,8 +534,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                 {activeDateFilter === "etd"
                   ? "ETD Date Range"
                   : activeDateFilter === "po"
-                  ? "PO Date Range"
-                  : "Delivery Date Range"}
+                    ? "PO Date Range"
+                    : "Delivery Date Range"}
               </Typography>
 
               <Box display="flex" gap={1}>
@@ -543,8 +547,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       activeDateFilter === "etd"
                         ? etdFrom
                         : activeDateFilter === "po"
-                        ? poFrom
-                        : deliveryFrom
+                          ? poFrom
+                          : deliveryFrom
                     }
                     onChange={(e) => {
                       if (activeDateFilter === "etd")
@@ -565,8 +569,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       activeDateFilter === "etd"
                         ? etdTo
                         : activeDateFilter === "po"
-                        ? poTo
-                        : deliveryTo
+                          ? poTo
+                          : deliveryTo
                     }
                     onChange={(e) => {
                       if (activeDateFilter === "etd") setEtdTo(e.target.value);
@@ -720,8 +724,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const handleSelectAll = (event) => {
     if (event.target.checked) {
       const next = paginatedPo.map((row) => row._id);
-     setSelected(next);
-     onSelectionChange(next);
+      setSelected(next);
+      onSelectionChange(next);
     } else {
       setSelected([]);
       onSelectionChange([]);
@@ -765,7 +769,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       clearSelection: () => { setSelected([]); onSelectionChange([]); },
       // optional: keep your CSV export callable via ref if you still need it
       exportToCSV: () => handleExport(true),
-       openBulkDeliverModal: () => handleOpenBulkModal(),
+      openBulkDeliverModal: () => handleOpenBulkModal(),
     }),
     [selected, paginatedPo] // keep fresh
   );
@@ -777,8 +781,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     const label = isFullyBilled
       ? "Fully Billed"
       : isPending
-      ? "Pending"
-      : status;
+        ? "Pending"
+        : status;
 
     const icon = isFullyBilled ? (
       <CheckRoundedIcon />
@@ -1088,8 +1092,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     const categories = Array.isArray(item)
       ? item.filter(Boolean).map(String)
       : item
-      ? [String(item)]
-      : [];
+        ? [String(item)]
+        : [];
 
     const onlyOther =
       categories.length === 1 && categories[0].trim().toLowerCase() === "other";
@@ -1226,9 +1230,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     const formattedAmount =
       billed > 0
         ? new Intl.NumberFormat("en-IN", {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-          }).format(billed)
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 2,
+        }).format(billed)
         : null;
 
     return (
@@ -1280,7 +1284,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       case "partially_delivered":
         return "#f59e0b";
       case "short_quantity":
-        return "#b45309"; 
+        return "#b45309";
       case "delivered":
         return "green";
       case "etd pending":
@@ -1332,260 +1336,243 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           width: "100%",
           borderRadius: "sm",
           flexShrink: 1,
-          overflow: "auto",
+          overflow: "hidden",
           minHeight: 0,
           marginLeft: isFromCAM || isFromPR ? 0 : { xl: "15%", lg: "18%" },
           maxWidth: isFromCAM || isFromPR ? "100%" : { lg: "85%", sm: "100%" },
         }}
       >
         <Box
-          component="table"
-          sx={{ width: "100%", borderCollapse: "collapse" }}
+          className="PO-TableScroller"
+          sx={{
+            overflowX: "auto",
+            overflowY: "auto",
+            maxHeight: `calc(100dvh - ${HEADER_STACK + FILTERS_APPROX + PADDING_FIX}px)`,
+            WebkitOverflowScrolling: "touch",
+          }}
         >
-          <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
-            <Box component="tr">
-              {/* Checkbox column */}
-              <Box
-                component="th"
-                sx={{
-                  position: "sticky",
-                  top: 0,
-                  background: "#e0e0e0",
-                  zIndex: 2,
-                  borderBottom: "1px solid #ddd",
-                  padding: "8px",
-                  textAlign: "left",
-                  fontWeight: "bold",
-                }}
-              >
-                <Checkbox
-                  indeterminate={
-                    selected.length > 0 && selected.length < paginatedPo.length
-                  }
-                  checked={
-                    selected.length === paginatedPo.length &&
-                    paginatedPo.length > 0
-                  }
-                  onChange={handleSelectAll}
-                  color={selected.length > 0 ? "primary" : "neutral"}
-                />
-              </Box>
-
-              {(!isLogisticsPage
-                ? ["Project ID", "PO Number"]
-                : ["Project ID", "PO Number"]
-              )
-                .concat([
-                  "Category Name",
-                  "PO Value(incl. GST)",
-                  "Advance Paid",
-                  ...(isLogisticsPage ? [] : ["Bill Status"]),
-                  ...(isLogisticsPage ? [] : ["Total Billed"]),
-                  "Status",
-                  "Delay",
-                  "",
-                ])
-                .map((header, index) => (
-                  <Box
-                    component="th"
-                    key={index}
-                    sx={{
-                      position: "sticky",
-                      top: 0,
-                      background: "#e0e0e0",
-                      zIndex: 2,
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {header}
-                  </Box>
-                ))}
-            </Box>
-          </Box>
-
-          <Box component="tbody">
-            {error ? (
-              <Typography color="danger" textAlign="center">
-                {error}
-              </Typography>
-            ) : isLoading ? (
-              <tr>
-                <td
-                  colSpan={13}
-                  style={{ padding: "8px", textAlign: "center" }}
+          <Box
+            component="table"
+            sx={{ width: "100%", borderCollapse: "collapse" }}
+          >
+            <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
+              <Box component="tr">
+                {/* Checkbox column */}
+                <Box
+                  component="th"
+                  sx={{
+                    position: "sticky",
+                    top: 0,
+                    background: "#e0e0e0",
+                    zIndex: 2,
+                    borderBottom: "1px solid #ddd",
+                    padding: "8px",
+                    textAlign: "left",
+                    fontWeight: "bold",
+                  }}
                 >
-                  <Box
-                    sx={{
-                      fontStyle: "italic",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
+                  <Checkbox
+                    indeterminate={
+                      selected.length > 0 && selected.length < paginatedPo.length
+                    }
+                    checked={
+                      selected.length === paginatedPo.length &&
+                      paginatedPo.length > 0
+                    }
+                    onChange={handleSelectAll}
+                    color={selected.length > 0 ? "primary" : "neutral"}
+                  />
+                </Box>
+
+                {(!isLogisticsPage
+                  ? ["Project ID", "PO Number"]
+                  : ["Project ID", "PO Number"]
+                )
+                  .concat([
+                    "Category Name",
+                    "PO Value(incl. GST)",
+                    "Advance Paid",
+                    ...(isLogisticsPage ? [] : ["Bill Status"]),
+                    ...(isLogisticsPage ? [] : ["Total Billed"]),
+                    "Status",
+                    "Delay",
+                    "",
+                  ])
+                  .map((header, index) => (
+                    <Box
+                      component="th"
+                      key={index}
+                      sx={{
+                        position: "sticky",
+                        top: 0,
+                        background: "#e0e0e0",
+                        zIndex: 2,
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "left",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {header}
+                    </Box>
+                  ))}
+              </Box>
+            </Box>
+
+            <Box component="tbody">
+              {error ? (
+                <Typography color="danger" textAlign="center">
+                  {error}
+                </Typography>
+              ) : isLoading ? (
+                <tr>
+                  <td
+                    colSpan={13}
+                    style={{ padding: "8px", textAlign: "center" }}
                   >
-                    <CircularProgress size="sm" sx={{ marginBottom: "8px" }} />
-                    <Typography fontStyle="italic">
-                      Loading Po's… please hang tight ⏳
-                    </Typography>
-                  </Box>
-                </td>
-              </tr>
-            ) : paginatedPo.length > 0 ? (
-              paginatedPo.map((po, index) => {
-                let etd = null;
-                let delay = 0;
+                    <Box
+                      sx={{
+                        fontStyle: "italic",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <CircularProgress size="sm" sx={{ marginBottom: "8px" }} />
+                      <Typography fontStyle="italic">
+                        Loading Po's… please hang tight ⏳
+                      </Typography>
+                    </Box>
+                  </td>
+                </tr>
+              ) : paginatedPo.length > 0 ? (
+                paginatedPo.map((po, index) => {
+                  let etd = null;
+                  let delay = 0;
 
-                const now = new Date();
-                const dispatch_date = po.dispatch_date
-                  ? new Date(po.dispatch_date)
-                  : null;
+                  const now = new Date();
+                  const dispatch_date = po.dispatch_date
+                    ? new Date(po.dispatch_date)
+                    : null;
 
-                if (po.etd) {
-                  etd = new Date(po.etd);
-                  if (dispatch_date) {
-                    const timeDiff = dispatch_date - etd;
-                    delay = Math.max(
-                      0,
-                      Math.floor(timeDiff / (1000 * 60 * 60 * 24))
-                    );
-                  } else if (now > etd) {
-                    const timeDiff = now - etd;
-                    delay = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+                  if (po.etd) {
+                    etd = new Date(po.etd);
+                    if (dispatch_date) {
+                      const timeDiff = dispatch_date - etd;
+                      delay = Math.max(
+                        0,
+                        Math.floor(timeDiff / (1000 * 60 * 60 * 24))
+                      );
+                    } else if (now > etd) {
+                      const timeDiff = now - etd;
+                      delay = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+                    }
                   }
-                }
-                const formattedStatus = formatStatus(
-                  po?.current_status?.status,
-                  po?.etd
-                );
+                  const formattedStatus = formatStatus(
+                    po?.current_status?.status,
+                    po?.etd
+                  );
 
-                return (
-                  <Box
-                    component="tr"
-                    key={index}
-                    sx={{
-                      "&:hover": { backgroundColor: "neutral.plainHoverBg" },
-                    }}
-                  >
+                  return (
                     <Box
-                      component="td"
+                      component="tr"
+                      key={index}
                       sx={{
-                        padding: 1,
-                        textAlign: "left",
-                        borderBottom: "1px solid",
+                        "&:hover": { backgroundColor: "neutral.plainHoverBg" },
                       }}
                     >
-                      <Checkbox
-                        checked={selected.includes(po._id)}
-                        onChange={() => handleRowSelect(po._id)}
-                        color={
-                          selected.includes(po._id) ? "primary" : "neutral"
-                        }
-                      />
-                    </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          padding: 1,
+                          textAlign: "left",
+                          borderBottom: "1px solid",
+                        }}
+                      >
+                        <Checkbox
+                          checked={selected.includes(po._id)}
+                          onChange={() => handleRowSelect(po._id)}
+                          color={
+                            selected.includes(po._id) ? "primary" : "neutral"
+                          }
+                        />
+                      </Box>
 
-                    <Box
-                      component="td"
-                      sx={{
-                        padding: 1,
-                        textAlign: "left",
-                        borderBottom: "1px solid",
-                        fontSize: 15,
-                        minWidth: 250,
-                      }}
-                    >
-                      <RenderPid p_id={po.p_id} />
-                    </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          padding: 1,
+                          textAlign: "left",
+                          borderBottom: "1px solid",
+                          fontSize: 15,
+                          minWidth: 250,
+                        }}
+                      >
+                        <RenderPid p_id={po.p_id} />
+                      </Box>
 
-                    <Box
-                      component="td"
-                      sx={{
-                        padding: 1,
-                        textAlign: "left",
-                        borderBottom: "1px solid",
-                        fontSize: 14,
-                        minWidth: 250,
-                      }}
-                    >
-                      <RenderPONumber
-                        po_number={po?.po_number}
-                        po_id={po?._id}
-                        date={po?.date}
-                        etd={po?.etd}
-                        mrd={po?.material_ready_date}
-                        rtd={po?.dispatch_date}
-                        delivery_date={po?.delivery_date}
-                        current_status={po?.current_status?.status}
-                        pr_no={po.pr_no}
-                      />
-                    </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          padding: 1,
+                          textAlign: "left",
+                          borderBottom: "1px solid",
+                          fontSize: 14,
+                          minWidth: 250,
+                        }}
+                      >
+                        <RenderPONumber
+                          po_number={po?.po_number}
+                          po_id={po?._id}
+                          date={po?.date}
+                          etd={po?.etd}
+                          mrd={po?.material_ready_date}
+                          rtd={po?.dispatch_date}
+                          delivery_date={po?.delivery_date}
+                          current_status={po?.current_status?.status}
+                          pr_no={po.pr_no}
+                        />
+                      </Box>
 
-                    <Box
-                      component="td"
-                      sx={{
-                        padding: 1,
-                        textAlign: "left",
-                        borderBottom: "1px solid",
-                        minWidth: 350,
-                      }}
-                    >
-                      <RenderItem_Vendor
-                        item={
-                          po.category_names === "Other"
-                            ? "other"
-                            : po.category_names
-                        }
-                        other_item={po?.pr?.other_item_name}
-                        amount={po?.pr?.amount}
-                        vendor={po.vendor}
-                      />
-                    </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          padding: 1,
+                          textAlign: "left",
+                          borderBottom: "1px solid",
+                          minWidth: 350,
+                        }}
+                      >
+                        <RenderItem_Vendor
+                          item={
+                            po.category_names === "Other"
+                              ? "other"
+                              : po.category_names
+                          }
+                          other_item={po?.pr?.other_item_name}
+                          amount={po?.pr?.amount}
+                          vendor={po.vendor}
+                        />
+                      </Box>
 
-                    <Box
-                      component="td"
-                      sx={{
-                        padding: 1,
-                        textAlign: "left",
-                        borderBottom: "1px solid",
-                        fontSize: 14,
-                        minWidth: 200,
-                      }}
-                    >
-                      ₹
-                      {new Intl.NumberFormat("en-IN", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 2,
-                      }).format(po.po_value)}
-                    </Box>
+                      <Box
+                        component="td"
+                        sx={{
+                          padding: 1,
+                          textAlign: "left",
+                          borderBottom: "1px solid",
+                          fontSize: 14,
+                          minWidth: 200,
+                        }}
+                      >
+                        ₹
+                        {new Intl.NumberFormat("en-IN", {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 2,
+                        }).format(po.po_value)}
+                      </Box>
 
-                    <Box
-                      component="td"
-                      sx={{
-                        padding: 1,
-                        textAlign: "left",
-                        borderBottom: "1px solid",
-                        fontSize: 14,
-                        minWidth: 150,
-                      }}
-                    >
-                      {po.po_number ? (
-                        <Typography level="body-sm">
-                          ₹{" "}
-                          {new Intl.NumberFormat("en-IN", {
-                            minimumFractionDigits: 0,
-                            maximumFractionDigits: 2,
-                          }).format(po.amount_paid ?? 0)}
-                        </Typography>
-                      ) : (
-                        <Chip size="sm" variant="soft" color="neutral">
-                          PO No Pending
-                        </Chip>
-                      )}
-                    </Box>
-
-                    {!isLogisticsPage && (
                       <Box
                         component="td"
                         sx={{
@@ -1596,160 +1583,188 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                           minWidth: 150,
                         }}
                       >
-                        <BillingStatusChip status={po.partial_billing} />
+                        {po.po_number ? (
+                          <Typography level="body-sm">
+                            ₹{" "}
+                            {new Intl.NumberFormat("en-IN", {
+                              minimumFractionDigits: 0,
+                              maximumFractionDigits: 2,
+                            }).format(po.amount_paid ?? 0)}
+                          </Typography>
+                        ) : (
+                          <Chip size="sm" variant="soft" color="neutral">
+                            PO No Pending
+                          </Chip>
+                        )}
                       </Box>
-                    )}
 
-                    {!isLogisticsPage && (
+                      {!isLogisticsPage && (
+                        <Box
+                          component="td"
+                          sx={{
+                            padding: 1,
+                            textAlign: "left",
+                            borderBottom: "1px solid",
+                            fontSize: 14,
+                            minWidth: 150,
+                          }}
+                        >
+                          <BillingStatusChip status={po.partial_billing} />
+                        </Box>
+                      )}
+
+                      {!isLogisticsPage && (
+                        <Box
+                          component="td"
+                          sx={{
+                            padding: 1,
+                            textAlign: "left",
+                            borderBottom: "1px solid",
+                            minWidth: 150,
+                          }}
+                        >
+                          <RenderTotalBilled
+                            total_billed={po.total_billed}
+                            po_value={po.po_value}
+                            po_number={po.po_number}
+                          />
+                        </Box>
+                      )}
+
                       <Box
                         component="td"
                         sx={{
                           padding: 1,
                           textAlign: "left",
                           borderBottom: "1px solid",
-                          minWidth: 150,
+                          minWidth: 280,
+                          width: 300,
                         }}
                       >
-                        <RenderTotalBilled
-                          total_billed={po.total_billed}
-                          po_value={po.po_value}
-                          po_number={po.po_number}
+                        <Tooltip
+                          title={po?.current_status?.remarks || "No remarks"}
+                          arrow
+                        >
+                          <Box
+                            sx={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              py: 0.5,
+                              borderRadius: "16px",
+                              color: getStatusColor(formattedStatus),
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              fontSize: "1rem",
+                              textTransform: "capitalize",
+                            }}
+                          >
+                            {getStatusIcon(formattedStatus)}
+                            {formattedStatus?.replace(/_/g, " ")}
+                          </Box>
+                        </Tooltip>
+
+                        <RenderStatusDates
+                          rtd={po?.dispatch_date}
+                          mrd={po?.material_ready_date}
+                          etd={po?.etd}
+                          delivery_date={po?.delivery_date}
+                          current_status={po?.current_status?.status}
+                          po_number={po?.po_number}
                         />
                       </Box>
-                    )}
 
-                    <Box
-                      component="td"
-                      sx={{
-                        padding: 1,
-                        textAlign: "left",
-                        borderBottom: "1px solid",
-                        minWidth: 280,
-                        width: 300,
-                      }}
-                    >
-                      <Tooltip
-                        title={po?.current_status?.remarks || "No remarks"}
-                        arrow
+                      <Box
+                        component="td"
+                        sx={{
+                          padding: 1,
+                          textAlign: "left",
+                          borderBottom: "1px solid",
+                          minWidth: 100,
+                        }}
                       >
-                        <Box
-                          sx={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            py: 0.5,
-                            borderRadius: "16px",
-                            color: getStatusColor(formattedStatus),
-                            fontWeight: 600,
-                            cursor: "pointer",
-                            fontSize: "1rem",
-                            textTransform: "capitalize",
-                          }}
-                        >
-                          {getStatusIcon(formattedStatus)}
-                          {formattedStatus?.replace(/_/g, " ")}
-                        </Box>
-                      </Tooltip>
-
-                      <RenderStatusDates
-                        rtd={po?.dispatch_date}
-                        mrd={po?.material_ready_date}
-                        etd={po?.etd}
-                        delivery_date={po?.delivery_date}
-                        current_status={po?.current_status?.status}
-                        po_number={po?.po_number}
-                      />
-                    </Box>
-
-                    <Box
-                      component="td"
-                      sx={{
-                        padding: 1,
-                        textAlign: "left",
-                        borderBottom: "1px solid",
-                        minWidth: 100,
-                      }}
-                    >
-                      {etd ? (
-                        delay > 0 ? (
-                          <Typography
-                            sx={{ color: "red", fontSize: 13, mt: 0.5 }}
-                          >
-                            ⏱ Delayed by {delay} day{delay > 1 ? "s" : ""}
-                          </Typography>
+                        {etd ? (
+                          delay > 0 ? (
+                            <Typography
+                              sx={{ color: "red", fontSize: 13, mt: 0.5 }}
+                            >
+                              ⏱ Delayed by {delay} day{delay > 1 ? "s" : ""}
+                            </Typography>
+                          ) : (
+                            <Typography
+                              sx={{ color: "green", fontSize: 13, mt: 0.5 }}
+                            >
+                              ✅ No delay
+                            </Typography>
+                          )
                         ) : (
                           <Typography
-                            sx={{ color: "green", fontSize: 13, mt: 0.5 }}
+                            sx={{
+                              color: "gray",
+                              fontSize: 13,
+                              mt: 0.5,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 0.5,
+                            }}
                           >
-                            ✅ No delay
+                            ⚠️
                           </Typography>
-                        )
-                      ) : (
-                        <Typography
-                          sx={{
-                            color: "gray",
-                            fontSize: 13,
-                            mt: 0.5,
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 0.5,
-                          }}
-                        >
-                          ⚠️
-                        </Typography>
-                      )}
-                    </Box>
+                        )}
+                      </Box>
 
+                      <Box
+                        component="td"
+                        sx={{
+                          padding: 1,
+                          textAlign: "left",
+                          borderBottom: "1px solid",
+                        }}
+                      >
+                        {po?.current_status?.status !== "delivered" &&
+                          po?.etd !== null && (
+                            <RowMenu
+                              currentPage={currentPage}
+                              po_number={po.po_number}
+                              current_status={po.current_status}
+                              etd={po.etd}
+                            />
+                          )}
+                      </Box>
+                    </Box>
+                  );
+                })
+              ) : (
+                <Box component="tr">
+                  <Box
+                    component="td"
+                    colSpan={13}
+                    sx={{ padding: 2, textAlign: "center", fontStyle: "italic" }}
+                  >
                     <Box
-                      component="td"
                       sx={{
-                        padding: 1,
-                        textAlign: "left",
-                        borderBottom: "1px solid",
+                        fontStyle: "italic",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
                       }}
                     >
-                      {po?.current_status?.status !== "delivered" &&
-                        po?.etd !== null && (
-                          <RowMenu
-                            currentPage={currentPage}
-                            po_number={po.po_number}
-                            current_status={po.current_status}
-                            etd={po.etd}
-                          />
-                        )}
+                      <img
+                        src={NoData}
+                        alt="No data Image"
+                        style={{ width: "50px", height: "50px" }}
+                      />
+                      <Typography fontStyle={"italic"}>
+                        No PO available
+                      </Typography>
                     </Box>
                   </Box>
-                );
-              })
-            ) : (
-              <Box component="tr">
-                <Box
-                  component="td"
-                  colSpan={13}
-                  sx={{ padding: 2, textAlign: "center", fontStyle: "italic" }}
-                >
-                  <Box
-                    sx={{
-                      fontStyle: "italic",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <img
-                      src={NoData}
-                      alt="No data Image"
-                      style={{ width: "50px", height: "50px" }}
-                    />
-                    <Typography fontStyle={"italic"}>
-                      No PO available
-                    </Typography>
-                  </Box>
                 </Box>
-              </Box>
-            )}
+              )}
+            </Box>
           </Box>
         </Box>
+
       </Sheet>
 
       {/* Pagination */}
@@ -1884,59 +1899,59 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
         {/* Bulk Deliver Modal */}
         <Modal open={bulkModalOpen} onClose={handleCloseBulkModal}>
-   <Sheet
-     variant="outlined"
-     sx={{
-       maxWidth: 420,
-       borderRadius: "md",
-       p: 3,
-       boxShadow: "lg",
-       mx: "auto",
-       mt: "10%",
-     }}
-   >
-     <Typography level="h5" mb={1}>
-       Mark {selected.length} PO{selected.length > 1 ? "s" : ""} as Delivered?
-     </Typography>
-     <Typography level="body-sm" mb={2}>
-       This will set <b>ETD</b>, <b>MR</b>, <b>RTD</b>, and <b>Delivery</b> dates to the same day
-       (from the date you provide below, or “now” in IST if left blank).
-     </Typography>
+          <Sheet
+            variant="outlined"
+            sx={{
+              maxWidth: 420,
+              borderRadius: "md",
+              p: 3,
+              boxShadow: "lg",
+              mx: "auto",
+              mt: "10%",
+            }}
+          >
+            <Typography level="h5" mb={1}>
+              Mark {selected.length} PO{selected.length > 1 ? "s" : ""} as Delivered?
+            </Typography>
+            <Typography level="body-sm" mb={2}>
+              This will set <b>ETD</b>, <b>MR</b>, <b>RTD</b>, and <b>Delivery</b> dates to the same day
+              (from the date you provide below, or “now” in IST if left blank).
+            </Typography>
 
-     <FormControl size="sm" sx={{ mb: 1.5 }}>
-       <FormLabel>Delivery Date (optional)</FormLabel>
-       <Input
-         type="datetime-local"
-         value={bulkDate}
-         onChange={(e) => setBulkDate(e.target.value)}
-       />
-     </FormControl>
+            <FormControl size="sm" sx={{ mb: 1.5 }}>
+              <FormLabel>Delivery Date (optional)</FormLabel>
+              <Input
+                type="datetime-local"
+                value={bulkDate}
+                onChange={(e) => setBulkDate(e.target.value)}
+              />
+            </FormControl>
 
-     <FormControl size="sm" sx={{ mb: 2 }}>
-       <FormLabel>Remarks</FormLabel>
-       <Textarea
-         minRows={3}
-         placeholder="Delivered via bulk action"
-         value={bulkRemarks}
-         onChange={(e) => setBulkRemarks(e.target.value)}
-       />
-     </FormControl>
+            <FormControl size="sm" sx={{ mb: 2 }}>
+              <FormLabel>Remarks</FormLabel>
+              <Textarea
+                minRows={3}
+                placeholder="Delivered via bulk action"
+                value={bulkRemarks}
+                onChange={(e) => setBulkRemarks(e.target.value)}
+              />
+            </FormControl>
 
-     <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
-       <Button variant="plain" onClick={handleCloseBulkModal}>
-         Cancel
-       </Button>
-       <Button
-         variant="solid"
-         color="success"
-         loading={isBulkDelivering}
-         onClick={handleConfirmBulkDeliver}
-       >
-         Confirm
-       </Button>
-     </Box>
-   </Sheet>
- </Modal>
+            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
+              <Button variant="plain" onClick={handleCloseBulkModal}>
+                Cancel
+              </Button>
+              <Button
+                variant="solid"
+                color="success"
+                loading={isBulkDelivering}
+                onClick={handleConfirmBulkDeliver}
+              >
+                Confirm
+              </Button>
+            </Box>
+          </Sheet>
+        </Modal>
 
 
         <SearchPickerModal
