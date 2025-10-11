@@ -26,6 +26,8 @@ function Dash_eng() {
   const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
+  const createdAtFrom = searchParams.get("from") || "";
+  const createdAtTo = searchParams.get("to") || "";
   const options = [1, 5, 10, 20, 50, 100];
   const [selectedTab, setSelectedTab] = useState(
     () => searchParams.get("tab") || "All"
@@ -54,6 +56,8 @@ function Dash_eng() {
     status: statusFilter,
     search: searchQuery,
     limit: rowsPerPage,
+    createdAtFrom: createdAtFrom,
+    createdAtTo: createdAtTo,
   });
 
   const HandOverSheet = Array.isArray(getHandOverSheet?.data)
@@ -73,24 +77,6 @@ function Dash_eng() {
         };
       })
     : [];
-
-  const ViewHandOver = ({ currentPage, p_id, code }) => {
-    return (
-      <>
-        <IconButton
-          color="primary"
-          onClick={() => {
-            const page = currentPage;
-            const projectId = Number(p_id);
-            sessionStorage.setItem("view handover", projectId);
-            navigate(`/view_handover?page=${page}&p_id=${projectId}`);
-          }}
-        >
-          <VisibilityIcon />
-        </IconButton>
-      </>
-    );
-  };
 
   const ProjectOverView = ({ currentPage, project_id, code }) => {
     return (
@@ -163,6 +149,14 @@ function Dash_eng() {
       setSearchParams({ page });
       setCurrentPage(page);
     }
+  };
+
+  const fmtDDMMYYYY = (d) => {
+    if (!d) return "-";
+    const t = new Date(d);
+    if (Number.isNaN(t.getTime())) return "-";
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${pad(t.getDate())}-${pad(t.getMonth() + 1)}-${t.getFullYear()}`;
   };
 
   return (
@@ -293,7 +287,8 @@ function Dash_eng() {
                 "Customer",
                 "Mobile",
                 "State",
-                "Capacity(AC/DC)"
+                "Capacity(AC/DC)",
+                "Created At",
               ].map((header, index) => (
                 <th
                   key={index}
@@ -417,6 +412,15 @@ function Dash_eng() {
                     {project.project_kwp && project.proposed_dc_capacity
                       ? `${project.project_kwp} AC / ${project.proposed_dc_capacity} DC`
                       : "-"}
+                  </td>
+                  <td
+                    style={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "left",
+                    }}
+                  >
+                    {fmtDDMMYYYY(project?.createdAt)}
                   </td>
                 </tr>
               ))

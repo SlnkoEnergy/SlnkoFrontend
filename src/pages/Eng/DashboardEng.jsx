@@ -6,10 +6,21 @@ import Sidebar from "../../component/Partials/Sidebar";
 import SubHeader from "../../component/Partials/SubHeader";
 import Dash_eng from "../../component/EngDashboard";
 import MainHeader from "../../component/Partials/MainHeader";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useState } from "react";
+import Filter from "../../component/Partials/Filter";
 
 function DashboardENG() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [open, setOpen] = useState(false);
+  const fields = [
+    {
+      key: "createdAt",
+      label: "Filter by Created At",
+      type: "daterange",
+    },
+  ];
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -65,6 +76,52 @@ function DashboardENG() {
           title="All Projects"
           isBackEnabled={false}
           sticky
+          rightSlot={
+            <>
+              <Filter
+                open={open}
+                onOpenChange={setOpen}
+                fields={fields}
+                title="Filters"
+                onApply={(values) => {
+                  setSearchParams((prev) => {
+                    const merged = Object.fromEntries(prev.entries());
+                    delete merged.from;
+                    delete merged.to;
+                    delete merged.matchMode;
+
+                    const next = {
+                      ...merged,
+                      page: "1",
+                    };
+
+                    // matcher -> matchMode
+                    if (values.matcher) {
+                      next.matchMode = values.matcher === "OR" ? "any" : "all";
+                    }
+
+                    // createdAt range
+                    if (values.createdAt?.from)
+                      next.from = String(values.createdAt.from);
+                    if (values.createdAt?.to)
+                      next.to = String(values.createdAt.to);
+
+                    return next;
+                  });
+                  setOpen(false);
+                }}
+                onReset={() => {
+                  setSearchParams((prev) => {
+                    const merged = Object.fromEntries(prev.entries());
+                    delete merged.from;
+                    delete merged.to;
+                    delete merged.matchMode;
+                    return { ...merged, page: "1" };
+                  });
+                }}
+              />
+            </>
+          }
         ></SubHeader>
         <Box
           component="main"
