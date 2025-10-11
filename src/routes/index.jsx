@@ -85,6 +85,7 @@ import MyApproval from "../pages/Approvals/MyApproval";
 import ApprovalDashboard from "../pages/Approvals/ApprovalDashboard";
 import MyRequest from "../pages/Approvals/MyRequest";
 import ProjectDashBoard from "../pages/Projects/ProjectDashboard";
+import DashboardSCM from "../pages/SCM/DashboardScm";
 
 function index() {
   return (
@@ -256,6 +257,14 @@ function index() {
         element={
           <PrivateRoute>
             <PurchaseOrder />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/scm_dash"
+        element={
+          <PrivateRoute>
+            <DashboardSCM />
           </PrivateRoute>
         }
       />
