@@ -27,6 +27,9 @@ import View_Project_Management from "../../component/ViewProjectManagement";
 import Filter from "../../component/Partials/Filter";
 import SearchPickerModal from "../../component/SearchPickerModal";
 import {
+  useExportProjectScheduleMutation,
+  useExportProjectSchedulePdfQuery,
+  useLazyExportProjectSchedulePdfQuery,
   useLazyGetAllTemplateNameSearchQuery,
   useUpdateProjectActivityFromTemplateMutation,
   useUpdateStatusOfPlanMutation,
@@ -41,6 +44,9 @@ function ViewProjectManagement() {
   const selectedView = searchParams.get("view") || "week";
   const [snack, setSnack] = useState({ open: false, msg: "" });
   const ganttRef = useRef(null);
+
+  const timeline = searchParams.get("timeline");
+  const type = searchParams.get("type");
   const [loading, setLoading] = useState(false);
   const [planStatus, setPlanStatus] = useState(null);
   const [updatePlanStatus, { isLoading: isUpdatingPlanStatus }] =
@@ -184,9 +190,9 @@ function ViewProjectManagement() {
     return {
       rows: Array.isArray(rows)
         ? rows.map((r, i) => ({
-            _id: r._id || r.id || String(i),
-            ...r,
-          }))
+          _id: r._id || r.id || String(i),
+          ...r,
+        }))
         : [],
       total,
     };
@@ -225,6 +231,44 @@ function ViewProjectManagement() {
     ? { variant: "solid", color: "danger" }
     : { variant: "outlined", color: "success" };
 
+  const [triggerExport, { loading: isExporting }] = useExportProjectScheduleMutation();
+
+  const handleExportCsv = async () => {
+    try {
+      const blob = await triggerExport({ projectId, type, timeline }).unwrap();
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "Project-Schedule.xlsx";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.log("Export Failed", error);
+      alert("Failed to export Project Schedule");
+    }
+  }
+
+  const [fetchPdf, { isFetching: isExportingPdf, isLoading, error, data }] =
+    useLazyExportProjectSchedulePdfQuery();
+
+  const handleExportPdf = async () => {
+    try {
+
+      const blob = await fetchPdf({ projectId }).unwrap();
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Project-Schedule.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.log("Export Failed", error);
+      alert("Failed to Export Project Schedule");
+    }
+  }
+
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -239,6 +283,25 @@ function ViewProjectManagement() {
           sticky
           rightSlot={
             <>
+              {/* Freeze / Unfreeze button */}
+              {/* <Button */}
+              {/* //   size="sm"
+              //   color="danger"
+              //   variant="outlined"
+              //   onClick={handleExportPdf}
+              //   disabled={isExportingPdf}
+              // >
+              //   {isExporting ? "Generating..." : "PDF"}
+              // </Button> */}
+              <Button
+                size="sm"
+                color="danger"
+                variant="outlined"
+                onClick={handleExportCsv}
+                disabled={isExporting}
+              >
+                {isExporting ? "Generating..." : "CSV"}
+              </Button>
               <Button
                 variant="outlined"
                 color="primary"
@@ -273,11 +336,11 @@ function ViewProjectManagement() {
                   height: "8px",
                   ...(freezeBtnProps.variant === "outlined"
                     ? {
-                        borderColor: "success.outlinedBorder",
-                        color: "success.plainColor",
-                        "--Button-hoverBorderColor":
-                          "success.outlinedHoverBorder",
-                      }
+                      borderColor: "success.outlinedBorder",
+                      color: "success.plainColor",
+                      "--Button-hoverBorderColor":
+                        "success.outlinedHoverBorder",
+                    }
                     : {}),
                 }}
               >
