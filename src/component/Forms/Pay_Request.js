@@ -69,7 +69,6 @@ function PaymentRequestForm() {
   const [isProjectsLoading, setIsProjectsLoading] = useState(true);
   const [isPoListLoading, setIsPoListLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [responseMessage, setResponseMessage] = useState("");
   const [errors, setErrors] = useState({});
 
   const getUserData = () => {
@@ -149,6 +148,15 @@ function PaymentRequestForm() {
           acc_number: "",
           ifsc: "",
           branch: "",
+          // clear PO-only derived fields when switching types
+          ...(prev.po_number === "N/A"
+            ? {}
+            : {
+                po_number: "",
+                po_value: "",
+                total_advance_paid: "",
+                po_balance: "",
+              }),
         }));
       }
     }
@@ -216,7 +224,7 @@ function PaymentRequestForm() {
       setFormData((prev) => ({
         ...prev,
         po_number: data?.po_number || poNum,
-         paid_for: data?.item,
+        paid_for: data?.item,
         vendor: data?.vendor || prev.vendor,
         po_value: poValueNum === "" ? "" : String(poValueNum),
         total_advance_paid: advPaidNum === "" ? "" : String(advPaidNum),
@@ -236,10 +244,7 @@ function PaymentRequestForm() {
       }));
 
       if (poProjectCode && !resolvedProject) {
-        console.warn(
-          "PO project code not found in project list:",
-          poProjectCode
-        );
+        console.warn("PO project code not found in project list:", poProjectCode);
         toast.info(
           `Project code from PO ("${poProjectCode}") not found in loaded projects.`
         );
@@ -332,9 +337,7 @@ function PaymentRequestForm() {
     if (Object.keys(clientErrors).length) {
       setErrors(clientErrors);
       toast.error("Please fix the highlighted fields.");
-
       console.error("Validation errors:", clientErrors);
-
       focusFirstError(clientErrors);
       return;
     }
@@ -350,28 +353,20 @@ function PaymentRequestForm() {
         submitted_by: user?.name || getUserData()?.name || "",
       };
 
-      const res = await Axios.post("/add-pay-requesT-IT", payload, {
+      await Axios.post("/add-pay-requesT-IT", payload, {
         headers: { "x-auth-token": token },
       });
 
-      const msg = res?.data?.message || "Payment Requested Successfully";
+      const msg = "Payment Requested Successfully";
       toast.success(msg);
       navigate("/daily-payment-request");
     } catch (err) {
-      const status = err?.response?.status;
-      const apiMsg =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Request failed. Please try again.";
-
       const apiFieldErrors = extractApiErrors(err?.response);
       if (Object.keys(apiFieldErrors).length) {
         setErrors(apiFieldErrors);
         focusFirstError(apiFieldErrors);
-
         console.error("API field errors:", apiFieldErrors);
       }
-
       console.error("API error response:", err?.response || err);
     } finally {
       setIsLoading(false);
@@ -409,6 +404,9 @@ function PaymentRequestForm() {
 
   const hasRealPO = !!(formData.po_number && formData.po_number !== "N/A");
 
+  // 🔒 Lock everything until Payment Type selected
+  const isFormLocked = !formData.pay_type;
+
   return (
     <CssBaseline>
       <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -440,15 +438,63 @@ function PaymentRequestForm() {
                 />
               </Box>
 
-              {/* Project & PO */}
+              {/* 🚦 TOP: Payment Type (always enabled) */}
               <Typography level="title-lg" sx={{ mb: 1 }}>
+                Start here
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+              <Grid container spacing={2} sx={{ mb: 1 }}>
+                <Grid xs={12} sm={6}>
+                  <FormControl error={!!errors.pay_type}>
+                    <FormLabel>Payment Type</FormLabel>
+                    <Select
+                      name="pay_type"
+                      value={
+                        formData.pay_type
+                          ? { label: formData.pay_type, value: formData.pay_type }
+                          : null
+                      }
+                      onChange={(selectedOption) =>
+                        handleChange({
+                          target: {
+                            name: "pay_type",
+                            value: selectedOption?.value || "",
+                          },
+                        })
+                      }
+                      options={[
+                        { label: "Payment Against PO", value: "Payment Against PO" },
+                        { label: "Adjustment", value: "Adjustment" },
+                        { label: "Slnko Service Charge", value: "Slnko Service Charge" },
+                        { label: "Other", value: "Other" },
+                      ]}
+                      placeholder="Select payment type"
+                      isClearable
+                    />
+                    {errors.pay_type && (
+                      <FormHelperText>{errors.pay_type}</FormHelperText>
+                    )}
+                  </FormControl>
+                </Grid>
+
+                {isFormLocked && (
+                  <Grid xs={12} sm={6} display="flex" alignItems="flex-end">
+                    <Chip variant="soft" color="neutral" size="sm">
+                      Select a payment type to enable the form
+                    </Chip>
+                  </Grid>
+                )}
+              </Grid>
+
+              {/* Project & PO */}
+              <Typography level="title-lg" sx={{ mt: 3, mb: 1 }}>
                 Project & PO
               </Typography>
               <Divider sx={{ mb: 2 }} />
 
               <Grid container spacing={2}>
                 <Grid xs={12} sm={6}>
-                  <FormControl>
+                  <FormControl error={!!errors.po_number}>
                     <FormLabel>PO Number</FormLabel>
                     <Select
                       name="po_number"
@@ -465,16 +511,23 @@ function PaymentRequestForm() {
                         value: po,
                         label: po,
                       }))}
-                      placeholder={isPoListLoading ? "Loading..." : "Select PO"}
-                      isDisabled={formData.pay_type === "Adjustment"}
+                      placeholder={
+                        isPoListLoading ? "Loading..." : "Select PO (if applicable)"
+                      }
+                      isDisabled={
+                        isFormLocked || formData.pay_type === "Adjustment"
+                      }
                       isLoading={isPoListLoading}
                       isClearable
                     />
+                    {errors.po_number && (
+                      <FormHelperText>{errors.po_number}</FormHelperText>
+                    )}
                   </FormControl>
                 </Grid>
 
                 <Grid xs={12} sm={6}>
-                  <FormControl>
+                  <FormControl error={!!errors.p_id}>
                     <FormLabel>Project</FormLabel>
                     {hasRealPO ? (
                       <Input
@@ -516,11 +569,13 @@ function PaymentRequestForm() {
                           isProjectsLoading
                             ? "Fetching..."
                             : inputValue
-                              ? "No matches"
-                              : "No options"
+                            ? "No matches"
+                            : "No options"
                         }
+                        isDisabled={isFormLocked}
                       />
                     )}
+                    {errors.p_id && <FormHelperText>{errors.p_id}</FormHelperText>}
                   </FormControl>
                 </Grid>
 
@@ -533,6 +588,7 @@ function PaymentRequestForm() {
                       onChange={handleChange}
                       placeholder="Project Name"
                       readOnly
+                      disabled={isFormLocked}
                     />
                   </FormControl>
                 </Grid>
@@ -546,6 +602,7 @@ function PaymentRequestForm() {
                       onChange={handleChange}
                       placeholder="Client Name"
                       readOnly
+                      disabled={isFormLocked}
                     />
                   </FormControl>
                 </Grid>
@@ -559,45 +616,7 @@ function PaymentRequestForm() {
                       onChange={handleChange}
                       placeholder="Group Name"
                       readOnly
-                    />
-                  </FormControl>
-                </Grid>
-
-                <Grid xs={12} sm={4}>
-                  <FormControl>
-                    <FormLabel>Payment Type</FormLabel>
-                    <Select
-                      name="pay_type"
-                      value={
-                        formData.pay_type
-                          ? {
-                              label: formData.pay_type,
-                              value: formData.pay_type,
-                            }
-                          : null
-                      }
-                      onChange={(selectedOption) =>
-                        handleChange({
-                          target: {
-                            name: "pay_type",
-                            value: selectedOption?.value,
-                          },
-                        })
-                      }
-                      options={[
-                        {
-                          label: "Payment Against PO",
-                          value: "Payment Against PO",
-                        },
-                        { label: "Adjustment", value: "Adjustment" },
-                        {
-                          label: "Slnko Service Charge",
-                          value: "Slnko Service Charge",
-                        },
-                        { label: "Other", value: "Other" },
-                      ]}
-                      placeholder="Select type"
-                      isClearable
+                      disabled={isFormLocked}
                     />
                   </FormControl>
                 </Grid>
@@ -610,7 +629,7 @@ function PaymentRequestForm() {
 
               <Grid container spacing={2}>
                 <Grid xs={12} sm={6}>
-                  <FormControl>
+                  <FormControl error={!!errors.amount_paid}>
                     <FormLabel>Amount Requested</FormLabel>
                     <Input
                       startDecorator={<span>₹</span>}
@@ -644,17 +663,17 @@ function PaymentRequestForm() {
                       }}
                       placeholder="0.00"
                       required
+                      disabled={isFormLocked}
+                      name="amount_paid"
                     />
-                    <FormHelperText>
-                      {formData.amount_paid
-                        ? formatINR(formData.amount_paid)
-                        : "Enter amount"}
-                    </FormHelperText>
+                    {errors.amount_paid && (
+                      <FormHelperText>{errors.amount_paid}</FormHelperText>
+                    )}
                   </FormControl>
                 </Grid>
 
                 <Grid xs={12} sm={6}>
-                  <FormControl>
+                  <FormControl error={!!errors.dbt_date}>
                     <FormLabel>Requested Date</FormLabel>
                     <Input
                       type="date"
@@ -663,12 +682,16 @@ function PaymentRequestForm() {
                       onChange={handleChange}
                       placeholder="Request Date"
                       required
+                      disabled={isFormLocked}
                     />
+                    {errors.dbt_date && (
+                      <FormHelperText>{errors.dbt_date}</FormHelperText>
+                    )}
                   </FormControl>
                 </Grid>
 
                 <Grid xs={12} sm={6}>
-                  <FormControl>
+                  <FormControl error={!!errors.vendor}>
                     <FormLabel>Vendor</FormLabel>
                     <Input
                       name="vendor"
@@ -676,12 +699,16 @@ function PaymentRequestForm() {
                       onChange={handleChange}
                       placeholder="Vendor / Credited to"
                       required
+                      disabled={isFormLocked}
                     />
+                    {errors.vendor && (
+                      <FormHelperText>{errors.vendor}</FormHelperText>
+                    )}
                   </FormControl>
                 </Grid>
 
                 <Grid xs={12} sm={6}>
-                  <FormControl>
+                  <FormControl error={!!errors.paid_for}>
                     <FormLabel>Requested For</FormLabel>
                     <Input
                       name="paid_for"
@@ -694,7 +721,11 @@ function PaymentRequestForm() {
                       }
                       placeholder="What is this payment for?"
                       required
+                      disabled={isFormLocked}
                     />
+                    {errors.paid_for && (
+                      <FormHelperText>{errors.paid_for}</FormHelperText>
+                    )}
                   </FormControl>
                 </Grid>
 
@@ -706,6 +737,7 @@ function PaymentRequestForm() {
                       value={formData.po_value || ""}
                       placeholder="PO Value"
                       readOnly
+                      disabled={isFormLocked}
                     />
                   </FormControl>
                 </Grid>
@@ -718,6 +750,7 @@ function PaymentRequestForm() {
                       value={formData.total_advance_paid}
                       placeholder="Total Advance Paid"
                       readOnly
+                      disabled={isFormLocked}
                     />
                   </FormControl>
                 </Grid>
@@ -730,9 +763,11 @@ function PaymentRequestForm() {
                       value={formData.po_balance || ""}
                       placeholder="Current PO Balance"
                       readOnly
+                      disabled={isFormLocked}
                     />
                   </FormControl>
                 </Grid>
+
                 <Grid xs={12} sm={12}>
                   <FormControl error={!!errors.comment}>
                     <FormLabel>Payment Description</FormLabel>
@@ -743,6 +778,7 @@ function PaymentRequestForm() {
                       placeholder="Add remarks for this Payment"
                       minRows={3}
                       required
+                      disabled={isFormLocked}
                     />
                     {errors.comment && (
                       <FormHelperText>{errors.comment}</FormHelperText>
@@ -772,6 +808,7 @@ function PaymentRequestForm() {
                           },
                         }))
                       }
+                      disabled={isFormLocked}
                     />
                   </FormControl>
                 </Grid>
@@ -779,7 +816,7 @@ function PaymentRequestForm() {
                 {formData.credit.credit_status === true && (
                   <>
                     <Grid xs={12} sm={3}>
-                      <FormControl>
+                      <FormControl error={!!errors.credit_deadline}>
                         <FormLabel>Credit Deadline</FormLabel>
                         <Input
                           type="date"
@@ -795,12 +832,16 @@ function PaymentRequestForm() {
                             }))
                           }
                           required
+                          disabled={isFormLocked}
                         />
+                        {errors.credit_deadline && (
+                          <FormHelperText>{errors.credit_deadline}</FormHelperText>
+                        )}
                       </FormControl>
                     </Grid>
 
                     <Grid xs={12} sm={7}>
-                      <FormControl>
+                      <FormControl error={!!errors.credit_remarks}>
                         <FormLabel>Credit Remarks</FormLabel>
                         <Textarea
                           name="credit_remarks"
@@ -817,7 +858,11 @@ function PaymentRequestForm() {
                           placeholder="Add remarks for this credit"
                           minRows={3}
                           required
+                          disabled={isFormLocked}
                         />
+                        {errors.credit_remarks && (
+                          <FormHelperText>{errors.credit_remarks}</FormHelperText>
+                        )}
                       </FormControl>
                     </Grid>
                   </>
@@ -836,7 +881,7 @@ function PaymentRequestForm() {
                 </Grid>
 
                 <Grid xs={12} sm={6}>
-                  <FormControl>
+                  <FormControl error={!!errors.benificiary}>
                     <FormLabel>Beneficiary Name</FormLabel>
                     <Input
                       name="benificiary"
@@ -844,12 +889,16 @@ function PaymentRequestForm() {
                       onChange={handleChange}
                       placeholder="Beneficiary Name"
                       required
+                      disabled={isFormLocked}
                     />
+                    {errors.benificiary && (
+                      <FormHelperText>{errors.benificiary}</FormHelperText>
+                    )}
                   </FormControl>
                 </Grid>
 
                 <Grid xs={12} sm={6}>
-                  <FormControl>
+                  <FormControl error={!!errors.acc_number}>
                     <FormLabel>Account Number</FormLabel>
                     <Input
                       name="acc_number"
@@ -857,7 +906,11 @@ function PaymentRequestForm() {
                       onChange={handleChange}
                       placeholder="Beneficiary Account Number"
                       required
+                      disabled={isFormLocked}
                     />
+                    {errors.acc_number && (
+                      <FormHelperText>{errors.acc_number}</FormHelperText>
+                    )}
                   </FormControl>
                 </Grid>
 
@@ -869,12 +922,13 @@ function PaymentRequestForm() {
                       value={formData.ifsc || ""}
                       onChange={handleChange}
                       placeholder="IFSC Code"
+                      disabled={isFormLocked}
                     />
                   </FormControl>
                 </Grid>
 
                 <Grid xs={12} sm={6}>
-                  <FormControl>
+                  <FormControl error={!!errors.branch}>
                     <FormLabel>Bank Name</FormLabel>
                     <Input
                       name="branch"
@@ -882,25 +936,24 @@ function PaymentRequestForm() {
                       onChange={handleChange}
                       placeholder="Bank Name"
                       required
+                      disabled={isFormLocked}
                     />
+                    {errors.branch && (
+                      <FormHelperText>{errors.branch}</FormHelperText>
+                    )}
                   </FormControl>
                 </Grid>
               </Grid>
 
               {/* Actions */}
-              <Grid
-                container
-                spacing={2}
-                justifyContent="center"
-                sx={{ mt: 3 }}
-              >
+              <Grid container spacing={2} justifyContent="center" sx={{ mt: 3 }}>
                 <Grid>
                   <Button
                     type="submit"
                     variant="solid"
                     color="primary"
                     loading={isLoading}
-                    disabled={isLoading}
+                    disabled={isLoading || isFormLocked}
                   >
                     Submit
                   </Button>
@@ -998,10 +1051,7 @@ function PaymentRequestForm() {
                 <Typography level="body-sm" sx={{ mt: 0.5 }}>
                   {poValueNum > 0
                     ? formatINR(
-                        Math.max(
-                          0,
-                          poValueNum - (totalAdvNum + amountRequested)
-                        )
+                        Math.max(0, poValueNum - (totalAdvNum + amountRequested))
                       )
                     : "—"}
                 </Typography>
