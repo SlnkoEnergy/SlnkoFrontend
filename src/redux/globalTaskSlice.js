@@ -145,9 +145,11 @@ export const GlobalTaskApi = createApi({
     }),
 
     getAllUserWithPagination: builder.query({
-      query: ({page = 1, pageSize = 7, search = "", department = "CAM"}) => 
-        `/all-user-with-pagination?page=${page}&search=${encodeURIComponent(search)}&pageSize=${pageSize}&department=${department}`,
-      providesTags: [{ type: "Users", id : "LIST"}]
+      query: ({ page = 1, pageSize = 7, search = "", department = "CAM" }) =>
+        `/all-user-with-pagination?page=${page}&search=${encodeURIComponent(
+          search
+        )}&pageSize=${pageSize}&department=${department}`,
+      providesTags: [{ type: "Users", id: "LIST" }],
     }),
 
     getAllDept: builder.query({
@@ -256,8 +258,7 @@ export const GlobalTaskApi = createApi({
       providesTags: [{ type: "TaskStats", id: "AGING_BY_RESOLUTION" }],
     }),
 
-
-       getAllowedModule: builder.query({
+    getAllowedModule: builder.query({
       query: (projectId) => ({
         url: `engineering/${projectId}/allowedtemplates`,
         method: "GET",
@@ -268,19 +269,18 @@ export const GlobalTaskApi = createApi({
       ],
     }),
 
-
     /* -------------- NAMESEARCH: Material Categories (allowed-only) -------------- */
-namesearchMaterialCategories: builder.query({
-  query: (q = {}) =>
-    `products/category${buildQS({
-      search: q.search ?? "",
-      page: q.page ?? 1,
-      limit: q.limit ?? 7,
-      pr: typeof q.pr === "boolean" ? String(q.pr) : (q.pr ?? ""),
-      project_id: q.project_id ?? "",
-    })}`,
-}),
-
+    namesearchMaterialCategories: builder.query({
+      query: (q = {}) =>
+        `products/category${buildQS({
+          search: q.search ?? "",
+          page: q.page ?? 1,
+          limit: q.limit ?? 7,
+          pr: typeof q.pr === "boolean" ? String(q.pr) : q.pr ?? "",
+          project_id: q.project_id ?? "",
+          activity: q.activity ?? "false",
+        })}`,
+    }),
   }),
 });
 

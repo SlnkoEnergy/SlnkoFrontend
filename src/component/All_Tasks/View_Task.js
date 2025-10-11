@@ -723,6 +723,8 @@ export default function ViewTaskPage() {
   ).toLowerCase();
   const isSystem = currentStatusLower === "system";
   const isPending = currentStatusLower === "pending";
+  const isProgress = currentStatusLower === "in progress";
+  const isCancelled = currentStatusLower === "cancelled";
 
   // Select effective status value into the modal select
   useEffect(() => {
@@ -917,7 +919,6 @@ export default function ViewTaskPage() {
     const chosen = status === "Select Status" ? "" : status;
     if (!chosen) return toast.error("Pick a status");
     if (!id) return toast.error("Task id missing");
-
     if (isSystem) {
       if (chosen !== "pending")
         return toast.error("From 'system' you can only move to 'Pending'.");
@@ -937,7 +938,7 @@ export default function ViewTaskPage() {
       } catch {
         return;
       }
-    } else if (isPending) {
+    } else if (isPending || isProgress || isCancelled) {
       const allowed = new Set([
         "pending",
         "in progress",
@@ -950,7 +951,7 @@ export default function ViewTaskPage() {
         );
     } else {
       return toast.info(
-        "Status can be changed only from 'system' or 'pending'."
+        "Status can't be changed after completion"
       );
     }
 
@@ -1288,11 +1289,10 @@ export default function ViewTaskPage() {
                   size="sm"
                   color={statusColor(effectiveCurrentStatus?.status)}
                   onClick={() => {
-                    if (isCompleted) return;
-                    if (isSystem || isPending) setOpenStatusModal(true);
+                    if (isSystem || isPending || isProgress || isCancelled) setOpenStatusModal(true);
                     else
                       toast.info(
-                        "Status can be changed only from 'system' or 'pending'."
+                        "Status can't be changed after completion"
                       );
                   }}
                   sx={{
@@ -1563,11 +1563,10 @@ export default function ViewTaskPage() {
                     size="sm"
                     color={statusColor(effectiveCurrentStatus?.status)}
                     onClick={() => {
-                      if (isCompleted) return;
-                      if (isSystem || isPending) setOpenStatusModal(true);
+                      if (isSystem || isPending || isProgress || isCancelled) setOpenStatusModal(true);
                       else
                         toast.info(
-                          "Status can be changed only from 'system' or 'pending'."
+                          "Status can't be changed after completion"
                         );
                     }}
                     sx={{
@@ -1970,25 +1969,25 @@ export default function ViewTaskPage() {
               value={status}
               onChange={(_, v) => setStatus(v)}
               placeholder="Select Status"
-              disabled={!(isSystem || isPending) || isCompleted}
+              disabled={!(isSystem || isPending || isProgress || isCancelled)}
             >
               <Option disabled value="Select Status">
                 Select Status
               </Option>
 
               {/* system -> pending */}
-              <Option value="pending" disabled={!isSystem && !isPending}>
+              <Option value="pending" disabled={!isSystem}>
                 Pending
               </Option>
 
               {/* pending -> anywhere else */}
-              <Option value="in progress" disabled={!isPending}>
+              <Option value="in progress">
                 In Progress
               </Option>
-              <Option value="completed" disabled={!isPending}>
+              <Option value="completed">
                 Completed
               </Option>
-              <Option value="cancelled" disabled={!isPending}>
+              <Option value="cancelled">
                 Cancelled
               </Option>
             </Select>
@@ -1999,7 +1998,7 @@ export default function ViewTaskPage() {
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Write remarks..."
-              disabled={!(isSystem || isPending)}
+              disabled={!(isSystem || isPending || isProgress || isCancelled)}
             />
           </Stack>
           <DialogActions>
@@ -2015,7 +2014,7 @@ export default function ViewTaskPage() {
               size="sm"
               onClick={handleStatusSubmit}
               loading={isUpdating}
-              disabled={!(isSystem || isPending) || isCompleted}
+              disabled={!(isSystem || isPending || isCancelled || isProgress)}
             >
               Submit
             </Button>

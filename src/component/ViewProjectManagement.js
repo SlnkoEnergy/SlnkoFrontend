@@ -1007,7 +1007,7 @@ const View_Project_Management = forwardRef(
     // Auto-calc start/end whenever predecessors or duration change
     useEffect(() => {
       const hasPreds = (form.predecessors || []).length > 0;
-      const dur = Number(form.duration || 0);
+      const dur = Number(form.duration - 1 || 0);
 
       if (hasPreds && dur > 0) {
         const res = recomputeDatesFromPredecessors(form.predecessors, dur);
@@ -1088,7 +1088,6 @@ const View_Project_Management = forwardRef(
  updatedByName,
       });
 
-      // If activity has predecessors and duration, auto-calc to avoid BE errors
       const durNum = Number(durStr || 0);
       if (uiPreds.length > 0 && durNum > 0) {
         const res = recomputeDatesFromPredecessors(uiPreds, durNum);
@@ -1100,7 +1099,6 @@ const View_Project_Management = forwardRef(
           }));
         }
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activityFetch, selectedId, dbIdToSi]);
 
     useEffect(() => {
