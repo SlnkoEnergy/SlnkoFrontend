@@ -1,7 +1,6 @@
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import TaskIcon from "@mui/icons-material/Task";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import AssignmentRoundedIcon from "@mui/icons-material/AssessmentRounded";
 import BuildIcon from "@mui/icons-material/Build";
 import EngineeringIcon from "@mui/icons-material/Engineering";
@@ -31,11 +30,6 @@ import Main_Logo from "../../assets/karwa_chautt_logo.png";
 import { closeSidebar } from "../../utils/utils";
 import DatabaseIcon from "@mui/icons-material/Storage";
 import FactCheckIcon from "@mui/icons-material/FactCheck";
-import ColorSchemeToggle from "./ColorSchemeToggle";
-import {
-  NovuProvider,
-  PopoverNotificationCenter,
-} from "@novu/notification-center";
 import AppNotification from "./Notification";
 
 function Toggler({ defaultExpanded = false, renderToggle, children }) {
@@ -331,7 +325,7 @@ function Sidebar() {
 
             <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/eng_dash")}>
-                <BuildIcon />
+                <SolarPowerIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Engineering</Typography>
                 </ListItemContent>
@@ -1017,7 +1011,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
             {/* CAM */}
-             <ListItem sx={{ mt: 0.5 }}>
+            <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/cam_dash")}>
                 <MiscellaneousServicesIcon />
                 <ListItemContent>
@@ -1373,7 +1367,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-             <ListItem sx={{ mt: 0.5 }}>
+            <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/cam_dash")}>
                 <MiscellaneousServicesIcon />
                 <ListItemContent>
@@ -1624,7 +1618,7 @@ function Sidebar() {
             </ListItem>
 
             {/* CAM Section */}
-             <ListItem sx={{ mt: 0.5 }}>
+            <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/cam_dash")}>
                 <MiscellaneousServicesIcon />
                 <ListItemContent>
@@ -1795,7 +1789,7 @@ function Sidebar() {
             </ListItem>
 
             {/* CAM Section */}
-             <ListItem sx={{ mt: 0.5 }}>
+            <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/cam_dash")}>
                 <MiscellaneousServicesIcon />
                 <ListItemContent>
@@ -1876,7 +1870,7 @@ function Sidebar() {
           >
             <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/eng_dash")}>
-                <BuildIcon />
+                <SolarPowerIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Engineering</Typography>
                 </ListItemContent>
@@ -2178,6 +2172,14 @@ function Sidebar() {
                 user?.emp_id === "SE-010") && (
                 <>
                   <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/cam_dash")}>
+                      <MiscellaneousServicesIcon />
+                      <ListItemContent>
+                        <Typography level="title-sm">CAM</Typography>
+                      </ListItemContent>
+                    </ListItemButton>
+                  </ListItem>
+                  <ListItem sx={{ mt: 0.5 }}>
                     <ListItemButton onClick={() => navigate("/project_dash")}>
                       <BuildIcon />
                       <ListItemContent>
@@ -2187,7 +2189,7 @@ function Sidebar() {
                   </ListItem>
                   <ListItem sx={{ mt: 0.5 }}>
                     <ListItemButton onClick={() => navigate("/eng_dash")}>
-                      <BuildIcon />
+                      <SolarPowerIcon />
                       <ListItemContent>
                         <Typography level="title-sm">Engineering</Typography>
                       </ListItemContent>
@@ -2201,7 +2203,7 @@ function Sidebar() {
           <List>
             <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/eng_dash")}>
-                <BuildIcon />
+                <SolarPowerIcon />
                 <ListItemContent>
                   <Typography level="title-sm">Engineering</Typography>
                 </ListItemContent>
@@ -2382,22 +2384,12 @@ function Sidebar() {
                       Purchase Order
                     </ListItemButton>
                   </ListItem>
-                  {/* <ListItem>
-                <ListItemButton onClick={() => navigate("#")}>
-                  Material Status
-                </ListItemButton>
-              </ListItem>
-              <ListItem>
-                <ListItemButton onClick={() => navigate("#")}>
-                  Vendor Bill
-                </ListItemButton>
-              </ListItem> */}
                 </List>
               </Toggler>
             </ListItem>
 
             {/* CAM Section */}
-             <ListItem sx={{ mt: 0.5 }}>
+            <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/cam_dash")}>
                 <MiscellaneousServicesIcon />
                 <ListItemContent>
@@ -2591,20 +2583,10 @@ function Sidebar() {
               >
                 <List sx={{ gap: 0.5 }}>
                   <ListItem sx={{ mt: 0.5 }}>
-                    {/* <ListItemButton onClick={() => navigate("/purchase-order")}>
-                      Purchase Order
-                    </ListItemButton>
-                  </ListItem>
-                  <ListItem> */}
                     <ListItemButton onClick={() => navigate("/logistics")}>
                       Logistics
                     </ListItemButton>
                   </ListItem>
-                  {/* <ListItem>
-                    <ListItemButton onClick={() => navigate("/vendor_bill")}>
-                      Vendor Bill
-                    </ListItemButton>
-                  </ListItem> */}
                 </List>
               </Toggler>
             </ListItem>

@@ -27,7 +27,6 @@ import {
   Input,
   Autocomplete,
 } from "@mui/joy";
-
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
 import KeyboardArrowRightRoundedIcon from "@mui/icons-material/KeyboardArrowRightRounded";
 import WorkOutlineIcon from "@mui/icons-material/WorkOutline";
@@ -46,6 +45,7 @@ import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
 import { toast } from "react-toastify";
 import DOMPurify from "dompurify";
 import {
@@ -950,9 +950,7 @@ export default function ViewTaskPage() {
           "From 'Pending', pick In Progress / Completed / Cancelled."
         );
     } else {
-      return toast.info(
-        "Status can't be changed after completion"
-      );
+      return toast.info("Status can't be changed after completion");
     }
 
     try {
@@ -1225,6 +1223,18 @@ export default function ViewTaskPage() {
   const canSeeDeadline = isCreator || isAssignee;
   const canEditDeadline = isCreator;
 
+const assignedIdSet = useMemo(() => {
+  const set = new Set();
+  (task?.assigned_to || []).forEach((u) => {
+    const uid = idOf(u);
+    if (uid) set.add(String(uid));
+  });
+  return set;
+}, [task?.assigned_to]);
+
+const isAssigneeById = meId ? assignedIdSet.has(String(meId)) : false;
+
+
   return (
     <Box
       sx={{
@@ -1289,11 +1299,9 @@ export default function ViewTaskPage() {
                   size="sm"
                   color={statusColor(effectiveCurrentStatus?.status)}
                   onClick={() => {
-                    if (isSystem || isPending || isProgress || isCancelled) setOpenStatusModal(true);
-                    else
-                      toast.info(
-                        "Status can't be changed after completion"
-                      );
+                    if (isSystem || isPending || isProgress || isCancelled)
+                      setOpenStatusModal(true);
+                    else toast.info("Status can't be changed after completion");
                   }}
                   sx={{
                     cursor: isSystem || isPending ? "pointer" : "not-allowed",
@@ -1314,28 +1322,46 @@ export default function ViewTaskPage() {
               </Stack>
 
               <Stack direction="row" alignItems="center" gap={1}>
-                <Tooltip title="Manage followers">
-                  <IconButton
-                    size="sm"
-                    variant="soft"
-                    onClick={() => setOpenFollowers(true)}
-                    sx={{ borderRadius: "lg" }}
-                  >
-                    <GroupOutlinedIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-                <Chip size="sm" variant="solid" color="primary">
-                  {(task?.followers?.length ?? 0).toString()}
-                </Chip>
+  <Tooltip title="Manage followers">
+    <IconButton
+      size="sm"
+      variant="soft"
+      onClick={() => setOpenFollowers(true)}
+      sx={{ borderRadius: "lg" }}
+    >
+      <GroupOutlinedIcon fontSize="small" />
+    </IconButton>
+  </Tooltip>
+  <Chip size="sm" variant="solid" color="primary">
+    {(task?.followers?.length ?? 0).toString()}
+  </Chip>
 
-                {isSystem && (
-                  <Tooltip title="Quick setup">
-                    <IconButton size="sm" onClick={() => setOpenSetup(true)}>
-                      <SettingsOutlinedIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                )}
-              </Stack>
+  {/* Quick setup (existing) */}
+  {isSystem && (
+    <Tooltip title="Quick setup">
+      <IconButton size="sm" onClick={() => setOpenSetup(true)}>
+        <SettingsOutlinedIcon fontSize="small" />
+      </IconButton>
+    </Tooltip>
+  )}
+
+  {/* NEW: Reassign (visible only if current user is in assigned_to) */}
+  {isAssigneeById && !isCompleted && (
+    <Tooltip title="Reassign task">
+      <IconButton
+        size="sm"
+        variant="soft"
+        color="primary"
+        aria-label="Reassign"
+        onClick={() => setOpenReassign(true)}
+        sx={{ borderRadius: "50%", "--IconButton-size": "28px" }}
+      >
+        <AutorenewRoundedIcon fontSize="small" />
+      </IconButton>
+    </Tooltip>
+  )}
+</Stack>
+
             </Stack>
             {/* Title line (read-only, no big inputs) */}
             <Typography
@@ -1563,11 +1589,10 @@ export default function ViewTaskPage() {
                     size="sm"
                     color={statusColor(effectiveCurrentStatus?.status)}
                     onClick={() => {
-                      if (isSystem || isPending || isProgress || isCancelled) setOpenStatusModal(true);
+                      if (isSystem || isPending || isProgress || isCancelled)
+                        setOpenStatusModal(true);
                       else
-                        toast.info(
-                          "Status can't be changed after completion"
-                        );
+                        toast.info("Status can't be changed after completion");
                     }}
                     sx={{
                       cursor: isSystem || isPending ? "pointer" : "default",
@@ -1981,15 +2006,9 @@ export default function ViewTaskPage() {
               </Option>
 
               {/* pending -> anywhere else */}
-              <Option value="in progress">
-                In Progress
-              </Option>
-              <Option value="completed">
-                Completed
-              </Option>
-              <Option value="cancelled">
-                Cancelled
-              </Option>
+              <Option value="in progress">In Progress</Option>
+              <Option value="completed">Completed</Option>
+              <Option value="cancelled">Cancelled</Option>
             </Select>
 
             <Textarea

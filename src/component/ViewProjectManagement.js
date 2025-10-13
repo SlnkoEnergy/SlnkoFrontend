@@ -25,7 +25,10 @@ import {
   Divider,
   Autocomplete,
   Tooltip,
+  Textarea,
 } from "@mui/joy";
+import Avatar from "@mui/joy/Avatar";
+
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import EventOutlinedIcon from "@mui/icons-material/EventOutlined";
 import { Timelapse, Add, Delete } from "@mui/icons-material";
@@ -640,6 +643,9 @@ const View_Project_Management = forwardRef(
       onPlanStatus?.(statusObj);
     }, [apiData, activityFetch, onPlanStatus]);
 
+    const initialStatusRef = useRef("");
+    const fetchedRemarksRef = useRef("");
+
     // Local flag for frozen state
     const planStatus =
       apiData?.projectactivity?.current_status?.status ??
@@ -923,8 +929,26 @@ const View_Project_Management = forwardRef(
       end: "",
       duration: "",
       predecessors: [],
-      resources: [], 
+      resources: [],
+      remarks: "",
     });
+
+    const statusChanged = form.status !== initialStatusRef.current;
+
+    useEffect(() => {
+      if (statusChanged) {
+        // Clear remarks so the user can type a fresh one for the new status
+        if (form.remarks !== "") {
+          setForm((f) => ({ ...f, remarks: "" }));
+        }
+      } else {
+        // Status reverted to the original — restore the fetched remarks
+        if (form.remarks !== fetchedRemarksRef.current) {
+          setForm((f) => ({ ...f, remarks: fetchedRemarksRef.current }));
+        }
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [statusChanged]);
 
     const activityOptions = useMemo(
       () =>
@@ -984,7 +1008,7 @@ const View_Project_Management = forwardRef(
     // Auto-calc start/end whenever predecessors or duration change
     useEffect(() => {
       const hasPreds = (form.predecessors || []).length > 0;
-      const dur = Number(form.duration - 1 || 0);
+      const dur = Number(form.duration || 0);
 
       if (hasPreds && dur > 0) {
         const res = recomputeDatesFromPredecessors(form.predecessors, dur);
@@ -1002,13 +1026,14 @@ const View_Project_Management = forwardRef(
       if (!hasPreds && form.start && dur > 0) {
         const s = parseISOAsLocalDate(form.start);
         if (s && !Number.isNaN(s)) {
-          const e = gantt.calculateEndDate({ start_date: s, duration: dur });
+          const e = finishFromStartAndDuration(s, dur);
           const nextEnd = toYMD(e);
           if (form.end !== nextEnd) {
             setForm((f) => ({ ...f, end: nextEnd }));
           }
         }
       }
+
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [form.predecessors, form.duration, form.start]);
 
@@ -1016,6 +1041,15 @@ const View_Project_Management = forwardRef(
       if (!activityFetch || !selectedId) return;
       const act = activityFetch.activity || activityFetch.data || activityFetch;
       const preds = Array.isArray(act?.predecessors) ? act.predecessors : [];
+
+      const fetchedStatus = act?.current_status?.status || "not started";
+      initialStatusRef.current = fetchedStatus;
+      fetchedRemarksRef.current =
+        act?.current_status?.remarks ?? act?.remarks ?? "";
+
+      const updatedBy = act?.current_status?.user_id ?? act?.user_id ?? {};
+      const updatedByName = updatedBy?.name || "";
+      const updatedByUrl = updatedBy?.attachment_url || "";
 
       const uiPreds = preds
         .map((p) => {
@@ -1046,12 +1080,15 @@ const View_Project_Management = forwardRef(
       }));
 
       setForm({
-        status: act?.current_status?.status || "not started",
+        status: fetchedStatus,
         start: startISO ? toYMD(parseISOAsLocalDate(startISO)) : "",
         end: finishISO ? toYMD(parseISOAsLocalDate(finishISO)) : "",
         duration: durStr,
         predecessors: uiPreds,
         resources: uiResources,
+        remarks: fetchedRemarksRef.current,
+        updatedByName,
+        updatedByUrl,
       });
 
       const durNum = Number(durStr || 0);
@@ -1115,6 +1152,7 @@ const View_Project_Management = forwardRef(
         status: form.status,
         predecessors: predsPayload,
         resources: resourcesPayload,
+        remarks: form.remarks || "",
       };
 
       try {
@@ -1138,7 +1176,7 @@ const View_Project_Management = forwardRef(
       }
     };
 
-     useImperativeHandle(ref, () => ({
+    useImperativeHandle(ref, () => ({
       saveAsTemplate: async (meta = {}) => {
         const { name, description } = meta || {};
         const rows = [];
@@ -2110,6 +2148,78 @@ const View_Project_Management = forwardRef(
                     <Option value="completed">Completed</Option>
                   </Select>
                 </FormControl>
+
+                {statusChanged && (
+                  <FormControl>
+                    <FormLabel>
+                      Remarks{" "}
+                      <Typography
+                        level="body-xs"
+                        sx={{ color: "text.tertiary", ml: 0.5 }}
+                      >
+                        (optional)
+                      </Typography>
+                    </FormLabel>
+                    <Textarea
+                      minRows={3}
+                      size="sm"
+                      placeholder="Reason for status change (optional)…"
+                      value={form.remarks}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, remarks: e.target.value }))
+                      }
+                      disabled={disableEditing}
+                    />
+                  </FormControl>
+                )}
+                {!statusChanged && form.remarks ? (
+                  <FormControl>
+                    <FormLabel>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <span>Last Remarks</span>
+                        {(form.updatedByName || form.updatedByUrl) && (
+                          <Stack
+                            direction="row"
+                            spacing={0.75}
+                            alignItems="center"
+                          >
+                            <Tooltip
+                              title={form.updatedByName || "User"}
+                              placement="top"
+                            >
+                              <Avatar
+                                size="sm"
+                                variant="soft"
+                                src={form.updatedByUrl || undefined}
+                                alt={form.updatedByName || "User"}
+                                onClick={() => navigate("/user_profile")}
+                                onMouseDown={(e) => e.preventDefault()} // stops label focusing instead of clicking
+                                sx={{
+                                  cursor: "pointer",
+                                  "&:hover": {
+                                    opacity: 0.8,
+                                    transform: "scale(1.05)",
+                                  },
+                                  transition: "all 0.2s ease-in-out",
+                                }}
+                              >
+                                {!form.updatedByUrl && form.updatedByName
+                                  ? form.updatedByName.charAt(0).toUpperCase()
+                                  : null}
+                              </Avatar>
+                            </Tooltip>
+                          </Stack>
+                        )}
+                      </Stack>
+                    </FormLabel>
+                    <Textarea
+                      minRows={3}
+                      size="sm"
+                      value={form.remarks}
+                      disabled
+                    />
+                  </FormControl>
+                ) : null}
 
                 <Divider />
 
