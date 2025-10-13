@@ -1779,7 +1779,7 @@ const Customer_Payment_Summary = () => {
                           "Prachi Singh",
                           "admin",
                           "Chandan Singh",
-                          "Gagan Tayal"
+                          "Gagan Tayal" 
                         ].includes(user?.name) && (
                           <>
                             <Button
