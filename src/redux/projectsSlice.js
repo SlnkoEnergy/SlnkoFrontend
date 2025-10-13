@@ -417,9 +417,9 @@ export const projectsApi = createApi({
       },
     }),
     exportProjectSchedulePdf: builder.query({
-      query: ({ projectId }) => {
+      query: ({ projectId, type, timeline }) => {
         return {
-          url: `/projectactivity/get-project-pdf?projectId=${projectId}`,
+          url: `/projectactivity/get-project-pdf?projectId=${projectId}&type=${type}&timeline=${timeline}`,
           method: "GET",
           responseHandler: (response) => response.blob(),
         }

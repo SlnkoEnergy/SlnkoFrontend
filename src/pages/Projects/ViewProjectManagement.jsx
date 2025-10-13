@@ -255,7 +255,7 @@ function ViewProjectManagement() {
   const handleExportPdf = async () => {
     try {
 
-      const blob = await fetchPdf({ projectId }).unwrap();
+      const blob = await fetchPdf({ projectId, type, timeline }).unwrap();
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -284,15 +284,15 @@ function ViewProjectManagement() {
           rightSlot={
             <>
               {/* Freeze / Unfreeze button */}
-              {/* <Button */}
-              {/* //   size="sm"
-              //   color="danger"
-              //   variant="outlined"
-              //   onClick={handleExportPdf}
-              //   disabled={isExportingPdf}
-              // >
-              //   {isExporting ? "Generating..." : "PDF"}
-              // </Button> */}
+              <Button
+                size="sm"
+                color="danger"
+                variant="outlined"
+                onClick={handleExportPdf}
+                disabled={isExportingPdf}
+              >
+                {isExporting ? "Generating..." : "PDF"}
+              </Button>
               <Button
                 size="sm"
                 color="danger"
