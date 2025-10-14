@@ -1,5 +1,5 @@
 import { Box, Button, CssBaseline, CssVarsProvider } from "@mui/joy";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Sidebar from "../../component/Partials/Sidebar";
 import MainHeader from "../../component/Partials/MainHeader";
 import SubHeader from "../../component/Partials/SubHeader";
@@ -8,10 +8,13 @@ import { useRef, useState } from "react";
 import { toast } from "react-toastify";
 import PurchaseOrderSummary from "../../component/PurchaseOrderSummary";
 import Filter from "../../component/Partials/Filter";
+import { useExportPosMutation } from "../../redux/purchasesSlice";
+import DownloadIcon from "@mui/icons-material/Download";
 
 function DashboardSCM() {
   const navigate = useNavigate();
 
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedPOIds, setSelectedPOIds] = useState([]);
   const selectedCount = selectedPOIds.length;
   const [open, setOpen] = useState(false);
@@ -33,6 +36,110 @@ function DashboardSCM() {
       state: { logisticSeed: seed }, // shape: { pos: [{ _id, po_number }, ...] }
     });
   };
+
+  const formatDateToDDMMYYYY = (dateStr) => {
+    if (!dateStr) return null;
+    const [year, month, day] = dateStr.split("-");
+    return `${day}-${month}-${year}`;
+  };
+
+  const [exportPos, { loading: isExporting }] = useExportPosMutation();
+
+  const handleExport = async (isExportAll) => {
+    try {
+      // const exportFrom =  formatDateToDDMMYYYY(from);
+      // const exportTo =  formatDateToDDMMYYYY(to);
+      const res = await exportPos({
+        // exportFrom,
+        // exportTo,
+        // isExportAll,
+      }).unwrap();
+
+      const url = URL.createObjectURL(res);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "po_export.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Export failed", err);
+      alert("Failed to export bills");
+    }
+  };
+
+
+  const statusOptions = [
+    "Approval Pending",
+    "Approval Done",
+    "ETD Pending",
+    "ETD Done",
+    "Material Ready",
+    "Ready to Dispatch",
+    "Out for Delivery",
+    "Partially Delivered",
+    "Short Quantity",
+    "Delivered",
+  ];
+  const fields = [
+    {
+      key: "Status",
+      label: "Filter By Delevry Status",
+      type: "select",
+      options: statusOptions.map((d) => ({ label: d, value: d }))
+    },
+    {
+      key: "poStatus",
+      label: "Filter By Bill Status",
+      type: "select",
+      options: ["Fully Billed", "Bill Pending"].map((d) => ({ label: d, value: d })),
+    },
+    {
+      key: "itemSearch",
+      label: "Filter By Category",
+      type: "select",
+      options: ["1st", "2nd", "3rd"].map((d) => ({ label: d, value: d })),
+    },
+    {
+      key: "etd_date",
+      label: "Filter By ETD Date",
+      type: "daterange",
+    },
+    {
+      key: "delivery_date",
+      label: "Filter By Deleviry Date",
+      type: "daterange",
+    }
+  ];
+
+  const [selectStatus, setSelectStatus] = useState(
+    searchParams.get("status") || ""
+  );
+  const [selectBillStatus, setSelectBillStatus] = useState(
+    searchParams.get("poStatus") || ""
+  );
+  const [selectItem, setSelectItem] = useState(
+    searchParams.get("category") || ""
+  );
+  const [etdDateFrom, setEtdDateFrom] = useState(
+    searchParams.get("etdDateFrom") || ""
+  )
+  const [etdDateTo, setEtdDateTo] = useState(
+    searchParams.get("etdDateTo") || ""
+  )
+  const [deleviryFrom, setDeleviryFrom] = useState(
+    searchParams.get("deleviryFrom") || ""
+  )
+  const [deleviryTo, setDeleviryTo] = useState(
+    searchParams.get("deleviryTo") || ""
+  )
+
+  // console.log(selectStatus);
+  // console.log(selectBillStatus);
+  // console.log(selectItem);
+  // console.log(etdDateFrom);
+  // console.log(etdDateTo);
+  // console.log(deleviryFrom);
+  // console.log(deleviryTo);
 
 
   return (
@@ -135,6 +242,16 @@ function DashboardSCM() {
                 </>
               )}
               <Button
+                variant="soft"
+                size="sm"
+                color="neutral"
+                onClick={() => handleExport(true)}
+                loading={isExporting}
+                startDecorator={<DownloadIcon />}
+              >
+                Export All
+              </Button>
+              <Button
                 color="primary"
                 variant="solid"
                 size="sm"
@@ -142,16 +259,39 @@ function DashboardSCM() {
               >
                 Add Vendor
               </Button>
+              <Filter
+                open={open}
+                onOpenChange={setOpen}
+                title="Filters"
+                fields={fields}
+                onApply={(values) => {
+
+                  setSelectStatus(values?.Status || "")
+                  setSelectBillStatus(values?.poStatus || "")
+                  setSelectItem(values?.itemSearch || "")
+                  setEtdDateFrom(values?.etd_date?.from || "");
+                  setEtdDateTo(values?.etd_date?.to || "");
+                  setDeleviryFrom(values?.deleviry_date?.from || "");
+                  setDeleviryTo(values?.deleviry_date?.to || "");
+
+                  setOpen(false);
+                }}
+                onReset={() => {
+                  setSelectStatus("")
+                  setSelectBillStatus("")
+                  setSelectItem("")
+                  setEtdDateFrom("");
+                  setEtdDateTo("");
+                  setDeleviryFrom("");
+                  setDeleviryTo("");
+
+                  setOpen(false);
+                }}
+              />
             </>
           }
         >
-          <Filter
-              // open={open}
-              // onOpenChange={setOpen}
-              // fields={fields}
-              // title="Filters"
 
-          />
         </SubHeader>
         <Box
           component="main"
@@ -172,6 +312,13 @@ function DashboardSCM() {
             ref={poSummaryRef}
             onSelectionChange={setSelectedPOIds}
             hideInlineBulkBar
+            selectStatus={selectStatus}
+            selectBillStatus={selectBillStatus}
+            selectItem={selectItem}
+            deleviryFrom={deleviryFrom}
+            deleviryTo={deleviryTo}
+            etdDateFrom={etdDateFrom}
+            etdDateTo={etdDateTo}
           />
         </Box>
 

@@ -72,9 +72,13 @@ const FILTERS_APPROX = 120;    // ~height of your filters row
 const PADDING_FIX = 24;
 
 const PurchaseOrderSummary = forwardRef((props, ref) => {
-  const { project_code, onSelectionChange = () => { } } = props;
+  const { project_code, onSelectionChange = () => { }, selectStatus, selectBillStatus, selectItem, deleviryFrom, deleviryTo, etdDateFrom, etdDateTo } = props;
   const [po, setPO] = useState("");
-  const [selectedpo, setSelectedpo] = useState("");
+  const [selectedpo, setSelectedpo] = useState( selectStatus || "");
+  console.log(selectedpo)
+  useEffect(() => {
+    
+  })
   const [selectedtype, setSelectedtype] = useState("");
   const [selected, setSelected] = useState([]);
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
