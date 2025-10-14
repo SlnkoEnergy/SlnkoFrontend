@@ -70,19 +70,11 @@ export const purchasesApi = createApi({
     }),
 
     exportPos: builder.mutation({
-      query: ({ from, to, exportAll }) => {
-        const params = new URLSearchParams();
-
-        if (exportAll) {
-          params.set("export", "all");
-        } else {
-          params.set("from", from);
-          params.set("to", to);
-        }
-
+      query: ({ purchaseorders }) => {
         return {
-          url: `get-export-po?${params}`,
-          method: "GET",
+          url: `get-export-po`,
+          method: "POST",
+          body: { purchaseorders },
           responseHandler: (response) => response.blob(),
         };
       },
