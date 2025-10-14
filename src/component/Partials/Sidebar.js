@@ -31,6 +31,7 @@ import { closeSidebar } from "../../utils/utils";
 import DatabaseIcon from "@mui/icons-material/Storage";
 import FactCheckIcon from "@mui/icons-material/FactCheck";
 import AppNotification from "./Notification";
+import { User2 } from "lucide-react";
 
 function Toggler({ defaultExpanded = false, renderToggle, children }) {
   const [open, setOpen] = useState(defaultExpanded);
@@ -202,6 +203,15 @@ function Sidebar() {
                   >
                     Home
                   </Typography>
+                </ListItemContent>
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem sx={{ mt: 0.5 }}>
+              <ListItemButton onClick={() => navigate("/user")}>
+                <User2 size={20}/>
+                <ListItemContent>
+                  <Typography level="title-sm">User</Typography>
                 </ListItemContent>
               </ListItemButton>
             </ListItem>

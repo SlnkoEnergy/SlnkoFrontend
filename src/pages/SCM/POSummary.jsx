@@ -71,7 +71,6 @@ const handleExportToCSV = async () => {
     }
   };
 
- 
 
   // NEW: open logistics with selected PO(s)
   const handleOpenLogisticsWithSeed = () => {

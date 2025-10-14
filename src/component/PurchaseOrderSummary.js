@@ -714,7 +714,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     ref,
     () => ({
       getSelectedPOSeed: () => {
-        // build a light-weight seed for the logistics form
         const pos = selected.map((id) => {
           const r = paginatedPo.find((x) => x._id === id);
           return {
