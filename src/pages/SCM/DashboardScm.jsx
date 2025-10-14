@@ -45,7 +45,7 @@ function DashboardSCM() {
                     <Box display="flex" gap={1}>
                         <Button
                             size="sm"
-                            onClick={() => navigate('/scm_dash')}
+                            onClick={() => navigate('/purchase-order')}
                             sx={{
                                 color: "white",
                                 bgcolor: "transparent",

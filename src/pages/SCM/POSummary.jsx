@@ -7,12 +7,14 @@ import Dash_scm from "../../component/ScmDashboard";
 import { useRef, useState } from "react";
 import { toast } from "react-toastify";
 import PurchaseOrderSummary from "../../component/PurchaseOrderSummary";
+import Filter from "../../component/Partials/Filter";
 
 function DashboardSCM() {
   const navigate = useNavigate();
 
   const [selectedPOIds, setSelectedPOIds] = useState([]);
   const selectedCount = selectedPOIds.length;
+  const [open, setOpen] = useState(false);
 
   const poSummaryRef = useRef();
 
@@ -45,7 +47,7 @@ function DashboardSCM() {
           <Box display="flex" gap={1}>
             <Button
               size="sm"
-              onClick={() => navigate('/scm_dash')}
+              onClick={() => navigate('/purchase-order')}
               sx={{
                 color: "white",
                 bgcolor: "transparent",
@@ -143,7 +145,13 @@ function DashboardSCM() {
             </>
           }
         >
+          <Filter
+              // open={open}
+              // onOpenChange={setOpen}
+              // fields={fields}
+              // title="Filters"
 
+          />
         </SubHeader>
         <Box
           component="main"
@@ -154,7 +162,7 @@ function DashboardSCM() {
             flexDirection: "column",
             gap: 1,
             mt: "108px",
-            mr:"28px",
+            mr: "28px",
             pr: "30px",
             ml: "24px",
             overflow: "hidden"
