@@ -215,27 +215,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     return `${day}-${month}-${year}`;
   };
 
-  const handleExport = async (isExportAll) => {
-    try {
-      const exportFrom = from ? formatDateToDDMMYYYY(from) : null;
-      const exportTo = to ? formatDateToDDMMYYYY(to) : null;
-      const res = await exportPos({
-        from: exportFrom,
-        to: exportTo,
-        exportAll: isExportAll,
-      }).unwrap();
 
-      const url = URL.createObjectURL(res);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "po_export.csv";
-      link.click();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Export failed", err);
-      alert("Failed to export bills");
-    }
-  };
 
   const handleDateFilterSelect = (type) => {
     setActiveDateFilter((prev) => (prev === type ? null : type));
@@ -473,20 +453,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           </Select>
         </FormControl>
 
-        {!isLogisticsPage && (
-          <Box mt={3} sx={{ display: "flex", gap: 1 }}>
-            <Button
-              variant="soft"
-              size="sm"
-              color="neutral"
-              onClick={() => handleExport(true)}
-              loading={isExporting}
-              startDecorator={<DownloadIcon />}
-            >
-              Export All
-            </Button>
-          </Box>
-        )}
 
         {!isLogisticsPage && (
           <Dropdown>
@@ -763,8 +729,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         return { pos };
       },
       clearSelection: () => { setSelected([]); onSelectionChange([]); },
-      // optional: keep your CSV export callable via ref if you still need it
-      exportToCSV: () => handleExport(true),
        openBulkDeliverModal: () => handleOpenBulkModal(),
     }),
     [selected, paginatedPo] // keep fresh
