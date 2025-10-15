@@ -21,8 +21,45 @@ function DashboardSCM() {
 
   const poSummaryRef = useRef();
 
+  const [exportPos, { isLoading: isExporting }] = useExportPosMutation();
+
+  const handleExportToCSV = async () => {
+    try {
+      const ids = (selectedPOIds || []).filter(Boolean);
+
+      if (!ids.length) {
+        toast.info("Please select at least one PO from the table.");
+        return;
+      }
+
+      const blob = await exportPos({ purchaseorders: ids }).unwrap();
+
+      const fileName = `po_${new Date().toISOString().slice(0, 10)}.csv`;
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+
+      toast.success(`Exported ${ids.length} PO${ids.length > 1 ? "s" : ""}`);
+    } catch (error) {
+      console.error("Export POs failed:", error);
+      const msg =
+        error?.data?.message ||
+        error?.error ||
+        "Failed to export POs. Please try again.";
+      toast.error(msg);
+    }
+  };
+
+
+
+  // NEW: open logistics with selected PO(s)
   const handleOpenLogisticsWithSeed = () => {
-    // expects PurchaseOrderSummary to expose getSelectedPOSeed() via useImperativeHandle
     const seed = poSummaryRef.current?.getSelectedPOSeed?.();
     const list = seed?.pos || [];
 
@@ -30,43 +67,10 @@ function DashboardSCM() {
       toast.info("Please select at least one PO from the table.");
       return;
     }
-
-    // Navigate with seed so AddLogisticForm can auto-fill the Products table
     navigate("/logistics-form?mode=add", {
-      state: { logisticSeed: seed }, // shape: { pos: [{ _id, po_number }, ...] }
+      state: { logisticSeed: seed },
     });
   };
-
-  const formatDateToDDMMYYYY = (dateStr) => {
-    if (!dateStr) return null;
-    const [year, month, day] = dateStr.split("-");
-    return `${day}-${month}-${year}`;
-  };
-
-  const [exportPos, { loading: isExporting }] = useExportPosMutation();
-
-  const handleExport = async (isExportAll) => {
-    try {
-      // const exportFrom =  formatDateToDDMMYYYY(from);
-      // const exportTo =  formatDateToDDMMYYYY(to);
-      const res = await exportPos({
-        // exportFrom,
-        // exportTo,
-        // isExportAll,
-      }).unwrap();
-
-      const url = URL.createObjectURL(res);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "po_export.csv";
-      link.click();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Export failed", err);
-      alert("Failed to export bills");
-    }
-  };
-
 
   const statusOptions = [
     "Approval Pending",
@@ -238,6 +242,14 @@ function DashboardSCM() {
                     onClick={handleOpenLogisticsWithSeed}
                   >
                     Logistics Form
+                  </Button>
+                  <Button
+                    color="primary"
+                    variant="outlined"
+                    size="sm"
+                    onClick={handleExportToCSV}
+                  >
+                    Export to CSV
                   </Button>
                 </>
               )}
