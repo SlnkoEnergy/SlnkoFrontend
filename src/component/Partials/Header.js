@@ -16,24 +16,6 @@ import AppNotification from './Notification';
 function Header() {
   const location = useLocation();
   const isSalesPage = location.pathname === "/sales";
-  const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [subscribeId, setSubscribeId] = useState("");
-  useEffect(() => {
-    const userData = getUserData();
-    setSubscribeId(userData.userID);
-    setUser(userData);
-  }, []);
-
-  const getUserData = () => {
-    const userData = localStorage.getItem("userDetails");
-
-    if (userData) {
-      return JSON.parse(userData);
-    }
-    return null;
-  };
-
   return (
     <>
       {/* Header Bar for non-sales pages */}

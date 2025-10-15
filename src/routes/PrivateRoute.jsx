@@ -3,29 +3,22 @@ import { Navigate, useNavigate } from "react-router-dom";
 
 const PrivateRoute = ({ children }) => {
   const navigate = useNavigate();
-  const authToken = localStorage.getItem("authToken");
-  const authTokenExpiration = localStorage.getItem("authTokenExpiration");
-  const currentTime = new Date().getTime();
+  const token = localStorage.getItem("token");
+  // const authTokenExpiration = localStorage.getItem("authTokenExpiration");
+  // const currentTime = new Date().getTime();
 
   const handleLogout = () => {
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("authTokenExpiration");
-    localStorage.removeItem("name");
-    localStorage.removeItem("email");
+    localStorage.removeItem("token");
     navigate("/login");
   };
 
   useEffect(() => {
-    if (
-      !authToken ||
-      !authTokenExpiration ||
-      currentTime > authTokenExpiration
-    ) {
+    if (!token) {
       handleLogout();
     }
-  }, [authToken, authTokenExpiration, currentTime, navigate]);
+  }, [token, navigate]);
 
-  if (!authToken || !authTokenExpiration || currentTime > authTokenExpiration) {
+  if (!token) {
     return <Navigate to="/login" />;
   }
 

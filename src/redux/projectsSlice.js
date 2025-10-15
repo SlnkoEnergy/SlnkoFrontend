@@ -6,10 +6,10 @@ export const projectsApi = createApi({
     baseUrl: `${process.env.REACT_APP_API_URL}/`,
     credentials: "include",
     prepareHeaders: (headers) => {
-      const token = localStorage.getItem("authToken");
+      const token = localStorage.getItem("token");
 
       if (token) {
-        headers.set("x-auth-token", token);
+        headers.set("Authorization", `Bearer ${token}`);
       }
 
       return headers;
@@ -188,9 +188,9 @@ export const projectsApi = createApi({
       providesTags: (result) =>
         result?.items
           ? [
-            ...result.items.map((a) => ({ type: "Activity", id: a._id })),
-            { type: "Activity", id: "LIST" },
-          ]
+              ...result.items.map((a) => ({ type: "Activity", id: a._id })),
+              { type: "Activity", id: "LIST" },
+            ]
           : [{ type: "Activity", id: "LIST" }],
     }),
 
@@ -217,9 +217,9 @@ export const projectsApi = createApi({
       providesTags: (result) =>
         result?.data
           ? [
-            ...result.data.map((m) => ({ type: "Module", id: m._id })),
-            { type: "Module", id: "LIST" },
-          ]
+              ...result.data.map((m) => ({ type: "Module", id: m._id })),
+              { type: "Module", id: "LIST" },
+            ]
           : [{ type: "Module", id: "LIST" }],
     }),
 
@@ -265,12 +265,12 @@ export const projectsApi = createApi({
       providesTags: (result) =>
         result?.data
           ? [
-            ...result.data.map((m) => ({
-              type: "MaterialCategory",
-              id: m._id,
-            })),
-            { type: "MaterialCategory", id: "LIST" },
-          ]
+              ...result.data.map((m) => ({
+                type: "MaterialCategory",
+                id: m._id,
+              })),
+              { type: "MaterialCategory", id: "LIST" },
+            ]
           : [{ type: "MaterialCategory", id: "LIST" }],
     }),
 
@@ -422,8 +422,8 @@ export const projectsApi = createApi({
           url: `/projectactivity/get-project-pdf?projectId=${projectId}`,
           method: "GET",
           responseHandler: (response) => response.blob(),
-        }
-      }
+        };
+      },
     }),
     updateReorderfromActivity: builder.mutation({
       query: ({ projectId }) => ({
@@ -489,5 +489,5 @@ export const {
   useExportProjectScheduleMutation,
   useExportProjectSchedulePdfQuery,
   useLazyExportProjectSchedulePdfQuery,
-  useUpdateReorderfromActivityMutation
+  useUpdateReorderfromActivityMutation,
 } = projectsApi;

@@ -111,9 +111,6 @@ export function OtpVerification({ email, onSuccess }) {
       if (!finalRes?.data?.token || !finalRes?.data?.userId) {
         throw new Error('Missing token or userId from finalize login');
       }
-
-      localStorage.setItem('authToken', finalRes?.data?.token);
-      localStorage.setItem('userId', finalRes?.data?.userId);
       const expiration = new Date().getTime() + 3 * 24 * 60 * 60 * 1000;
       localStorage.setItem("authTokenExpiration", expiration.toString());
       setUserId(finalRes?.data?.userId); 

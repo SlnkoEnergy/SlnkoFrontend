@@ -6,10 +6,10 @@ export const paymentsApi = createApi({
     baseUrl: `${process.env.REACT_APP_API_URL}/`,
     credentials: "include",
     prepareHeaders: (headers) => {
-      const token = localStorage.getItem("authToken");
+      const token = localStorage.getItem("token");
 
       if (token) {
-        headers.set("x-auth-token", token);
+        headers.set("Authorization", `Bearer ${token}`);
       }
 
       return headers;

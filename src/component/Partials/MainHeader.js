@@ -18,6 +18,7 @@ import AppNotification from "./Notification";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import { useGetUserByIdQuery } from "../../redux/loginSlice";
 import { toggleSidebar } from "../../utils/utils";
+import { useSelector } from "react-redux";
 
 const LS_KEY = "userDetails";
 
@@ -68,8 +69,10 @@ export default function MainHeader({ title, children }) {
       window.removeEventListener("userDetails:update", onAny);
     };
   }, []);
+  
+  const storedUser = useSelector((state) => state.auth.user);
 
-  const storedUserId = useMemo(() => user?.userID || user?._id || null, [user]);
+  const storedUserId = storedUser?._id ||  null;
 
   const { data, isSuccess, refetch } = useGetUserByIdQuery(storedUserId, {
     skip: !storedUserId,

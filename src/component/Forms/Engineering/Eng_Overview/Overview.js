@@ -28,6 +28,7 @@ import CloudUpload from "@mui/icons-material/CloudUpload";
 import HistoryRoundedIcon from "@mui/icons-material/HistoryRounded";
 import EditNoteRoundedIcon from "@mui/icons-material/EditNoteRounded";
 import PlaylistAddRoundedIcon from "@mui/icons-material/PlaylistAddRounded";
+import { useSelector } from "react-redux";
 
 const Overview = () => {
   const navigate = useNavigate();
@@ -52,7 +53,7 @@ const Overview = () => {
   const [remarksTemplateId, setRemarksTemplateId] = useState(null);
   const [previewFileUrl, setPreviewFileUrl] = useState(null);
   const [iframeLoaded, setIframeLoaded] = useState(false);
-
+   const storedUser = useSelector((state) => state.auth.user);
   const [uploadModal, setUploadModal] = useState({
     open: false,
     index: null,
@@ -183,7 +184,7 @@ const Overview = () => {
   );
 
   const handleSubmit = async (index) => {
-    const userId = user?.userID;
+    const userId = storedUser?._id;
 
     if (!userId) {
       toast.error("User ID not found. Please log in again.");
@@ -249,7 +250,7 @@ const Overview = () => {
   };
 
   const handleMultipleSubmitFiles = async (submitIndexArray) => {
-    const userId = user?.userID;
+    const userId = storedUser?._id;
 
     if (!userId) {
       toast.error("User ID not found. Please log in again.");
@@ -309,11 +310,11 @@ const Overview = () => {
     }
   };
 
+ 
   const handleHold = async () => {
     try {
-      const storedUser = JSON.parse(localStorage.getItem("userDetails"));
       const department = storedUser?.department || "";
-      const userId = storedUser?.userId || storedUser?.name || "";
+      const userId = storedUser?._id || storedUser?.name || "";
 
       if (!holdTemplateId) {
         toast.error("No template selected for hold.");
@@ -359,7 +360,7 @@ const Overview = () => {
     try {
       const storedUser = JSON.parse(localStorage.getItem("userDetails"));
       const department = storedUser?.department || "";
-      const userId = storedUser?.userId || "";
+      const userId = storedUser?._id || "";
 
       await updateStatus({
         projectId,
@@ -383,7 +384,7 @@ const Overview = () => {
     try {
       const storedUser = JSON.parse(localStorage.getItem("userDetails"));
       const department = storedUser?.department;
-      const userId = storedUser?.userId || storedUser?.name;
+      const userId = storedUser?._id || storedUser?.name;
 
       if (!department) {
         toast.error("Department not found.");
@@ -419,7 +420,7 @@ const Overview = () => {
 
     const storedUser = JSON.parse(localStorage.getItem("userDetails"));
     const department = storedUser?.department || "";
-    const userId = storedUser?.userId || storedUser?.name || "";
+    const userId = storedUser?._id || storedUser?.name || "";
 
     if (!department || !userId) {
       toast.error("User details missing.");
@@ -459,7 +460,7 @@ const Overview = () => {
     try {
       const storedUser = JSON.parse(localStorage.getItem("userDetails"));
       const department = storedUser?.department || "";
-      const userId = storedUser?.userId || "";
+      const userId = storedUser?._id || "";
       await updateStatus({
         projectId,
         moduleTemplateId: templateId,
@@ -487,7 +488,7 @@ const Overview = () => {
     try {
       const storedUser = JSON.parse(localStorage.getItem("userDetails"));
       const department = storedUser?.department || "";
-      const userId = storedUser?.userId || "";
+      const userId = storedUser?._id || "";
 
       await updateStatus({
         projectId,

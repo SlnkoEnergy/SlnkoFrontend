@@ -28,10 +28,12 @@ import { poHistoryApi } from "../redux/poHistory";
 import { inspectionApi } from "../redux/inspectionSlice";
 import { postsApi } from "../redux/postsSlice";
 import { approvalsApi } from "../redux/ApprovalsSlice";
+import authReducer from '../redux/auth/authSlice';
 import {leadsApi} from "../redux/leadsSlice"
 
 export const store = configureStore({
   reducer: {
+    auth: authReducer,
     [projectsApi.reducerPath]: projectsApi.reducer,
     [paymentsApi.reducerPath]: paymentsApi.reducer,
     [purchasesApi.reducerPath]: purchasesApi.reducer,

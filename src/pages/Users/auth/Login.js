@@ -14,8 +14,9 @@ import * as Yup from "yup";
 import Img1 from "../../../assets/New_Solar3.png";
 import Img5 from "../../../assets/karwa_chautt_logo.png";
 import ImgX from "../../../assets/slnko_white_logo.png";
-import axios from "axios";
 import { useAddLoginsMutation } from "../../../redux/loginSlice";
+import { useDispatch } from "react-redux";
+import { setCredentials } from "../../../redux/auth/authSlice";
 import Colors from "../../../utils/colors";
 import { OtpVerification } from "./OtpVerification";
 import { Modal, ModalDialog } from "@mui/joy";
@@ -24,6 +25,7 @@ const Login = () => {
   const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState("");
   const [addLogin] = useAddLoginsMutation();
+  const dispatch = useDispatch();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [geoInfo, setGeoInfo] = useState({
     latitude: null,
@@ -37,30 +39,28 @@ const Login = () => {
   const handleTogglePassword = () => setShowPassword((prev) => !prev);
 
   useEffect(() => {
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const latitude = position.coords.latitude;
-        const longitude = position.coords.longitude;
-        let fullAddress = "";
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`
-          );
-          const data = await res.json();
-          fullAddress = data.display_name || "";
-        } catch (err) {
-          console.log("Reverse geocoding failed");
-        }
-        setGeoInfo({ latitude, longitude, fullAddress });
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      const latitude = position.coords.latitude;
+      const longitude = position.coords.longitude;
+      let fullAddress = "";
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`
+        );
+        const data = await res.json();
+        fullAddress = data.display_name || "";
+      } catch (err) {
+        console.log("Reverse geocoding failed");
       }
-    );
+      setGeoInfo({ latitude, longitude, fullAddress });
+    });
   }, []);
-
-  console.log({geoInfo})
 
   const handleLogin = async (values) => {
     if (!geoInfo.latitude || !geoInfo.longitude) {
-      toast.error("Location is required to login. Please enable location access.");
+      toast.error(
+        "Location is required to login. Please enable location access."
+      );
       return;
     }
     setIsSubmitting(true);
@@ -72,48 +72,20 @@ const Login = () => {
         fullAddress: geoInfo.fullAddress,
       };
 
+      console.log({ loginPayload });
+
+      // Use login service for authentication
       const user = await addLogin(loginPayload).unwrap();
 
       if (!user.token) {
         toast.error("Login failed: Token not received.");
         return;
       }
-
-      const expiration = new Date().getTime() + 3 * 24 * 60 * 60 * 1000;
-      localStorage.setItem("authToken", user.token);
-      localStorage.setItem("authTokenExpiration", expiration.toString());
-
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL}/get-all-useR-IT`,
-        {
-          headers: { "x-auth-token": user.token },
-          withCredentials: true
-        }
-      );
-
-      const matchedUser = response?.data?.data.find(
-        (item) => String(item._id) === String(user.userId)
-      );
-
-      if (!matchedUser) {
-        toast.error("Login failed: User details not found.");
+      if (!user.user) {
+        toast.error("Login failed: User details not found in response.");
         return;
       }
-
-      const userDetails = {
-        name: matchedUser.name,
-        email: matchedUser.email,
-        phone: matchedUser.phone,
-        emp_id: matchedUser.emp_id,
-        role: matchedUser.role,
-        department: matchedUser.department || "",
-        userID: matchedUser._id || "",
-        location: matchedUser.location || "",
-        about: matchedUser.about || "",
-        attacchment_url: matchedUser.attacchment_url || "",
-      };
-
-      localStorage.setItem("userDetails", JSON.stringify(userDetails));
+      dispatch(setCredentials({ user: user.user, token: user.token }));
       toast.success("Login successful!");
       navigate("/dashboard");
     } catch (error) {
@@ -122,7 +94,8 @@ const Login = () => {
         error?.data?.message ||
         error?.message ||
         "Login failed.";
-      const email = error?.response?.data?.email || error?.data?.email || error?.email;
+      const email =
+        error?.response?.data?.email || error?.data?.email || error?.email;
       if (
         message === "Unrecognized device. OTP has been sent for verification."
       ) {
@@ -137,20 +110,20 @@ const Login = () => {
     }
   };
 
-  const validationSchema = Yup.object({
-    name: Yup.string().required("Name is required!"),
-    password: Yup.string()
-      .required("Password is required!")
-      .matches(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])/,
-        "Password must contain one uppercase letter, one lowercase letter, one number, and one special character."
-      )
-      .min(8, "Password must be at least 8 characters long."),
-  });
+  // const validationSchema = Yup.object({
+  //   name: Yup.string().required("Name is required!"),
+  //   password: Yup.string()
+  //     .required("Password is required!")
+  //     .matches(
+  //       /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])/,
+  //       "Password must contain one uppercase letter, one lowercase letter, one number, and one special character."
+  //     )
+  //     .min(8, "Password must be at least 8 characters long."),
+  // });
 
   const formik = useFormik({
     initialValues: { name: "", password: "" },
-    validationSchema: validationSchema,
+    // validationSchema: validationSchema,
     onSubmit: handleLogin,
   });
 
@@ -163,9 +136,8 @@ const Login = () => {
     autoplaySpeed: 3000,
     arrows: false,
   };
-  
 
-   const submitButtonStyle = {
+  const submitButtonStyle = {
     padding: "12px",
     margin: "20px 0",
     borderRadius: 15,
@@ -358,20 +330,19 @@ const Login = () => {
             </form>
           </Paper>
         </Grid>
-     
-<Modal open={otpDialogOpen} onClose={() => setOtpDialogOpen(false)}>
-  <ModalDialog>
-    <Typography level="h4" component="h2">
-      OTP Verification
-    </Typography>
 
-    <OtpVerification
-      email={emailForOtp}
-      onSuccess={() => setOtpDialogOpen(false)}
-    />
-  </ModalDialog>
-</Modal>
+        <Modal open={otpDialogOpen} onClose={() => setOtpDialogOpen(false)}>
+          <ModalDialog>
+            <Typography level="h4" component="h2">
+              OTP Verification
+            </Typography>
 
+            <OtpVerification
+              email={emailForOtp}
+              onSuccess={() => setOtpDialogOpen(false)}
+            />
+          </ModalDialog>
+        </Modal>
       </Grid>
     </Box>
   );

@@ -1,16 +1,15 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: `${process.env.REACT_APP_API_URL}/`,
+  baseUrl: `${process.env.REACT_APP_LOGIN_URL}/users`,
   credentials: "include",
   prepareHeaders: (headers) => {
-    const token = localStorage.getItem("authToken");
-    if (token) headers.set("x-auth-token", token);
+    const token = localStorage.getItem("token");
+    if (token) headers.set("Authorization", `Bearer ${token}`);
     return headers;
   },
 });
 
-// small helper to normalize various API shapes to an array of users
 const normalizeUsers = (result) => {
   if (!result) return [];
   if (Array.isArray(result)) return result;
@@ -22,12 +21,10 @@ const normalizeUsers = (result) => {
 export const loginsApi = createApi({
   reducerPath: "loginsApi",
   baseQuery,
-  // include both to avoid breaking anything that relied on "Login"
   tagTypes: ["Login", "User"],
   endpoints: (builder) => ({
     getLogins: builder.query({
       query: () => "get-all-useR-IT",
-      // provide a LIST tag and one tag per user so edits invalidate properly
       providesTags: (result) => {
         const list = normalizeUsers(result);
         return [
@@ -41,11 +38,10 @@ export const loginsApi = createApi({
 
     addLogins: builder.mutation({
       query: (newLogin) => ({
-        url: "logiN-IT",
+        url: "/login",
         method: "POST",
         body: newLogin,
       }),
-      // new user likely changes the list
       invalidatesTags: [{ type: "User", id: "LIST" }, "Login"],
     }),
 

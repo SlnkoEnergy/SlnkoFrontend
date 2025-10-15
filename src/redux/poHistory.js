@@ -6,10 +6,10 @@ export const poHistoryApi = createApi({
     baseUrl: `${process.env.REACT_APP_API_URL}/`,
     credentials: "include",
     prepareHeaders: (headers) => {
-      const token = localStorage.getItem("authToken");
+      const token = localStorage.getItem("token");
 
       if (token) {
-        headers.set("x-auth-token", token);
+        headers.set("Authorization", `Bearer ${token}`);
       }
 
       return headers;
@@ -17,17 +17,17 @@ export const poHistoryApi = createApi({
   }),
   tagTypes: ["Pohistory"],
   endpoints: (builder) => ({
-   getPoHistory: builder.query({
-  query: ({ subject_type, subject_id }) => {
-    const params = new URLSearchParams({
-      subject_type,
-      subject_id,
-    });
+    getPoHistory: builder.query({
+      query: ({ subject_type, subject_id }) => {
+        const params = new URLSearchParams({
+          subject_type,
+          subject_id,
+        });
 
-    return `/history/Pohistory?${params.toString()}`;
-  },
-  providesTags: ["Pohistory"],
-}),
+        return `/history/Pohistory?${params.toString()}`;
+      },
+      providesTags: ["Pohistory"],
+    }),
 
     addPoHistory: builder.mutation({
       query: (newHistory) => ({
@@ -40,4 +40,5 @@ export const poHistoryApi = createApi({
   }),
 });
 
-export const { useLazyGetPoHistoryQuery, useAddPoHistoryMutation } = poHistoryApi;
+export const { useLazyGetPoHistoryQuery, useAddPoHistoryMutation } =
+  poHistoryApi;

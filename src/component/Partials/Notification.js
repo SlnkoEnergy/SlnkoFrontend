@@ -9,6 +9,7 @@ import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 import { Box, IconButton } from "@mui/joy";
 import { useNavigate } from "react-router-dom";
 import main_logo from "../../assets/protrac_logo.png"
+import { useSelector } from "react-redux";
 
 const isIOS =
   typeof navigator !== "undefined" &&
@@ -153,10 +154,11 @@ const AppNotification = () => {
     }
     return null;
   };
-
+  const storedUser = useSelector((state) => state.auth.user);
+  const storedUserId = storedUser?._id ||  null;
   useEffect(() => {
     const userData = getUserData();
-    setSubscribeId(userData.userID);
+    setSubscribeId(storedUserId);
     setUser(userData);
   }, []);
   return (

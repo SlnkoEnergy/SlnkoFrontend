@@ -35,6 +35,7 @@ import CamHandoverSheetForm from "./Lead Stage/Handover/CAMHandover";
 import PurchaseRequestCard from "./PurchaseRequestCard";
 import ScopeDetail from "./Scope";
 import Posts from "./Posts";
+import { useSelector } from "react-redux";
 
 /* ---------------- helpers ---------------- */
 const getUserData = () => {
@@ -213,11 +214,10 @@ export default function Project_Detail() {
 
   const { data: postsResp } = useGetPostsQuery({ project_id });
 
-  const currentUser = useMemo(() => getUserData(), []);
-  const currentUserId = useMemo(
-    () => (currentUser ? currentUser.userID || null : null),
-    [currentUser]
-  );
+ const currentUser = useSelector((state) => state.auth.user);
+  const currentUserId = currentUser ?  currentUser._id || null : null;
+
+  console.log({currentUser, currentUserId});
 
   // ---- tabs (string keys) ----
   const initialTab = sanitizeTabFromQuery(searchParams.get("tab"));
