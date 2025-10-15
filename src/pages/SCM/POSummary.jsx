@@ -4,7 +4,7 @@ import Sidebar from "../../component/Partials/Sidebar";
 import MainHeader from "../../component/Partials/MainHeader";
 import SubHeader from "../../component/Partials/SubHeader";
 import Dash_scm from "../../component/ScmDashboard";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import PurchaseOrderSummary from "../../component/PurchaseOrderSummary";
 import Filter from "../../component/Partials/Filter";
@@ -87,7 +87,7 @@ function DashboardSCM() {
   const fields = [
     {
       key: "Status",
-      label: "Filter By Delevry Status",
+      label: "Filter By Delivery Status",
       type: "select",
       options: statusOptions.map((d) => ({ label: d, value: d }))
     },
@@ -110,7 +110,7 @@ function DashboardSCM() {
     },
     {
       key: "delivery_date",
-      label: "Filter By Deleviry Date",
+      label: "Filter By Delivery Date",
       type: "daterange",
     }
   ];
@@ -130,16 +130,18 @@ function DashboardSCM() {
   const [etdDateTo, setEtdDateTo] = useState(
     searchParams.get("etdDateTo") || ""
   )
-  const [deleviryFrom, setDeleviryFrom] = useState(
-    searchParams.get("deleviryFrom") || ""
+  const [deliveryFrom, setDeliveryFrom] = useState(
+    searchParams.get("deliveryFrom") || ""
   )
-  const [deleviryTo, setDeleviryTo] = useState(
-    searchParams.get("deleviryTo") || ""
+  const [deliveryTo, setDeliveryTo] = useState(
+    searchParams.get("deliveryTo") || ""
   )
 
+  useEffect(() => {
+    console.log("PARENT selectStatus state ->", deliveryFrom, typeof deliveryFrom);
+  }, [deliveryFrom]);
 
-
-
+  console.log(selectStatus)
   return (
 
     <CssVarsProvider disableTransitionOnChange>
@@ -251,7 +253,7 @@ function DashboardSCM() {
                 variant="soft"
                 size="sm"
                 color="neutral"
-                onClick={() => handleExport(true)}
+                // onClick={() => handleExport(true)}
                 loading={isExporting}
                 startDecorator={<DownloadIcon />}
               >
@@ -277,8 +279,8 @@ function DashboardSCM() {
                   setSelectItem(values?.itemSearch || "")
                   setEtdDateFrom(values?.etd_date?.from || "");
                   setEtdDateTo(values?.etd_date?.to || "");
-                  setDeleviryFrom(values?.deleviry_date?.from || "");
-                  setDeleviryTo(values?.deleviry_date?.to || "");
+                  setDeliveryFrom(values?.delivery_date?.from || "");
+                  setDeliveryTo(values?.delivery_date?.to || "");
 
                   setOpen(false);
                 }}
@@ -288,8 +290,8 @@ function DashboardSCM() {
                   setSelectItem("")
                   setEtdDateFrom("");
                   setEtdDateTo("");
-                  setDeleviryFrom("");
-                  setDeleviryTo("");
+                  setDeliveryFrom("");
+                  setDeliveryTo("");
 
                   setOpen(false);
                 }}
@@ -321,8 +323,8 @@ function DashboardSCM() {
             selectStatus={selectStatus}
             selectBillStatus={selectBillStatus}
             selectItem={selectItem}
-            deleviryFrom={deleviryFrom}
-            deleviryTo={deleviryTo}
+            delivery_From={deliveryFrom}
+            delivery_To={deliveryTo}
             etdDateFrom={etdDateFrom}
             etdDateTo={etdDateTo}
           />

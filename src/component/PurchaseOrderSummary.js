@@ -34,7 +34,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
 import { ClickAwayListener } from "@mui/base";
 import {
@@ -72,13 +72,10 @@ const FILTERS_APPROX = 120;    // ~height of your filters row
 const PADDING_FIX = 24;
 
 const PurchaseOrderSummary = forwardRef((props, ref) => {
-  const { project_code, onSelectionChange = () => { }, selectStatus, selectBillStatus, selectItem, deleviryFrom, deleviryTo, etdDateFrom, etdDateTo } = props;
+  const { project_code, onSelectionChange = () => { }, selectStatus, selectBillStatus, selectItem, delivery_From, delivery_To, etdDateFrom, etdDateTo } = props;
   const [po, setPO] = useState("");
-  const [selectedpo, setSelectedpo] = useState( selectStatus || "");
-  console.log(selectedpo)
-  useEffect(() => {
-    
-  })
+  const [selectedpo, setSelectedpo] = useState("");
+
   const [selectedtype, setSelectedtype] = useState("");
   const [selected, setSelected] = useState([]);
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
@@ -107,7 +104,10 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const [nextStatus, setNextStatus] = useState("");
   const [remarks, setRemarks] = useState("");
   const [perPage, setPerPage] = useState(initialPageSize);
+
+
   const [selectedStatusFilter, setSelectedStatusFilter] = useState("");
+  
 
   // ===== Category Select + Browse-all modal state =====
   const initialItemSearch = searchParams.get("itemSearch") || "";
@@ -221,6 +221,15 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     return `${day}-${month}-${year}`;
   };
 
+  useEffect(() => {
+    setSelectedStatusFilter(selectStatus)
+    setSelectedpo(selectBillStatus)
+    setDeliveryFrom(delivery_From);
+    setDeliveryTo(delivery_To);
+    setEtdTo(etdDateTo);
+    setEtdFrom(etdDateFrom)
+    setSelecteditem(selectItem)
+  }, [selectStatus, selectBillStatus, delivery_From, delivery_To, etdDateFrom, etdDateTo, selectItem])
 
 
   const handleDateFilterSelect = (type) => {
@@ -276,14 +285,19 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     "Delivered",
   ];
 
-  useEffect(() => {
-    const status = searchParams.get("status") || "";
-    const po = searchParams.get("poStatus") || "";
-    const itemSearch = searchParams.get("itemSearch") || "";
-    setSelectedStatusFilter(status);
-    setSelectedpo(po);
-    setSelecteditem(itemSearch);
-  }, [searchParams]);
+  const status = searchParams.get("status") || "";
+  console.log(status);
+
+  // useEffect(() => {
+  //   const status = searchParams.get("status") || "";
+  //   const po = searchParams.get("poStatus") || "";
+  //   const itemSearch = searchParams.get("itemSearch") || "";
+  //   setSelectedStatusFilter(status);
+  //   setSelectedpo(po);
+  //   console.log(status);
+  //   setSelecteditem(itemSearch);
+  // }, [searchParams]);
+
 
 
   const applyCategory = (value) => {
@@ -330,232 +344,105 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   };
 
   // ===== Filters bar (uses only values computed from top-level hooks) =====
-  const renderFilters = () => {
-    const po_status = ["Fully Billed", "Bill Pending"];
+  // const renderFilters = () => {
+  //   const po_status = ["Fully Billed", "Bill Pending"];
 
-    return (
-      <Box
-        sx={{
-          position: "relative",
-          display: "flex",
-          alignItems: "center",
-          gap: 1.5,
-          flexWrap: "wrap",
-        }}
-      >
-        {/* Category Queue — like screenshot */}
-        <FormControl sx={{ minWidth: 240 }} size="sm">
-          <FormLabel>Category Queue</FormLabel>
-          <Select
-            value={selecteditem}
-            placeholder={isCatInitFetching ? "Loading…" : "All Categories"}
-            listboxOpen={categorySelectOpen}
-            onListboxOpenChange={(_e, open) => setCategorySelectOpen(open)}
-            onChange={(_e, newValue) => {
-              if (newValue === "__more__") {
-                setCategorySelectOpen(false);
-                setCategoryModalOpen(true);
-                return;
-              }
-              applyCategory(newValue || "");
-            }}
-            size="sm"
-          >
-            <Option value="">All Categories</Option>
+  //   return (
+  //     <Box
+  //       sx={{
+  //         position: "relative",
+  //         display: "flex",
+  //         alignItems: "center",
+  //         gap: 1.5,
+  //         flexWrap: "wrap",
+  //       }}
+  //     >
+  //       {/* Category Queue — like screenshot */}
+        
 
-            {topCategories.slice(0, 7).map((cat) => (
-              <Option key={cat._id} value={cat.name}>
-                {cat.name}
-              </Option>
-            ))}
+  //       {/* {!isLogisticsPage && (
+          
+  //       )} */}
 
-            {/* Keep selected visible if not in top 7 */}
-            {selecteditem &&
-              !topCategories
-                .slice(0, 7)
-                .some((c) => c.name === selecteditem) && (
-                <Option key={`picked-${selecteditem}`} value={selecteditem}>
-                  {selecteditem}
-                </Option>
-              )}
-
-            {
-              <Option
-                value="__more__"
-                sx={{
-                  color: "primary.plainColor",
-                  fontWeight: 600,
-                  "&:hover": {
-                    bgcolor: "primary.softBg",
-                    color: "primary.solidColor",
-                  },
-                }}
-              >
-                Browse all…
-              </Option>
-            }
-          </Select>
-        </FormControl>
-
-        {!isLogisticsPage && (
-          <FormControl sx={{ flex: 1 }} size="sm">
-            <FormLabel>Bill Status</FormLabel>
-            <Select
-              value={searchParams.get("poStatus") || ""}
-              onChange={(_, newValue) => {
-                setSearchParams((prev) => {
-                  const updated = new URLSearchParams(prev);
-                  if (newValue) updated.set("poStatus", newValue);
-                  else updated.delete("poStatus");
-                  updated.set("page", "1");
-                  return updated;
-                });
-              }}
-              size="sm"
-              placeholder="Select Status"
-            >
-              <Option value="">All status</Option>
-              {["Fully Billed", "Bill Pending"].map((status) => (
-                <Option key={status} value={status}>
-                  {status}
-                </Option>
-              ))}
-            </Select>
-          </FormControl>
-        )}
-
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Status Filter</FormLabel>
-          <Select
-            value={searchParams.get("status") || ""}
-            onChange={(_, newValue) => {
-              setSearchParams((prev) => {
-                const updated = new URLSearchParams(prev);
-                if (newValue) updated.set("status", newValue);
-                else updated.delete("status");
-                updated.set("page", "1");
-                return updated;
-              });
-            }}
-            size="sm"
-            placeholder="Select Status"
-          >
-            <Option value="">All Status</Option>
-            {[
-              "Approval Pending",
-              "Approval Done",
-              "ETD Pending",
-              "ETD Done",
-              "Material Ready",
-              "Ready to Dispatch",
-              "Out for Delivery",
-              "Partially Delivered",
-              "Delivered",
-            ].map((status) => (
-              <Option key={status} value={status}>
-                {status}
-              </Option>
-            ))}
-          </Select>
-        </FormControl>
+        
 
 
-        {!isLogisticsPage && (
-          <Dropdown>
-            <MenuButton
-              slots={{ root: IconButton }}
-              slotProps={{
-                root: { variant: "soft", size: "sm", color: "neutral" },
-              }}
-              sx={{ mt: 3 }}
-            >
-              <CalendarSearch />
-            </MenuButton>
-            <Menu placement="bottom-start">
-              <MenuItem onClick={() => handleDateFilterSelect("etd")}>
-                ETD Date
-              </MenuItem>
-              <MenuItem onClick={() => handleDateFilterSelect("delivery")}>
-                Delivery Date
-              </MenuItem>
-            </Menu>
-          </Dropdown>
-        )}
+        
 
-        {activeDateFilter && (
-          <ClickAwayListener onClickAway={() => setActiveDateFilter(null)}>
-            <Sheet
-              variant="outlined"
-              sx={{
-                position: "absolute",
-                top: "120%",
-                zIndex: 10,
-                mt: 1,
-                backgroundColor: "background.body",
-                boxShadow: "md",
-                borderRadius: "sm",
-                p: 2,
-                width: 320,
-              }}
-            >
-              <Typography level="body-sm" fontWeight="bold" gutterBottom>
-                {activeDateFilter === "etd"
-                  ? "ETD Date Range"
-                  : activeDateFilter === "po"
-                    ? "PO Date Range"
-                    : "Delivery Date Range"}
-              </Typography>
+  //       {/* {activeDateFilter && (
+  //         <ClickAwayListener onClickAway={() => setActiveDateFilter(null)}>
+  //           <Sheet
+  //             variant="outlined"
+  //             sx={{
+  //               position: "absolute",
+  //               top: "120%",
+  //               zIndex: 10,
+  //               mt: 1,
+  //               backgroundColor: "background.body",
+  //               boxShadow: "md",
+  //               borderRadius: "sm",
+  //               p: 2,
+  //               width: 320,
+  //             }}
+  //           >
+  //             <Typography level="body-sm" fontWeight="bold" gutterBottom>
+  //               {activeDateFilter === "etd"
+  //                 ? "ETD Date Range"
+  //                 : activeDateFilter === "po"
+  //                   ? "PO Date Range"
+  //                   : "Delivery Date Range"}
+  //             </Typography>
 
-              <Box display="flex" gap={1}>
-                <FormControl size="sm" sx={{ flex: 1 }}>
-                  <FormLabel>From</FormLabel>
-                  <Input
-                    type="date"
-                    value={
-                      activeDateFilter === "etd"
-                        ? etdFrom
-                        : activeDateFilter === "po"
-                          ? poFrom
-                          : deliveryFrom
-                    }
-                    onChange={(e) => {
-                      if (activeDateFilter === "etd")
-                        setEtdFrom(e.target.value);
-                      if (activeDateFilter === "po") setPoFrom(e.target.value);
-                      if (activeDateFilter === "delivery")
-                        setDeliveryFrom(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                  />
-                </FormControl>
+  //             <Box display="flex" gap={1}>
+  //               <FormControl size="sm" sx={{ flex: 1 }}>
+  //                 <FormLabel>From</FormLabel>
+  //                 <Input
+  //                   type="date"
+  //                   value={
+  //                     activeDateFilter === "etd"
+  //                       ? etdFrom
+  //                       : activeDateFilter === "po"
+  //                         ? poFrom
+  //                         : deliveryFrom
+  //                   }
+  //                   onChange={(e) => {
+  //                     if (activeDateFilter === "etd")
+  //                       setEtdFrom(e.target.value);
+  //                     if (activeDateFilter === "po") setPoFrom(e.target.value);
+  //                     if (activeDateFilter === "delivery")
+  //                       setDeliveryFrom(e.target.value);
+  //                     setCurrentPage(1);
+  //                   }}
+  //                 />
+  //               </FormControl>
 
-                <FormControl size="sm" sx={{ flex: 1 }}>
-                  <FormLabel>To</FormLabel>
-                  <Input
-                    type="date"
-                    value={
-                      activeDateFilter === "etd"
-                        ? etdTo
-                        : activeDateFilter === "po"
-                          ? poTo
-                          : deliveryTo
-                    }
-                    onChange={(e) => {
-                      if (activeDateFilter === "etd") setEtdTo(e.target.value);
-                      if (activeDateFilter === "po") setPoTo(e.target.value);
-                      if (activeDateFilter === "delivery")
-                        setDeliveryTo(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                  />
-                </FormControl>
-              </Box>
-            </Sheet>
-          </ClickAwayListener>
-        )}
-      </Box>
-    );
-  };
+  //               <FormControl size="sm" sx={{ flex: 1 }}>
+  //                 <FormLabel>To</FormLabel>
+  //                 <Input
+  //                   type="date"
+  //                   value={
+  //                     activeDateFilter === "etd"
+  //                       ? etdTo
+  //                       : activeDateFilter === "po"
+  //                         ? poTo
+  //                         : deliveryTo
+  //                   }
+  //                   onChange={(e) => {
+  //                     if (activeDateFilter === "etd") setEtdTo(e.target.value);
+  //                     if (activeDateFilter === "po") setPoTo(e.target.value);
+  //                     if (activeDateFilter === "delivery")
+  //                       setDeliveryTo(e.target.value);
+  //                     setCurrentPage(1);
+  //                   }}
+  //                 />
+  //               </FormControl>
+  //             </Box>
+  //           </Sheet>
+  //         </ClickAwayListener>
+  //       )} */}
+  //     </Box>
+  //   );
+  // };
 
   const [updateStatus] = useUpdatePurchasesStatusMutation();
   const [selectedStatus, setSelectedStatus] = useState("");
@@ -736,7 +623,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       },
       clearSelection: () => { setSelected([]); onSelectionChange([]); },
       // optional: keep your CSV export callable via ref if you still need it
-      exportToCSV: () => handleExport(true),
+      // exportToCSV: () => handleExport(true),
       openBulkDeliverModal: () => handleOpenBulkModal(),
     }),
     [selected, paginatedPo] // keep fresh
@@ -1292,7 +1179,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           />
         </FormControl>
 
-        {renderFilters()}
       </Box>
       {/* Table */}
       <Sheet
