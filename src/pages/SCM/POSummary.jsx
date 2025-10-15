@@ -137,13 +137,7 @@ function DashboardSCM() {
     searchParams.get("deleviryTo") || ""
   )
 
-  // console.log(selectStatus);
-  // console.log(selectBillStatus);
-  // console.log(selectItem);
-  // console.log(etdDateFrom);
-  // console.log(etdDateTo);
-  // console.log(deleviryFrom);
-  // console.log(deleviryTo);
+
 
 
   return (
