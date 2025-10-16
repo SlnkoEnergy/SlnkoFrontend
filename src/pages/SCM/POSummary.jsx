@@ -38,7 +38,7 @@ function POSummary() {
 
   const [exportPos, { isLoading: isExporting }] = useExportPosMutation();
 
-const handleExportToCSV = async () => {
+  const handleExportToCSV = async () => {
     try {
       const ids = (selectedPOIds || []).filter(Boolean);
 
@@ -70,8 +70,6 @@ const handleExportToCSV = async () => {
       toast.error(msg);
     }
   };
-
- 
 
   // NEW: open logistics with selected PO(s)
   const handleOpenLogisticsWithSeed = () => {
@@ -199,14 +197,6 @@ const handleExportToCSV = async () => {
                   </Button>
                 </>
               )}
-              <Button
-                color="primary"
-                variant="solid"
-                size="sm"
-                onClick={() => navigate("/add_vendor")}
-              >
-                Add Vendor
-              </Button>
             </Box>
           </Box>
 

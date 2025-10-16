@@ -43,7 +43,7 @@ const AddVendor = () => {
     try {
       const token = localStorage.getItem("authToken");
 
-      const response = await Axios.post("/Add-vendoR-IT", formData, {
+      const response = await Axios.post("/vendor", formData, {
         headers: {
           "x-auth-token": token,
         },

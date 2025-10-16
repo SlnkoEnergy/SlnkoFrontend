@@ -85,6 +85,7 @@ import MyApproval from "../pages/Approvals/MyApproval";
 import ApprovalDashboard from "../pages/Approvals/ApprovalDashboard";
 import MyRequest from "../pages/Approvals/MyRequest";
 import ProjectDashBoard from "../pages/Projects/ProjectDashboard";
+import Vendors from "../pages/SCM/Vendors";
 
 function index() {
   return (
@@ -268,10 +269,26 @@ function index() {
         }
       />
       <Route
+        path="/add_vendor"
+        element={
+          <PrivateRoute>
+            <Add_Vendor />
+          </PrivateRoute>
+        }
+      />
+      <Route
         path="/vendor_bill"
         element={
           <PrivateRoute>
             <VendorBill />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/vendors"
+        element={
+          <PrivateRoute>
+            <Vendors />
           </PrivateRoute>
         }
       />
@@ -567,14 +584,6 @@ function index() {
         element={
           <PrivateRoute>
             <Add_Purchase />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/add_vendor"
-        element={
-          <PrivateRoute>
-            <Add_Vendor />
           </PrivateRoute>
         }
       />

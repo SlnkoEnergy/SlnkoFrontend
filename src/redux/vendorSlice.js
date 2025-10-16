@@ -16,6 +16,17 @@ export const vendorsApi = createApi({
   }),
   tagTypes: ["Vendors"],
   endpoints: (builder) => ({
+    getAllVendors: builder.query({
+      query: ({ page, limit, search }) =>
+        `/vendor/vendors?page=${page}&limit=${limit}&search=${search}`,
+      providesTags: (result) =>
+        result?.data
+          ? [
+              { type: "Vendors", id: "LIST" },
+              ...result.data.map((p) => ({ type: "Vendors", id: p._id })),
+            ]
+          : [{ type: "Vendors", id: "LIST" }],
+    }),
     getVendorsNameSearch: builder.query({
       query: ({ limit, search, page }) =>
         `/vendor-search?search=${search}&limit=${limit}&page=${page}`,
@@ -30,4 +41,8 @@ export const vendorsApi = createApi({
   }),
 });
 
-export const { useGetVendorsNameSearchQuery, useLazyGetVendorsNameSearchQuery } = vendorsApi;
+export const {
+  useGetAllVendorsQuery,
+  useGetVendorsNameSearchQuery,
+  useLazyGetVendorsNameSearchQuery,
+} = vendorsApi;

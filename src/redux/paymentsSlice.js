@@ -22,7 +22,7 @@ export const paymentsApi = createApi({
       providesTags: ["Payment"],
     }),
     getVendors: builder.query({
-      query: () => "get-all-vendoR-IT",
+      query: () => "vendor",
       providesTags: ["Payment"],
     }),
     addPayments: builder.mutation({
