@@ -160,7 +160,7 @@ function Vendors() {
         >
           <Box
             sx={{
-              width: { xs: "95vw", sm: 720 },
+              width: { xs: "95vw", sm: '100%' },
               maxHeight: "85vh",
               overflow: "auto",
               position: "relative",
