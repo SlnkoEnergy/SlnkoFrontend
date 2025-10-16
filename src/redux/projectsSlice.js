@@ -188,9 +188,9 @@ export const projectsApi = createApi({
       providesTags: (result) =>
         result?.items
           ? [
-            ...result.items.map((a) => ({ type: "Activity", id: a._id })),
-            { type: "Activity", id: "LIST" },
-          ]
+              ...result.items.map((a) => ({ type: "Activity", id: a._id })),
+              { type: "Activity", id: "LIST" },
+            ]
           : [{ type: "Activity", id: "LIST" }],
     }),
 
@@ -217,9 +217,9 @@ export const projectsApi = createApi({
       providesTags: (result) =>
         result?.data
           ? [
-            ...result.data.map((m) => ({ type: "Module", id: m._id })),
-            { type: "Module", id: "LIST" },
-          ]
+              ...result.data.map((m) => ({ type: "Module", id: m._id })),
+              { type: "Module", id: "LIST" },
+            ]
           : [{ type: "Module", id: "LIST" }],
     }),
 
@@ -265,12 +265,12 @@ export const projectsApi = createApi({
       providesTags: (result) =>
         result?.data
           ? [
-            ...result.data.map((m) => ({
-              type: "MaterialCategory",
-              id: m._id,
-            })),
-            { type: "MaterialCategory", id: "LIST" },
-          ]
+              ...result.data.map((m) => ({
+                type: "MaterialCategory",
+                id: m._id,
+              })),
+              { type: "MaterialCategory", id: "LIST" },
+            ]
           : [{ type: "MaterialCategory", id: "LIST" }],
     }),
 
@@ -422,8 +422,8 @@ export const projectsApi = createApi({
           url: `/projectactivity/get-project-pdf?projectId=${projectId}&type=${type}&timeline=${timeline}`,
           method: "GET",
           responseHandler: (response) => response.blob(),
-        }
-      }
+        };
+      },
     }),
     updateReorderfromActivity: builder.mutation({
       query: ({ projectId }) => ({
@@ -431,6 +431,11 @@ export const projectsApi = createApi({
         method: "PUT",
       }),
       invalidatesTags: ["Project"],
+    }),
+
+    getAllProjectUser: builder.query({
+      query: (id) => "projectactivity/project-users",
+      providesTags: ["Project"],
     }),
   }),
 });
@@ -489,5 +494,6 @@ export const {
   useExportProjectScheduleMutation,
   useExportProjectSchedulePdfQuery,
   useLazyExportProjectSchedulePdfQuery,
-  useUpdateReorderfromActivityMutation
+  useUpdateReorderfromActivityMutation,
+  useGetAllProjectUserQuery
 } = projectsApi;

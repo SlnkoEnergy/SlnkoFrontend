@@ -38,6 +38,7 @@ import {
   useUpdateActivityInProjectMutation,
   useCreateProjectActivityMutation,
   useGetActivityInProjectQuery,
+  useGetAllProjectUserQuery,
 } from "../redux/projectsSlice";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import AppSnackbar from "./AppSnackbar";
@@ -592,7 +593,6 @@ const View_Project_Management = forwardRef(
     const [selectedTaskName, setSelectedTaskName] = useState("");
     const [activeDbId, setActiveDbId] = useState(null);
 
-    // keep URL in sync whenever type/timeline change
     const syncURL = (nextType, nextTimeline) => {
       const params = new URLSearchParams(searchParams);
       if (projectId) params.set("project_id", projectId);
@@ -607,13 +607,59 @@ const View_Project_Management = forwardRef(
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // API hooks
+    const [assignPick, setAssignPick] = useState([]);
+
+    const handleAssignPicked = () => {
+      if (!assignPick.length) return;
+
+      const prevAssigned = ensureIds(form.assigned_to);
+      const updatedAssigned = [...new Set([...prevAssigned, ...assignPick])];
+      setForm((f) => ({
+        ...f,
+        assigned_to: updatedAssigned,
+        assigned_status: "Assigned",
+      }));
+
+      setAssignPick([]);
+    };
+
+    const handleRemovePicked = (ids) => {
+      const toRemove = Array.isArray(ids) ? ids : assignPick;
+      if (!toRemove.length) return;
+
+      const prevAssigned = ensureIds(form.assigned_to);
+      const remaining = prevAssigned.filter((id) => !toRemove.includes(id));
+      setForm((f) => ({
+        ...f,
+        assigned_to: remaining,
+        assigned_status: "Removed",
+      }));
+
+      setAssignPick([]);
+    };
+
+    function dedupeStatus(arr) {
+      const map = new Map();
+      arr.forEach((e) => map.set(String(e.user_id), e));
+      return Array.from(map.values());
+    }
+
     const { data: apiData, refetch: refetchAll } =
       useGetProjectActivityByProjectIdQuery(projectId, { skip: !projectId });
     const [reorderProjectActivities] = useReorderProjectActivitiesMutation();
     const [updateActivityInProject, { isLoading: isSaving }] =
       useUpdateActivityInProjectMutation();
     const [createProjectActivity] = useCreateProjectActivityMutation();
+
+    const { data: projectUsers = [], isFetching: isFetchingUsers } =
+      useGetAllProjectUserQuery();
+
+    const assignOptions = Array.isArray(projectUsers?.data)
+      ? projectUsers.data.map((u) => ({
+          label: u.name,
+          value: u._id,
+        }))
+      : [];
 
     const {
       data: activityFetch,
@@ -931,6 +977,9 @@ const View_Project_Management = forwardRef(
       predecessors: [],
       resources: [],
       remarks: "",
+      assigned_to: [],
+      assigned_status: null,
+      assigned_by: null,
     });
 
     const statusChanged = form.status !== initialStatusRef.current;
@@ -1005,6 +1054,10 @@ const View_Project_Management = forwardRef(
       return { start, end };
     };
 
+    const dbg = (label, obj) => {
+      console.log(`[ASSIGN-DBG] ${label}`, JSON.parse(JSON.stringify(obj)));
+    };
+
     // Auto-calc start/end whenever predecessors or duration change
     useEffect(() => {
       const hasPreds = (form.predecessors || []).length > 0;
@@ -1036,6 +1089,10 @@ const View_Project_Management = forwardRef(
 
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [form.predecessors, form.duration, form.start]);
+
+    const toId = (x) => (typeof x === "string" ? x : x?._id || x?.id || "");
+    const ensureIds = (arr) =>
+      Array.isArray(arr) ? arr.map(toId).filter(Boolean) : [];
 
     useEffect(() => {
       if (!activityFetch || !selectedId) return;
@@ -1079,6 +1136,13 @@ const View_Project_Management = forwardRef(
         number: Number(r?.number) || 0,
       }));
 
+      const assignedToIds = ensureIds(act?.assigned_to);
+
+      const assignedById = act?.assigned_by ? toId(act.assigned_by) : null;
+
+      const assignedStatusStr =
+        typeof act?.assigned_status === "string" ? act.assigned_status : null;
+
       setForm({
         status: fetchedStatus,
         start: startISO ? toYMD(parseISOAsLocalDate(startISO)) : "",
@@ -1089,6 +1153,9 @@ const View_Project_Management = forwardRef(
         remarks: fetchedRemarksRef.current,
         updatedByName,
         updatedByUrl,
+        assigned_to: assignedToIds,
+        assigned_status: assignedStatusStr,
+        assigned_by: assignedById,
       });
 
       const durNum = Number(durStr || 0);
@@ -1153,6 +1220,9 @@ const View_Project_Management = forwardRef(
         predecessors: predsPayload,
         resources: resourcesPayload,
         remarks: form.remarks || "",
+        assigned_to: ensureIds(form.assigned_to),
+        assigned_status: form.assigned_status || undefined,
+        assigned_by: toId(form.assigned_by) || undefined,
       };
 
       try {
@@ -2097,6 +2167,7 @@ const View_Project_Management = forwardRef(
                 animation: "fadeIn 140ms ease-out",
               }}
             />
+
             <Sheet
               variant="outlined"
               sx={{
@@ -2133,6 +2204,7 @@ const View_Project_Management = forwardRef(
 
                 <Divider />
 
+                {/* ---------- STATUS ---------- */}
                 <FormControl>
                   <FormLabel>Status</FormLabel>
                   <Select
@@ -2193,7 +2265,7 @@ const View_Project_Management = forwardRef(
                                 src={form.updatedByUrl || undefined}
                                 alt={form.updatedByName || "User"}
                                 onClick={() => navigate("/user_profile")}
-                                onMouseDown={(e) => e.preventDefault()} // stops label focusing instead of clicking
+                                onMouseDown={(e) => e.preventDefault()}
                                 sx={{
                                   cursor: "pointer",
                                   "&:hover": {
@@ -2223,7 +2295,7 @@ const View_Project_Management = forwardRef(
 
                 <Divider />
 
-                {/* Predecessors */}
+                {/* ---------- PREDECESSORS ---------- */}
                 <Stack spacing={1}>
                   <Stack
                     direction="row"
@@ -2254,6 +2326,7 @@ const View_Project_Management = forwardRef(
                       Add
                     </Button>
                   </Stack>
+
                   <Stack spacing={1}>
                     {form.predecessors.length === 0 && (
                       <Typography
@@ -2293,6 +2366,7 @@ const View_Project_Management = forwardRef(
 
                 <Divider />
 
+                {/* ---------- BASELINE DATES ---------- */}
                 <Stack direction="row" spacing={1}>
                   <FormControl sx={{ flex: 1 }}>
                     <FormLabel>
@@ -2330,10 +2404,7 @@ const View_Project_Management = forwardRef(
                       value={form.duration}
                       disabled={disableEditing}
                       onChange={(e) =>
-                        setForm((f) => ({
-                          ...f,
-                          duration: e.target.value,
-                        }))
+                        setForm((f) => ({ ...f, duration: e.target.value }))
                       }
                     />
                   </FormControl>
@@ -2345,6 +2416,8 @@ const View_Project_Management = forwardRef(
                 </FormControl>
 
                 <Divider />
+
+                {/* ---------- RESOURCES ---------- */}
                 <Stack spacing={1}>
                   <Stack
                     direction="row"
@@ -2401,6 +2474,139 @@ const View_Project_Management = forwardRef(
                   </Stack>
                 </Stack>
 
+                <Divider />
+                <FormControl>
+                  <FormLabel>Assign To (Multiple)</FormLabel>
+
+                  <Autocomplete
+                    multiple
+                    size="sm"
+                    placeholder={
+                      isFetchingUsers ? "Loading users..." : "Select users"
+                    }
+                    options={assignOptions}
+                    getOptionLabel={(o) => o.label}
+                    isOptionEqualToValue={(a, b) => a.value === b.value}
+                    value={assignOptions.filter((o) =>
+                      assignPick.includes(o.value)
+                    )}
+                    onChange={(_, values) => {
+                      const next = values.map((v) => v.value);
+                      dbg("Autocomplete.onChange -> assignPick", { next });
+                      setAssignPick(next);
+                    }}
+                    filterSelectedOptions
+                    disableCloseOnSelect
+                    disabled={disableEditing || isFetchingUsers}
+                    slotProps={{
+                      listbox: {
+                        sx: { zIndex: 1401, maxHeight: 240, overflowY: "auto" },
+                      },
+                    }}
+                  />
+
+                  <Stack direction="row" spacing={1} sx={{ mt: 1.25 }}>
+                    <Button
+                      size="sm"
+                      color="success"
+                      startDecorator={<Add fontSize="small" />}
+                      onClick={() => {
+                        dbg("Assign button CLICK", {
+                          assignPick,
+                          before_assigned_to: form.assigned_to,
+                          before_assigned_status: form.assigned_status,
+                        });
+                        handleAssignPicked();
+                      }}
+                      disabled={!assignPick.length || disableEditing}
+                    >
+                      Assign
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      color="danger"
+                      variant="soft"
+                      startDecorator={<Delete fontSize="small" />}
+                      onClick={() => {
+                        dbg("Remove button CLICK", {
+                          assignPick,
+                          before_assigned_to: form.assigned_to,
+                          before_assigned_status: form.assigned_status,
+                        });
+                        handleRemovePicked(); // uses assignPick by default
+                      }}
+                      disabled={!assignPick.length || disableEditing}
+                    >
+                      Remove
+                    </Button>
+                  </Stack>
+
+                  {(form.assigned_to?.length ?? 0) > 0 ? (
+                    <Stack spacing={0.75} sx={{ mt: 1.5 }}>
+                      <Typography
+                        level="body-sm"
+                        sx={{ fontWeight: 600, color: "text.secondary" }}
+                      >
+                        Currently Assigned
+                      </Typography>
+                      <Stack
+                        direction="row"
+                        spacing={0.75}
+                        flexWrap="wrap"
+                        useFlexGap
+                      >
+                        {form.assigned_to.map((id) => {
+                          const user = assignOptions.find(
+                            (o) => o.value === id
+                          );
+                          const label = user ? user.label : id;
+                          return (
+                            <Chip
+                              key={id}
+                              size="sm"
+                              variant="soft"
+                              color="primary"
+                              endDecorator={
+                                <IconButton
+                                  size="sm"
+                                  variant="plain"
+                                  color="danger"
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    dbg("Chip delete CLICK", {
+                                      id,
+                                      before_assigned_to: form.assigned_to,
+                                      before_assigned_status:
+                                        form.assigned_status,
+                                    });
+                                    handleRemovePicked([id]);
+                                  }}
+                                >
+                                  <Delete fontSize="small" />
+                                </IconButton>
+                              }
+                            >
+                              {label}
+                            </Chip>
+                          );
+                        })}
+                      </Stack>
+                    </Stack>
+                  ) : (
+                    <Typography
+                      level="body-xs"
+                      sx={{ mt: 1, color: "text.tertiary" }}
+                    >
+                      No users assigned
+                    </Typography>
+                  )}
+                </FormControl>
+
+                <Divider />
+
+                {/* ---------- ACTION BUTTONS ---------- */}
                 <Stack direction="row" spacing={1}>
                   <Tooltip
                     title={
