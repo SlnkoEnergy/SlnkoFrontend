@@ -2,10 +2,12 @@ import { SnackbarProvider } from "notistack";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Index from "./routes/index";
+import AuthRehydrate from "./redux/auth/AuthRehydrate";
 
 export default function App() {
   return (
     <div>
+      <AuthRehydrate />
       <SnackbarProvider
         maxSnack={2}
         anchorOrigin={{

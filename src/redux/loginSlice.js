@@ -79,7 +79,7 @@ export const loginsApi = createApi({
     }),
 
     getUserById: builder.query({
-      query: (userId) => `get-single-useR-IT/${userId}`,
+      query: (userId) => `/${userId}`,
       providesTags: (result, error, userId) => [
         { type: "User", id: userId },
       ],

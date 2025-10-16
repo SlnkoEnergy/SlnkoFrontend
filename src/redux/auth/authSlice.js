@@ -6,7 +6,7 @@ const initialState = {
   status: "idle",
   error: null,
 };
-
+console.log("Initial token:", initialState);
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -14,7 +14,9 @@ const authSlice = createSlice({
     setCredentials: (state, action) => {
       state.user = action.payload.user;
       state.token = action.payload.token;
-      localStorage.setItem("token", action.payload.token);
+      if (action.payload.token) {
+        localStorage.setItem("token", action.payload.token);
+      }
     },
     logout: (state) => {
       state.user = null;

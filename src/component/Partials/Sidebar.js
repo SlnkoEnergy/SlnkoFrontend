@@ -32,6 +32,7 @@ import DatabaseIcon from "@mui/icons-material/Storage";
 import FactCheckIcon from "@mui/icons-material/FactCheck";
 import AppNotification from "./Notification";
 import { User2 } from "lucide-react";
+import { useSelector } from "react-redux";
 
 function Toggler({ defaultExpanded = false, renderToggle, children }) {
   const [open, setOpen] = useState(defaultExpanded);
@@ -62,21 +63,13 @@ function Sidebar() {
   const [user, setUser] = useState(null);
   const [subscribeId, setSubscribeId] = useState("");
   const location = useLocation();
+  const storedUser = useSelector((state) => state.auth.user);
+  const storedUserId = storedUser?._id || null;
   useEffect(() => {
-    const userData = getUserData();
-    setSubscribeId(userData.userID);
-    setUser(userData);
+    setSubscribeId(storedUserId);
+    setUser(storedUser);
   }, []);
-
-  const getUserData = () => {
-    const userData = localStorage.getItem("userDetails");
-
-    if (userData) {
-      return JSON.parse(userData);
-    }
-    return null;
-  };
-
+  console.log({storedUser, storedUserId});
   const handleLogout = () => {
     localStorage.clear();
     navigate("/login");
@@ -2672,8 +2665,12 @@ function Sidebar() {
         >
           <Avatar />
           <Stack>
-            <Typography fontWeight="lg">{user?.name}</Typography>
-            <Typography level="body-sm">{user?.emp_id}</Typography>
+            <Typography fontWeight="lg">
+  {user ? user.name : "Loading..."}
+</Typography>
+<Typography level="body-sm">
+  {user ? user.emp_id : ""}
+</Typography>
           </Stack>
           <IconButton
             onClick={handleLogout}
