@@ -84,9 +84,9 @@ export default function Vendor_Detail() {
     const requested = sanitizeTabFromQuery(searchParams.get("tab"));
     const isPORequested = requested === "po";
     if (isPORequested && !allowedPO) {
-      setTabValue("handover");
+      setTabValue("purchaseorders");
       const params = new URLSearchParams(searchParams);
-      params.set("tab", "handover");
+      params.set("tab", "purchaseorders");
       setSearchParams(params);
     } else {
       setTabValue(requested);
