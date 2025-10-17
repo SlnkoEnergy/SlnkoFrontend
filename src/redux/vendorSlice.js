@@ -16,6 +16,19 @@ export const vendorsApi = createApi({
   }),
   tagTypes: ["Vendors"],
   endpoints: (builder) => ({
+    addVendor: builder.mutation({
+      query: ({ data, profileFile }) => {
+        const form = new FormData();
+        if (profileFile) form.append("profile_image", profileFile);
+        form.append("data", JSON.stringify(data));
+        return {
+          url: "/vendor/vendor",
+          method: "POST",
+          body: form,
+        };
+      },
+      invalidatesTags: [{ type: "Vendors", id: "LIST" }],
+    }),
     getAllVendors: builder.query({
       query: ({ page, limit, search }) =>
         `/vendor/vendors?page=${page}&limit=${limit}&search=${search}`,
@@ -42,6 +55,7 @@ export const vendorsApi = createApi({
 });
 
 export const {
+  useAddVendorMutation,
   useGetAllVendorsQuery,
   useGetVendorsNameSearchQuery,
   useLazyGetVendorsNameSearchQuery,
