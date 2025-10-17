@@ -12,6 +12,7 @@ import gantt from "dhtmlx-gantt/codebase/dhtmlxgantt";
 import {
   Box,
   Chip,
+  ChipDelete,
   Sheet,
   Typography,
   Stack,
@@ -42,6 +43,7 @@ import {
 } from "../redux/projectsSlice";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import AppSnackbar from "./AppSnackbar";
+import { toast } from "react-toastify";
 
 /* ---------------- helpers ---------------- */
 const labelToType = { FS: "0", SS: "1", FF: "2" };
@@ -612,31 +614,50 @@ const View_Project_Management = forwardRef(
     const handleAssignPicked = () => {
       if (!assignPick.length) return;
 
-      const prevAssigned = ensureIds(form.assigned_to);
-      const updatedAssigned = [...new Set([...prevAssigned, ...assignPick])];
-      setForm((f) => ({
-        ...f,
-        assigned_to: updatedAssigned,
-        assigned_status: "Assigned",
-      }));
+      setForm((f) => {
+        const prev = ensureIds(f.assigned_to);
+        const next = Array.from(new Set([...prev, ...assignPick]));
+
+        let newStatus = "Assigned";
+        if (prev.length && next.length > prev.length) newStatus = "Assigned";
+        else if (next.length && next.length !== prev.length)
+          newStatus = "Partial";
+        else if (!next.length) newStatus = "Removed";
+
+        return {
+          ...f,
+          assigned_to: next,
+          assigned_status: newStatus,
+        };
+      });
 
       setAssignPick([]);
+      toast.success("Engineer's assigned successfully.");
     };
 
     const handleRemovePicked = (ids) => {
       const toRemove = Array.isArray(ids) ? ids : assignPick;
       if (!toRemove.length) return;
 
-      const prevAssigned = ensureIds(form.assigned_to);
-      const remaining = prevAssigned.filter((id) => !toRemove.includes(id));
-      setForm((f) => ({
-        ...f,
-        assigned_to: remaining,
-        assigned_status: "Removed",
-      }));
+      setForm((f) => {
+        const prev = ensureIds(f.assigned_to);
+        const remaining = prev.filter((id) => !toRemove.includes(id));
+
+        let newStatus = "Removed";
+        if (remaining.length && remaining.length !== prev.length)
+          newStatus = "Partial";
+
+        return {
+          ...f,
+          assigned_to: remaining,
+          assigned_status: newStatus,
+        };
+      });
 
       setAssignPick([]);
+      toast.info("User(s) removed successfully.");
     };
+
 
     function dedupeStatus(arr) {
       const map = new Map();
@@ -979,7 +1000,6 @@ const View_Project_Management = forwardRef(
       remarks: "",
       assigned_to: [],
       assigned_status: null,
-      assigned_by: null,
     });
 
     const statusChanged = form.status !== initialStatusRef.current;
@@ -1054,11 +1074,11 @@ const View_Project_Management = forwardRef(
       return { start, end };
     };
 
-    const dbg = (label, obj) => {
-      console.log(`[ASSIGN-DBG] ${label}`, JSON.parse(JSON.stringify(obj)));
-    };
+    // const dbg = (label, obj) => {
+    //   console.log(`[ASSIGN-DBG] ${label}`, JSON.parse(JSON.stringify(obj)));
+    // };
 
-    // Auto-calc start/end whenever predecessors or duration change
+
     useEffect(() => {
       const hasPreds = (form.predecessors || []).length > 0;
       const dur = Number(form.duration || 0);
@@ -1096,6 +1116,7 @@ const View_Project_Management = forwardRef(
 
     useEffect(() => {
       if (!activityFetch || !selectedId) return;
+
       const act = activityFetch.activity || activityFetch.data || activityFetch;
       const preds = Array.isArray(act?.predecessors) ? act.predecessors : [];
 
@@ -1104,10 +1125,17 @@ const View_Project_Management = forwardRef(
       fetchedRemarksRef.current =
         act?.current_status?.remarks ?? act?.remarks ?? "";
 
+      // ✅ Updated by (status updater)
       const updatedBy = act?.current_status?.user_id ?? act?.user_id ?? {};
       const updatedByName = updatedBy?.name || "";
       const updatedByUrl = updatedBy?.attachment_url || "";
 
+      // ✅ Assigned by (person who assigned users)
+      const assignedBy = act?.assigned_by ?? {};
+      const assignedByName = assignedBy?.name || "";
+      const assignedByUrl = assignedBy?.attachment_url || "";
+
+      // 🔁 Predecessors for UI
       const uiPreds = preds
         .map((p) => {
           const db = String(p.activity_id || "");
@@ -1129,7 +1157,7 @@ const View_Project_Management = forwardRef(
         ? String(Number(act.duration))
         : "";
 
-      // Resources: normalize array into UI
+      // 🔧 Normalize resources for UI
       const resArrRaw = Array.isArray(act?.resources) ? act.resources : [];
       const uiResources = resArrRaw.map((r) => ({
         type: r?.type || "",
@@ -1137,12 +1165,10 @@ const View_Project_Management = forwardRef(
       }));
 
       const assignedToIds = ensureIds(act?.assigned_to);
-
-      const assignedById = act?.assigned_by ? toId(act.assigned_by) : null;
-
       const assignedStatusStr =
         typeof act?.assigned_status === "string" ? act.assigned_status : null;
 
+      // 🧭 Set all values including assigned_by
       setForm({
         status: fetchedStatus,
         start: startISO ? toYMD(parseISOAsLocalDate(startISO)) : "",
@@ -1153,11 +1179,14 @@ const View_Project_Management = forwardRef(
         remarks: fetchedRemarksRef.current,
         updatedByName,
         updatedByUrl,
+        assigned_by: toId(assignedBy), // ✅ store ID if needed for logic
+        assignedByName,
+        assignedByUrl,
         assigned_to: assignedToIds,
         assigned_status: assignedStatusStr,
-        assigned_by: assignedById,
       });
 
+      // 🔁 Optional: recompute dates if predecessors exist
       const durNum = Number(durStr || 0);
       if (uiPreds.length > 0 && durNum > 0) {
         const res = recomputeDatesFromPredecessors(uiPreds, durNum);
@@ -1212,6 +1241,16 @@ const View_Project_Management = forwardRef(
             }))
         : [];
 
+      let computedAssignedStatus = form.assigned_status;
+      if (Array.isArray(form.assigned_to)) {
+        if (form.assigned_to.length === 0) computedAssignedStatus = "Removed";
+        else if (
+          form.assigned_to.length > 0 &&
+          form.assigned_status === "Removed"
+        )
+          computedAssignedStatus = "Assigned";
+      }
+
       const payload = {
         planned_start: form.start || null,
         planned_finish: form.end || null,
@@ -1221,9 +1260,10 @@ const View_Project_Management = forwardRef(
         resources: resourcesPayload,
         remarks: form.remarks || "",
         assigned_to: ensureIds(form.assigned_to),
-        assigned_status: form.assigned_status || undefined,
-        assigned_by: toId(form.assigned_by) || undefined,
+        assigned_status: computedAssignedStatus || undefined,
       };
+
+      console.log("🛰️ Sending update payload:", payload);
 
       try {
         const result = await updateActivityInProject({
@@ -1237,11 +1277,17 @@ const View_Project_Management = forwardRef(
         }
 
         await (refetchAll().unwrap?.() ?? refetchAll());
-        setSnack({ open: true, msg: "Activity updated." });
+        setSnack({
+          open: true,
+          msg: `Activity updated successfully${
+            computedAssignedStatus ? ` (${computedAssignedStatus})` : ""
+          }.`,
+        });
         setSelectedId(null);
         setActiveDbId(null);
         setSelectedTaskName("");
       } catch (e) {
+        console.error("❌ Update failed:", e);
         setSnack({ open: true, msg: extractBackendError(e) });
       }
     };
@@ -2476,13 +2522,14 @@ const View_Project_Management = forwardRef(
 
                 <Divider />
                 <FormControl>
-                  <FormLabel>Assign To (Multiple)</FormLabel>
-
+                  <FormLabel>Assigned To (Site Engineers)</FormLabel>
                   <Autocomplete
                     multiple
                     size="sm"
                     placeholder={
-                      isFetchingUsers ? "Loading users..." : "Select users"
+                      isFetchingUsers
+                        ? "Loading users..."
+                        : "Select user(s) to assign"
                     }
                     options={assignOptions}
                     getOptionLabel={(o) => o.label}
@@ -2492,7 +2539,6 @@ const View_Project_Management = forwardRef(
                     )}
                     onChange={(_, values) => {
                       const next = values.map((v) => v.value);
-                      dbg("Autocomplete.onChange -> assignPick", { next });
                       setAssignPick(next);
                     }}
                     filterSelectedOptions
@@ -2511,11 +2557,10 @@ const View_Project_Management = forwardRef(
                       color="success"
                       startDecorator={<Add fontSize="small" />}
                       onClick={() => {
-                        dbg("Assign button CLICK", {
-                          assignPick,
-                          before_assigned_to: form.assigned_to,
-                          before_assigned_status: form.assigned_status,
-                        });
+                        if (!assignPick.length) {
+                          toast.info("Select user(s) first.");
+                          return;
+                        }
                         handleAssignPicked();
                       }}
                       disabled={!assignPick.length || disableEditing}
@@ -2529,12 +2574,11 @@ const View_Project_Management = forwardRef(
                       variant="soft"
                       startDecorator={<Delete fontSize="small" />}
                       onClick={() => {
-                        dbg("Remove button CLICK", {
-                          assignPick,
-                          before_assigned_to: form.assigned_to,
-                          before_assigned_status: form.assigned_status,
-                        });
-                        handleRemovePicked(); // uses assignPick by default
+                        if (!assignPick.length) {
+                          toast.info("Select user(s) to remove.");
+                          return;
+                        }
+                        handleRemovePicked();
                       }}
                       disabled={!assignPick.length || disableEditing}
                     >
@@ -2542,6 +2586,7 @@ const View_Project_Management = forwardRef(
                     </Button>
                   </Stack>
 
+                 
                   {(form.assigned_to?.length ?? 0) > 0 ? (
                     <Stack spacing={0.75} sx={{ mt: 1.5 }}>
                       <Typography
@@ -2550,6 +2595,7 @@ const View_Project_Management = forwardRef(
                       >
                         Currently Assigned
                       </Typography>
+
                       <Stack
                         direction="row"
                         spacing={0.75}
@@ -2561,31 +2607,42 @@ const View_Project_Management = forwardRef(
                             (o) => o.value === id
                           );
                           const label = user ? user.label : id;
+
                           return (
                             <Chip
                               key={id}
                               size="sm"
                               variant="soft"
                               color="primary"
+                              sx={{ alignItems: "center" }}
                               endDecorator={
-                                <IconButton
-                                  size="sm"
+                                <ChipDelete
+                                  aria-label={`Remove ${label}`}
                                   variant="plain"
                                   color="danger"
-                                  onMouseDown={(e) => e.stopPropagation()}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    dbg("Chip delete CLICK", {
-                                      id,
-                                      before_assigned_to: form.assigned_to,
-                                      before_assigned_status:
-                                        form.assigned_status,
+                                    setForm((f) => {
+                                      const remaining = f.assigned_to.filter(
+                                        (x) => x !== id
+                                      );
+                                      let newStatus = "Removed";
+                                      if (
+                                        remaining.length &&
+                                        remaining.length !==
+                                          f.assigned_to.length
+                                      ) {
+                                        newStatus = "Partial";
+                                      }
+                                      return {
+                                        ...f,
+                                        assigned_to: remaining,
+                                        assigned_status: newStatus,
+                                      };
                                     });
-                                    handleRemovePicked([id]);
+                                    toast.info("Engineer's removed successfully.");
                                   }}
-                                >
-                                  <Delete fontSize="small" />
-                                </IconButton>
+                                />
                               }
                             >
                               {label}
@@ -2597,9 +2654,13 @@ const View_Project_Management = forwardRef(
                   ) : (
                     <Typography
                       level="body-xs"
-                      sx={{ mt: 1, color: "text.tertiary" }}
+                      sx={{
+                        mt: 1,
+                        color: "text.tertiary",
+                        fontStyle: "italic",
+                      }}
                     >
-                      No users assigned
+                      No users currently assigned.
                     </Typography>
                   )}
                 </FormControl>
