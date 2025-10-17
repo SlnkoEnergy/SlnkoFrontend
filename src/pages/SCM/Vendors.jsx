@@ -14,7 +14,8 @@ import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 
 function Vendors() {
   const navigate = useNavigate();
-  const [openAddTaskModal, setOpenAddTaskModal] = useState(false);
+  const [openAddVendorModal, setOpenAddVendorModal] = useState(false);
+  console.log({openAddVendorModal})
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -104,7 +105,7 @@ function Vendors() {
                 variant="solid"
                 size="sm"
                 startDecorator={<Add />}
-                onClick={() => setOpenAddTaskModal(true)}
+                onClick={() => setOpenAddVendorModal(true)}
                 sx={{
                   backgroundColor: "#3366a3",
                   color: "#fff",
@@ -135,8 +136,8 @@ function Vendors() {
       </Box>
 
       <Modal
-        open={openAddTaskModal}
-        onClose={() => setOpenAddTaskModal(false)}
+        open={openAddVendorModal}
+        onClose={() => setOpenAddVendorModal(false)}
         slotProps={{
           backdrop: {
             sx: {},
@@ -169,7 +170,7 @@ function Vendors() {
             <IconButton
               variant="plain"
               color="neutral"
-              onClick={() => setOpenAddTaskModal(false)}
+              onClick={() => setOpenAddVendorModal(false)}
               sx={{
                 position: "sticky",
                 top: 8,
@@ -179,7 +180,7 @@ function Vendors() {
             >
               <CloseRoundedIcon />
             </IconButton>
-            <AddVendor />
+            <AddVendor setOpenAddVendorModal={setOpenAddVendorModal} />
           </Box>
         </ModalDialog>
       </Modal>

@@ -23,12 +23,12 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useAddVendorMutation } from "../../redux/vendorSlice";
 
-const gstinRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i;
 const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/i;
 
 const initialForm = {
   type: "company",
   name: "",
+  company_name: "",
   email: "",
   phone: "",
   street1: "",
@@ -36,31 +36,22 @@ const initialForm = {
   city: "",
   zip: "",
   state: "",
-  country: "",
-  gstinApplicable: "not_applicable",
-  gstin: "",
-  website: "",
-  tags: [],
+  Beneficiary_Name: "",
   Account_No: "",
   IFSC_Code: "",
   Bank_Name: "",
 };
 
-function AddVendor() {
-  const navigate = useNavigate();
+function AddVendor({ setOpenAddVendorModal }) {
   const [form, setForm] = useState(initialForm);
   const [bankOpen, setBankOpen] = useState(true);
   const [errors, setErrors] = useState({});
-
-  // RTK Query hook
   const [addVendor, { isLoading }] = useAddVendorMutation();
-
-  // Photo upload state
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState("");
 
   const titlePlaceholder = useMemo(
-    () => (form.type === "company" ? "e.g. ABC" : "e.g. Ramesh Singh"),
+    () => (form.type === "company" ? "e.g. ABC Pvt Ltd" : "e.g. Ramesh Singh"),
     [form.type]
   );
 
@@ -68,7 +59,6 @@ function AddVendor() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Clean up object URL to avoid memory leaks
   useEffect(() => {
     return () => {
       if (photoPreview) URL.revokeObjectURL(photoPreview);
@@ -93,20 +83,28 @@ function AddVendor() {
 
   const validate = () => {
     const e = {};
+
+    // required by schema
     if (!form.name?.trim()) e.name = "Name is required.";
-    if (form.email && !/\S+@\S+\.\S+/.test(form.email))
-      e.email = "Invalid email.";
-    if (form.phone && !/^[0-9+\-\s()]{7,20}$/.test(form.phone))
-      e.phone = "Invalid phone.";
-    if (form.gstinApplicable === "has_gstin") {
-      if (!form.gstin?.trim()) e.gstin = "GSTIN is required.";
-      else if (!gstinRegex.test(form.gstin))
-        e.gstin = "GSTIN format looks invalid.";
-    }
-    if (form.Account_No && !/^\d{9,18}$/.test(form.Account_No))
+    if (!form.email?.trim()) e.email = "Email is required.";
+    else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = "Invalid email.";
+
+    if (!form.Beneficiary_Name?.trim())
+      e.Beneficiary_Name = "Beneficiary name is required.";
+
+    if (!form.Account_No?.toString().trim())
+      e.Account_No = "Account number is required.";
+    else if (!/^\d{9,18}$/.test(form.Account_No.toString().trim()))
       e.Account_No = "Account number should be 9–18 digits.";
-    if (form.IFSC_Code && !ifscRegex.test(form.IFSC_Code))
+
+    if (!form.IFSC_Code?.trim()) e.IFSC_Code = "IFSC is required.";
+    else if (!ifscRegex.test(form.IFSC_Code))
       e.IFSC_Code = "Enter a valid IFSC (e.g., HDFC0001234).";
+
+    if (!form.Bank_Name?.trim()) e.Bank_Name = "Bank name is required.";
+    if (form.zip && !/^\d{4,10}$/.test(String(form.zip)))
+      e.zip = "Pincode should be 4–10 digits.";
+
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -117,12 +115,27 @@ function AddVendor() {
       toast.error("Please fix the highlighted fields.");
       return;
     }
+
     const payload = {
-      ...form,
-      IFSC_Code: form.IFSC_Code?.toUpperCase() || "",
-      gstin:
-        form.gstinApplicable === "has_gstin" ? form.gstin?.toUpperCase() : "",
-      gstin_applicable: form.gstinApplicable === "has_gstin",
+      type: form.type,
+      name: form.name.trim(),
+      company_name:
+        form.type === "person" ? form.company_name?.trim() || "" : undefined,
+      Beneficiary_Name: form.Beneficiary_Name.trim(),
+      Account_No: form.Account_No,
+      IFSC_Code: form.IFSC_Code.toUpperCase(),
+      Bank_Name: form.Bank_Name.trim(),
+      contact_details: {
+        email: form.email.trim(),
+        phone: form.phone?.trim() || "",
+      },
+      address: {
+        line1: form.street1?.trim() || "",
+        line2: form.street2?.trim() || "",
+        pincode: form.zip?.toString().trim() || "",
+        city: form.city?.trim() || "",
+        state: form.state?.trim() || "",
+      },
     };
 
     try {
@@ -131,7 +144,7 @@ function AddVendor() {
       setForm(initialForm);
       setPhotoFile(null);
       setPhotoPreview("");
-      navigate("/purchase-order");
+      setOpenAddVendorModal(false);
     } catch (err) {
       const msg =
         err?.data?.msg || err?.error || err?.message || "Failed to add vendor.";
@@ -139,7 +152,6 @@ function AddVendor() {
     }
   };
 
-  // underline style for inputs
   const underlineInputStyle = {
     width: "100%",
     borderRadius: 0,
@@ -168,9 +180,7 @@ function AddVendor() {
       >
         {/* Header */}
         <Grid container spacing={2} alignItems="center">
-          {/* Upload Photo tile */}
           <Grid xs={12} md="auto">
-            {/* Hidden file input */}
             <input
               id="vendor-photo-input"
               type="file"
@@ -255,6 +265,26 @@ function AddVendor() {
                 "& input": { paddingBottom: "4px" },
               }}
             />
+            {errors.name && (
+              <FormHelperText sx={{ color: "danger.500", mt: 0.5 }}>
+                {errors.name}
+              </FormHelperText>
+            )}
+
+            {/* Company Name (only when person) */}
+            {form.type === "person" && (
+              <Grid container spacing={2} sx={{ mt: 2 }}>
+                <Grid xs={12} md={6}>
+                  <Input
+                    placeholder="Company Name"
+                    value={form.company_name}
+                    onChange={(e) => setField("company_name", e.target.value)}
+                    variant="plain"
+                    sx={underlineInputStyle}
+                  />
+                </Grid>
+              </Grid>
+            )}
 
             {/* Email + Phone */}
             <Grid container spacing={2} sx={{ mt: 2 }}>
@@ -266,7 +296,13 @@ function AddVendor() {
                   variant="plain"
                   onChange={(e) => setField("email", e.target.value)}
                   sx={underlineInputStyle}
+                  error={!!errors.email}
                 />
+                {errors.email && (
+                  <FormHelperText sx={{ color: "danger.500" }}>
+                    {errors.email}
+                  </FormHelperText>
+                )}
               </Grid>
               <Grid xs={12} md={6}>
                 <Input
@@ -292,7 +328,7 @@ function AddVendor() {
         <Grid container spacing={1.5}>
           <Grid xs={12} md={6}>
             <Input
-              placeholder="Street..."
+              placeholder="Address Line 1"
               value={form.street1}
               onChange={(e) => setField("street1", e.target.value)}
               variant="plain"
@@ -301,7 +337,7 @@ function AddVendor() {
           </Grid>
           <Grid xs={12} md={6}>
             <Input
-              placeholder="Street 2..."
+              placeholder="Address Line 2"
               value={form.street2}
               onChange={(e) => setField("street2", e.target.value)}
               variant="plain"
@@ -319,28 +355,25 @@ function AddVendor() {
           </Grid>
           <Grid xs={12} md={6}>
             <Input
-              placeholder="ZIP"
+              placeholder="Pincode"
               value={form.zip}
               type="number"
               onChange={(e) => setField("zip", e.target.value)}
               sx={underlineInputStyle}
               variant="plain"
+              error={!!errors.zip}
             />
+            {errors.zip && (
+              <FormHelperText sx={{ color: "danger.500" }}>
+                {errors.zip}
+              </FormHelperText>
+            )}
           </Grid>
           <Grid xs={12} md={6}>
             <Input
               placeholder="State"
               value={form.state}
               onChange={(e) => setField("state", e.target.value)}
-              sx={underlineInputStyle}
-              variant="plain"
-            />
-          </Grid>
-          <Grid xs={12} md={6}>
-            <Input
-              placeholder="Country"
-              value={form.country}
-              onChange={(e) => setField("country", e.target.value)}
               sx={underlineInputStyle}
               variant="plain"
             />
@@ -368,6 +401,24 @@ function AddVendor() {
           {bankOpen && (
             <Grid container spacing={1.5} sx={{ mt: 1 }}>
               <Grid xs={12} md={6}>
+                <FormControl error={!!errors.Beneficiary_Name}>
+                  <FormLabel>Beneficiary Name</FormLabel>
+                  <Input
+                    placeholder="e.g. Ramesh Singh"
+                    value={form.Beneficiary_Name}
+                    onChange={(e) =>
+                      setField("Beneficiary_Name", e.target.value)
+                    }
+                    variant="plain"
+                    sx={underlineInputStyle}
+                  />
+                  {errors.Beneficiary_Name && (
+                    <FormHelperText>{errors.Beneficiary_Name}</FormHelperText>
+                  )}
+                </FormControl>
+              </Grid>
+
+              <Grid xs={12} md={6}>
                 <FormControl error={!!errors.Account_No}>
                   <FormLabel>Account Number</FormLabel>
                   <Input
@@ -382,6 +433,7 @@ function AddVendor() {
                   )}
                 </FormControl>
               </Grid>
+
               <Grid xs={12} md={6}>
                 <FormControl error={!!errors.IFSC_Code}>
                   <FormLabel>IFSC Code</FormLabel>
@@ -397,8 +449,9 @@ function AddVendor() {
                   )}
                 </FormControl>
               </Grid>
+
               <Grid xs={12} md={6}>
-                <FormControl>
+                <FormControl error={!!errors.Bank_Name}>
                   <FormLabel>Bank Name</FormLabel>
                   <Input
                     placeholder="e.g. Axis Bank"
@@ -407,6 +460,9 @@ function AddVendor() {
                     sx={underlineInputStyle}
                     variant="plain"
                   />
+                  {errors.Bank_Name && (
+                    <FormHelperText>{errors.Bank_Name}</FormHelperText>
+                  )}
                 </FormControl>
               </Grid>
             </Grid>
@@ -430,7 +486,7 @@ function AddVendor() {
               "--Button-hoverBorderColor": "#3366a3",
               "&:hover": { color: "#3366a3" },
             }}
-            onClick={() => navigate(-1)}
+            onClick={() => setOpenAddVendorModal(false)}
             disabled={isLoading}
           >
             Cancel
