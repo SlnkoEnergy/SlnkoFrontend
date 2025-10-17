@@ -5,7 +5,7 @@ function Dashboard() {
   return (
     <Box
       sx={{
-        ml: { lg: "var(--Sidebar-width)" },
+        ml: { md: 0, lg: "var(--Sidebar-width)" },
         px: 0,
         width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
         minHeight: "100vh",
@@ -16,7 +16,6 @@ function Dashboard() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-
         "@keyframes blink": {
           "0%, 100%": {
             opacity: 0.25,

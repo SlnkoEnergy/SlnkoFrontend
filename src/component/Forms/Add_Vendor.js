@@ -19,7 +19,6 @@ import {
 import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUp from "@mui/icons-material/KeyboardArrowUp";
 import CloudUploadRoundedIcon from "@mui/icons-material/CloudUploadRounded";
-import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useAddVendorMutation } from "../../redux/vendorSlice";
 

@@ -40,9 +40,13 @@ export const vendorsApi = createApi({
             ]
           : [{ type: "Vendors", id: "LIST" }],
     }),
+    getVendorById: builder.query({
+      query: (id) => `/vendor/vendor/${id}`,
+      providesTags: (result, error, id) => [{ type: "Vendors", id }],
+    }),
     getVendorsNameSearch: builder.query({
       query: ({ limit, search, page }) =>
-        `/vendor-search?search=${search}&limit=${limit}&page=${page}`,
+        `/vendor/vendor-search?search=${search}&limit=${limit}&page=${page}`,
       providesTags: (result) =>
         result?.data
           ? [
@@ -57,6 +61,7 @@ export const vendorsApi = createApi({
 export const {
   useAddVendorMutation,
   useGetAllVendorsQuery,
+  useGetVendorByIdQuery,
   useGetVendorsNameSearchQuery,
   useLazyGetVendorsNameSearchQuery,
 } = vendorsApi;

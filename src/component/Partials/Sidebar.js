@@ -26,7 +26,7 @@ import Stack from "@mui/joy/Stack";
 import Typography from "@mui/joy/Typography";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import Main_Logo from "../../assets/karwa_chautt_logo.png";
+import Main_Logo from "../../assets/protrac_diwali.png";
 import { closeSidebar } from "../../utils/utils";
 import DatabaseIcon from "@mui/icons-material/Storage";
 import FactCheckIcon from "@mui/icons-material/FactCheck";
@@ -914,7 +914,7 @@ function Sidebar() {
           </List>
         ) : user?.name === "Guddu Rani Dubey" ||
           user?.name === "Varun Mishra" ||
-          (user?.name === "Prachi Singh") ? (
+          user?.name === "Prachi Singh" ? (
           <List
             size="sm"
             sx={{

@@ -35,7 +35,7 @@ export const purchasesApi = createApi({
         params: clean({
           page: args.page ?? 1,
           search: args.search ?? "",
-          status: args.status,          // disappears when empty -> new key
+          status: args.status,         
           pageSize: args.pageSize ?? 10,
           type: args.type,
           project_id: args.project_id,
@@ -47,6 +47,7 @@ export const purchasesApi = createApi({
           deliveryTo: args.deliveryTo,
           filter: args.filter,
           itemSearch: args.itemSearch,
+          vendor_id: args.vendor_id,
         }),
       }),
       transformResponse: (response) => ({

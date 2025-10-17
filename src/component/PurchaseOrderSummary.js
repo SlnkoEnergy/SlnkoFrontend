@@ -70,7 +70,7 @@ import {
 import SearchPickerModal from "../component/SearchPickerModal";
 
 const PurchaseOrderSummary = forwardRef((props, ref) => {
-  const { project_code, onSelectionChange = () => {}} = props;
+  const { project_code, vendor_id,onSelectionChange = () => {}} = props;
   const [po, setPO] = useState("");
   const [selectedpo, setSelectedpo] = useState("");
   const [selectedtype, setSelectedtype] = useState("");
@@ -144,7 +144,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const navigate = useNavigate();
 
   const location = useLocation();
-  const isFromCAM = location.pathname === "/project_detail";
+  const isFromCAM = location.pathname === "/project_detail" || location.pathname === "/view_vendor";
   const isFromPR = location.pathname === "/purchase_detail";
   const isLogisticsPage = location.pathname === "/logistics";
 
@@ -170,6 +170,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     pr_id: pr_id ? pr_id.toString() : "",
     item_id: item_id ? item_id.toString() : "",
     itemSearch: selecteditem || "",
+    vendor_id: vendor_id ? vendor_id : "",
   });
 
   const handleOpen = (po_number, action) => {

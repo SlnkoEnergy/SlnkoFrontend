@@ -10,14 +10,14 @@ import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
 import { CircularProgress, Option, Select } from "@mui/joy";
 import { useGetAllVendorsQuery } from "../redux/vendorSlice";
 
 const AllVendors = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-
+  const navigate = useNavigate();
   const readInt = (key, fallback) => {
     const v = parseInt(searchParams.get(key) || "", 10);
     return Number.isFinite(v) && v > 0 ? v : fallback;
@@ -285,7 +285,9 @@ const AllVendors = () => {
                   key={vendor._id ?? index}
                   sx={{
                     "&:hover": { backgroundColor: "neutral.plainHoverBg" },
+                    cursor: "pointer",
                   }}
+                  onClick={() => navigate(`/view_vendor?id=${vendor._id}`)}
                 >
                   <Box
                     component="td"

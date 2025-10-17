@@ -86,6 +86,7 @@ import ApprovalDashboard from "../pages/Approvals/ApprovalDashboard";
 import MyRequest from "../pages/Approvals/MyRequest";
 import ProjectDashBoard from "../pages/Projects/ProjectDashboard";
 import Vendors from "../pages/SCM/Vendors";
+import ViewVendors from "../pages/SCM/ViewVendor";
 
 function index() {
   return (
@@ -289,6 +290,14 @@ function index() {
         element={
           <PrivateRoute>
             <Vendors />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/view_vendor"
+        element={
+          <PrivateRoute>
+            <ViewVendors />
           </PrivateRoute>
         }
       />
