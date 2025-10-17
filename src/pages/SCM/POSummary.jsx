@@ -3,22 +3,21 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import Sidebar from "../../component/Partials/Sidebar";
 import MainHeader from "../../component/Partials/MainHeader";
 import SubHeader from "../../component/Partials/SubHeader";
-import Dash_scm from "../../component/ScmDashboard";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import PurchaseOrderSummary from "../../component/PurchaseOrderSummary";
 import Filter from "../../component/Partials/Filter";
 import { useExportPosMutation } from "../../redux/purchasesSlice";
 import DownloadIcon from "@mui/icons-material/Download";
+import { useGetAllCategoriesDropdownQuery } from "../../redux/productsSlice";
 
 function DashboardSCM() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedPOIds, setSelectedPOIds] = useState([]);
   const selectedCount = selectedPOIds.length;
   const [open, setOpen] = useState(false);
-
   const poSummaryRef = useRef();
 
   const [exportPos, { isLoading: isExporting }] = useExportPosMutation();
@@ -33,7 +32,6 @@ function DashboardSCM() {
       }
 
       const blob = await exportPos({ purchaseorders: ids }).unwrap();
-
       const fileName = `po_${new Date().toISOString().slice(0, 10)}.csv`;
 
       const url = URL.createObjectURL(blob);
@@ -56,8 +54,6 @@ function DashboardSCM() {
     }
   };
 
-
-
   // NEW: open logistics with selected PO(s)
   const handleOpenLogisticsWithSeed = () => {
     const seed = poSummaryRef.current?.getSelectedPOSeed?.();
@@ -72,6 +68,11 @@ function DashboardSCM() {
     });
   };
 
+  const { data: allMaterial } = useGetAllCategoriesDropdownQuery();
+  const allMaterials = Array.isArray(allMaterial)
+    ? allMaterial
+    : allMaterial?.data ?? [];
+
   const statusOptions = [
     "Approval Pending",
     "Approval Done",
@@ -84,24 +85,28 @@ function DashboardSCM() {
     "Short Quantity",
     "Delivered",
   ];
+
   const fields = [
     {
       key: "Status",
       label: "Filter By Delivery Status",
       type: "select",
-      options: statusOptions.map((d) => ({ label: d, value: d }))
+      options: statusOptions.map((d) => ({ label: d, value: d })),
     },
     {
       key: "poStatus",
       label: "Filter By Bill Status",
       type: "select",
-      options: ["Fully Billed", "Bill Pending"].map((d) => ({ label: d, value: d })),
+      options: ["All Status", "Fully Billed", "Bill Pending"].map((d) => ({
+        label: d,
+        value: d,
+      })),
     },
     {
       key: "itemSearch",
       label: "Filter By Category",
       type: "select",
-      options: ["1st", "2nd", "3rd"].map((d) => ({ label: d, value: d })),
+      options: allMaterials.map((d) => ({ label: d.name, value: d.name })),
     },
     {
       key: "etd_date",
@@ -112,9 +117,10 @@ function DashboardSCM() {
       key: "delivery_date",
       label: "Filter By Delivery Date",
       type: "daterange",
-    }
+    },
   ];
 
+  // IMPORTANT: read the SAME KEYS the child writes/reads
   const [selectStatus, setSelectStatus] = useState(
     searchParams.get("status") || ""
   );
@@ -122,39 +128,37 @@ function DashboardSCM() {
     searchParams.get("poStatus") || ""
   );
   const [selectItem, setSelectItem] = useState(
-    searchParams.get("category") || ""
+    searchParams.get("itemSearch") || ""
   );
   const [etdDateFrom, setEtdDateFrom] = useState(
-    searchParams.get("etdDateFrom") || ""
-  )
-  const [etdDateTo, setEtdDateTo] = useState(
-    searchParams.get("etdDateTo") || ""
-  )
+    searchParams.get("etdFrom") || ""
+  );
+  const [etdDateTo, setEtdDateTo] = useState(searchParams.get("etdTo") || "");
   const [deliveryFrom, setDeliveryFrom] = useState(
     searchParams.get("deliveryFrom") || ""
-  )
+  );
   const [deliveryTo, setDeliveryTo] = useState(
     searchParams.get("deliveryTo") || ""
-  )
+  );
+
+  // Version flag to let child know Apply/Reset happened
+  const [filtersVersion, setFiltersVersion] = useState(0);
 
   useEffect(() => {
-    console.log("PARENT selectStatus state ->", deliveryFrom, typeof deliveryFrom);
-  }, [deliveryFrom]);
+    // dev log
+    // console.log("PARENT selectItem ->", selectItem);
+  }, [selectItem]);
 
-  console.log(selectStatus)
   return (
-
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
-      <Box
-        sx={{ display: "flex", minHeight: "100dvh" }}
-      >
+      <Box sx={{ display: "flex", minHeight: "100dvh" }}>
         <Sidebar />
         <MainHeader title="SCM" sticky>
           <Box display="flex" gap={1}>
             <Button
               size="sm"
-              onClick={() => navigate('/purchase-order')}
+              onClick={() => navigate("/purchase-order")}
               sx={{
                 color: "white",
                 bgcolor: "transparent",
@@ -191,6 +195,7 @@ function DashboardSCM() {
             >
               Logistics
             </Button>
+
             <Button
               size="sm"
               onClick={() => navigate(`/vendor_bill`)}
@@ -249,16 +254,17 @@ function DashboardSCM() {
                   </Button>
                 </>
               )}
+
               <Button
                 variant="soft"
                 size="sm"
                 color="neutral"
-                // onClick={() => handleExport(true)}
                 loading={isExporting}
                 startDecorator={<DownloadIcon />}
               >
                 Export All
               </Button>
+
               <Button
                 color="primary"
                 variant="solid"
@@ -267,40 +273,41 @@ function DashboardSCM() {
               >
                 Add Vendor
               </Button>
+
               <Filter
                 open={open}
                 onOpenChange={setOpen}
                 title="Filters"
                 fields={fields}
                 onApply={(values) => {
-
-                  setSelectStatus(values?.Status || "")
-                  setSelectBillStatus(values?.poStatus || "")
-                  setSelectItem(values?.itemSearch || "")
+                  setSelectStatus(values?.Status || "");
+                  setSelectBillStatus(values?.poStatus || "");
+                  setSelectItem(values?.itemSearch || "");
                   setEtdDateFrom(values?.etd_date?.from || "");
                   setEtdDateTo(values?.etd_date?.to || "");
                   setDeliveryFrom(values?.delivery_date?.from || "");
                   setDeliveryTo(values?.delivery_date?.to || "");
 
+                  setFiltersVersion((v) => v + 1); // ← signal child
                   setOpen(false);
                 }}
                 onReset={() => {
-                  setSelectStatus("")
-                  setSelectBillStatus("")
-                  setSelectItem("")
+                  setSelectStatus("");
+                  setSelectBillStatus("");
+                  setSelectItem("");
                   setEtdDateFrom("");
                   setEtdDateTo("");
                   setDeliveryFrom("");
                   setDeliveryTo("");
 
+                  setFiltersVersion((v) => v + 1); // ← signal child (clear)
                   setOpen(false);
                 }}
               />
             </>
           }
-        >
+        />
 
-        </SubHeader>
         <Box
           component="main"
           className="MainContent"
@@ -313,7 +320,7 @@ function DashboardSCM() {
             mr: "28px",
             pr: "30px",
             ml: "24px",
-            overflow: "hidden"
+            overflow: "hidden",
           }}
         >
           <PurchaseOrderSummary
@@ -327,9 +334,9 @@ function DashboardSCM() {
             delivery_To={deliveryTo}
             etdDateFrom={etdDateFrom}
             etdDateTo={etdDateTo}
+            filtersVersion={filtersVersion} // ← NEW
           />
         </Box>
-
       </Box>
     </CssVarsProvider>
   );

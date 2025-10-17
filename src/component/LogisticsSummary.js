@@ -414,141 +414,111 @@ export default function LogisticsDashboard() {
     );
 
   return (
-    <>
-      {/* Search */}
+    <Box
+      sx={{
+        ml: { lg: "var(--Sidebar-width)" },
+        px: "0px",
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+      }}
+    >
       <Box
-        sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          borderRadius: "sm",
-          py: 1,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1.5,
-          "& > *": { minWidth: { xs: "120px", md: "160px" } },
-        }}
+        display="flex"
+        justifyContent="space-between"
+        alignItems="flex-end"      // ⬅️ align bottoms
+        flexWrap="wrap"
+        gap={1}
+        sx={{ mb: 1.5 }}           // ⬅️ single, uniform gap before the table
       >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search here</FormLabel>
-          <Input
-            size="sm"
-            placeholder="Search by Logistics Code, PO, Vehicle No., Description"
-            startDecorator={<SearchIcon />}
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              const params = new URLSearchParams(searchParams);
-              params.set("page", "1");
-              setSearchParams(params);
-              setCurrentPage(1);
-            }}
-          />
-        </FormControl>
-      </Box>
-
-      {/* Tabs + Rows per page */}
-      <Box
-        display={"flex"}
-        sx={{ marginLeft: { xl: "15%", lg: "18%" } }}
-        justifyContent={"space-between"}
-        width={"full"}
-        alignItems={"center"}
-      >
-        <Box>
-          <Tabs
-            value={selectedTab}
-            onChange={(_, newValue) => {
-              setSelectedTab(newValue);
-
-              const params = new URLSearchParams(searchParams);
-              params.set("tab", newValue);
-              params.set("page", "1");
-
-              const statusValue = mapTabToStatus(newValue);
-              if (statusValue) {
-                // write status for Out for delivery / Delivered
-                params.set("status", statusValue);
-              } else {
-                // remove status for All
-                params.delete("status");
-              }
-
-              setSearchParams(params);
-              setCurrentPage(1);
-            }}
-            indicatorPlacement="none"
-            sx={{
-              bgcolor: "background.level1",
-              borderRadius: 9999,
-              boxShadow: "sm",
-              width: "fit-content",
-            }}
-          >
-            <TabList sx={{ gap: 1 }}>
-              {TAB_LABELS.map((label) => (
-                <Tab
-                  key={label}
-                  value={label}
-                  disableIndicator
-                  sx={{
-                    borderRadius: 9999,
-                    fontWeight: "md",
-                    "&.Mui-selected": {
-                      bgcolor: "background.surface",
-                      boxShadow: "sm",
-                    },
-                  }}
-                >
-                  {label}
-                </Tab>
-              ))}
-            </TabList>
-          </Tabs>
-        </Box>
+        <Tabs
+          value={selectedTab}
+          onChange={(_, newValue) => {
+            setSelectedTab(newValue);
+            const params = new URLSearchParams(searchParams);
+            params.set("tab", newValue);
+            params.set("page", "1");
+            const statusValue = mapTabToStatus(newValue);
+            statusValue ? params.set("status", statusValue) : params.delete("status");
+            setSearchParams(params);
+            setCurrentPage(1);
+          }}
+          indicatorPlacement="none"
+          sx={{
+            p: 0, m: 0,             // ⬅️ remove internal space
+            minHeight: 0,           // ⬅️ avoid extra height
+            bgcolor: "background.level1",
+            borderRadius: "md",
+            boxShadow: "sm",
+            width: "fit-content",
+            flexShrink: 0,
+            "--Tabs-gap": "8px",    // ⬅️ keep tabs compact
+          }}
+        >
+          <TabList sx={{ gap: 1, p: 0, m: 0 }}>
+            {TAB_LABELS.map((label) => (
+              <Tab
+                key={label}
+                value={label}
+                disableIndicator
+                sx={{
+                  borderRadius: "xl",
+                  fontWeight: "md",
+                  whiteSpace: "nowrap",
+                  py: 0.5,           
+                  "&.Mui-selected": { bgcolor: "background.surface", boxShadow: "sm" },
+                }}
+              >
+                {label}
+              </Tab>
+            ))}
+          </TabList>
+        </Tabs>
 
         <Box
-          display="flex"
-          alignItems="center"
-          gap={1}
-          sx={{ padding: "8px 16px" }}
+          sx={{
+            py: 0,
+            display: "flex",
+            alignItems: "flex-end",
+            gap: 1.5,
+            pl: 15,
+            width: { xs: "100%", md: "50%" },
+            minWidth: 260,
+            flex: 1,
+          }}
         >
-          <Typography level="body-sm">Rows Per Page:</Typography>
-          <Select
-            value={rowsPerPage}
-            onChange={(_, newValue) => {
-              if (newValue == null) return;
-              setRowsPerPage(newValue);
-              const params = new URLSearchParams(searchParams);
-              params.set("pageSize", String(newValue));
-              params.set("page", "1");
-              setSearchParams(params);
-              setCurrentPage(1);
-            }}
-            size="sm"
-            variant="outlined"
-            sx={{ minWidth: 80, borderRadius: "md", boxShadow: "sm" }}
-          >
-            {[10, 25, 50, 100].map((v) => (
-              <Option key={v} value={v}>
-                {v}
-              </Option>
-            ))}
-          </Select>
+          <FormControl sx={{ flex: 1, minWidth: 0 }} size="sm">
+            <FormLabel sx={{ mb: 0.5 }}>Search here</FormLabel>
+            <Input
+              size="sm"
+              placeholder="Search by Logistics Code, PO, Vehicle No., Description"
+              startDecorator={<SearchIcon />}
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                const params = new URLSearchParams(searchParams);
+                params.set("page", "1");
+                setSearchParams(params);
+                setCurrentPage(1);
+              }}
+              sx={{ width: "100%", minWidth: 0 }}
+            />
+          </FormControl>
         </Box>
       </Box>
+
+
+
+
 
       {/* Table */}
       <Sheet
         className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: { xs: "none", sm: "initial" },
+          display: { xs: "none", sm: "block" },
           width: "100%",
           borderRadius: "sm",
-          flexShrink: 1,
+          maxHeight: { xs: "66vh", xl: "75vh" },
           overflow: "auto",
-          minHeight: 0,
-          marginLeft: { lg: "18%", xl: "15%" },
-          maxWidth: { lg: "85%", sm: "100%" },
         }}
       >
         <Box
@@ -810,7 +780,7 @@ export default function LogisticsDashboard() {
           display: "flex",
           flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
-          marginLeft: { lg: "18%", xl: "15%" },
+
         }}
       >
         <Button
@@ -856,6 +826,36 @@ export default function LogisticsDashboard() {
           )}
         </Box>
 
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={1}
+          sx={{ padding: "8px 16px" }}
+        >
+          <Typography level="body-sm">Rows Per Page:</Typography>
+          <Select
+            value={rowsPerPage}
+            onChange={(_, newValue) => {
+              if (newValue == null) return;
+              setRowsPerPage(newValue);
+              const params = new URLSearchParams(searchParams);
+              params.set("pageSize", String(newValue));
+              params.set("page", "1");
+              setSearchParams(params);
+              setCurrentPage(1);
+            }}
+            size="sm"
+            variant="outlined"
+            sx={{ minWidth: 80, borderRadius: "md", boxShadow: "sm" }}
+          >
+            {[10, 25, 50, 100].map((v) => (
+              <Option key={v} value={v}>
+                {v}
+              </Option>
+            ))}
+          </Select>
+        </Box>
+
         <Button
           size="sm"
           variant="outlined"
@@ -867,6 +867,7 @@ export default function LogisticsDashboard() {
           Next
         </Button>
       </Box>
-    </>
+    </Box>
+
   );
 }

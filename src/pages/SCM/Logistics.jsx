@@ -201,7 +201,6 @@ function Logistics() {
           title="Logistic"
           isBackEnabled={false}
           sticky
-
         >
 
         </SubHeader>

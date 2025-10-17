@@ -34,7 +34,7 @@ export const purchasesApi = createApi({
         const params = clean({
           page: args.page ?? 1,
           search: args.search ?? "",
-          status: args.status,          // check this
+          status: args.status === "All Status" ? "" : args.status,          // check this
           pageSize: args.pageSize ?? 10,
           type: args.type,
           project_id: args.project_id,
@@ -47,9 +47,6 @@ export const purchasesApi = createApi({
           filter: args.filter,
           itemSearch: args.itemSearch,
         });
-
-        console.log("📦 getPaginatedPOs called with params:", params);
-
         return {
           url: "get-paginated-po",
           params,

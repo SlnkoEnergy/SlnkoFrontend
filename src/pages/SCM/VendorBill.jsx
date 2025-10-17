@@ -10,12 +10,95 @@ import Header from '../../component/Partials/Header';
 import VendorBill from "../../component/Vendor_Bill";
 import MainHeader from '../../component/Partials/MainHeader';
 import { Button } from '@mui/joy';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import SubHeader from '../../component/Partials/SubHeader';
+import Filter from '../../component/Partials/Filter';
+import { useState } from 'react';
+import { useExportBillsMutation } from '../../redux/billsSlice';
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+
 
 function Bill_History() {
 
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const [open, setOpen] = useState(false);
+
+  const fields = [
+    {
+      key: "billStatus",
+      label: "Filter By Bill Status",
+      type: "select",
+      options: ["All Status", "Fully Billed", "Bill Pending"].map((d) => ({ label: d, value: d })),
+    },
+    {
+      key: "dateFilter",
+      label: "Date Filter",
+      type: "daterange",
+    }
+  ];
+
+  const [selectStatus, setSelectStatus] = useState(
+    searchParams.get("status") || ""
+  )
+
+  const [dateFilterFrom, setDateFilterFrom] = useState(
+    searchParams.get("dateFilter") || ""
+  )
+
+  const [dateFilterEnd, setDateFilterEnd] = useState(
+    searchParams.get("dateFilterEnd") || ""
+  )
+
+  const [exportBills, { isLoading: isExporting }] = useExportBillsMutation();
+
+  const handleExport = async (isExportAll) => {
+    try {
+      // const exportFrom =  formatDateToDDMMYYYY(from) ;
+      // const exportTo = formatDateToDDMMYYYY(to) : null;
+      // const exportAll = !from || !to;
+
+      const res = await exportBills({
+        // from: exportFrom,
+        // to: exportTo,
+        // exportAll: isExportAll,
+      }).unwrap();
+
+      const url = URL.createObjectURL(res);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "bills_export.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Export failed", err);
+      alert("Failed to export bills");
+    }
+  };  //   try {
+  //     const exportFrom = from ? formatDateToDDMMYYYY(from) : null;
+  //     const exportTo = to ? formatDateToDDMMYYYY(to) : null;
+  //     // const exportAll = !from || !to;
+
+  //     const res = await exportBills({
+  //       from: exportFrom,
+  //       to: exportTo,
+  //       exportAll: isExportAll,
+  //     }).unwrap();
+
+  //     const url = URL.createObjectURL(res);
+  //     const link = document.createElement("a");
+  //     link.href = url;
+  //     link.download = "bills_export.csv";
+  //     link.click();
+  //     URL.revokeObjectURL(url);
+  //   } catch (err) {
+  //     console.error("Export failed", err);
+  //     alert("Failed to export bills");
+  //   }
+  // };
+
+
   return (
     // <CssVarsProvider disableTransitionOnChange>
     //   <CssBaseline />
@@ -178,6 +261,44 @@ function Bill_History() {
           sticky
 
         >
+          <>
+
+            <Button
+              variant="outlined"
+              size="sm"
+              color="primary"
+              onClick={() => handleExport(false)}
+              loading={isExporting}
+              startDecorator={<CalendarMonthIcon />}
+            >
+              Export
+            </Button>
+
+            <Filter
+              open={open}
+              onOpenChange={setOpen}
+              title="Filters"
+              fields={fields}
+
+              onApply={(values) => {
+
+                setSelectStatus(values?.billStatus || "")
+                setDateFilterFrom(values?.dateFilter?.from || "")
+                setDateFilterEnd(values?.dateFilter?.to || "");
+
+                setOpen(false);
+              }}
+
+              onReset={() => {
+
+                setSelectStatus("");
+                setDateFilterFrom("");
+                setDateFilterEnd("");
+
+                setOpen(false);
+              }}
+            />
+          </>
 
         </SubHeader>
 
@@ -190,13 +311,17 @@ function Bill_History() {
             flexDirection: "column",
             gap: 1,
             mt: "108px",
-            mr:"28px",
+            mr: "28px",
             pr: "30px",
             ml: "24px",
             overflow: "hidden"
           }}
         >
-          <VendorBill />
+          <VendorBill
+            selectStatus={selectStatus}
+            dateFilterFrom={dateFilterFrom} // if you meant start date
+            dateFilterEnd={dateFilterEnd}
+          />
         </Box>
       </Box>
 

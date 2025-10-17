@@ -1,12 +1,11 @@
 import { keyframes } from "@emotion/react";
 import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
-import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import DownloadIcon from "@mui/icons-material/Download";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import SearchIcon from "@mui/icons-material/Search";
 import { CircularProgress, Option, Select, Sheet, Tooltip } from "@mui/joy";
+import Checkbox from "@mui/joy/Checkbox";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Chip from "@mui/joy/Chip";
@@ -16,57 +15,98 @@ import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Typography from "@mui/joy/Typography";
 import { useSnackbar } from "notistack";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import {
-  useExportBillsMutation,
-  useGetAllBillsQuery,
-} from "../redux/billsSlice";
+import { useGetAllBillsQuery } from "../redux/billsSlice";
 import Axios from "../utils/Axios";
 import dayjs from "dayjs";
 
-const HEADER_STACK = 108;      // MainHeader + SubHeader sticky stack
-const FILTERS_APPROX = 120;    // ~height of your filters row
+const HEADER_STACK = 108;
+const FILTERS_APPROX = 120;
 const PADDING_FIX = 24;
 
-function VendorBillSummary() {
-  const [searchQuery, setSearchQuery] = useState("");
+function VendorBillSummary({ selectStatus, dateFilterFrom, dateFilterEnd }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [user, setUser] = useState(null);
-  const selectedbill = searchParams.get("status") || "";
+  const navigate = useNavigate();
+
+  const nonEmpty = (v) => typeof v === "string" && v.trim() !== "";
+
+  // search text & pagination
+  const [searchQuery, setSearchQuery] = useState("");
   const initialPage = parseInt(searchParams.get("page")) || 1;
   const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
-  const [from, setFrom] = useState("");
-  const [date, setDate] = useState("");
-  const [to, setTo] = useState("");
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [perPage, setPerPage] = useState(initialPageSize);
-  const po_number = searchParams.get("po_number");
+
+  const po_number = searchParams.get("po_number") || "";
+
+  // selection
+  const [selectedIds, setSelectedIds] = useState([]);
+
+  // Optional user data (kept)
+  const [user, setUser] = useState(null);
   useEffect(() => {
-    const userData = getUserData();
-    setUser(userData);
+    const userData = localStorage.getItem("userDetails");
+    setUser(userData ? JSON.parse(userData) : null);
   }, []);
 
-  const getUserData = () => {
-    const userData = localStorage.getItem("userDetails");
-    if (userData) {
-      return JSON.parse(userData);
+  // Sync PROPS -> URL (only these three keys)
+  const isPushingRef = useRef(false);
+  useEffect(() => {
+    const nextStatus = nonEmpty(selectStatus) ? selectStatus : "";
+    const nextFrom = nonEmpty(dateFilterFrom) ? dateFilterFrom : "";
+    const nextEnd = nonEmpty(dateFilterEnd) ? dateFilterEnd : "";
+
+    const urlStatus = searchParams.get("status") || "";
+    const urlFrom = searchParams.get("dateFrom") || "";
+    const urlEnd = searchParams.get("dateEnd") || "";
+
+    const needsUpdate =
+      urlStatus !== nextStatus || urlFrom !== nextFrom || urlEnd !== nextEnd;
+
+    if (!needsUpdate) return;
+
+    isPushingRef.current = true;
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (nextStatus) next.set("status", nextStatus); else next.delete("status");
+      if (nextFrom) next.set("dateFrom", nextFrom); else next.delete("dateFrom");
+      if (nextEnd) next.set("dateEnd", nextEnd); else next.delete("dateEnd");
+      next.set("page", "1"); // reset page when filters change
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectStatus, dateFilterFrom, dateFilterEnd]);
+
+  // If something else changes the URL, update current page
+  useEffect(() => {
+    if (isPushingRef.current) {
+      isPushingRef.current = false;
+      return;
     }
-    return null;
-  };
+    const pageFromUrl = parseInt(searchParams.get("page")) || 1;
+    setCurrentPage(pageFromUrl);
+  }, [searchParams]);
 
-  const { data: getBill = {}, isLoading } = useGetAllBillsQuery({
-    page: currentPage,
-    pageSize: perPage,
-    status: selectedbill,
-    search: searchQuery,
-    date: date,
-    po_number: po_number,
-  });
+  // Build query args without empty strings
+  const queryArgs = useMemo(() => {
+    const args = {
+      page: currentPage,
+      pageSize: perPage,
+    };
+    if (nonEmpty(selectStatus)) args.status = selectStatus;
+    if (nonEmpty(searchQuery)) args.search = searchQuery.toLowerCase();
+    if (nonEmpty(dateFilterFrom)) args.dateFrom = dateFilterFrom;
+    if (nonEmpty(dateFilterEnd)) args.dateEnd = dateFilterEnd;
+    if (nonEmpty(po_number)) args.po_number = po_number;
+    return args;
+  }, [currentPage, perPage, selectStatus, searchQuery, dateFilterFrom, dateFilterEnd, po_number]);
 
-  const [exportBills, { isLoading: isExporting }] = useExportBillsMutation();
+  // Fetch
+  const { data: getBill = {}, isLoading } = useGetAllBillsQuery(queryArgs);
+
   const {
-    data: getBillData = [],
+    data: billsData = [],
     total = 0,
     count = 0,
     page = 0,
@@ -74,122 +114,102 @@ function VendorBillSummary() {
     totalPages = 0,
   } = getBill;
 
-  const startIndex = (page - 1) * pageSize + 1;
-  const endIndex = Math.min(page * pageSize, total);
-
-  const getPaginationRange = () => {
-    const siblings = 1;
-    const pages = [];
-
-    if (totalPages <= 5 + siblings * 2) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i);
-    } else {
-      const left = Math.max(currentPage - siblings, 2);
-      const right = Math.min(currentPage + siblings, totalPages - 1);
-
-      pages.push(1);
-      if (left > 2) pages.push("...");
-
-      for (let i = left; i <= right; i++) pages.push(i);
-
-      if (right < totalPages - 1) pages.push("...");
-      pages.push(totalPages);
-    }
-
-    return pages;
-  };
-
-  const handleSearch = (query) => {
-    setSearchQuery(query.toLowerCase());
-  };
-
   const bills = useMemo(
     () => (Array.isArray(getBill?.data) ? getBill.data : []),
     [getBill]
   );
 
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
+  // Clear selection when list changes (page/filter)
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [bills, currentPage, perPage]);
+
+  // Pagination
+  const startIndex = (page - 1) * pageSize + 1;
+  const endIndex = Math.min(page * pageSize, total);
+
+  const handlePageChange = (pageNum) => {
+    if (pageNum >= 1 && pageNum <= totalPages) {
       setSearchParams((prev) => {
-        return {
-          ...Object.fromEntries(prev.entries()),
-          page: String(page),
-        };
+        const next = new URLSearchParams(prev);
+        next.set("page", String(pageNum));
+        return next;
       });
     }
   };
 
-  useEffect(() => {
-    const page = parseInt(searchParams.get("page")) || 1;
-    setCurrentPage(page);
-  }, [searchParams]);
-
-  const formatDateToDDMMYYYY = (dateStr) => {
-    if (!dateStr) return null;
-    const [year, month, day] = dateStr.split("-");
-    return `${day}-${month}-${year}`;
+  const handlePerPageChange = (newValue) => {
+    setPerPage(newValue);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("page", "1");
+      next.set("pageSize", String(newValue));
+      return next;
+    });
   };
 
-  const handleExport = async (isExportAll) => {
-    try {
-      const exportFrom = from ? formatDateToDDMMYYYY(from) : null;
-      const exportTo = to ? formatDateToDDMMYYYY(to) : null;
-      // const exportAll = !from || !to;
+  // Selection handlers
+  const allIdsOnPage = useMemo(() => bills.map((b) => b._id).filter(Boolean), [bills]);
+  const isAllSelected = allIdsOnPage.length > 0 && selectedIds.length === allIdsOnPage.length;
+  const isIndeterminate = selectedIds.length > 0 && !isAllSelected;
 
-      const res = await exportBills({
-        from: exportFrom,
-        to: exportTo,
-        exportAll: isExportAll,
-      }).unwrap();
-
-      const url = URL.createObjectURL(res);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "bills_export.csv";
-      link.click();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Export failed", err);
-      alert("Failed to export bills");
-    }
+  const toggleSelectAll = (checked) => {
+    if (checked) setSelectedIds(allIdsOnPage);
+    else setSelectedIds([]);
   };
+
+  const toggleRow = (id) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const capitalize = (s = "") =>
+    s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+
+  const BillingStatusChip = ({ status, balance }) => {
+    const isFullyBilled = status === "fully billed";
+    const isPending = status === "waiting bills";
+    const rawLabel = isFullyBilled
+      ? "Fully Billed"
+      : isPending
+        ? `${balance} - Waiting Bills`
+        : status;
+    return (
+      <Chip
+        variant="soft"
+        size="sm"
+        startDecorator={
+          isFullyBilled ? (
+            <CheckRoundedIcon />
+          ) : isPending ? (
+            <AutorenewRoundedIcon />
+          ) : null
+        }
+        color={isFullyBilled ? "success" : isPending ? "warning" : "neutral"}
+      >
+        {capitalize(rawLabel)}
+      </Chip>
+    );
+  };
+
+  const { enqueueSnackbar } = useSnackbar();
 
   const BillAcceptance = ({ billNumber, approvedBy }) => {
     const [isAccepted, setIsAccepted] = useState(Boolean(approvedBy));
-    const [user, setUser] = useState(null);
-    const { enqueueSnackbar } = useSnackbar();
-
-    useEffect(() => {
-      const userData = getUserData();
-      setUser(userData);
-    }, []);
-
-    const getUserData = () => {
-      const userData = localStorage.getItem("userDetails");
-      return userData ? JSON.parse(userData) : null;
-    };
-
     const handleAcceptance = async () => {
       try {
         const token = localStorage.getItem("authToken");
-
-        if (!token) throw new Error("No auth token found in localStorage.");
-
-        const response = await Axios.put(
+        const localUser = user;
+        if (!token) throw new Error("No auth token found");
+        const res = await Axios.put(
           "/accepted-by",
-          {
-            bill_number: billNumber,
-          },
-          {
-            headers: {
-              "x-auth-token": token,
-            },
-          }
+          { bill_number: billNumber },
+          { headers: { "x-auth-token": token } }
         );
-
-        if (response.status === 200) {
+        if (res.status === 200) {
           setIsAccepted(true);
-          enqueueSnackbar(`Bill accepted successfully by ${user?.name}`, {
+          enqueueSnackbar(`Bill accepted successfully by ${localUser?.name}`, {
             variant: "success",
           });
         } else {
@@ -197,14 +217,12 @@ function VendorBillSummary() {
             variant: "error",
           });
         }
-      } catch (error) {
-        console.error("Failed to accept the bill:", error);
+      } catch (err) {
         enqueueSnackbar("This bill has already been accepted.", {
           variant: "error",
         });
       }
     };
-
     return (
       <Box>
         {isAccepted ? (
@@ -214,14 +232,7 @@ function VendorBillSummary() {
           >
             <Typography
               level="body-sm"
-              sx={{
-                color: "#666",
-                fontWeight: 500,
-                mt: 0.5,
-                display: "flex",
-                flexDirection: "column",
-                cursor: "help",
-              }}
+              sx={{ color: "#666", fontWeight: 500, mt: 0.5, cursor: "help" }}
             >
               Approved
             </Typography>
@@ -240,19 +251,14 @@ function VendorBillSummary() {
               size="sm"
               sx={{
                 boxShadow: "0 2px 6px rgba(0, 128, 0, 0.2)",
-                transition: "all 0.2s ease-in-out",
+                transition: "all .2s",
                 "&:hover": {
                   transform: "scale(1.1)",
                   boxShadow: "0 4px 10px rgba(0, 128, 0, 0.3)",
-                  backgroundColor: "rgba(76, 175, 80, 0.15)",
-                  "& .CheckIcon": {
-                    color: "#000",
-                  },
                 },
-                cursor: "pointer",
               }}
             >
-              <CheckRoundedIcon className="CheckIcon" />
+              <CheckRoundedIcon />
             </IconButton>
           </form>
         )}
@@ -260,176 +266,22 @@ function VendorBillSummary() {
     );
   };
 
-  const capitalize = (str = "") =>
-    str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-
-  const BillingStatusChip = ({ status, balance }) => {
-    const isFullyBilled = status === "fully billed";
-    const isPending = status === "waiting bills";
-
-    const rawLabel = isFullyBilled
-      ? "Fully Billed"
-      : isPending
-        ? `${balance} - Waiting Bills`
-        : status;
-
-    const label = capitalize(rawLabel);
-
-    const icon = isFullyBilled ? (
-      <CheckRoundedIcon />
-    ) : isPending ? (
-      <AutorenewRoundedIcon />
-    ) : null;
-
-    const color = isFullyBilled ? "success" : isPending ? "warning" : "neutral";
-
-    return (
-      <Chip variant="soft" size="sm" startDecorator={icon} color={color}>
-        {label}
-      </Chip>
-    );
-  };
-
-  const handleStatusChange = (newValue) => {
-    setSearchParams({
-      page: 1,
-      pageSize: perPage,
-      status: newValue,
-    });
-  };
-
-  const renderFilters = () => {
-    const bill_status = ["fully billed ", "waiting bills"];
-
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 2,
-          alignItems: "center",
-          mb: 2,
-        }}
-      >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Bill Status</FormLabel>
-          <Select
-            value={selectedbill}
-            onChange={(e, newValue) => handleStatusChange(newValue)}
-            size="sm"
-            placeholder="Select Bill Status"
-          >
-            <Option value="">All status</Option>
-            {bill_status.map((status) => (
-              <Option key={status} value={status}>
-                {status}
-              </Option>
-            ))}
-          </Select>
-        </FormControl>
-        <FormControl size="sm" sx={{ minWidth: 140 }}>
-          <FormLabel>From Date</FormLabel>
-          <Input
-            type="date"
-            value={from}
-            onChange={(e) => {
-              setFrom(e.target.value);
-              setCurrentPage(1);
-            }}
-          />
-        </FormControl>
-
-        <FormControl size="sm" sx={{ minWidth: 140 }}>
-          <FormLabel>To Date</FormLabel>
-          <Input
-            type="date"
-            value={to}
-            onChange={(e) => {
-              setTo(e.target.value);
-              setCurrentPage(1);
-            }}
-          />
-        </FormControl>
-        <Box mt={3} sx={{ display: "flex", gap: 1 }}>
-          <Button
-            variant="outlined"
-            size="sm"
-            color="primary"
-            onClick={() => handleExport(false)}
-            loading={isExporting}
-            disabled={!from || !to}
-            startDecorator={<CalendarMonthIcon />}
-          >
-            Export by Date
-          </Button>
-
-          <Button
-            variant="soft"
-            size="sm"
-            color="neutral"
-            onClick={() => handleExport(true)}
-            startDecorator={<DownloadIcon />}
-          >
-            Export All
-          </Button>
-        </Box>
-        <FormControl size="sm" sx={{ minWidth: 140 }}>
-          <FormLabel>Date Filter</FormLabel>
-          <Input
-            type="date"
-            value={date}
-            onChange={(e) => {
-              const rawDate = e.target.value;
-              const formatted = dayjs(rawDate).format("DD/MM/YYYY");
-              setDate(formatted);
-              setCurrentPage(1);
-            }}
-          />
-        </FormControl>
-      </Box>
-    );
-  };
-  const RenderTableCell = ({ cell }) => {
-    return (
-      <Box
-        component="td"
-        sx={{
-          borderBottom: "1px solid #ddd",
-          padding: "8px",
-          textAlign: "left",
-        }}
-      >
-        {cell}
-      </Box>
-    );
-  };
-  const handlePerPageChange = (newValue) => {
-    setPerPage(newValue);
-    setSearchParams({
-      page: 1,
-      pageSize: newValue,
-      status: selectedbill,
-      search: searchQuery,
-      date: date,
-    });
-  };
-
-  const navigate = useNavigate();
   return (
-    <>
+    <Box
+      sx={{
+        ml: { lg: "var(--Sidebar-width)" },
+        px: "0px",
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+      }}
+    >
+      {/* Search only */}
       <Box
-        className="SearchAndFilters-tabletUp"
-        sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          borderRadius: "sm",
-          py: 1,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1.5,
-          "& > *": {
-            minWidth: { xs: "120px", md: "160px" },
-          },
-        }}
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        pb={2}
+        flexWrap="wrap"
+        gap={1}
       >
         <FormControl sx={{ flex: 1 }} size="sm">
           <FormLabel>Search here</FormLabel>
@@ -438,196 +290,141 @@ function VendorBillSummary() {
             placeholder="Search Project Id, PO Number, Vendor"
             startDecorator={<SearchIcon />}
             value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </FormControl>
-        {renderFilters()}
       </Box>
 
       <Sheet
         className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: { xs: "none", sm: "initial" },
+          display: { xs: "none", sm: "block" },
           width: "100%",
           borderRadius: "sm",
-          flexShrink: 1,
+          maxHeight: { xs: "66vh", xl: "75vh" },
           overflow: "auto",
-          minHeight: 0,
-          marginLeft: { lg: "18%", xl: "15%" },
-          maxWidth: { lg: "85%", sm: "100%" },
         }}
       >
-        <Box
-          className="PO-TableScroller"
-          sx={{
-            overflowX: "auto",
-            overflowY: "auto",
-            maxHeight: `calc(100dvh - ${HEADER_STACK + FILTERS_APPROX + PADDING_FIX}px)`,
-            WebkitOverflowScrolling: "touch",
-          }}
-        >
-          <Box
-            component="table"
-            sx={{
-              width: "100%",
-              borderCollapse: "collapse",
-              fontSize: "14px",
-            }}
-          >
-            <Box
-              component="thead"
-              sx={{
-                backgroundColor: "neutral.softBg",
-              }}
-            >
-              <Box component="tr">
-                {[
-                  "Bill No.",
-                  "Bill Date",
-                  "Bill Value",
-                  "Total Billed",
-                  "Category",
-                  "Project ID",
-                  "PO NO.",
-                  "Vendor",
-                  "PO Value",
-                  "PO Status",
-                  "Received",
-                  "Created On",
-                ]?.map((header, index) => (
-                  <Box
-                    component="th"
-                    key={index}
-                    sx={{
-                      position: "sticky",
-                      top: 0,
-                      background: "#e0e0e0",
-                      zIndex: 2,
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {header}
-                  </Box>
-                ))}
-              </Box>
-            </Box>
 
-            <Box component="tbody">
-              {isLoading ? (
-                <Box component="tr">
-                  <Box
-                    component="td"
-                    colSpan={14}
-                    sx={{
-                      py: 5,
-                      textAlign: "center",
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        fontStyle: "italic",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <CircularProgress size="sm" sx={{ color: "primary.500" }} />
-                      <Typography fontStyle="italic">
-                        Loading bills… please hang tight ⏳
-                      </Typography>
-                    </Box>
+        <Box
+          component="table"
+          sx={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}
+        >
+          <Box component="thead" sx={{ backgroundColor: "neutral.softBg" }}>
+            <Box component="tr">
+              {/* Select-All header cell */}
+              <Box
+                component="th"
+                sx={{
+                  position: "sticky",
+                  top: 0,
+                  background: "#e0e0e0",
+                  zIndex: 2,
+                  borderBottom: "1px solid #ddd",
+                  padding: "8px",
+                  textAlign: "left",
+                  width: 44,
+                }}
+              >
+                <Checkbox
+                  size="sm"
+                  checked={isAllSelected}
+                  indeterminate={isIndeterminate}
+                  onChange={(e) => toggleSelectAll(e.target.checked)}
+                />
+              </Box>
+
+              {[
+                "Bill No.",
+                "Bill Date",
+                "Bill Value",
+                "Total Billed",
+                "Category",
+                "Project ID",
+                "PO NO.",
+                "Vendor",
+                "PO Value",
+                "PO Status",
+                "Received",
+                "Created On",
+              ].map((h, i) => (
+                <Box
+                  component="th"
+                  key={i}
+                  sx={{
+                    position: "sticky",
+                    top: 0,
+                    background: "#e0e0e0",
+                    zIndex: 2,
+                    borderBottom: "1px solid #ddd",
+                    padding: "8px",
+                    textAlign: "left",
+                    fontWeight: "bold",
+                  }}
+                >
+                  {h}
+                </Box>
+              ))}
+            </Box>
+          </Box>
+
+          <Box component="tbody">
+            {isLoading ? (
+              <Box component="tr">
+                <Box component="td" colSpan={15} sx={{ py: 5, textAlign: "center" }}>
+                  <Box sx={{ fontStyle: "italic", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <CircularProgress size="sm" sx={{ color: "primary.500" }} />
+                    <Typography fontStyle="italic">Loading bills… please hang tight ⏳</Typography>
                   </Box>
                 </Box>
-              ) : bills.length > 0 ? (
-                bills.map((bill, index) => (
-                  <Box
-                    component="tr"
-                    key={bill.bill_no || index}
-                    sx={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "left",
-                      }}
-                    >
+              </Box>
+            ) : bills.length > 0 ? (
+              bills.map((bill, idx) => {
+                const id = bill._id || `${bill.bill_no}-${idx}`;
+                const isChecked = selectedIds.includes(id);
+                return (
+                  <Box component="tr" key={id} sx={{ borderBottom: "1px solid #ddd" }}>
+                    {/* Row checkbox */}
+                    <Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "8px", width: 44 }}>
+                      <Checkbox
+                        size="sm"
+                        checked={isChecked}
+                        onChange={() => toggleRow(id)}
+                      />
+                    </Box>
+
+                    <Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
                       <Chip
                         variant="outlined"
                         color="primary"
                         sx={{ cursor: "pointer" }}
-                        onClick={() =>
-                          navigate(`/add_bill?mode=edit&_id=${bill._id}`)
-                        }
+                        onClick={() => navigate(`/add_bill?mode=edit&_id=${bill._id}`)}
                       >
                         {bill.bill_no}
                       </Chip>
                     </Box>
 
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "left",
-                      }}
-                    >
+                    <Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
                       {dayjs(bill.bill_date).format("DD/MM/YYYY")}
                     </Box>
 
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "left",
-                      }}
-                    >
+                    <Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
                       ₹{Number(bill.bill_value).toFixed(2)}
                     </Box>
 
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "left",
-                      }}
-                    >
+                    <Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
                       ₹{Number(bill.total_billed).toFixed(2)}
                     </Box>
 
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "left",
-                      }}
-                    >
-                      {Array.isArray(bill.item) && bill.item.length > 0
+                    <Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
+                      {Array.isArray(bill.item) && bill.item.length
                         ? (() => {
-                          const uniqueNames = [
-                            ...new Set(
-                              bill.item
-                                .map((it) => it?.category_name)
-                                .filter(Boolean)
-                            ),
+                          const unique = [
+                            ...new Set(bill.item.map((it) => it?.category_name).filter(Boolean)),
                           ];
-
-                          const first = uniqueNames[0];
-                          const remaining = uniqueNames.slice(1);
-
+                          const first = unique[0];
+                          const remaining = unique.slice(1);
                           return (
                             <>
                               {first}
@@ -662,93 +459,46 @@ function VendorBillSummary() {
                         : bill.item?.category_name || "-"}
                     </Box>
 
-                    <RenderTableCell cell={bill.project_id} />
+                    <Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
+                      {bill.project_id}
+                    </Box>
 
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "12px",
-                        textAlign: "left",
-                      }}
-                    >
+                    <Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "12px" }}>
                       {bill.po_no}
                     </Box>
 
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "left",
-                      }}
-                    >
+                    <Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
                       {bill.vendor}
                     </Box>
 
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "left",
-                      }}
-                    >
-                      ₹{bill.po_value}
+                    <Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
+                      ₹{Number(bill.po_value || 0).toFixed(2)}
                     </Box>
 
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "left",
-                      }}
-                    >
+                    <Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
                       <BillingStatusChip
                         status={bill.po_status}
                         balance={(bill.po_value - bill.total_billed).toFixed(2)}
                       />
                     </Box>
 
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "left",
-                      }}
-                    >
-                      <BillAcceptance
-                        billNumber={bill.bill_no}
-                        approvedBy={bill.approved_by_name}
-                      />
+                    <Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
+                      <BillAcceptance billNumber={bill.bill_no} approvedBy={bill.approved_by_name} />
                     </Box>
 
-                    <Box
-                      component="td"
-                      sx={{
-                        borderBottom: "1px solid #ddd",
-                        padding: "8px",
-                        textAlign: "left",
-                      }}
-                    >
+                    <Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
                       {dayjs(bill.created_on).format("DD/MM/YYYY")}
                     </Box>
                   </Box>
-                ))
-              ) : (
-                <Box component="tr">
-                  <Box
-                    component="td"
-                    colSpan={14}
-                    sx={{ textAlign: "center", p: 2 }}
-                  >
-                    No bills found.
-                  </Box>
+                );
+              })
+            ) : (
+              <Box component="tr">
+                <Box component="td" colSpan={15} sx={{ textAlign: "center", p: 2 }}>
+                  No bills found.
                 </Box>
-              )}
-            </Box>
+              </Box>
+            )}
           </Box>
         </Box>
 
@@ -758,13 +508,12 @@ function VendorBillSummary() {
       <Box
         className="Pagination-laptopUp"
         sx={{
-          pt: 2,
+          pt: 1,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
-          flexDirection: { xs: "column", md: "row" },
-          marginLeft: { xl: "15%", lg: "18%" },
         }}
       >
         <Button
@@ -779,39 +528,48 @@ function VendorBillSummary() {
         </Button>
 
         <Box>
-          {/* Showing page {currentPage} of {totalPages} ({total} results) */}
           <Typography level="body-sm">
-            Showing {startIndex}–{endIndex} of {total} results
+            Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} of {total} results
           </Typography>
         </Box>
 
-        <Box
-          sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
-        >
-          {getPaginationRange()?.map((page, idx) =>
-            page === "..." ? (
-              <Box key={`ellipsis-${idx}`} sx={{ px: 1 }}>
-                ...
-              </Box>
-            ) : (
-              <IconButton
-                key={page}
-                size="sm"
-                variant={page === currentPage ? "contained" : "outlined"}
-                color="neutral"
-                onClick={() => handlePageChange(page)}
-              >
-                {page}
-              </IconButton>
-            )
-          )}
+        <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
+          {(() => {
+            const siblings = 1;
+            const pages = [];
+            if (totalPages <= 5 + siblings * 2) {
+              for (let i = 1; i <= totalPages; i++) pages.push(i);
+            } else {
+              const left = Math.max(currentPage - siblings, 2);
+              const right = Math.min(currentPage + siblings, totalPages - 1);
+              pages.push(1);
+              if (left > 2) pages.push("...");
+              for (let i = left; i <= right; i++) pages.push(i);
+              if (right < totalPages - 1) pages.push("...");
+              pages.push(totalPages);
+            }
+            return pages.map((p, idx) =>
+              p === "..." ? (
+                <Box key={`ellipsis-${idx}`} sx={{ px: 1 }}>
+                  ...
+                </Box>
+              ) : (
+                <IconButton
+                  key={p}
+                  size="sm"
+                  variant={p === currentPage ? "contained" : "outlined"}
+                  color="neutral"
+                  onClick={() => handlePageChange(p)}
+                >
+                  {p}
+                </IconButton>
+              )
+            );
+          })()}
         </Box>
 
         <FormControl size="sm" sx={{ minWidth: 120 }}>
-          <Select
-            value={perPage}
-            onChange={(e, newValue) => handlePerPageChange(newValue)}
-          >
+          <Select value={perPage} onChange={(e, v) => handlePerPageChange(v)}>
             {[10, 30, 60, 100].map((num) => (
               <Option key={num} value={num}>
                 {num}
@@ -831,7 +589,7 @@ function VendorBillSummary() {
           Next
         </Button>
       </Box>
-    </>
+    </Box>
   );
 }
 
