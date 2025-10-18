@@ -15,18 +15,110 @@ import Sidebar from '../../component/Partials/Sidebar';
 
 import Header from '../../component/Partials/Header';
 import AllProject from '../../component/AllProject';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import ExpenseApproval from '../../component/Expense Sheet/Expense_Approval';
+import MainHeader from '../../component/Partials/MainHeader';
+import SubHeader from '../../component/Partials/SubHeader';
+import Filter from "../../component/Partials/Filter";
+
 
 function ApprovalExpense() {
-    const navigate = useNavigate();
-      
+  const navigate = useNavigate();
+
+  // const [open , setOpen] =  useEffect(false);
+  // const [searchParams, setSearchParams] = useSearchParams();
+
+  // const [status, setStatus] = useEffect(
+  //   searchParams.get("status") || ""
+  // );
+
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
       <Box sx={{ display: "flex", minHeight: "100dvh" }}>
-        <Header />
         <Sidebar />
+        <MainHeader title="Expense Sheet" sticky>
+          <Box display="flex" gap={1}>
+            <Button
+              size="sm"
+              onClick={() => navigate(`/expense_dashboard`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              DashBoard
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => navigate(`/expense_approval`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              Expense Approval
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => navigate(`/expense_hr`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              HR Expense Approval
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => navigate(`/expense_accounts`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              Account Expense Approval
+            </Button>
+          </Box>
+
+        </MainHeader>
+
+        <SubHeader title="Expense Approval" isBackEnabled={false} sticky>
+              <Filter 
+              
+              />
+
+        </SubHeader>
         <Box
           component="main"
           className="MainContent"
@@ -57,9 +149,9 @@ function ApprovalExpense() {
               size="sm"
               aria-label="breadcrumbs"
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0, marginTop: {md:"4%", lg:"0%"} }}
+              sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
             >
-              
+
               <Link
                 underline="hover"
                 color="neutral"
@@ -91,11 +183,11 @@ function ApprovalExpense() {
             <Typography level="h2" component="h1">
               Expense Approval Dashboard
             </Typography>
-           
-             
+
+
           </Box>
-          <ExpenseApproval/>
-          
+          <ExpenseApproval />
+
         </Box>
       </Box>
     </CssVarsProvider>
