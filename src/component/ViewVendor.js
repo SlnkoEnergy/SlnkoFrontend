@@ -3,7 +3,6 @@ import {
   Box,
   Avatar,
   Typography,
-  Chip,
   Tabs,
   TabList,
   Tab,
@@ -16,15 +15,11 @@ import {
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
-import { useGetProjectByIdQuery } from "../redux/projectsSlice";
 import { useGetPostsQuery } from "../redux/postsSlice";
 import { useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import Overview from "./Forms/Engineering/Eng_Overview/Overview";
-import CamHandoverSheetForm from "./Lead Stage/Handover/CAMHandover";
 import PurchaseRequestCard from "./PurchaseRequestCard";
-import ScopeDetail from "./Scope";
-import Posts from "./Posts";
 import { useGetVendorByIdQuery } from "../redux/vendorSlice";
 
 /* ---------------- helpers ---------------- */
@@ -37,20 +32,20 @@ const getUserData = () => {
   }
 };
 
-const VALID_TABS = new Set(["notes", "handover", "scope", "po", "eng"]);
+const VALID_TABS = new Set(["purchaseorders", "payments", "emails", "balance"]);
+
 const NUM_TO_KEY = {
-  0: "notes",
-  1: "handover",
-  2: "scope",
-  3: "po",
-  4: "eng",
+  0: "purchaseorders",
+  1: "payments",
+  2: "emails",
+  3: "balance",
 };
 
 const sanitizeTabFromQuery = (raw) => {
-  if (!raw) return "notes";
+  if (!raw) return "purchaseorders";
   if (NUM_TO_KEY[raw]) return NUM_TO_KEY[raw];
   if (VALID_TABS.has(raw)) return raw;
-  return "notes";
+  return "purchaseorders";
 };
 
 const canUserSeePO = (user) => {
@@ -76,29 +71,23 @@ export default function Vendor_Detail() {
 
   const { data: getVendor } = useGetVendorByIdQuery(id);
   const vendorDetails = getVendor?.data || {};
+
+  // Make "purchaseorders" the initial tab (fallback), read from ?tab=...
   const initialTab = sanitizeTabFromQuery(searchParams.get("tab"));
   const [tabValue, setTabValue] = useState(initialTab);
-  const allowedPO = canUserSeePO(currentUser);
 
+  // Keep local state in sync if URL changes externally
   useEffect(() => {
-    const requested = sanitizeTabFromQuery(searchParams.get("tab"));
-    const isPORequested = requested === "po";
-    if (isPORequested && !allowedPO) {
-      setTabValue("purchaseorders");
-      const params = new URLSearchParams(searchParams);
-      params.set("tab", "purchaseorders");
-      setSearchParams(params);
-    } else {
-      setTabValue(requested);
-    }
-  }, [searchParams, allowedPO, setSearchParams]);
+    const urlTab = sanitizeTabFromQuery(searchParams.get("tab"));
+    if (urlTab !== tabValue) setTabValue(urlTab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const handleTabChange = (_e, newValue) => {
     const next = String(newValue);
-    const final = next === "po" && !allowedPO ? "handover" : next;
-    setTabValue(final);
+    setTabValue(next);
     const params = new URLSearchParams(searchParams);
-    params.set("tab", final);
+    params.set("tab", next);
     setSearchParams(params);
   };
 
@@ -152,6 +141,7 @@ export default function Vendor_Detail() {
             alignItems: "start",
           }}
         >
+          {/* Left sidebar card (sticky) */}
           <Card
             variant="outlined"
             sx={{
@@ -181,7 +171,7 @@ export default function Vendor_Detail() {
                     sx={{ width: 64, height: 64 }}
                   />
                   <Typography level="title-md">
-                    {vendorDetails?.name}
+                    {vendorDetails?.name || "-"}
                   </Typography>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <EmailOutlinedIcon fontSize="small" />
@@ -241,16 +231,17 @@ export default function Vendor_Detail() {
                 </Typography>
               )}
               <Typography level="body-sm">
-                <b>Beneficiary Name:</b> {vendorDetails?.Beneficiary_Name}
+                <b>Beneficiary Name:</b>{" "}
+                {vendorDetails?.Beneficiary_Name || "-"}
               </Typography>
               <Typography level="body-sm">
-                <b>Account Number:</b> {vendorDetails?.Account_No}
+                <b>Account Number:</b> {vendorDetails?.Account_No || "-"}
               </Typography>
               <Typography level="body-sm">
-                <b>IFSC Code:</b> {vendorDetails?.IFSC_Code}
+                <b>IFSC Code:</b> {vendorDetails?.IFSC_Code || "-"}
               </Typography>
               <Typography level="body-sm">
-                <b>Bank Name:</b> {vendorDetails?.Bank_Name}
+                <b>Bank Name:</b> {vendorDetails?.Bank_Name || "-"}
               </Typography>
               <Typography level="body-sm">
                 <b>On Boarding Date:</b>{" "}
@@ -260,7 +251,7 @@ export default function Vendor_Detail() {
               </Typography>
               <Divider sx={{ my: 1 }} />
               <Typography level="body-sm">
-                <b>Balance:</b> ₹ {vendorDetails?.balance}
+                <b>Balance:</b> ₹ {vendorDetails?.balance ?? "-"}
               </Typography>
             </Stack>
           </Card>
@@ -294,30 +285,60 @@ export default function Vendor_Detail() {
                 <Tab value="balance">Summary</Tab>
               </TabList>
 
+              {/* Purchase Orders */}
               <TabPanel
                 value="purchaseorders"
-                sx={{
-                    p: { xs: 1, md: 1.5 },
-                    height: { xs: "auto", md: `100%` },
-                    overflowY: { md: "auto" },
-                  }}
-              >
-                <Box sx={{ width: "100%" }}>
-                  <PurchaseRequestCard vendor_id={vendorDetails?._id} />
-                </Box>
-              </TabPanel>
-
-              <TabPanel
-                value="eng"
                 sx={{
                   p: { xs: 1, md: 1.5 },
                   height: { xs: "auto", md: `100%` },
                   overflowY: { md: "auto" },
                 }}
               >
-                <Box sx={{ display: "flex", alignItems: "flex-start" }}>
-                  <Overview />
+                <Box sx={{ width: "100%" }}>
+                  <PurchaseRequestCard vendor_id={vendorDetails?._id} />
                 </Box>
+              </TabPanel>
+
+              {/* Payments (placeholder) */}
+              <TabPanel
+                value="payments"
+                sx={{
+                  p: { xs: 1, md: 1.5 },
+                  height: { xs: "auto", md: `100%` },
+                  overflowY: { md: "auto" },
+                }}
+              >
+                <Typography level="body-md">
+                  Payments view coming soon.
+                </Typography>
+              </TabPanel>
+
+              {/* Emails (placeholder) */}
+              <TabPanel
+                value="emails"
+                sx={{
+                  p: { xs: 1, md: 1.5 },
+                  height: { xs: "auto", md: `100%` },
+                  overflowY: { md: "auto" },
+                }}
+              >
+                <Typography level="body-md">
+                  Emails view coming soon.
+                </Typography>
+              </TabPanel>
+
+              {/* Summary / Balance (placeholder) */}
+              <TabPanel
+                value="balance"
+                sx={{
+                  p: { xs: 1, md: 1.5 },
+                  height: { xs: "auto", md: `100%` },
+                  overflowY: { md: "auto" },
+                }}
+              >
+                <Typography level="body-md">
+                  Vendor summary will appear here.
+                </Typography>
               </TabPanel>
             </Tabs>
           </Card>
