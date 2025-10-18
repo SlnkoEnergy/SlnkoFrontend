@@ -1,4 +1,3 @@
-import React from "react";
 import { Box, Typography } from "@mui/joy";
 
 function Dashboard() {
@@ -45,6 +44,7 @@ function Dashboard() {
           left: 0,
           right: 0,
           height: 84,
+          mt:{xs:'20px'},
           pointerEvents: "none",
         }}
       >

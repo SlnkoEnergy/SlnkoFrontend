@@ -31,16 +31,35 @@ function Dashboardz() {
             gap: 1,
           }}
         >
+          {/* <Box sx={{ display: 'flex', alignItems: 'center', marginLeft:{xl:"16%",lg:"20%"}}}>
+            <Breadcrumbs
+              size="sm"
+              aria-label="breadcrumbs"
+              separator={<ChevronRightRoundedIcon fontSize="sm" />}
+              sx={{ pl: 0, marginTop: {md:"5%", lg:"0%"} }}
+            >
+              <Link
+                underline="hover"
+                color="neutral"
+                href=""
+                sx={{ fontSize: 12, fontWeight: 500 }}
+              >
+                Home
+              </Link>
+              <Typography color="primary" sx={{ fontWeight: 500, fontSize: 12 }}>
+                Dashboard
+              </Typography>
+            </Breadcrumbs>
+          </Box> */}
           <Box
             sx={{
               display: "flex",
               mb: 1,
               gap: 1,
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: { xs: "start", sm: "center" },
-              flexWrap: "wrap",
-              justifyContent: "center",
-              marginLeft: "0%",
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: { xs: 'start', sm: 'center' },
+              flexWrap: 'wrap',
+              justifyContent: 'center',
             }}
           >
             <Dashboard />
