@@ -38,21 +38,13 @@ function Dashboardz() {
             gap: 1,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', marginLeft:{xl:"16%",lg:"20%"}}}>
+          {/* <Box sx={{ display: 'flex', alignItems: 'center', marginLeft:{xl:"16%",lg:"20%"}}}>
             <Breadcrumbs
               size="sm"
               aria-label="breadcrumbs"
               separator={<ChevronRightRoundedIcon fontSize="sm" />}
               sx={{ pl: 0, marginTop: {md:"5%", lg:"0%"} }}
             >
-              {/* <Link
-                underline="none"
-                color="neutral"
-                href="#some-link"
-                aria-label="Home"
-              >
-                <HomeRoundedIcon />
-              </Link> */}
               <Link
                 underline="hover"
                 color="neutral"
@@ -65,7 +57,7 @@ function Dashboardz() {
                 Dashboard
               </Typography>
             </Breadcrumbs>
-          </Box>
+          </Box> */}
           <Box
             sx={{
               display: 'flex',
@@ -75,7 +67,6 @@ function Dashboardz() {
               alignItems: { xs: 'start', sm: 'center' },
               flexWrap: 'wrap',
               justifyContent: 'center',
-              marginLeft:{xl:"0%", lg:"20%"}
             }}
           >
            <Dashboard />
