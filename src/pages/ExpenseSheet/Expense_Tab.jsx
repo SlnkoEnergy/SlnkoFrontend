@@ -1,51 +1,166 @@
-import React, { useRef, useState, useEffect } from 'react';
+import  { useState, useEffect } from 'react';
 import { CssVarsProvider } from '@mui/joy/styles';
 import CssBaseline from '@mui/joy/CssBaseline';
 import Box from '@mui/joy/Box';
 import Button from '@mui/joy/Button';
-import Breadcrumbs from '@mui/joy/Breadcrumbs';
-import Link from '@mui/joy/Link';
+
 import Typography from '@mui/joy/Typography';
 
-import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
-import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
-import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
-
 import Sidebar from '../../component/Partials/Sidebar';
-// import OrderTable from '../../component/OrderTable';
-// import OrderList from '../../component/OrderList';
-import Header from '../../component/Partials/Header';
-import { useNavigate } from 'react-router-dom';
+
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import AllExpense from '../../component/Expense Sheet/ExpenseDashboard';
+import MainHeader from '../../component/Partials/MainHeader';
+import SubHeader from '../../component/Partials/SubHeader';
+import Filter from "../../component/Partials/Filter";
+
 
 function Expense_Table() {
-    const navigate = useNavigate();
-      const allProjectRef = useRef();
-    
-  
-      
-    //   const [user, setUser] = useState(null);
-            
-              
-    //           useEffect(() => {
-    //            const userData = getUserData();
-    //            setUser(userData);
-    //          }, []);
-             
-    //          const getUserData = () => {
-    //            const userData = localStorage.getItem("userDetails");
-    //            if (userData) {
-    //              return JSON.parse(userData);
-    //            }
-    //            return null;
-    //          };
-      
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [open, setOpen] = useState(false);
+
+  const [department, setDepartment] = useState(
+    searchParams.get("department") || ""
+  );
+
+  useEffect(() => {
+    if (department) {
+      setSearchParams({ department });
+    } else {
+      setSearchParams({});
+    }
+  }, [department, setSearchParams]);
+
+  const departments = [
+    "Accounts",
+    "HR",
+    "Engineering",
+    "Projects",
+    "Infra",
+    "CAM",
+    "Internal",
+    "SCM",
+    "IT Team",
+    "Loan",
+    "BD",
+  ];
+  const fields = [
+    {
+      key: "department",
+      label: "Filter By Department",
+      type: "select",
+      options: departments.map((d) => ({ label: d, value: d })),
+    }
+  ]
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
       <Box sx={{ display: "flex", minHeight: "100dvh" }}>
-        <Header />
         <Sidebar />
+        <MainHeader title="Expense Sheet" sticky>
+          <Box display="flex" gap={1}>
+            <Button
+              size="sm"
+              onClick={() => navigate(`/expense_dashboard`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              DashBoard
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => navigate(`/expense_approval`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              Expense Approval
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => navigate(`/expense_hr`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              HR Expense Approval
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => navigate(`/expense_accounts`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              Account Expense Approval
+            </Button>
+          </Box>
+
+        </MainHeader>
+
+        <SubHeader title="Dashboard" isBackEnabled={false} sticky>
+          <Box display="flex" gap={1} alignItems="center">
+            <Button
+              color="primary"
+              size="sm"
+              onClick={() => navigate("/add_expense")}
+            >
+              Add Expense +
+            </Button>
+          </Box>
+
+          <Filter
+            open={open}
+            onOpenChange={setOpen}
+            title="Filters"
+            fields={fields}
+            onApply={(values) => {
+              setDepartment(values?.department || "");
+
+              setOpen(false);
+            }}
+            onReset={() => {
+              setDepartment("");
+              setOpen(false)
+            }}
+          />
+        </SubHeader>
         <Box
           component="main"
           className="MainContent"
@@ -72,35 +187,7 @@ function Expense_Table() {
               marginLeft: { xl: "15%", lg: "18%" },
             }}
           >
-            <Breadcrumbs
-              size="sm"
-              aria-label="breadcrumbs"
-              separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0, marginTop: {md:"4%", lg:"0%"} }}
-            >
-              {/* <Link
-                underline="none"
-                color="neutral"
-                href="#some-link"
-                aria-label="Home"
-              >
-                <HomeRoundedIcon />
-              </Link> */}
-              <Link
-                underline="hover"
-                color="neutral"
-                href=""
-                sx={{ fontSize: 12, fontWeight: 500 }}
-              >
-                Expense Sheet
-              </Link>
-              <Typography
-                color="primary"
-                sx={{ fontWeight: 500, fontSize: 12 }}
-              >
-                User Expense
-              </Typography>
-            </Breadcrumbs>
+
           </Box>
           <Box
             sx={{
@@ -117,7 +204,7 @@ function Expense_Table() {
             <Typography level="h2" component="h1">
               User Expense
             </Typography>
-           
+
             <Box
               sx={{
                 display: "flex",
@@ -129,28 +216,12 @@ function Expense_Table() {
                 justifyContent: "center",
               }}
             >
-              <Button
-              color="primary"
-              
-              size="sm"
-              onClick={() => navigate("/add_expense")}
-            >
-              Add Expense +
-            </Button> 
-              {/* <Button
-                color="primary"
-                startDecorator={<DownloadRoundedIcon />}
-                size="sm"
-                onClick={handleExportToCSV} 
-              >
-                Export to CSV
-              </Button> */}
+
+
             </Box>
-             
+
           </Box>
           <AllExpense />
-          {/* <OrderTable /> */}
-          {/* <OrderList /> */}
         </Box>
       </Box>
     </CssVarsProvider>

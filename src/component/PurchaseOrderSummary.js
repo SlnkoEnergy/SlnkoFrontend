@@ -950,26 +950,34 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       }}
     >
       <Box
-        sx={{
-          py: 1,
-          display: "flex",
-          alignItems: "flex-end",
-          gap: 1.5,
-          width: { xs: "100%", md: "50%" },
-        }}
+        display="flex"
+        justifyContent="flex-end"
+        alignItems="center"
+        pt={2}
+        pb={0.5}
+        flexWrap="wrap"
+        gap={1}
       >
-        <FormControl sx={{ flex: 2, minWidth: 280 }} size="sm">
-          <FormLabel>Search here</FormLabel>
-          <Input
-            size="sm"
-            placeholder="Search Project Id, PO Number, Vendor"
-            startDecorator={<SearchIcon />}
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-        </FormControl>
+        <Box
+          sx={{
+            py: 1,
+            display: "flex",
+            alignItems: "flex-end",
+            gap: 1.5,
+            width: { xs: "100%", md: "50%" },
+          }}
+        >
+          <FormControl sx={{ flex: 1 }} size="sm">
+            <Input
+              size="sm"
+              placeholder="Search Project Id, PO Number, Vendor"
+              startDecorator={<SearchIcon />}
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+          </FormControl>
+        </Box>
       </Box>
-
       <Sheet
         className="OrderTableContainer"
         variant="outlined"
@@ -1410,7 +1418,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           )}
         </Box>
 
-        <FormControl size="sm" sx={{ minWidth: 120 }}>
+        <FormControl size="sm" sx={{ minWidth: 80 }}>
           <Select
             value={perPage}
             onChange={(_e, newValue) => {
@@ -1426,7 +1434,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           >
             {[10, 30, 60, 100].map((num) => (
               <Option key={num} value={num}>
-                {num}/Page
+                {num}
               </Option>
             ))}
           </Select>

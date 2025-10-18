@@ -277,22 +277,33 @@ function VendorBillSummary({ selectStatus, dateFilterFrom, dateFilterEnd }) {
       {/* Search only */}
       <Box
         display="flex"
-        justifyContent="space-between"
+        justifyContent="flex-end"
         alignItems="center"
-        pb={2}
+        pt={2}
+        pb={0.5}
         flexWrap="wrap"
         gap={1}
       >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search here</FormLabel>
-          <Input
-            size="sm"
-            placeholder="Search Project Id, PO Number, Vendor"
-            startDecorator={<SearchIcon />}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </FormControl>
+        <Box
+          sx={{
+            py: 1,
+            display: "flex",
+            alignItems: "flex-end",
+            gap: 1.5,
+            width: { xs: "100%", md: "50%" },
+          }}
+        >
+          <FormControl sx={{ flex: 1 }} size="sm">
+            <Input
+              size="sm"
+              placeholder="Search Project Id, PO Number, Vendor"
+              startDecorator={<SearchIcon />}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </FormControl>
+        </Box>
+
       </Box>
 
       <Sheet

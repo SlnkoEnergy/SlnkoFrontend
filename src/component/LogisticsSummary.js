@@ -424,10 +424,11 @@ export default function LogisticsDashboard() {
       <Box
         display="flex"
         justifyContent="space-between"
-        alignItems="flex-end"      // ⬅️ align bottoms
+        alignItems="center"
+        pt={2}
+        pb={0.5}
         flexWrap="wrap"
-        gap={1}
-        sx={{ mb: 1.5 }}           // ⬅️ single, uniform gap before the table
+        gap={1}           // ⬅️ single, uniform gap before the table
       >
         <Tabs
           value={selectedTab}
@@ -443,14 +444,10 @@ export default function LogisticsDashboard() {
           }}
           indicatorPlacement="none"
           sx={{
-            p: 0, m: 0,             // ⬅️ remove internal space
-            minHeight: 0,           // ⬅️ avoid extra height
             bgcolor: "background.level1",
             borderRadius: "md",
             boxShadow: "sm",
             width: "fit-content",
-            flexShrink: 0,
-            "--Tabs-gap": "8px",    // ⬅️ keep tabs compact
           }}
         >
           <TabList sx={{ gap: 1, p: 0, m: 0 }}>
@@ -462,9 +459,10 @@ export default function LogisticsDashboard() {
                 sx={{
                   borderRadius: "xl",
                   fontWeight: "md",
-                  whiteSpace: "nowrap",
-                  py: 0.5,           
-                  "&.Mui-selected": { bgcolor: "background.surface", boxShadow: "sm" },
+                  "&.Mui-selected": {
+                    bgcolor: "background.surface",
+                    boxShadow: "sm",
+                  },
                 }}
               >
                 {label}
@@ -475,18 +473,14 @@ export default function LogisticsDashboard() {
 
         <Box
           sx={{
-            py: 0,
+            py: 1,
             display: "flex",
             alignItems: "flex-end",
             gap: 1.5,
-            pl: 15,
             width: { xs: "100%", md: "50%" },
-            minWidth: 260,
-            flex: 1,
           }}
         >
           <FormControl sx={{ flex: 1, minWidth: 0 }} size="sm">
-            <FormLabel sx={{ mb: 0.5 }}>Search here</FormLabel>
             <Input
               size="sm"
               placeholder="Search by Logistics Code, PO, Vehicle No., Description"

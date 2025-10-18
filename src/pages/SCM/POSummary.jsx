@@ -255,15 +255,7 @@ function DashboardSCM() {
                 </>
               )}
 
-              <Button
-                variant="soft"
-                size="sm"
-                color="neutral"
-                loading={isExporting}
-                startDecorator={<DownloadIcon />}
-              >
-                Export All
-              </Button>
+
 
               <Button
                 color="primary"

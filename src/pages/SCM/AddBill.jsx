@@ -8,14 +8,84 @@ import Typography from "@mui/joy/Typography";
 import ADDBILL from "../../component/Forms/Add_Bill";
 import Header from "../../component/Partials/Header";
 import Sidebar from "../../component/Partials/Sidebar";
+import SubHeader from "../../component/Partials/SubHeader";
+import MainHeader from "../../component/Partials/MainHeader";
+import { Button } from "@mui/joy";
+import { useNavigate } from "react-router-dom";
 
 function Add_Bill() {
+
+  const navigate = useNavigate();
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
-      <Box sx={{ display: "flex", minHeight: "100%" }}>
-        <Header />
+      <Box sx={{ display: "flex", minHeight: "100dvh" }}>
         <Sidebar />
+        <MainHeader title="SCM" sticky>
+          <Box display="flex" gap={1}>
+            <Button
+              size="sm"
+              onClick={() => navigate("/purchase-order")}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": {
+                  bgcolor: "rgba(255,255,255,0.15)",
+                },
+              }}
+            >
+              Purchase Order
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => navigate(`/logistics`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": {
+                  bgcolor: "rgba(255,255,255,0.15)",
+                },
+              }}
+            >
+              Logistics
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => navigate(`/vendor_bill`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": {
+                  bgcolor: "rgba(255,255,255,0.15)",
+                },
+              }}
+            >
+              Vendor Bill
+            </Button>
+          </Box>
+        </MainHeader>
+        <SubHeader title="Edit Vendor Bill" isBackEnabled={true} sticky></SubHeader>
+
         <Box
           component="main"
           className="MainContent"
@@ -23,54 +93,13 @@ function Add_Bill() {
             flex: 1,
             display: "flex",
             flexDirection: "column",
-            minWidth: 0,
-            height: "100dvh",
             gap: 1,
+            mt: "108px",
+            p: "16px",
+            px: "24px",
           }}
         >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              marginLeft: { xl: "16%", lg: "20%" },
-            }}
-          >
-            <Breadcrumbs
-              size="sm"
-              aria-label="breadcrumbs"
-              separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0, marginTop: {md:"4%", lg:"0%"} }}
-            >
-              <Link
-                underline="hover"
-                color="neutral"
-                href=""
-                sx={{ fontSize: 12, fontWeight: 500 }}
-              >
-                Purcahse Order Summary
-              </Link>
-              <Typography
-                color="primary"
-                sx={{ fontWeight: 500, fontSize: 12 }}
-              >
-                Add Bill
-              </Typography>
-            </Breadcrumbs>
-          </Box>
-          <Box
-            sx={{
-              display: "flex",
-              mb: 1,
-              gap: 1,
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: { xs: "start", sm: "center" },
-              flexWrap: "wrap",
-              justifyContent: "space-between",
-              marginLeft: { xl: "12%", lg: "20%" },
-            }}
-          >
-            <ADDBILL />
-          </Box>
+          <ADDBILL />
         </Box>
       </Box>
     </CssVarsProvider>

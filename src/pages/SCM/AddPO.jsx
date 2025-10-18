@@ -9,87 +9,104 @@ import React from "react";
 import ADDPO from "../../component/Forms/Add_Po";
 import Header from "../../component/Partials/Header";
 import Sidebar from "../../component/Partials/Sidebar";
+import MainHeader from "../../component/Partials/MainHeader";
+import SubHeader from "../../component/Partials/SubHeader";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@mui/joy";
 
 function Add_Purchase() {
+
+  const navigate = useNavigate();
+
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
-      <Box sx={{ display: "flex", minHeight: "100%" }}>
-        <Header />
+      <Box sx={{ display: "flex", minHeight: "100dvh" }}>
         <Sidebar />
+        <MainHeader title="SCM" sticky>
+          <Box display="flex" gap={1}>
+            <Button
+              size="sm"
+              onClick={() => navigate("/purchase-order")}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": {
+                  bgcolor: "rgba(255,255,255,0.15)",
+                },
+              }}
+            >
+              Purchase Order
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => navigate(`/logistics`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": {
+                  bgcolor: "rgba(255,255,255,0.15)",
+                },
+              }}
+            >
+              Logistics
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => navigate(`/vendor_bill`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": {
+                  bgcolor: "rgba(255,255,255,0.15)",
+                },
+              }}
+            >
+              Vendor Bill
+            </Button>
+          </Box>
+        </MainHeader>
+        <SubHeader
+          title="Purchase Order"
+          isBackEnabled={true}
+          sticky
+        ></SubHeader>
+
+
         <Box
           component="main"
           className="MainContent"
           sx={{
-            // px: { xs: 2, md: 6 },
-            // pt: {
-            //   xs: 'calc(12px + var(--Header-height))',
-            //   sm: 'calc(12px + var(--Header-height))',
-            //   md: 3,
-            // },
-            // pb: { xs: 2, sm: 2, md: 3 },
             flex: 1,
             display: "flex",
             flexDirection: "column",
-            minWidth: 0,
-            height: "100dvh",
             gap: 1,
+            mt: "108px",
+            p: "16px",
+            px: "24px",
           }}
         >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              marginLeft: { xl: "16%", lg: "20%" },
-            }}
-          >
-            <Breadcrumbs
-              size="sm"
-              aria-label="breadcrumbs"
-              separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0 , marginTop: {md:"4%", lg:"0%"}}}
-            >
-              {/* <Link
-                underline="none"
-                color="neutral"
-                href="#some-link"
-                aria-label="Home"
-              >
-                <HomeRoundedIcon />
-              </Link> */}
-              <Link
-                underline="hover"
-                color="neutral"
-                href=""
-                sx={{ fontSize: 12, fontWeight: 500 }}
-              >
-                SCM
-              </Link>
-              <Typography
-                color="primary"
-                sx={{ fontWeight: 500, fontSize: 12 }}
-              >
-                Add Purchase Order
-              </Typography>
-            </Breadcrumbs>
-          </Box>
-          <Box
-            sx={{
-              display: "flex",
-              mb: 1,
-              gap: 1,
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: { xs: "start", sm: "center" },
-              flexWrap: "wrap",
-              justifyContent: "space-between",
-              marginLeft: { xl: "8%", lg: "15%" },
-            }}
-          >
-            <ADDPO />
-          </Box>
-
-          {/* <OrderTable /> */}
-          {/* <OrderList /> */}
+          <ADDPO />
         </Box>
       </Box>
     </CssVarsProvider>
