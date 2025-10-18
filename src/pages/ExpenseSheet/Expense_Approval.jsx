@@ -25,12 +25,41 @@ import Filter from "../../component/Partials/Filter";
 function ApprovalExpense() {
   const navigate = useNavigate();
 
-  // const [open , setOpen] =  useEffect(false);
-  // const [searchParams, setSearchParams] = useSearchParams();
+  const [open, setOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  // const [status, setStatus] = useEffect(
-  //   searchParams.get("status") || ""
-  // );
+  const [status, setStatus] = useState(
+    searchParams.get("status") || ""
+  );
+  const [dateFrom, setDateFrom] = useState(
+    searchParams.get("from") || ""
+  )
+  const [dateTo, setDateTo] = useState(
+    searchParams.get("to") || ""
+  )
+
+  const statusOptions = [
+    {value: "submitted", label: "Pending"},
+    {value: "manager approval", label: "Manager Approved"},
+    {value: "hr approval", label: "HR Approved"},
+    {value: "final approval", label: "Approved"},
+    {value: "hold", label: "On Hold"},
+    {value: "rejected", label: "Rejected"}
+  ]
+  const fields = [
+    {
+      key: "status",
+      label: "Filter By Status",
+      options: statusOptions.map((d) => ({label: d.label, value: d.value})),
+      type: "select"
+    },
+    {
+      key: "dates",
+      label: "Filter By Date",
+      type: "daterange",
+    }
+
+  ]
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -115,7 +144,23 @@ function ApprovalExpense() {
 
         <SubHeader title="Expense Approval" isBackEnabled={false} sticky>
               <Filter 
-              
+
+                open={open}
+                onOpenChange={setOpen}
+                fields={fields}
+                onApply={(value) => {
+                  setStatus(value?.status || "") ;
+                  setDateFrom(value?.dates?.from || "");
+                  setDateTo(value?.dates?.to);
+                  setOpen(false);
+                }}
+
+                onReset={() => {
+                  setStatus("");
+                  setDateFrom("");
+                  setDateTo("");
+                  setOpen(false);
+                }}
               />
 
         </SubHeader>
