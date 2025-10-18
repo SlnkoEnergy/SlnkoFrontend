@@ -82,7 +82,7 @@ function Sidebar() {
   };
 
   const isSalesPage = location.pathname === "/sales";
-  const isProjecsPage = location.pathname === "/view_pm";
+  const isProjecsPage = location.pathname === "/view_pm" || "/email";
   return (
     <Sheet
       className="Sidebar"

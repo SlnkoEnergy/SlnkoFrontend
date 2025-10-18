@@ -119,7 +119,7 @@ export default function Vendor_Detail() {
     <Box
       sx={{
         ml: { lg: "var(--Sidebar-width)" },
-        px: { xs: 1, md: 2 },
+        px: { xs: 1, md: 0 },
         width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
       }}
     >

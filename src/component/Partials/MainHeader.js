@@ -120,7 +120,7 @@ export default function MainHeader({ title, children }) {
       : baseSrc;
 
   const avatarInitial = (user?.name?.[0] || "U").toUpperCase();
-  const isProjectsPage = location.pathname === "/view_pm";
+  const isProjectsPage = location.pathname === "/view_pm" || "/email";
   return (
     <Sheet
       variant="primary"
