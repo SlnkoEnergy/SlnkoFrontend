@@ -114,7 +114,7 @@ function Add_Expense() {
           </Box>
 
         </MainHeader>
-        <SubHeader title="Add Expense" isBackEnabled={false} sticky>
+        <SubHeader title="Add Expense" isBackEnabled={true} sticky>
           <Filter
             open={open}
             onOpenChange={setOpen}
@@ -148,7 +148,8 @@ function Add_Expense() {
           }}
         >
           <Expense_form
-
+            dateFrom={dateFrom}
+            dateTo={dateEnd}
           />
 
         </Box>
