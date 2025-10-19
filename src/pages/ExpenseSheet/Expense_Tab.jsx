@@ -1,19 +1,18 @@
-import  { useState, useEffect } from 'react';
-import { CssVarsProvider } from '@mui/joy/styles';
-import CssBaseline from '@mui/joy/CssBaseline';
-import Box from '@mui/joy/Box';
-import Button from '@mui/joy/Button';
+import { useState, useEffect } from "react";
+import { CssVarsProvider } from "@mui/joy/styles";
+import CssBaseline from "@mui/joy/CssBaseline";
+import Box from "@mui/joy/Box";
+import Button from "@mui/joy/Button";
 
-import Typography from '@mui/joy/Typography';
+import Typography from "@mui/joy/Typography";
 
-import Sidebar from '../../component/Partials/Sidebar';
+import Sidebar from "../../component/Partials/Sidebar";
 
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import AllExpense from '../../component/Expense Sheet/ExpenseDashboard';
-import MainHeader from '../../component/Partials/MainHeader';
-import SubHeader from '../../component/Partials/SubHeader';
+import { useNavigate, useSearchParams } from "react-router-dom";
+import AllExpense from "../../component/Expense Sheet/ExpenseDashboard";
+import MainHeader from "../../component/Partials/MainHeader";
+import SubHeader from "../../component/Partials/SubHeader";
 import Filter from "../../component/Partials/Filter";
-
 
 function Expense_Table() {
   const navigate = useNavigate();
@@ -25,12 +24,11 @@ function Expense_Table() {
   );
 
   useEffect(() => {
-    if (department) {
-      setSearchParams({ department });
-    } else {
-      setSearchParams({});
-    }
-  }, [department, setSearchParams]);
+    const sp = new URLSearchParams(searchParams);
+    if (department) sp.set("department", department);
+    else sp.delete("department");
+    setSearchParams(sp);
+  }, [department]);
 
   const departments = [
     "Accounts",
@@ -51,8 +49,8 @@ function Expense_Table() {
       label: "Filter By Department",
       type: "select",
       options: departments.map((d) => ({ label: d, value: d })),
-    }
-  ]
+    },
+  ];
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -131,7 +129,6 @@ function Expense_Table() {
               Account Expense Approval
             </Button>
           </Box>
-
         </MainHeader>
 
         <SubHeader title="Dashboard" isBackEnabled={false} sticky>
@@ -157,7 +154,7 @@ function Expense_Table() {
             }}
             onReset={() => {
               setDepartment("");
-              setOpen(false)
+              setOpen(false);
             }}
           />
         </SubHeader>
@@ -165,62 +162,15 @@ function Expense_Table() {
           component="main"
           className="MainContent"
           sx={{
-            px: { xs: 2, md: 6 },
-            pt: {
-              xs: "calc(12px + var(--Header-height))",
-              sm: "calc(12px + var(--Header-height))",
-              md: 3,
-            },
-            pb: { xs: 2, sm: 2, md: 3 },
             flex: 1,
             display: "flex",
             flexDirection: "column",
-            minWidth: 0,
-            height: "100dvh",
             gap: 1,
+            mt: "108px",
+            p: "16px",
+            px: "24px",
           }}
         >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              marginLeft: { xl: "15%", lg: "18%" },
-            }}
-          >
-
-          </Box>
-          <Box
-            sx={{
-              display: "flex",
-              mb: 1,
-              gap: 1,
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: { xs: "start", sm: "center" },
-              flexWrap: "wrap",
-              justifyContent: "space-between",
-              marginLeft: { xl: "15%", lg: "18%" },
-            }}
-          >
-            <Typography level="h2" component="h1">
-              User Expense
-            </Typography>
-
-            <Box
-              sx={{
-                display: "flex",
-                mb: 1,
-                gap: 1,
-                flexDirection: { xs: "column", sm: "row" },
-                alignItems: { xs: "start", sm: "center" },
-                flexWrap: "wrap",
-                justifyContent: "center",
-              }}
-            >
-
-
-            </Box>
-
-          </Box>
           <AllExpense />
         </Box>
       </Box>

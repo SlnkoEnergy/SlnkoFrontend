@@ -24,7 +24,7 @@ import Filter from "../../component/Partials/Filter";
 function Hr_Expense() {
   const navigate = useNavigate();
 
-  const [open, setOpne] = useState(false);
+  const [open, setOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [department, setDepartment] = useState(
@@ -66,13 +66,13 @@ function Hr_Expense() {
       key: "status",
       label: "Filter By Status",
       type: "select",
-      options: statuses.map((d) => ({ label : d.label, value: d.value})),
+      options: statuses.map((d) => ({ label: d.label, value: d.value })),
     },
     {
       key: "dates",
       label: "Filter By Date",
       type: "daterange",
-    }
+    },
   ];
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -155,72 +155,41 @@ function Hr_Expense() {
         </MainHeader>
 
         <SubHeader title="HR Expense Approval" isBackEnabled={false} sticky>
-          <Filter />
+          <Filter
+            open={open}
+            onOpenChange={setOpen}
+            fields={fields}
+            onApply={(values) => {
+              setStatus(values?.status);
+              setDepartment(values?.department);
+              setDateFrom(values?.dates?.from);
+              setDateTo(values?.dates?.to);
+
+              setOpen(false);
+            }}
+            onReset={() => {
+              setStatus("");
+              setDepartment("");
+              setDateFrom("");
+              setDateTo("");
+
+              setOpen(false);
+            }}
+          />
         </SubHeader>
         <Box
           component="main"
           className="MainContent"
           sx={{
-            px: { xs: 2, md: 6 },
-            pt: {
-              xs: "calc(12px + var(--Header-height))",
-              sm: "calc(12px + var(--Header-height))",
-              md: 3,
-            },
-            pb: { xs: 2, sm: 2, md: 3 },
             flex: 1,
             display: "flex",
             flexDirection: "column",
-            minWidth: 0,
-            height: "100dvh",
             gap: 1,
+            mt: "108px",
+            p: "16px",
+            px: "24px",
           }}
         >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              marginLeft: { xl: "15%", lg: "18%" },
-            }}
-          >
-            <Breadcrumbs
-              size="sm"
-              aria-label="breadcrumbs"
-              separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
-            >
-              <Link
-                underline="hover"
-                color="neutral"
-                href=""
-                sx={{ fontSize: 12, fontWeight: 500 }}
-              >
-                Expense Sheet
-              </Link>
-              <Typography
-                color="primary"
-                sx={{ fontWeight: 500, fontSize: 12 }}
-              >
-                HR Expense Approval Dashboard
-              </Typography>
-            </Breadcrumbs>
-          </Box>
-          <Box
-            sx={{
-              display: "flex",
-              mb: 1,
-              gap: 1,
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: { xs: "start", sm: "center" },
-              flexWrap: "wrap",
-              justifyContent: "space-between",
-              marginLeft: { xl: "15%", lg: "18%" },
-            }}
-          >
-            <Typography level="h2" component="h1">
-              HR Expense Approval Dashboard
-            </Typography>
-          </Box>
           <HrExpense />
         </Box>
       </Box>

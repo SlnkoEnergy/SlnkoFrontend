@@ -151,7 +151,6 @@ function Add_Expense() {
             dateFrom={dateFrom}
             dateTo={dateEnd}
           />
-
         </Box>
       </Box>
     </CssVarsProvider>

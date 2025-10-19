@@ -10,7 +10,7 @@ import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 import Sidebar from "../../component/Partials/Sidebar";
 import Header from "../../component/Partials/Header";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import AccountsExpense from "../../component/Expense Sheet/Accounts_Expense_Approval";
 import {
   useExportExpenseToCSVMutation,
@@ -24,12 +24,66 @@ import {
   MenuButton,
   MenuItem,
 } from "@mui/joy";
+import SubHeader from "../../component/Partials/SubHeader";
+import MainHeader from "../../component/Partials/MainHeader";
+import Filter from "../../component/Partials/Filter";
 
 function Accounts_Expense() {
   const navigate = useNavigate();
   const [triggerExport] = useExportExpenseToCSVMutation();
   const [sheetIds, setSheetIds] = useState([]);
   const [downloadStatus, setDownloadStatus] = useState("");
+
+  const [open, setOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const [department, setDepartment] = useState(
+    searchParams.get("department" || "")
+  );
+  const [status, setStatus] = useState(searchParams.get("status" || ""));
+  const [dateFrom, setDateFrom] = useState(searchParams.get("from" || ""));
+  const [dateTo, setDateTo] = useState(searchParams.get("to" || ""));
+
+  const departments = [
+    "Accounts",
+    "HR",
+    "Engineering",
+    "Projects",
+    "Infra",
+    "CAM",
+    "Internal",
+    "SCM",
+    "IT Team",
+    "BD",
+  ];
+
+  const statuses = [
+    { value: "submitted", label: "Pending" },
+    { value: "manager approval", label: "Manager Approved" },
+    { value: "hr approval", label: "HR Approved" },
+    { value: "final approval", label: "Approved" },
+    { value: "hold", label: "On Hold" },
+    { value: "rejected", label: "Rejected" },
+  ];
+  const fields = [
+    {
+      key: "department",
+      label: "Filter By Department",
+      type: "select",
+      options: departments.map((d) => ({ label: d, value: d })),
+    },
+    {
+      key: "status",
+      label: "Filter By Status",
+      type: "select",
+      options: statuses.map((d) => ({ label: d.label, value: d.value })),
+    },
+    {
+      key: "dates",
+      label: "Filter By Date",
+      type: "daterange",
+    },
+  ];
   const handleExportCSV = async (sheetIds, view = "detailed") => {
     try {
       const dashboard = view === "list";
@@ -40,7 +94,9 @@ function Accounts_Expense() {
       );
       const a = document.createElement("a");
       a.href = url;
-      a.download = `expenses_${dashboard ? "list" : "detailed"}_${Date.now()}.csv`;
+      a.download = `expenses_${
+        dashboard ? "list" : "detailed"
+      }_${Date.now()}.csv`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -85,72 +141,88 @@ function Accounts_Expense() {
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
       <Box sx={{ display: "flex", minHeight: "100dvh" }}>
-        <Header />
         <Sidebar />
-        <Box
-          component="main"
-          className="MainContent"
-          sx={{
-            px: { xs: 2, md: 6 },
-            pt: {
-              xs: "calc(12px + var(--Header-height))",
-              sm: "calc(12px + var(--Header-height))",
-              md: 3,
-            },
-            pb: { xs: 2, sm: 2, md: 3 },
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            minWidth: 0,
-            height: "100dvh",
-            gap: 1,
-          }}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              marginLeft: { xl: "15%", lg: "18%" },
-            }}
-          >
-            <Breadcrumbs
+        <MainHeader title="Expense Sheet" sticky>
+          <Box display="flex" gap={1}>
+            <Button
               size="sm"
-              aria-label="breadcrumbs"
-              separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
+              onClick={() => navigate(`/expense_dashboard`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
             >
-              <Link
-                underline="hover"
-                color="neutral"
-                href=""
-                sx={{ fontSize: 12, fontWeight: 500 }}
-              >
-                Expense Sheet
-              </Link>
-              <Typography
-                color="primary"
-                sx={{ fontWeight: 500, fontSize: 12 }}
-              >
-                Accounts Expense Approval Dashboard
-              </Typography>
-            </Breadcrumbs>
+              DashBoard
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => navigate(`/expense_approval`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              Expense Approval
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => navigate(`/expense_hr`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              HR Expense Approval
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => navigate(`/expense_accounts`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              Account Expense Approval
+            </Button>
           </Box>
-          <Box
-            sx={{
-              display: "flex",
-              mb: 1,
-              gap: 1,
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: { xs: "start", sm: "center" },
-              flexWrap: "wrap",
-              justifyContent: "space-between",
-              marginLeft: { xl: "15%", lg: "18%" },
-            }}
-          >
-            <Typography level="h2" component="h1">
-              Accounts Expense Approval Dashboard
-            </Typography>
-            {sheetIds.length > 0 && (
+        </MainHeader>
+
+        <SubHeader
+          title="Accounts Expense Approval Dashboard"
+          isBackEnabled={false}
+          sticky
+        >
+          {sheetIds.length > 0 && (
             <Box gap={2} display={"flex"} justifyContent={"center"}>
               <Dropdown>
                 <MenuButton
@@ -195,9 +267,44 @@ function Accounts_Expense() {
                 </Box>
               )}
             </Box>
-            )}
-          </Box>
+          )}
 
+          <Filter
+            open={open}
+            onOpenChange={setOpen}
+            fields={fields}
+            onApply={(values) => {
+              setStatus(values?.status);
+              setDepartment(values?.department);
+              setDateFrom(values?.dates?.from);
+              setDateTo(values?.dates?.to);
+
+              setOpen(false);
+            }}
+            onReset={() => {
+              setStatus("");
+              setDepartment("");
+              setDateFrom("");
+              setDateTo("");
+
+              setOpen(false);
+            }}
+          />
+        </SubHeader>
+
+        <Box
+          component="main"
+          className="MainContent"
+          sx={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            gap: 1,
+            mt: "108px",
+            p: "16px",
+            px: "24px",
+          }}
+        >
           <AccountsExpense setSheetIds={setSheetIds} sheetIds={sheetIds} />
         </Box>
       </Box>

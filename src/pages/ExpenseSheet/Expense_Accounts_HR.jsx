@@ -9,86 +9,112 @@ import Header from "../../component/Partials/Header";
 import Sidebar from "../../component/Partials/Sidebar";
 import { useNavigate } from "react-router-dom";
 import UpdateExpenseAccounts from "../../component/Expense Sheet/Expense Form/Acc_Hr_Update_Expense";
+import SubHeader from "../../component/Partials/SubHeader";
+import MainHeader from "../../component/Partials/MainHeader";
+import { Button } from "@mui/joy";
 
 function Update_Expense() {
   const navigate = useNavigate();
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
-      <Box sx={{ display: "flex", minHeight: "100%" }}>
-        <Header />
+      <Box sx={{ display: "flex", minHeight: "100dvh" }}>
         <Sidebar />
-        <Box
-          component="main"
-          className="MainContent"
-          sx={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            minWidth: 0,
-            height: "100dvh",
-            gap: 1,
-          }}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              marginLeft: {
-                xs: "3vw",
-                sm: "3vw",
-                md: "3vw",
-                lg: "22vw",
-                xl: "16vw",
-              },
-              marginTop: {
-                xs: "10vh",
-                sm: "8vh",
-                md: "4vh",
-                lg: "2vh",
-                xl: "0vh",
-              },
-            }}
-          >
-            <Breadcrumbs
+        <MainHeader title="Expense Sheet" sticky>
+          <Box display="flex" gap={1}>
+            <Button
               size="sm"
-              aria-label="breadcrumbs"
-              separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
+              onClick={() => navigate(`/expense_dashboard`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
             >
-              <Link
-                underline="hover"
-                color="neutral"
-                href=""
-                sx={{ fontSize: 12, fontWeight: 500 }}
-               
-              >
-                Expense Approval Dashboard
-              </Link>
-              <Typography
-                color="primary"
-                sx={{ fontWeight: 500, fontSize: 12 }}
-              >
-                Update Expense
-              </Typography>
-            </Breadcrumbs>
+              DashBoard
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => navigate(`/expense_approval`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              Expense Approval
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => navigate(`/expense_hr`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              HR Expense Approval
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => navigate(`/expense_accounts`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              Account Expense Approval
+            </Button>
           </Box>
+        </MainHeader>
+       <SubHeader title= "Update Expense" isBackEnabled={false} sticky>
+
+       </SubHeader>
+         
 
           <Box
+            component="main"
+            className="MainContent"
             sx={{
+              flex: 1,
               display: "flex",
-              mb: 1,
+              flexDirection: "column",
               gap: 1,
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: { xs: "start", sm: "center" },
-              flexWrap: "wrap",
-              justifyContent: "space-between",
+              mt: "108px",
+              p: "16px",
+              px: "24px",
             }}
           >
             <UpdateExpenseAccounts />
           </Box>
         </Box>
-      </Box>
     </CssVarsProvider>
   );
 }
