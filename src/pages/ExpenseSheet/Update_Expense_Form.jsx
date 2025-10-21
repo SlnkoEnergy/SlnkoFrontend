@@ -9,7 +9,7 @@ import Typography from "@mui/joy/Typography";
 import Header from "../../component/Partials/Header";
 import Sidebar from "../../component/Partials/Sidebar";
 
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import UpdateExpense from "../../component/Expense Sheet/Expense Form/Update_Expense";
 import SubHeader from "../../component/Partials/SubHeader";
 import MainHeader from "../../component/Partials/MainHeader";
@@ -17,6 +17,9 @@ import { Button } from "@mui/joy";
 
 function Edit_Expense() {
   const navigate = useNavigate();
+
+  const [searchParams, setSearchParams] = useSearchParams();
+
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -96,11 +99,72 @@ function Edit_Expense() {
             </Button>
           </Box>
         </MainHeader>
-        <SubHeader
-          title="Update Expense"
-          isBackEnabled={false}
-          sticky
-        ></SubHeader>
+        <SubHeader title="Update Expense" isBackEnabled={true} sticky>
+          <Box display="flex" gap={2}>
+            {(([
+              "Engineering",
+              "BD",
+              "Projects",
+              "Infra",
+              "Loan",
+              "CAM",
+              "Accounts",
+              "HR",
+              "Marketing",
+            ].includes(user?.department) &&
+              user?.role === "manager") ||
+              user?.role === "visitor" ||
+              user?.name === "IT Team" ||
+              user?.department === "admin") && (
+              <>
+                <Button
+                  color="danger"
+                  size="sm"
+                  onClick={handleRejectAll}
+                  disabled={rows.every((row) => {
+                    const status =
+                      typeof row.current_status === "string"
+                        ? row.current_status
+                        : row.current_status?.status;
+
+                    return [
+                      "rejected",
+                      "hold",
+                      "hr approval",
+                      "manager approval",
+                      "final approval",
+                    ].includes(status);
+                  })}
+                >
+                  Reject All
+                </Button>
+
+                <Button
+                  color="success"
+                  size="sm"
+                  onClick={handleApproveAll}
+                  disabled={rows.every((row) => {
+                    const status =
+                      typeof row.current_status === "string"
+                        ? row.current_status
+                        : row.current_status?.status;
+
+                    return [
+                      "rejected",
+                      "hold",
+                      "hr approval",
+                      "manager approval",
+                      "final approval",
+                    ].includes(status);
+                  })}
+                >
+                  Approve All
+                </Button>
+              </>
+            )}
+          </Box>
+          
+        </SubHeader>
         <Box
           component="main"
           className="MainContent"

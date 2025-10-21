@@ -84,6 +84,26 @@ function Accounts_Expense() {
       type: "daterange",
     },
   ];
+
+  useEffect(() => {
+
+    const sp = new URLSearchParams(searchParams);
+
+    if(department) sp.set("department", department);
+    else sp.delete("department");
+
+    if(status) sp.set("status", status);
+    else sp.delete("status");
+
+    if(dateFrom) sp.set("from", dateFrom);
+    else sp.delete("from");
+
+    if(dateTo) sp.set("to", dateTo);
+    else sp.delete("to");
+
+    setSearchParams(sp);
+  })
+
   const handleExportCSV = async (sheetIds, view = "detailed") => {
     try {
       const dashboard = view === "list";
