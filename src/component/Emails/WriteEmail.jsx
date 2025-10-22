@@ -29,13 +29,15 @@ const WriteEmail = forwardRef(function WriteEmail({ open, onClose }, ref) {
           backgroundColor: "background.level1",
           borderColor: "neutral.outlinedBorder",
           boxShadow: "lg",
-          zIndex: 1000,
+          zIndex: 1,
           position: "fixed",
           bottom: 0,
           right: 24,
           transition: "transform 0.3s ease",
         },
-        open ? { transform: "translateY(0)" } : { transform: "translateY(100%)" },
+        open
+          ? { transform: "translateY(0)" }
+          : { transform: "translateY(100%)" },
       ]}
     >
       <Box sx={{ mb: 2 }}>
@@ -43,7 +45,9 @@ const WriteEmail = forwardRef(function WriteEmail({ open, onClose }, ref) {
         <ModalClose id="close-icon" onClick={onClose} />
       </Box>
 
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 2, flexShrink: 0 }}>
+      <Box
+        sx={{ display: "flex", flexDirection: "column", gap: 2, flexShrink: 0 }}
+      >
         <FormControl>
           <FormLabel>To</FormLabel>
           <Input placeholder="email@email.com" aria-label="Message" />
@@ -88,7 +92,11 @@ const WriteEmail = forwardRef(function WriteEmail({ open, onClose }, ref) {
                     <FormatListBulletedRoundedIcon />
                   </IconButton>
                 </div>
-                <Button color="primary" sx={{ borderRadius: "sm" }} onClick={onClose}>
+                <Button
+                  color="primary"
+                  sx={{ borderRadius: "sm" }}
+                  onClick={onClose}
+                >
                   Send
                 </Button>
               </Stack>

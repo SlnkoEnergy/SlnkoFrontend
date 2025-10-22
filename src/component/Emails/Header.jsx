@@ -200,7 +200,7 @@ export default function Header() {
             placement="bottom-end"
             size="sm"
             sx={{
-              zIndex: "99999",
+              zIndex: "1",
               p: 1,
               gap: 1,
               "--ListItem-radius": "var(--joy-radius-sm)",

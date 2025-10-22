@@ -10,17 +10,17 @@ import CreateRoundedIcon from "@mui/icons-material/CreateRounded";
 import EmailRoundedIcon from "@mui/icons-material/EmailRounded";
 import PeopleAltRoundedIcon from "@mui/icons-material/PeopleAltRounded";
 import FolderRoundedIcon from "@mui/icons-material/FolderRounded";
-import Layout from "./Layout";
-import Navigation from "./Navigation";
-import Mails from "./Mails";
-import EmailContent from "./EmailContent";
-import WriteEmail from "./WriteEmail";
-import Header from "./Header";
-import SubHeader from "../Partials/SubHeader";
-import MainHeader from "../Partials/MainHeader";
+import Layout from "../../component/Emails/Layout";
+import Navigation from "../../component/Emails/Navigation";
+import Mails from "../../component/Emails/Mails";
+import EmailContent from "../../component/Emails/EmailContent";
+import WriteEmail from "../../component/Emails/WriteEmail";
+import SubHeader from "../../component/Partials/SubHeader";
+import MainHeader from "../../component/Partials/MainHeader";
 import { useNavigate } from "react-router-dom";
+import Sidebar from "../../component/Partials/Sidebar";
 
-export default function EmailExample() {
+export default function Email() {
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [open, setOpen] = React.useState(false);
   const navigate = useNavigate();
@@ -44,6 +44,7 @@ export default function EmailExample() {
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
       <Box sx={{ display: "flex", minHeight: "100vh" }}>
+         <Sidebar />
         {drawerOpen && (
           <Layout.SideDrawer onClose={() => setDrawerOpen(false)}>
             <Navigation />
@@ -58,7 +59,7 @@ export default function EmailExample() {
           sx={{
             justifyContent: "space-around",
             display: { xs: "flex", sm: "none" },
-            zIndex: "999",
+            zIndex: "1",
             bottom: 0,
             position: "fixed",
             width: "100dvw",

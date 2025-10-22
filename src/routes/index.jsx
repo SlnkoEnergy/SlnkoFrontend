@@ -87,7 +87,7 @@ import MyRequest from "../pages/Approvals/MyRequest";
 import ProjectDashBoard from "../pages/Projects/ProjectDashboard";
 import Vendors from "../pages/SCM/Vendors";
 import ViewVendors from "../pages/SCM/ViewVendor";
-import EmailExample from "../component/VendorEmail/MainPage";
+import Email from "../pages/Emails/Email";
 
 function index() {
   return (
@@ -306,7 +306,7 @@ function index() {
         path="/email"
         element={
           <PrivateRoute>
-            <EmailExample />
+            <Email />
           </PrivateRoute>
         }
       />

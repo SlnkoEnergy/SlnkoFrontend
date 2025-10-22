@@ -120,7 +120,7 @@ export default function MainHeader({ title, children }) {
       : baseSrc;
 
   const avatarInitial = (user?.name?.[0] || "U").toUpperCase();
-  const isProjectsPage = location.pathname === "/view_pm" || "/email";
+  const isProjectsPage = location.pathname === "/view_pm" || location.pathname === "/email";
   return (
     <Sheet
       variant="primary"
@@ -237,7 +237,7 @@ export default function MainHeader({ title, children }) {
                 p: 0,
                 borderRadius: "md",
                 border: "none",
-                zIndex: 10000,
+                zIndex: 200,
                 "--ListItemDecorator-size": "1.5em",
                 "& .MuiMenuItem-root": {
                   borderRadius: "sm",

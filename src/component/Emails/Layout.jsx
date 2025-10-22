@@ -43,7 +43,7 @@ function Header(props) {
           borderColor: "divider",
           position: "sticky",
           top: 0,
-          zIndex: 1100,
+          zIndex: 1,
         },
         ...(Array.isArray(props.sx) ? props.sx : [props.sx]),
       ]}
@@ -112,7 +112,7 @@ function SideDrawer(props) {
     <Box
       {...other}
       sx={[
-        { position: "fixed", zIndex: 1200, width: "100%", height: "100%" },
+        { position: "fixed", zIndex: 1, width: "100%", height: "100%" },
         ...(Array.isArray(other.sx) ? other.sx : [other.sx]),
       ]}
     >
