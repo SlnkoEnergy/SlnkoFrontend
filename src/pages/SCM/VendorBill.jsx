@@ -1,55 +1,77 @@
-import { CssVarsProvider } from '@mui/joy/styles';
-import CssBaseline from '@mui/joy/CssBaseline';
-import Box from '@mui/joy/Box';
-import Breadcrumbs from '@mui/joy/Breadcrumbs';
-import Link from '@mui/joy/Link';
-import Typography from '@mui/joy/Typography';
-import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
-import Sidebar from '../../component/Partials/Sidebar';
-import Header from '../../component/Partials/Header';
+import { CssVarsProvider } from "@mui/joy/styles";
+import CssBaseline from "@mui/joy/CssBaseline";
+import Box from "@mui/joy/Box";
+import Breadcrumbs from "@mui/joy/Breadcrumbs";
+import Link from "@mui/joy/Link";
+import Typography from "@mui/joy/Typography";
+import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
+import Sidebar from "../../component/Partials/Sidebar";
+import Header from "../../component/Partials/Header";
 import VendorBill from "../../component/Vendor_Bill";
-import MainHeader from '../../component/Partials/MainHeader';
-import { Button } from '@mui/joy';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import SubHeader from '../../component/Partials/SubHeader';
-import Filter from '../../component/Partials/Filter';
-import { useState } from 'react';
-import { useExportBillsMutation } from '../../redux/billsSlice';
+import MainHeader from "../../component/Partials/MainHeader";
+import { Button } from "@mui/joy";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import SubHeader from "../../component/Partials/SubHeader";
+import Filter from "../../component/Partials/Filter";
+import { useEffect, useState } from "react";
+import { useExportBillsMutation } from "../../redux/billsSlice";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 
-
 function Bill_History() {
-
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [open, setOpen] = useState(false);
+
+  const status = [
+    { label: "All Status", value: "" },
+    { label: "Fully Billed", value: "fully billed" },
+    { label: "Bill Pending", value: "bill pending" },
+  ];
 
   const fields = [
     {
       key: "billStatus",
       label: "Filter By Bill Status",
       type: "select",
-      options: ["All Status", "Fully Billed", "Bill Pending"].map((d) => ({ label: d, value: d })),
+      options: status.map((d) => ({
+        label: d.label,
+        value: d.value,
+      })),
     },
     {
       key: "dateFilter",
       label: "Date Filter",
       type: "daterange",
-    }
+    },
   ];
 
   const [selectStatus, setSelectStatus] = useState(
     searchParams.get("status") || ""
-  )
+  );
 
   const [dateFilterFrom, setDateFilterFrom] = useState(
-    searchParams.get("dateFilter") || ""
-  )
+    searchParams.get("from") || ""
+  );
 
   const [dateFilterEnd, setDateFilterEnd] = useState(
-    searchParams.get("dateFilterEnd") || ""
-  )
+    searchParams.get("to") || ""
+  );
+
+  useEffect(() => {
+    const sp = new URLSearchParams(searchParams);
+
+    if (selectStatus) sp.set("status", selectStatus);
+    else sp.delete("status");
+
+    if (dateFilterFrom) sp.set("from", dateFilterFrom);
+    else sp.delete("from");
+
+    if (dateFilterEnd) sp.set("to", dateFilterEnd);
+    else sp.delete("to");
+
+    setSearchParams(sp);
+  }, [selectStatus, dateFilterEnd, dateFilterFrom]);
 
   const [exportBills, { isLoading: isExporting }] = useExportBillsMutation();
 
@@ -75,7 +97,7 @@ function Bill_History() {
       console.error("Export failed", err);
       alert("Failed to export bills");
     }
-  };  //   try {
+  }; //   try {
   //     const exportFrom = from ? formatDateToDDMMYYYY(from) : null;
   //     const exportTo = to ? formatDateToDDMMYYYY(to) : null;
   //     // const exportAll = !from || !to;
@@ -98,105 +120,16 @@ function Bill_History() {
   //   }
   // };
 
-
   return (
-    // <CssVarsProvider disableTransitionOnChange>
-    //   <CssBaseline />
-    //   <Box sx={{ display: "flex", minHeight: "100dvh" }}>
-    //     <Header />
-    //     <Sidebar />
-    //     <Box
-    //       component="main"
-    //       className="MainContent"
-    //       sx={{
-    //         px: { xs: 2, md: 6 },
-    //         pt: {
-    //           xs: "calc(12px + var(--Header-height))",
-    //           sm: "calc(12px + var(--Header-height))",
-    //           md: 3,
-    //         },
-    //         pb: { xs: 2, sm: 2, md: 3 },
-    //         flex: 1,
-    //         display: "flex",
-    //         flexDirection: "column",
-    //         minWidth: 0,
-    //         height: "100dvh",
-    //         gap: 1,
-    //       }}
-    //     >
-    //       <Box
-    //         sx={{
-    //           display: "flex",
-    //           alignItems: "center",
-    //           marginLeft: { xl: "15%", lg: "18%", },
-    //         }}
-    //       >
-    //         <Breadcrumbs
-    //           size="sm"
-    //           aria-label="breadcrumbs"
-    //           separator={<ChevronRightRoundedIcon fontSize="sm" />}
-    //           sx={{ pl: 0 }}
-    //         >
-    //           <Link
-    //             underline="hover"
-    //             color="neutral"
-    //             href=""
-    //             sx={{ fontSize: 12, fontWeight: 500 }}
-    //           >
-    //             SCM
-    //           </Link>
-    //           <Typography
-    //             color="primary"
-    //             sx={{ fontWeight: 500, fontSize: 12 }}
-    //           >
-    //             Vendor Bill
-    //           </Typography>
-    //         </Breadcrumbs>
-    //       </Box>
-    //       <Box
-    //         sx={{
-    //           display: "flex",
-    //           mb: 1,
-    //           gap: 1,
-    //           flexDirection: { xs: "column", sm: "row" },
-    //           alignItems: { xs: "start", sm: "center" },
-    //           flexWrap: "wrap",
-    //           justifyContent: "space-between",
-    //           marginLeft: { xl: "15%", lg: "18%" },
-    //         }}
-    //       >
-    //         <Typography level="h2" component="h1">
-    //           Vendor Bill
-    //         </Typography>
-    //         <Box
-    //           sx={{
-    //             display: "flex",
-    //             mb: 1,
-    //             gap: 1,
-    //             flexDirection: { xs: "column", sm: "row" },
-    //             alignItems: { xs: "start", sm: "center" },
-    //             flexWrap: "wrap",
-    //             justifyContent: "center",
-    //           }}
-    //         >
-    //         </Box>
-    //       </Box>
-    //       <VendorBill />
-    //     </Box>
-    //   </Box>
-    // </CssVarsProvider>
-
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
-      <Box
-        sx={{ display: "flex", minHeight: "100dvh" }}
-      >
+      <Box sx={{ display: "flex", minHeight: "100dvh" }}>
         <Sidebar />
         <MainHeader title="SCM" sticky>
           <Box display="flex" gap={1}>
             <Button
               size="sm"
-              onClick={() => navigate('/purchase-order')}
+              onClick={() => navigate("/purchase-order")}
               sx={{
                 color: "white",
                 bgcolor: "transparent",
@@ -255,14 +188,8 @@ function Bill_History() {
           </Box>
         </MainHeader>
 
-        <SubHeader
-          title="Vendor Bill"
-          isBackEnabled={false}
-          sticky
-
-        >
+        <SubHeader title="Vendor Bill" isBackEnabled={false} sticky>
           <>
-
             <Button
               variant="outlined"
               size="sm"
@@ -279,18 +206,14 @@ function Bill_History() {
               onOpenChange={setOpen}
               title="Filters"
               fields={fields}
-
               onApply={(values) => {
-
-                setSelectStatus(values?.billStatus || "")
-                setDateFilterFrom(values?.dateFilter?.from || "")
+                setSelectStatus(values?.billStatus || "");
+                setDateFilterFrom(values?.dateFilter?.from || "");
                 setDateFilterEnd(values?.dateFilter?.to || "");
 
                 setOpen(false);
               }}
-
               onReset={() => {
-
                 setSelectStatus("");
                 setDateFilterFrom("");
                 setDateFilterEnd("");
@@ -299,7 +222,6 @@ function Bill_History() {
               }}
             />
           </>
-
         </SubHeader>
 
         <Box
@@ -314,17 +236,12 @@ function Bill_History() {
             mr: "28px",
             pr: "30px",
             ml: "24px",
-            overflow: "hidden"
+            overflow: "hidden",
           }}
         >
-          <VendorBill
-            selectStatus={selectStatus}
-            dateFilterFrom={dateFilterFrom} // if you meant start date
-            dateFilterEnd={dateFilterEnd}
-          />
+          <VendorBill />
         </Box>
       </Box>
-
     </CssVarsProvider>
   );
 }

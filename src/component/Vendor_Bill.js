@@ -25,11 +25,10 @@ const HEADER_STACK = 108;
 const FILTERS_APPROX = 120;
 const PADDING_FIX = 24;
 
-function VendorBillSummary({ selectStatus, dateFilterFrom, dateFilterEnd }) {
+function VendorBillSummary() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const nonEmpty = (v) => typeof v === "string" && v.trim() !== "";
 
   // search text & pagination
   const [searchQuery, setSearchQuery] = useState("");
@@ -39,6 +38,9 @@ function VendorBillSummary({ selectStatus, dateFilterFrom, dateFilterEnd }) {
   const [perPage, setPerPage] = useState(initialPageSize);
 
   const po_number = searchParams.get("po_number") || "";
+  const dateFilterEnd = searchParams.get("to") || "";
+  const dateFilterFrom = searchParams.get("from") || "";
+  const selectStatus = searchParams.get("status") || "";
 
   // selection
   const [selectedIds, setSelectedIds] = useState([]);
@@ -50,60 +52,15 @@ function VendorBillSummary({ selectStatus, dateFilterFrom, dateFilterEnd }) {
     setUser(userData ? JSON.parse(userData) : null);
   }, []);
 
-  // Sync PROPS -> URL (only these three keys)
-  const isPushingRef = useRef(false);
-  useEffect(() => {
-    const nextStatus = nonEmpty(selectStatus) ? selectStatus : "";
-    const nextFrom = nonEmpty(dateFilterFrom) ? dateFilterFrom : "";
-    const nextEnd = nonEmpty(dateFilterEnd) ? dateFilterEnd : "";
-
-    const urlStatus = searchParams.get("status") || "";
-    const urlFrom = searchParams.get("dateFrom") || "";
-    const urlEnd = searchParams.get("dateEnd") || "";
-
-    const needsUpdate =
-      urlStatus !== nextStatus || urlFrom !== nextFrom || urlEnd !== nextEnd;
-
-    if (!needsUpdate) return;
-
-    isPushingRef.current = true;
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      if (nextStatus) next.set("status", nextStatus); else next.delete("status");
-      if (nextFrom) next.set("dateFrom", nextFrom); else next.delete("dateFrom");
-      if (nextEnd) next.set("dateEnd", nextEnd); else next.delete("dateEnd");
-      next.set("page", "1"); // reset page when filters change
-      return next;
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectStatus, dateFilterFrom, dateFilterEnd]);
-
-  // If something else changes the URL, update current page
-  useEffect(() => {
-    if (isPushingRef.current) {
-      isPushingRef.current = false;
-      return;
-    }
-    const pageFromUrl = parseInt(searchParams.get("page")) || 1;
-    setCurrentPage(pageFromUrl);
-  }, [searchParams]);
-
-  // Build query args without empty strings
-  const queryArgs = useMemo(() => {
-    const args = {
-      page: currentPage,
-      pageSize: perPage,
-    };
-    if (nonEmpty(selectStatus)) args.status = selectStatus;
-    if (nonEmpty(searchQuery)) args.search = searchQuery.toLowerCase();
-    if (nonEmpty(dateFilterFrom)) args.dateFrom = dateFilterFrom;
-    if (nonEmpty(dateFilterEnd)) args.dateEnd = dateFilterEnd;
-    if (nonEmpty(po_number)) args.po_number = po_number;
-    return args;
-  }, [currentPage, perPage, selectStatus, searchQuery, dateFilterFrom, dateFilterEnd, po_number]);
-
-  // Fetch
-  const { data: getBill = {}, isLoading } = useGetAllBillsQuery(queryArgs);
+  const { data: getBill = {}, isLoading } = useGetAllBillsQuery({
+    page: currentPage,
+    pageSize: perPage,
+    po_number: po_number,
+    search: searchQuery,
+    dateFrom: dateFilterFrom,
+    dateEnd: dateFilterEnd,
+    status: selectStatus,
+  });
 
   const {
     data: billsData = [],
@@ -149,8 +106,12 @@ function VendorBillSummary({ selectStatus, dateFilterFrom, dateFilterEnd }) {
   };
 
   // Selection handlers
-  const allIdsOnPage = useMemo(() => bills.map((b) => b._id).filter(Boolean), [bills]);
-  const isAllSelected = allIdsOnPage.length > 0 && selectedIds.length === allIdsOnPage.length;
+  const allIdsOnPage = useMemo(
+    () => bills.map((b) => b._id).filter(Boolean),
+    [bills]
+  );
+  const isAllSelected =
+    allIdsOnPage.length > 0 && selectedIds.length === allIdsOnPage.length;
   const isIndeterminate = selectedIds.length > 0 && !isAllSelected;
 
   const toggleSelectAll = (checked) => {
@@ -173,8 +134,8 @@ function VendorBillSummary({ selectStatus, dateFilterFrom, dateFilterEnd }) {
     const rawLabel = isFullyBilled
       ? "Fully Billed"
       : isPending
-        ? `${balance} - Waiting Bills`
-        : status;
+      ? `${balance} - Waiting Bills`
+      : status;
     return (
       <Chip
         variant="soft"
@@ -303,7 +264,6 @@ function VendorBillSummary({ selectStatus, dateFilterFrom, dateFilterEnd }) {
             />
           </FormControl>
         </Box>
-
       </Box>
 
       <Sheet
@@ -317,7 +277,6 @@ function VendorBillSummary({ selectStatus, dateFilterFrom, dateFilterEnd }) {
           overflow: "auto",
         }}
       >
-
         <Box
           component="table"
           sx={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}
@@ -383,10 +342,23 @@ function VendorBillSummary({ selectStatus, dateFilterFrom, dateFilterEnd }) {
           <Box component="tbody">
             {isLoading ? (
               <Box component="tr">
-                <Box component="td" colSpan={15} sx={{ py: 5, textAlign: "center" }}>
-                  <Box sx={{ fontStyle: "italic", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <Box
+                  component="td"
+                  colSpan={15}
+                  sx={{ py: 5, textAlign: "center" }}
+                >
+                  <Box
+                    sx={{
+                      fontStyle: "italic",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                    }}
+                  >
                     <CircularProgress size="sm" sx={{ color: "primary.500" }} />
-                    <Typography fontStyle="italic">Loading bills… please hang tight ⏳</Typography>
+                    <Typography fontStyle="italic">
+                      Loading bills… please hang tight ⏳
+                    </Typography>
                   </Box>
                 </Box>
               </Box>
@@ -395,9 +367,20 @@ function VendorBillSummary({ selectStatus, dateFilterFrom, dateFilterEnd }) {
                 const id = bill._id || `${bill.bill_no}-${idx}`;
                 const isChecked = selectedIds.includes(id);
                 return (
-                  <Box component="tr" key={id} sx={{ borderBottom: "1px solid #ddd" }}>
+                  <Box
+                    component="tr"
+                    key={id}
+                    sx={{ borderBottom: "1px solid #ddd" }}
+                  >
                     {/* Row checkbox */}
-                    <Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "8px", width: 44 }}>
+                    <Box
+                      component="td"
+                      sx={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        width: 44,
+                      }}
+                    >
                       <Checkbox
                         size="sm"
                         checked={isChecked}
@@ -405,99 +388,144 @@ function VendorBillSummary({ selectStatus, dateFilterFrom, dateFilterEnd }) {
                       />
                     </Box>
 
-                    <Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
+                    <Box
+                      component="td"
+                      sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                    >
                       <Chip
                         variant="outlined"
                         color="primary"
                         sx={{ cursor: "pointer" }}
-                        onClick={() => navigate(`/add_bill?mode=edit&_id=${bill._id}`)}
+                        onClick={() =>
+                          navigate(`/add_bill?mode=edit&_id=${bill._id}`)
+                        }
                       >
                         {bill.bill_no}
                       </Chip>
                     </Box>
 
-                    <Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
+                    <Box
+                      component="td"
+                      sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                    >
                       {dayjs(bill.bill_date).format("DD/MM/YYYY")}
                     </Box>
 
-                    <Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
+                    <Box
+                      component="td"
+                      sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                    >
                       ₹{Number(bill.bill_value).toFixed(2)}
                     </Box>
 
-                    <Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
+                    <Box
+                      component="td"
+                      sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                    >
                       ₹{Number(bill.total_billed).toFixed(2)}
                     </Box>
 
-                    <Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
+                    <Box
+                      component="td"
+                      sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                    >
                       {Array.isArray(bill.item) && bill.item.length
                         ? (() => {
-                          const unique = [
-                            ...new Set(bill.item.map((it) => it?.category_name).filter(Boolean)),
-                          ];
-                          const first = unique[0];
-                          const remaining = unique.slice(1);
-                          return (
-                            <>
-                              {first}
-                              {remaining.length > 0 && (
-                                <Tooltip title={remaining.join(", ")} arrow>
-                                  <Box
-                                    component="span"
-                                    sx={{
-                                      ml: 1,
-                                      px: 1,
-                                      borderRadius: "50%",
-                                      backgroundColor: "primary.solidBg",
-                                      color: "white",
-                                      fontSize: "12px",
-                                      fontWeight: 500,
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      minWidth: "22px",
-                                      height: "22px",
-                                      lineHeight: 1,
-                                      cursor: "pointer",
-                                    }}
-                                  >
-                                    +{remaining.length}
-                                  </Box>
-                                </Tooltip>
-                              )}
-                            </>
-                          );
-                        })()
+                            const unique = [
+                              ...new Set(
+                                bill.item
+                                  .map((it) => it?.category_name)
+                                  .filter(Boolean)
+                              ),
+                            ];
+                            const first = unique[0];
+                            const remaining = unique.slice(1);
+                            return (
+                              <>
+                                {first}
+                                {remaining.length > 0 && (
+                                  <Tooltip title={remaining.join(", ")} arrow>
+                                    <Box
+                                      component="span"
+                                      sx={{
+                                        ml: 1,
+                                        px: 1,
+                                        borderRadius: "50%",
+                                        backgroundColor: "primary.solidBg",
+                                        color: "white",
+                                        fontSize: "12px",
+                                        fontWeight: 500,
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        minWidth: "22px",
+                                        height: "22px",
+                                        lineHeight: 1,
+                                        cursor: "pointer",
+                                      }}
+                                    >
+                                      +{remaining.length}
+                                    </Box>
+                                  </Tooltip>
+                                )}
+                              </>
+                            );
+                          })()
                         : bill.item?.category_name || "-"}
                     </Box>
 
-                    <Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
+                    <Box
+                      component="td"
+                      sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                    >
                       {bill.project_id}
                     </Box>
 
-                    <Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "12px" }}>
+                    <Box
+                      component="td"
+                      sx={{ borderBottom: "1px solid #ddd", padding: "12px" }}
+                    >
                       {bill.po_no}
                     </Box>
 
-                    <Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
+                    <Box
+                      component="td"
+                      sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                    >
                       {bill.vendor}
                     </Box>
 
-                    <Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
+                    <Box
+                      component="td"
+                      sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                    >
                       ₹{Number(bill.po_value || 0).toFixed(2)}
                     </Box>
 
-                    <Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
+                    <Box
+                      component="td"
+                      sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                    >
                       <BillingStatusChip
                         status={bill.po_status}
                         balance={(bill.po_value - bill.total_billed).toFixed(2)}
                       />
                     </Box>
 
-                    <Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
-                      <BillAcceptance billNumber={bill.bill_no} approvedBy={bill.approved_by_name} />
+                    <Box
+                      component="td"
+                      sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                    >
+                      <BillAcceptance
+                        billNumber={bill.bill_no}
+                        approvedBy={bill.approved_by_name}
+                      />
                     </Box>
 
-                    <Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
+                    <Box
+                      component="td"
+                      sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                    >
                       {dayjs(bill.created_on).format("DD/MM/YYYY")}
                     </Box>
                   </Box>
@@ -505,14 +533,17 @@ function VendorBillSummary({ selectStatus, dateFilterFrom, dateFilterEnd }) {
               })
             ) : (
               <Box component="tr">
-                <Box component="td" colSpan={15} sx={{ textAlign: "center", p: 2 }}>
+                <Box
+                  component="td"
+                  colSpan={15}
+                  sx={{ textAlign: "center", p: 2 }}
+                >
                   No bills found.
                 </Box>
               </Box>
             )}
           </Box>
         </Box>
-
       </Sheet>
 
       {/* Pagination */}
@@ -540,11 +571,14 @@ function VendorBillSummary({ selectStatus, dateFilterFrom, dateFilterEnd }) {
 
         <Box>
           <Typography level="body-sm">
-            Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} of {total} results
+            Showing {(page - 1) * pageSize + 1}–
+            {Math.min(page * pageSize, total)} of {total} results
           </Typography>
         </Box>
 
-        <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
+        <Box
+          sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
+        >
           {(() => {
             const siblings = 1;
             const pages = [];

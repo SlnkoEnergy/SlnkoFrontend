@@ -230,7 +230,6 @@ const AllExpense = forwardRef((props, ref) => {
         display="flex"
         justifyContent="flex-end"
         alignItems="center"
-        pt={4}
         pb={0.5}
         flexWrap="wrap"
         gap={1}
