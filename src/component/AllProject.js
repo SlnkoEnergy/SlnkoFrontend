@@ -31,6 +31,7 @@ import {
   useGetAllProjectsQuery,
   useUpdateProjectStatusMutation,
 } from "../redux/projectsSlice";
+import AssignedWorkModal from "./Forms/AssignWorkModal";
 
 function AllProjects() {
   const navigate = useNavigate();
@@ -118,6 +119,28 @@ function AllProjects() {
       {code || "-"}
     </span>
   );
+  const [assignedOpen, setAssignedOpen] = useState(false);
+  const [assignedProject, setAssignedProject] = useState(null);
+
+  const openAssignedModal = (project) => {
+    setAssignedProject({
+      id: project?._id || project?.project_id,
+      code: project?.code || "-",
+      name: project?.name || "-",
+      customer: project?.customer || "-",
+    });
+    setAssignedOpen(true);
+  };
+
+  const closeAssignedModal = () => {
+    setAssignedOpen(false);
+    setAssignedProject(null);
+  };
+
+  const handleAssignedSaved = async () => {
+    await (refetch().unwrap?.() ?? refetch());
+    closeAssignedModal();
+  };
 
   // ======== Search: update URL on every keystroke and reset page to 1 ========
   const handleSearchChange = (query) => {
@@ -342,6 +365,7 @@ function AllProjects() {
                 "Capacity(AC/DC)",
                 "Status",
                 "Schedule",
+                "Assigned Work",
               ].map((header) => (
                 <th
                   key={header}
@@ -486,6 +510,18 @@ function AllProjects() {
                         <Add />
                       </IconButton>
                     </td>
+
+                    <td
+                      style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                    >
+                      <Button
+                        size="sm"
+                        variant="outlined"
+                        onClick={() => openAssignedModal(project)}
+                      >
+                        Assigned Work +
+                      </Button>
+                    </td>
                   </tr>
                 );
               })
@@ -521,6 +557,12 @@ function AllProjects() {
         </Box>
       </Sheet>
 
+      <AssignedWorkModal
+        open={assignedOpen}
+        onClose={closeAssignedModal}
+        onSaved={handleAssignedSaved}
+        project={assignedProject}
+      />
       {/* Pagination */}
       <Box
         className="Pagination-laptopUp"
