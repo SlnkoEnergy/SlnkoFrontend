@@ -71,6 +71,8 @@ const Customer_Payment_Summary = () => {
   const [selectedAdjust, setSelectedAdjust] = useState([]);
   const [selectedCredits, setSelectedCredits] = useState([]);
   const [selectedDebits, setSelectedDebits] = useState([]);
+  const [salesBasic, setSalesBasic] = useState("");
+  const [salesGst, setSalesGst] = useState("");
 
   const [searchSales, setSearchSales] = useState("");
 
@@ -1779,7 +1781,7 @@ const Customer_Payment_Summary = () => {
                           "Prachi Singh",
                           "admin",
                           "Chandan Singh",
-                          "Gagan Tayal" 
+                          "Gagan Tayal",
                         ].includes(user?.name) && (
                           <>
                             <Button
@@ -1847,7 +1849,6 @@ const Customer_Payment_Summary = () => {
                               border: "1px solid #ccc",
                             },
                           },
-                          // PO & Vendor: no tooltip/ellipsis — just wrap
                           "& th.poCell, & td.poCell, & th.vendorCell, & td.vendorCell":
                             {
                               whiteSpace: "normal",
@@ -1855,7 +1856,6 @@ const Customer_Payment_Summary = () => {
                               wordBreak: "break-word",
                               maxWidth: "unset",
                             },
-                          // Item: allow truncation (ellipsis) on wider screens only
                           "& th.itemCell, & td.itemCell": {
                             maxWidth: { xs: 160, sm: 220, md: 320 },
                             whiteSpace: { xs: "normal", md: "nowrap" },
@@ -1875,10 +1875,82 @@ const Customer_Payment_Summary = () => {
                             <th className="poCell">PO Number</th>
                             <th className="vendorCell">Vendor</th>
                             <th className="itemCell">Item Name</th>
-                            <th>PO Value (₹)</th>
-                            <th>Advance Paid (₹)</th>
-                            <th>Remaining Amount (₹)</th>
-                            <th>Total Billed Value (₹)</th>
+
+                            <th>
+                              <Tooltip
+                                arrow
+                                variant="soft"
+                                title="PO Value (₹)"
+                              >
+                                <span>PO Value (₹)</span>
+                              </Tooltip>
+                            </th>
+
+                            <th>
+                              <Tooltip
+                                arrow
+                                variant="soft"
+                                title={
+                                  <span>
+                                    Advance Paid (₹)
+                                    <br />
+                                    <em>
+                                      Sum of approved vendor advances against
+                                      this PO
+                                    </em>
+                                  </span>
+                                }
+                              >
+                                <span>Advance Paid (₹)</span>
+                              </Tooltip>
+                            </th>
+
+                            <th>
+                              <Tooltip
+                                arrow
+                                variant="soft"
+                                title={
+                                  <span>
+                                    Advance Remaining (₹) = PO Value − Advance
+                                    Paid
+                                  </span>
+                                }
+                              >
+                                <span>Advance Remaining (₹)</span>
+                              </Tooltip>
+                            </th>
+
+                            <th>
+                              <Tooltip
+                                arrow
+                                variant="soft"
+                                title={
+                                  <span>
+                                    Unbilled PO (₹) = PO Value − Total Billed
+                                    Value
+                                  </span>
+                                }
+                              >
+                                <span>Unbilled PO (₹)</span>
+                              </Tooltip>
+                            </th>
+
+                            <th>
+                              <Tooltip
+                                arrow
+                                variant="soft"
+                                title={
+                                  <span>
+                                    Total Billed Value (₹)
+                                    <br />
+                                    <em>Sum of bills raised against this PO</em>
+                                  </span>
+                                }
+                              >
+                                <span>Total Billed Value (₹)</span>
+                              </Tooltip>
+                            </th>
+
                             <th style={{ textAlign: "center" }}>
                               <Checkbox
                                 onChange={handleSelectAllClient}
@@ -1888,6 +1960,7 @@ const Customer_Payment_Summary = () => {
                                     ClientSummary.length
                                 }
                                 disabled={ClientSummary.length === 0}
+                                aria-label="Select all rows"
                               />
                             </th>
                           </tr>
@@ -1942,6 +2015,12 @@ const Customer_Payment_Summary = () => {
                                   ₹{" "}
                                   {(
                                     client?.remaining_amount || 0
+                                  ).toLocaleString("en-IN")}
+                                </td>
+                                <td>
+                                  ₹{" "}
+                                  {(
+                                    client?.po_remaining_amount || 0
                                   ).toLocaleString("en-IN")}
                                 </td>
                                 <td>
@@ -2800,7 +2879,70 @@ const Customer_Payment_Summary = () => {
             <DialogTitle id="sales-convert-title">Sales Conversion</DialogTitle>
             <DialogContent>
               <Stack spacing={2}>
-                {/* Dotted dropzone */}
+                {/* ---- CAP CONTEXT ---- */}
+                {(() => {
+                  const poValue = Number(selectedPO?.po_value ?? 0);
+                  const totalBilled = Number(selectedPO?.total_billed ?? 0); // string in DB → number here
+                  const totalSalesValue = Number(
+                    selectedPO?.total_sales_value ?? 0
+                  );
+
+                  const cap = Math.max(0, poValue - totalBilled);
+                  const remainingAllowed = Math.max(0, cap - totalSalesValue);
+
+                  const basic = Number(salesBasic);
+                  const gst = Number(salesGst);
+                  const entryTotal =
+                    (Number.isFinite(basic) ? basic : 0) +
+                    (Number.isFinite(gst) ? gst : 0);
+                  const overLimit = entryTotal > remainingAllowed;
+
+                  // expose for button below
+                  window._salesUI = { remainingAllowed, entryTotal, overLimit };
+
+                  return (
+                    <Sheet
+                      variant="soft"
+                      sx={{
+                        p: 1.25,
+                        borderRadius: "md",
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: 1,
+                      }}
+                    >
+                      <Typography level="body-xs" color="neutral">
+                        PO Value: <b>{poValue.toLocaleString()}</b>
+                      </Typography>
+                      <Typography
+                        level="body-xs"
+                        color="neutral"
+                        sx={{ textAlign: "right" }}
+                      >
+                        Total Billed: <b>{totalBilled.toLocaleString()}</b>
+                      </Typography>
+                      <Typography level="body-xs" color="neutral">
+                        Sales Recorded:{" "}
+                        <b>{totalSalesValue.toLocaleString()}</b>
+                      </Typography>
+                      <Typography
+                        level="body-xs"
+                        sx={{
+                          textAlign: "right",
+                          color:
+                            remainingAllowed > 0
+                              ? "success.plainColor"
+                              : "danger.plainColor",
+                        }}
+                      >
+                        Remaining Allowed:{" "}
+                        <b>{remainingAllowed.toLocaleString()}</b>
+                      </Typography>
+                    </Sheet>
+                  );
+                })()}
+
+                {/* ---- DROPZONE ---- */}
                 <Box
                   onClick={() => fileInputRef.current?.click()}
                   onDrop={onDrop}
@@ -2839,7 +2981,7 @@ const Customer_Payment_Summary = () => {
                     name="file"
                     multiple
                     accept="image/*,application/pdf"
-                    onChange={(e) => onFileInputChange(e)}
+                    onChange={onFileInputChange}
                     style={{ display: "none" }}
                   />
 
@@ -2850,7 +2992,7 @@ const Customer_Payment_Summary = () => {
                   </Typography>
                 </Box>
 
-                {/* Preview + editable attachment_name */}
+                {/* ---- PREVIEW ---- */}
                 {salesFiles.length > 0 && (
                   <Sheet
                     variant="soft"
@@ -2948,7 +3090,71 @@ const Customer_Payment_Summary = () => {
                   </Sheet>
                 )}
 
-                {/* Remarks */}
+                {/* ---- AMOUNTS ---- */}
+                <Stack direction="row" spacing={1.25}>
+                  <FormControl sx={{ flex: 1 }}>
+                    <FormLabel>Basic Sales</FormLabel>
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      value={salesBasic}
+                      onChange={(e) => setSalesBasic(e.target.value)}
+                      slotProps={{
+                        input: { min: 0, step: "0.01", inputMode: "decimal" },
+                      }}
+                    />
+                  </FormControl>
+                  <FormControl sx={{ flex: 1 }}>
+                    <FormLabel>GST on Sales</FormLabel>
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      value={salesGst}
+                      onChange={(e) => setSalesGst(e.target.value)}
+                      slotProps={{
+                        input: { min: 0, step: "0.01", inputMode: "decimal" },
+                      }}
+                    />
+                  </FormControl>
+                </Stack>
+
+                {/* ---- ENTRY TOTAL / HINT ---- */}
+                {(() => {
+                  const basic = Number(salesBasic);
+                  const gst = Number(salesGst);
+                  const entryTotal =
+                    (Number.isFinite(basic) ? basic : 0) +
+                    (Number.isFinite(gst) ? gst : 0);
+                  const remaining = window._salesUI?.remainingAllowed ?? 0;
+                  const overLimit = entryTotal > remaining;
+
+                  return (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "baseline",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Typography level="title-sm">
+                        Entry Total: <b>{entryTotal.toLocaleString()}</b>
+                      </Typography>
+                      <Typography
+                        level="body-xs"
+                        color={overLimit ? "danger" : "neutral"}
+                        sx={{ textAlign: "right" }}
+                      >
+                        {overLimit
+                          ? `Exceeds remaining allowed by ${(
+                              entryTotal - remaining
+                            ).toLocaleString()}`
+                          : `Within remaining allowed`}
+                      </Typography>
+                    </Box>
+                  );
+                })()}
+
+                {/* ---- REMARKS ---- */}
                 <Textarea
                   minRows={3}
                   placeholder="Enter remarks..."
@@ -2957,7 +3163,7 @@ const Customer_Payment_Summary = () => {
                   onChange={(e) => setSalesRemarks(e.target.value)}
                 />
 
-                {/* Actions */}
+                {/* ---- ACTIONS ---- */}
                 <Stack direction="row" spacing={1.5} justifyContent="flex-end">
                   <Button
                     variant="plain"
@@ -2970,7 +3176,14 @@ const Customer_Payment_Summary = () => {
                     variant="solid"
                     color="primary"
                     loading={isConverting}
-                    disabled={!salesRemarks.trim()}
+                    disabled={
+                      !salesRemarks.trim() ||
+                      !Number.isFinite(Number(salesBasic)) ||
+                      !Number.isFinite(Number(salesGst)) ||
+                      Number(salesBasic) < 0 ||
+                      Number(salesGst) < 0 ||
+                      (window._salesUI?.overLimit ?? false)
+                    }
                     onClick={handleSalesConvert}
                   >
                     Convert
