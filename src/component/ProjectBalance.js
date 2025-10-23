@@ -887,7 +887,7 @@ export default function ProjectBalancesJoy() {
                     <Checkbox
                       size="sm"
                       checked={checked}
-                      disabled={!rowKey} // if no code, disable selection
+                      disabled={!rowKey}
                       onChange={(e) => rowKey && toggleRow(e, rowKey)}
                       onClick={(e) => e.stopPropagation()}
                       variant="soft"
