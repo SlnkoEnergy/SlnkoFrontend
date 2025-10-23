@@ -21,10 +21,12 @@ import { useNavigate } from "react-router-dom";
 import Sidebar from "../../component/Partials/Sidebar";
 
 export default function Email() {
-  const [drawerOpen, setDrawerOpen] = React.useState(false);
-  const [open, setOpen] = React.useState(false);
   const navigate = useNavigate();
-  // Ctrl/⌘+N to open compose
+  const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const [selectedEmail, setSelectedEmail] = React.useState(null);
+  const [selectedStatus, setSelectedStatus] = React.useState("queued");
+  const [open, setOpen] = React.useState(false);
+
   React.useEffect(() => {
     const onKey = (e) => {
       const isMac = navigator.platform.toUpperCase().includes("MAC");
@@ -44,7 +46,7 @@ export default function Email() {
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
       <Box sx={{ display: "flex", minHeight: "100vh" }}>
-         <Sidebar />
+        <Sidebar />
         {drawerOpen && (
           <Layout.SideDrawer onClose={() => setDrawerOpen(false)}>
             <Navigation />
@@ -74,7 +76,6 @@ export default function Email() {
             color="neutral"
             aria-pressed="true"
             component="a"
-            href="/joy-ui/getting-started/templates/email/"
             size="sm"
             startDecorator={<EmailRoundedIcon />}
             sx={{ flexDirection: "column", "--Button-gap": 0 }}
@@ -85,7 +86,6 @@ export default function Email() {
             variant="plain"
             color="neutral"
             component="a"
-            href="/joy-ui/getting-started/templates/team/"
             size="sm"
             startDecorator={<PeopleAltRoundedIcon />}
             sx={{ flexDirection: "column", "--Button-gap": 0 }}
@@ -96,7 +96,6 @@ export default function Email() {
             variant="plain"
             color="neutral"
             component="a"
-            href="/joy-ui/getting-started/templates/files/"
             size="sm"
             startDecorator={<FolderRoundedIcon />}
             sx={{ flexDirection: "column", "--Button-gap": 0 }}
@@ -104,6 +103,7 @@ export default function Email() {
             Files
           </Button>
         </Stack>
+
         <MainHeader title="Email" sticky>
           <Box display="flex" gap={1}>
             <Button
@@ -144,7 +144,8 @@ export default function Email() {
           </Box>
         </MainHeader>
 
-        <SubHeader title="Email" isBackEnabled={true} sticky></SubHeader>
+        <SubHeader title="Email" isBackEnabled sticky />
+
         <Box
           component="main"
           className="MainContent"
@@ -155,7 +156,7 @@ export default function Email() {
             gap: 1,
             mt: "108px",
             p: "16px",
-            px: "24px",
+            px: "16px",
           }}
         >
           <Layout.Root
@@ -167,10 +168,11 @@ export default function Email() {
             ]}
           >
             <Layout.SideNav>
-              <Navigation />
+              <Navigation setSelectedStatus={setSelectedStatus} />
             </Layout.SideNav>
 
             <Layout.SidePane>
+              {/* Header for inbox */}
               <Box
                 sx={{
                   p: 2,
@@ -179,16 +181,13 @@ export default function Email() {
                   justifyContent: "space-between",
                 }}
               >
-                <Box sx={{ alignItems: "center", gap: 1 }}>
+                <Box>
                   <Typography
                     level="title-lg"
                     textColor="text.secondary"
                     component="h1"
                   >
                     My inbox
-                  </Typography>
-                  <Typography level="title-sm" textColor="text.tertiary">
-                    5 emails
                   </Typography>
                 </Box>
 
@@ -206,11 +205,16 @@ export default function Email() {
                 </FocusTrap>
               </Box>
 
-              <Mails />
+              {/* Mails list */}
+              <Mails
+                setSelectedEmail={setSelectedEmail}
+                selectedEmailId={selectedEmail}
+                selectedStatus={selectedStatus}
+              />
             </Layout.SidePane>
 
             <Layout.Main>
-              <EmailContent />
+              <EmailContent selectedEmail={selectedEmail} />
             </Layout.Main>
           </Layout.Root>
         </Box>

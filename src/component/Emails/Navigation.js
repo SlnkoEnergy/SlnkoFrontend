@@ -6,65 +6,53 @@ import ListItem from "@mui/joy/ListItem";
 import ListItemButton from "@mui/joy/ListItemButton";
 import ListItemDecorator from "@mui/joy/ListItemDecorator";
 import ListItemContent from "@mui/joy/ListItemContent";
-
 import InboxRoundedIcon from "@mui/icons-material/InboxRounded";
 import OutboxRoundedIcon from "@mui/icons-material/OutboxRounded";
 import DraftsRoundedIcon from "@mui/icons-material/DraftsRounded";
-import AssistantPhotoRoundedIcon from "@mui/icons-material/AssistantPhotoRounded";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
 
-export default function Navigation() {
+export default function Navigation({ setSelectedStatus }) {
+  const [selected, setSelected] = React.useState("queued");
+
+  const items = [
+    { label: "Queued", value: "queued", Icon: InboxRoundedIcon },
+    { label: "Sent", value: "sent", Icon: OutboxRoundedIcon },
+    { label: "Draft", value: "draft", Icon: DraftsRoundedIcon },
+    { label: "Trash", value: "trash", Icon: DeleteRoundedIcon },
+  ];
+
+  const handleClick = (value) => {
+    setSelected(value);
+    setSelectedStatus?.(value);
+  };
+
   return (
     <List size="sm" sx={{ "--ListItem-radius": "8px", "--List-gap": "4px" }}>
       <ListItem nested>
-        <ListSubheader sx={{ letterSpacing: "2px", fontWeight: "800" }}>
+        <ListSubheader sx={{ letterSpacing: "2px", fontWeight: 800 }}>
           Browse
         </ListSubheader>
+
         <List aria-labelledby="nav-list-browse">
-          <ListItem>
-            <ListItemButton selected>
-              <ListItemDecorator>
-                <InboxRoundedIcon fontSize="small" />
-              </ListItemDecorator>
-              <ListItemContent>Inbox</ListItemContent>
-            </ListItemButton>
-          </ListItem>
-
-          <ListItem>
-            <ListItemButton>
-              <ListItemDecorator>
-                <OutboxRoundedIcon fontSize="small" />
-              </ListItemDecorator>
-              <ListItemContent>Sent</ListItemContent>
-            </ListItemButton>
-          </ListItem>
-
-          <ListItem>
-            <ListItemButton>
-              <ListItemDecorator>
-                <DraftsRoundedIcon fontSize="small" />
-              </ListItemDecorator>
-              <ListItemContent>Draft</ListItemContent>
-            </ListItemButton>
-          </ListItem>
-
-          <ListItem>
-            <ListItemButton>
-              <ListItemDecorator>
-                <AssistantPhotoRoundedIcon fontSize="small" />
-              </ListItemDecorator>
-              <ListItemContent>Flagged</ListItemContent>
-            </ListItemButton>
-          </ListItem>
-
-          <ListItem>
-            <ListItemButton>
-              <ListItemDecorator>
-                <DeleteRoundedIcon fontSize="small" />
-              </ListItemDecorator>
-              <ListItemContent>Trash</ListItemContent>
-            </ListItemButton>
-          </ListItem>
+          {items.map(({ label, value, Icon }) => (
+            <ListItem key={value}>
+              <ListItemButton
+                selected={selected === value}
+                onClick={() => handleClick(value)}
+                sx={{
+                  ...(selected === value && {
+                    bgcolor: "neutral.softBg",
+                    "&:hover": { bgcolor: "neutral.softHoverBg" },
+                  }),
+                }}
+              >
+                <ListItemDecorator>
+                  <Icon fontSize="small" />
+                </ListItemDecorator>
+                <ListItemContent>{label}</ListItemContent>
+              </ListItemButton>
+            </ListItem>
+          ))}
         </List>
       </ListItem>
 

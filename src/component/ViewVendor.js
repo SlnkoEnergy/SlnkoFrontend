@@ -18,7 +18,6 @@ import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import { useGetPostsQuery } from "../redux/postsSlice";
 import { useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
-import Overview from "./Forms/Engineering/Eng_Overview/Overview";
 import PurchaseRequestCard from "./PurchaseRequestCard";
 import { useGetVendorByIdQuery } from "../redux/vendorSlice";
 
@@ -48,15 +47,6 @@ const sanitizeTabFromQuery = (raw) => {
   return "purchaseorders";
 };
 
-const canUserSeePO = (user) => {
-  if (!user) return false;
-  const role = String(user.role || "").toLowerCase();
-  const dept = user.department || "";
-  const special = user.emp_id === "SE-013";
-  const privileged = special || role === "admin" || role === "superadmin";
-  return privileged || dept !== "Engineering";
-};
-
 export default function Vendor_Detail() {
   const [searchParams, setSearchParams] = useSearchParams();
   const id = searchParams.get("id") || "";
@@ -72,15 +62,12 @@ export default function Vendor_Detail() {
   const { data: getVendor } = useGetVendorByIdQuery(id);
   const vendorDetails = getVendor?.data || {};
 
-  // Make "purchaseorders" the initial tab (fallback), read from ?tab=...
   const initialTab = sanitizeTabFromQuery(searchParams.get("tab"));
   const [tabValue, setTabValue] = useState(initialTab);
 
-  // Keep local state in sync if URL changes externally
   useEffect(() => {
     const urlTab = sanitizeTabFromQuery(searchParams.get("tab"));
     if (urlTab !== tabValue) setTabValue(urlTab);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   const handleTabChange = (_e, newValue) => {
@@ -91,7 +78,6 @@ export default function Vendor_Detail() {
     setSearchParams(params);
   };
 
-  // ---- follow/unfollow state ----
   const [isFollowing, setIsFollowing] = useState(false);
   const [toast, setToast] = useState({
     open: false,
