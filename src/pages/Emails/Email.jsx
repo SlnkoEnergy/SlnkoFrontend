@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { CssVarsProvider } from "@mui/joy/styles";
 import { FocusTrap } from "@mui/base/FocusTrap";
 import CssBaseline from "@mui/joy/CssBaseline";
@@ -10,11 +10,11 @@ import CreateRoundedIcon from "@mui/icons-material/CreateRounded";
 import EmailRoundedIcon from "@mui/icons-material/EmailRounded";
 import PeopleAltRoundedIcon from "@mui/icons-material/PeopleAltRounded";
 import FolderRoundedIcon from "@mui/icons-material/FolderRounded";
-import Layout from "../../component/Emails/Layout";
-import Navigation from "../../component/Emails/Navigation";
-import Mails from "../../component/Emails/Mails";
-import EmailContent from "../../component/Emails/EmailContent";
-import WriteEmail from "../../component/Emails/WriteEmail";
+import Layout from "../../component/Emails/Email/Layout";
+import Navigation from "../../component/Emails/Email/Navigation";
+import Mails from "../../component/Emails/Email/Mails";
+import EmailContent from "../../component/Emails/Email/EmailContent";
+import WriteEmail from "../../component/Emails/Email/WriteEmail";
 import SubHeader from "../../component/Partials/SubHeader";
 import MainHeader from "../../component/Partials/MainHeader";
 import { useNavigate } from "react-router-dom";
@@ -22,10 +22,11 @@ import Sidebar from "../../component/Partials/Sidebar";
 
 export default function Email() {
   const navigate = useNavigate();
-  const [drawerOpen, setDrawerOpen] = React.useState(false);
-  const [selectedEmail, setSelectedEmail] = React.useState(null);
-  const [selectedStatus, setSelectedStatus] = React.useState("queued");
-  const [open, setOpen] = React.useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedEmail, setSelectedEmail] = useState(null);
+  const [selectedStatus, setSelectedStatus] = useState("queued");
+  const [selectedTag, setSelectedTag] = useState(null);
+  const [open, setOpen] = useState(false);
 
   React.useEffect(() => {
     const onKey = (e) => {
@@ -108,7 +109,7 @@ export default function Email() {
           <Box display="flex" gap={1}>
             <Button
               size="sm"
-              onClick={() => navigate(`/task_dashboard`)}
+              onClick={() => navigate(`/email`)}
               sx={{
                 color: "white",
                 bgcolor: "transparent",
@@ -126,7 +127,7 @@ export default function Email() {
 
             <Button
               size="sm"
-              onClick={() => navigate(`/all_task`)}
+              onClick={() => navigate(`/email_template`)}
               sx={{
                 color: "white",
                 bgcolor: "transparent",
@@ -168,7 +169,10 @@ export default function Email() {
             ]}
           >
             <Layout.SideNav>
-              <Navigation setSelectedStatus={setSelectedStatus} />
+              <Navigation
+                setSelectedTag={setSelectedTag}
+                setSelectedStatus={setSelectedStatus}
+              />
             </Layout.SideNav>
 
             <Layout.SidePane>
@@ -208,8 +212,11 @@ export default function Email() {
               {/* Mails list */}
               <Mails
                 setSelectedEmail={setSelectedEmail}
-                selectedEmailId={selectedEmail}
+                selectedEmail={selectedEmail}
                 selectedStatus={selectedStatus}
+                setSelectedStatus={setSelectedStatus}
+                selectedTag={selectedTag}
+                setSelectedTag={setSelectedTag}
               />
             </Layout.SidePane>
 

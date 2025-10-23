@@ -88,6 +88,7 @@ import ProjectDashBoard from "../pages/Projects/ProjectDashboard";
 import Vendors from "../pages/SCM/Vendors";
 import ViewVendors from "../pages/SCM/ViewVendor";
 import Email from "../pages/Emails/Email";
+import Template from "../pages/Emails/Template";
 
 function index() {
   return (
@@ -307,6 +308,14 @@ function index() {
         element={
           <PrivateRoute>
             <Email />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/email_template"
+        element={
+          <PrivateRoute>
+            <Template />
           </PrivateRoute>
         }
       />

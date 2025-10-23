@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Box from "@mui/joy/Box";
 import Chip from "@mui/joy/Chip";
 import Card from "@mui/joy/Card";
@@ -16,7 +16,7 @@ import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import {
   useGetEmailByIdQuery,
   useUpdateEmailStatusMutation,
-} from "../../redux/emailSlice";
+} from "../../../redux/emailSlice";
 
 /* ---------- utility to sanitize html ---------- */
 const sanitizeHtmlToText = (html = "") => {
@@ -99,6 +99,16 @@ export default function EmailContent({ selectedEmail }) {
     }
   };
 
+  const statusChip = (status) => {
+    const s = String(status || "").toLowerCase();
+    if (s === "sent") return { color: "success", label: "Sent" };
+    if (s === "draft") return { color: "neutral", label: "Draft" };
+    if (s === "trash") return { color: "danger", label: "Trash" };
+    return { color: "primary", label: "Queued" };
+  };
+
+  const chip = statusChip(status);
+
   return (
     <Sheet
       variant="outlined"
@@ -155,13 +165,12 @@ export default function EmailContent({ selectedEmail }) {
         textColor="text.primary"
         endDecorator={
           <Chip
-            component="span"
             size="sm"
+            color={chip.color}
             variant="soft"
-            color="primary"
             sx={{ textTransform: "capitalize" }}
           >
-            {status}
+            {chip.label}
           </Chip>
         }
       >

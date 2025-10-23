@@ -18,8 +18,8 @@ export const emailApi = createApi({
   tagTypes: ["Email"],
   endpoints: (builder) => ({
     getEmail: builder.query({
-      query: ({ page = 1, search = "", limit = 10, status }) =>
-        `?page=${page}&search=${search}&limit=${limit}&status=${status}`,
+      query: ({ page = 1, search = "", limit = 10, status, tags }) =>
+        `?page=${page}&search=${search}&limit=${limit}&status=${status}&tags=${tags}`,
       transformResponse: (response) => ({
         data: response.data || [],
         pagination: response?.pagination || {},
@@ -41,6 +41,21 @@ export const emailApi = createApi({
         { type: "Email", id: "LIST" },
       ],
     }),
+    getUniqueTags: builder.query({
+      query: () => "/tags",
+      providesTags: (result, error, id) => [{ type: "Email", id }],
+    }),
+
+    //Templates
+    getEmailTemplate: builder.query({
+      query: ({ page = 1, search = "", limit = 10, tags }) =>
+        `/template?page=${page}&search=${search}&limit=${limit}&tags=${tags}`,
+      transformResponse: (response) => ({
+        data: response.data || [],
+        pagination: response?.pagination || {},
+      }),
+      providesTags: () => [{ type: "Email", id: "LIST" }],
+    }),
   }),
 });
 
@@ -48,4 +63,6 @@ export const {
   useGetEmailQuery,
   useGetEmailByIdQuery,
   useUpdateEmailStatusMutation,
+  useGetUniqueTagsQuery,
+  useGetEmailTemplateQuery
 } = emailApi;

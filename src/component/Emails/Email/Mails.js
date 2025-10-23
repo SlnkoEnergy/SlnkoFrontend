@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useRef } from "react";
 import Box from "@mui/joy/Box";
 import Typography from "@mui/joy/Typography";
 import Avatar from "@mui/joy/Avatar";
@@ -10,7 +10,7 @@ import ListItemDecorator from "@mui/joy/ListItemDecorator";
 import Chip from "@mui/joy/Chip";
 import Tooltip from "@mui/joy/Tooltip";
 import Skeleton from "@mui/joy/Skeleton";
-import { useGetEmailQuery } from "../../redux/emailSlice";
+import { useGetEmailQuery } from "../../../redux/emailSlice";
 import KeyboardDoubleArrowLeftRoundedIcon from "@mui/icons-material/KeyboardDoubleArrowLeftRounded";
 import KeyboardDoubleArrowRightRoundedIcon from "@mui/icons-material/KeyboardDoubleArrowRightRounded";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
@@ -75,8 +75,8 @@ const relativeTime = (d) => {
 const statusChip = (status) => {
   const s = String(status || "").toLowerCase();
   if (s === "sent") return { color: "success", label: "Sent" };
-  if (s === "failed") return { color: "danger", label: "Failed" };
   if (s === "draft") return { color: "neutral", label: "Draft" };
+  if (s === "trash") return { color: "danger", label: "Trash" };
   return { color: "primary", label: "Queued" };
 };
 
@@ -100,8 +100,11 @@ const initials = (name = "") => {
 /* ---------- component ---------- */
 export default function EmailList({
   setSelectedEmail,
-  selectedEmailId,
+  selectedEmail,
   selectedStatus,
+  setSelectedStatus,
+  selectedTag,
+  setSelectedTag,
 }) {
   const [page, setPage] = React.useState(1);
   const pageSize = 10;
@@ -109,6 +112,7 @@ export default function EmailList({
     page: page,
     limit: pageSize,
     status: selectedStatus,
+    tags: selectedTag,
   });
 
   const emails = useMemo(() => data?.data || [], [data]);
@@ -118,11 +122,25 @@ export default function EmailList({
     total: 0,
     limit: pageSize,
   };
+  const prevStatusRef = useRef(selectedStatus);
+  const prevTagRef = useRef(selectedTag);
   React.useEffect(() => {
-    if (selectedEmailId === null && emails.length > 0) {
-      setSelectedEmail(emails[0]?._id || String(0));
+    if (
+      selectedEmail === null &&
+      emails.length > 0 &&
+      prevStatusRef.current === selectedStatus
+    ) {
+      setSelectedEmail(emails[0]?._id || undefined);
+    } else if (prevStatusRef.current !== selectedStatus) {
+      setSelectedEmail(emails[0]?._id || undefined);
+      setSelectedTag(null);
+      prevStatusRef.current = selectedStatus;
+    } else if (prevTagRef !== selectedTag) {
+      setSelectedEmail(emails[0]?._id || undefined);
+      setSelectedStatus(null);
+      prevTagRef.current = selectedStatus;
     }
-  }, [selectedEmailId, emails, setSelectedEmail]);
+  }, [selectedEmail, emails, setSelectedEmail, selectedStatus, selectedTag]);
 
   const handlePrevPage = () => {
     if (pagination.page > 1) setPage((prev) => prev - 1);
@@ -215,9 +233,7 @@ export default function EmailList({
         const project = payload?.project?.name || payload?.project || undefined;
 
         const id = item?._id || String(index);
-        const isSelected = selectedEmailId
-          ? selectedEmailId === id
-          : index === 0;
+        const isSelected = selectedEmail ? selectedEmail === id : index === 0;
 
         return (
           <React.Fragment key={id}>
@@ -300,7 +316,6 @@ export default function EmailList({
                     {subject}
                   </Typography>
 
-                  {/* Meta row (amount + project) if available */}
                   {(amount || project) && (
                     <Box
                       sx={{
@@ -323,7 +338,6 @@ export default function EmailList({
                     </Box>
                   )}
 
-                  {/* Preview text (HTML stripped) */}
                   <Typography
                     level="body-sm"
                     textColor="text.tertiary"
@@ -344,7 +358,6 @@ export default function EmailList({
           </React.Fragment>
         );
       })}
-      {/* Pagination Controls */}
       <Box
         sx={{
           display: "flex",

@@ -83,7 +83,9 @@ function Sidebar() {
 
   const isSalesPage = location.pathname === "/sales";
   const isProjectsPage =
-    location.pathname === "/view_pm" || location.pathname === "/email";
+    location.pathname === "/view_pm" ||
+    location.pathname === "/email" ||
+    location.pathname === "/email_template";
   return (
     <Sheet
       className="Sidebar"
