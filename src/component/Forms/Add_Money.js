@@ -42,7 +42,6 @@ const Add_Money = () => {
     }));
   }
   setUser(userData);
-  // console.log("details are :", userData);
 }, []);
   
     const getUserData = () => {
@@ -138,7 +137,6 @@ const Add_Money = () => {
       setResponseMessage("Form submitted successfully!");
       toast.success("Money Added Successfully ")
       navigate("/project-balance");
-      // console.log("Form submission response:", response.data);
     } catch (error) {
       console.error("Error submitting form:", error);
       toast.error("Something went Error !!")
