@@ -48,6 +48,7 @@ import InsertDriveFileRounded from "@mui/icons-material/InsertDriveFileRounded";
 import CloseRounded from "@mui/icons-material/CloseRounded";
 import Axios from "../../utils/Axios";
 import CurrencyRupee from "@mui/icons-material/CurrencyRupee";
+import InfoOutlined from "@mui/icons-material/InfoOutlined";
 import {
   useGetCustomerSummaryQuery,
   useUpdateSalesPOMutation,
@@ -93,7 +94,6 @@ const Customer_Payment_Summary = () => {
 
   const {
     projectDetails = {},
-    balanceSummary = {},
     credit = { history: [], total: 0 },
     debit = { history: [], total: 0 },
     clientHistory = { data: [], meta: {} },
@@ -152,21 +152,6 @@ const Customer_Payment_Summary = () => {
       return po.includes(q) || vendor.includes(q) || item.includes(q);
     });
   }, [SalesSummary, searchSales]);
-
-  const saleTotalsFiltered = useMemo(
-    () =>
-      (filteredSales || []).reduce(
-        (acc, s) => {
-          const po = Number(s?.po_value ?? s?.total_po ?? 0);
-          const adv = Number(s?.advance_paid ?? 0);
-          acc.total_sale += po;
-          acc.total_advance_paid += adv;
-          return acc;
-        },
-        { total_sale: 0, total_advance_paid: 0 }
-      ),
-    [filteredSales]
-  );
 
   useEffect(() => {
     const delayedSearch = debounce(() => {
@@ -510,254 +495,201 @@ const Customer_Payment_Summary = () => {
 
   // ***Balance Summary***
 
-  const {
-    total_received,
-    total_return,
-    netBalance,
-    total_advance_paid,
-    balance_payable_to_vendors,
-    total_adjustment,
-    balance_with_slnko,
-    total_po_basic,
-    gst_as_po_basic,
-    total_po_with_gst,
-    gst_with_type_percentage,
-    gst_difference,
-    total_po_value,
-    total_sales,
-    total_billed_value,
-    net_advanced_paid,
-    billing_type,
-    tcs_as_applicable,
-    balance_required,
-    extraGST,
-  } = balanceSummary || {};
 
-  const formatIndianNumber = (val) => {
-    const n = Number(val);
-    if (!isFinite(n)) return "—";
-    return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(
-      Math.round(Math.abs(n))
-    );
-  };
+const RupeeValue = ({ value }) => {
+  if (value == null || value === "") return "";
+  const val = Number(value).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return <>₹ {val}</>;
+};
 
-  const RupeeValue = ({ value }) => {
-    const n = Number(value);
-    const isNeg = n < 0;
-    return (
-      <span
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "flex-end",
-          gap: 4,
-        }}
-      >
-        {isNeg && <span>-</span>}
-        <CurrencyRupee style={{ fontSize: 16, marginBottom: 1 }} />
-        <span>{formatIndianNumber(n)}</span>
-      </span>
-    );
-  };
+const formatIndianNumber = (val) => {
+  if (val == null || isNaN(val)) return "-";
+  return Number(val).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
 
-  const Balance_Summary = () => {
-    const safeRound = (v) => {
-      const n = Number(v);
-      return Number.isFinite(n) ? Math.round(n) : NaN;
-    };
+const safeRound = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.round(n) : 0;
+};
 
-    const rows = [
-      ["1", "Total Received", total_received],
-      ["2", "Total Return", total_return],
-      ["3", "Net Balance [(1)-(2)]", netBalance, "muted"],
-      ["4", "Total Advance Paid to Vendors", total_advance_paid],
-      ["4A", "Total Adjustment (Debit-Credit)", total_adjustment],
-      [
-        "5",
-        "Balance With Slnko [(3)-(4)-(4A)]",
-        safeRound(balance_with_slnko),
-        "highlight",
-        true,
-      ],
-      ["6", "Total PO Basic Value", safeRound(total_po_basic)],
-      ["7", "GST Value as per PO", safeRound(gst_as_po_basic)],
-      ["8", "Total PO with GST", safeRound(total_po_with_gst)],
-      ["8A", "Total Sales with GST", safeRound(total_sales)],
-      [
-        "9",
-        billing_type === "Composite"
-          ? "GST (13.8%)"
-          : billing_type === "Individual"
-          ? "GST (18%)"
-          : "GST (Type - N/A)",
-        gst_with_type_percentage,
-      ],
-      ["10", "Total Billed Value", total_billed_value],
-      ["11", "Net Advance Paid [(4)-(10)]", net_advanced_paid],
-      [
-        "12",
-        "Balance Payable to Vendors [(8)-(10)-(11)]",
-        safeRound(balance_payable_to_vendors),
-        "highlight",
-        true,
-      ],
-      ["13", "TCS as Applicable", safeRound(tcs_as_applicable)],
-      [
-        "14",
-        "Extra GST Recoverable from Client [(8)-(6)]",
-        safeRound(extraGST),
-      ],
-      [
-        "15",
-        "Balance Required [(5)-(12)-(13)]",
-        safeRound(balance_required),
-        "highlight",
-        true,
-        Number(balance_required) >= 0 ? "pos" : "neg",
-      ],
-    ];
+// ---------- Component ----------
+const Balance_Summary = ({
+  isLoading = false,
+  total_received,
+  total_return,
+  total_advance_paid,
+  total_adjustment,
+  balance_with_slnko,
+  billing_type,
+  gst_difference,
+  total_sales_value,
+  total_unbilled_sales,
+  advance_left_after_billed,
+}) => {
+  const net_balance = safeRound(total_received - total_return);
 
-    return (
-      <Grid container spacing={2}>
-        {/* Balance table */}
-        <Grid item xs={12} sm={8} md={8}>
-          <Sheet
-            variant="outlined"
+  const rows = [
+    ["1", "Total Received", "#FFF176", true, safeRound(total_received)],
+    ["2", "Total Return", "#FFF176", true, safeRound(total_return)],
+    ["3", "Net Balance [(1)-(2)]", "#FFE0B2", true, net_balance],
+    ["4", "Total Advances Paid to Vendors", "#FFF", false, safeRound(total_advance_paid)],
+    ["4A", "Advances left after bills received", "#FFF", false, safeRound(advance_left_after_billed)],
+    ["5", "Adjustment (Debit-Credit)", "#FFF", false, safeRound(total_adjustment)],
+    ["6", "Balance With Slnko [(3)-(4)-(5)]", "#FFE0B2", true, safeRound(balance_with_slnko)],
+    ["", "Billing Details", "#F5F5F5", true, ""],
+    ["7", "Invoice issued to customer", "#FFF", false, safeRound(total_sales_value)],
+    [
+      "8",
+      "Bills received, yet to be invoiced to customer",
+      "#FFF",
+      false,
+      safeRound(total_unbilled_sales),
+    ],
+  ];
+
+  return (
+    <Grid container spacing={2}>
+      {/* ------------------- Balance Summary Table ------------------- */}
+      <Grid item xs={12} sm={8} md={8}>
+        <Sheet
+          variant="outlined"
+          sx={{
+            borderRadius: "8px",
+            p: 2,
+            backgroundColor: "#fff",
+            overflowX: "auto",
+            "@media print": { boxShadow: "none", border: "none" },
+          }}
+        >
+          <Typography
+            level="h5"
+            sx={{ fontWeight: "bold", mb: 1.5, fontSize: 16 }}
+          >
+            Balance Summary
+          </Typography>
+
+          <Table
+            aria-label="Balance summary"
+            borderAxis="both"
+            stickyHeader={false}
             sx={{
-              borderRadius: "8px",
-              p: 2,
-              backgroundColor: "#fff",
-              overflowX: "auto",
-              "@media print": { boxShadow: "none", border: "none" },
+              minWidth: 480,
+              tableLayout: "fixed",
+              "& thead": {
+                backgroundColor: "neutral.softBg",
+                "@media print": { backgroundColor: "#f0f0f0" },
+              },
+              "& th, & td": {
+                px: 1.5,
+                py: 1,
+                fontSize: 14,
+                "@media print": {
+                  px: 1,
+                  py: 0.75,
+                  fontSize: 12,
+                  border: "1px solid #ccc",
+                },
+              },
+              "& th.num, & td.num": {
+                textAlign: "right",
+                fontVariantNumeric: "tabular-nums",
+                whiteSpace: "nowrap",
+              },
             }}
           >
-            <Typography
-              level="h5"
-              sx={{ fontWeight: "bold", mb: 1.5, fontSize: 16 }}
-            >
-              Balance Summary
-            </Typography>
-
-            <Table
-              aria-label="Balance summary"
-              borderAxis="both"
-              stickyHeader={false}
-              sx={{
-                minWidth: 560,
-                tableLayout: "fixed",
-                "& thead": {
-                  backgroundColor: "neutral.softBg",
-                  "@media print": { backgroundColor: "#f0f0f0" },
-                },
-                "& th, & td": {
-                  px: 1.5,
-                  py: 1,
-                  fontSize: 14,
-                  "@media print": {
-                    px: 1,
-                    py: 0.75,
-                    fontSize: 12,
-                    border: "1px solid #ddd",
-                  },
-                },
-                "& th.num, & td.num": {
-                  textAlign: "right",
-                  fontVariantNumeric: "tabular-nums",
-                  whiteSpace: "nowrap",
-                },
-              }}
-            >
-              <thead>
-                <tr>
-                  <th style={{ width: 64 }}>S.No.</th>
-                  <th>Description</th>
-                  <th className="num" style={{ width: 180 }}>
-                    Value
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map(([sno, desc, value, tone, bold, state]) => (
-                  <tr
-                    key={sno}
+            <thead>
+              <tr>
+                <th style={{ width: 64 }}>S.No.</th>
+                <th>Description</th>
+                <th className="num" style={{ width: 160 }}>
+                  Value
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(([sno, desc, bg, bold, value]) => (
+                <tr
+                  key={sno + desc}
+                  style={{
+                    background: bg,
+                    fontWeight: bold ? 700 : 400,
+                  }}
+                >
+                  <td>{sno}</td>
+                  <td
                     style={{
-                      background:
-                        tone === "highlight"
-                          ? "#B6F4C633"
-                          : tone === "muted"
-                          ? "#C8C8C633"
-                          : "transparent",
-                      fontWeight: bold ? 700 : 400,
-                      color:
-                        state === "pos"
-                          ? "var(--joy-palette-success-700)"
-                          : state === "neg"
-                          ? "var(--joy-palette-danger-700)"
-                          : "inherit",
+                      textAlign: desc === "Billing Details" ? "center" : "left",
                     }}
                   >
-                    <td>{sno}</td>
-                    <td>{desc}</td>
-                    <td className="num">
-                      {isLoading ? "• • •" : <RupeeValue value={value} />}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          </Sheet>
-        </Grid>
+                    {desc}
+                  </td>
+                  <td className="num">
+                    {isLoading ? "• • •" : <RupeeValue value={value} />}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </Sheet>
+      </Grid>
 
-        {/* KPIs */}
-        <Grid item xs={12} sm={4} md={4}>
-          <Stack
-            direction="row"
-            flexWrap="wrap"
-            useFlexGap
-            spacing={1}
-            sx={{ mt: { xs: 1, sm: 0 } }}
+      {/* ------------------- KPI Section ------------------- */}
+      <Grid item xs={12} sm={4} md={4}>
+        <Stack
+          direction="row"
+          flexWrap="wrap"
+          useFlexGap
+          spacing={1}
+          sx={{ mt: { xs: 1, sm: 0 } }}
+        >
+          <Chip
+            size="md"
+            variant="soft"
+            color={(Number(gst_difference) ?? 0) >= 0 ? "success" : "danger"}
+            sx={{ fontWeight: "bold" }}
           >
+            <span
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              GST (Diff):{" "}
+              {isLoading ? (
+                "• • •"
+              ) : (
+                <>
+                  <CurrencyRupee sx={{ fontSize: 16, mb: "2px" }} />
+                  {formatIndianNumber(gst_difference)}
+                </>
+              )}
+            </span>
+          </Chip>
+
+          {billing_type && (
             <Chip
               size="md"
               variant="soft"
-              color={(Number(gst_difference) ?? 0) >= 0 ? "success" : "danger"}
-              sx={{ fontWeight: "bold" }}
+              color="neutral"
+              sx={{ fontWeight: 600 }}
             >
-              <span
-                style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-              >
-                GST (Diff):{" "}
-                {isLoading ? (
-                  "• • •"
-                ) : (
-                  <>
-                    <CurrencyRupee sx={{ fontSize: 16, mb: "2px" }} />
-                    {formatIndianNumber(gst_difference)}
-                  </>
-                )}
-              </span>
+              Billing:{" "}
+              {billing_type === "Composite"
+                ? "Composite (13.8%)"
+                : billing_type === "Individual"
+                ? "Individual (18%)"
+                : "N/A"}
             </Chip>
-
-            {billing_type && (
-              <Chip
-                size="md"
-                variant="soft"
-                color="neutral"
-                sx={{ fontWeight: 600 }}
-              >
-                Billing:{" "}
-                {billing_type === "Composite"
-                  ? "Composite (13.8%)"
-                  : billing_type === "Individual"
-                  ? "Individual (18%)"
-                  : "N/A"}
-              </Chip>
-            )}
-          </Stack>
-        </Grid>
+          )}
+        </Stack>
       </Grid>
-    );
-  };
+    </Grid>
+  );
+};
+
 
   const [updateSalesPO, { isLoading: isConverting }] =
     useUpdateSalesPOMutation();
@@ -768,42 +700,107 @@ const Customer_Payment_Summary = () => {
   const [salesFiles, setSalesFiles] = useState([]);
   const fileInputRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
-
-  const formatBytes = (b) => {
-    if (!b && b !== 0) return "—";
-    const u = ["B", "KB", "MB", "GB"];
-    let i = 0,
-      n = b;
-    while (n >= 1024 && i < u.length - 1) {
-      n /= 1024;
-      i++;
-    }
-    return `${n.toFixed(n < 10 && i > 0 ? 1 : 0)} ${u[i]}`;
-  };
+  const [selectedPO, setSelectedPO] = useState([]);
+  const [salesAmounts, setSalesAmounts] = useState({});
 
   const handleSalesConvert = async () => {
     try {
-      if (!selectedClients.length) return;
+      if (!selectedPO.length) {
+        toast.error("No PO(s) selected.");
+        return;
+      }
 
-      await Promise.all(
-        selectedClients.map((id) =>
-          updateSalesPO({
+      if (!salesRemarks.trim()) {
+        toast.error("Remarks are required.");
+        return;
+      }
+
+      // ✅ Validate all selected POs for salesAmounts presence and values
+      const invalidPOs = selectedPO.filter((po) => {
+        const id = po._id;
+        const basic = salesAmounts[id]?.basic;
+        const gst = salesAmounts[id]?.gst;
+
+        // Ensure both fields are filled and numeric
+        return (
+          basic === undefined ||
+          gst === undefined ||
+          basic === "" ||
+          gst === "" ||
+          isNaN(Number(basic)) ||
+          isNaN(Number(gst))
+        );
+      });
+
+      if (invalidPOs.length > 0) {
+        const poList = invalidPOs.map((p) => p.po_number).join(", ");
+        toast.error(
+          `Please enter both Basic Sales and GST on Sales for: ${poList}`
+        );
+        return;
+      }
+
+      const results = await Promise.allSettled(
+        selectedPO.map(async (po) => {
+          const id = po._id;
+          const poNumber = po.po_number;
+          const basic = Number(salesAmounts[id]?.basic || 0);
+          const gst = Number(salesAmounts[id]?.gst || 0);
+
+          return await updateSalesPO({
             id,
+            po_number: poNumber,
             remarks: salesRemarks.trim(),
+            basic_sales: basic,
+            gst_on_sales: gst,
             files: salesFiles,
-          }).unwrap()
-        )
+          }).unwrap();
+        })
       );
 
-      toast.success(`Converted ${selectedClients.length} PO(s)`);
-      setSalesOpen(false);
-      setSalesRemarks("");
-      setSalesFiles([]);
-      setSelectedClients([]);
-      refetch();
+      let ok = 0;
+      let fail = 0;
+
+      for (const r of results) {
+        if (r.status === "fulfilled") {
+          ok++;
+        } else {
+          fail++;
+          const err = r.reason?.data || r.reason?.response?.data || {};
+          const msg =
+            err?.message || "Sales conversion failed due to server validation.";
+
+          const d = err?.details || err?.cap_context;
+          if (d) {
+            const details = Object.entries(d)
+              .map(([k, v]) => `${k}: ${v}`)
+              .join(", ");
+            toast.error(`${msg}\n(${details})`, { autoClose: 6000 });
+          } else {
+            toast.error(msg, { autoClose: 4000 });
+          }
+        }
+      }
+
+      if (ok) toast.success(`Converted ${ok} PO(s) successfully.`);
+      if (fail) toast.warning(`Failed ${fail} PO(s).`);
+
+      // ✅ Reset form only on success
+      if (ok) {
+        setSalesOpen(false);
+        setSelectedPO([]);
+        setSelectedClients([]);
+        setSalesFiles([]);
+        setSalesRemarks("");
+        setSalesAmounts({});
+        refetch();
+      }
     } catch (err) {
       const msg =
-        err?.data?.message || err?.error || "Failed to convert selected PO(s).";
+        err?.data?.message ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "Sales conversion failed.";
       toast.error(msg);
     }
   };
@@ -861,6 +858,27 @@ const Customer_Payment_Summary = () => {
   const closeSaleDetail = () => {
     setSaleDetailOpen(false);
     setActiveSale(null);
+  };
+
+  const toNum = (v) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : NaN;
+  };
+
+  const getRemainingAllowed = (po) => {
+    const poValue = toNum(po?.po_value) || 0;
+    const totalBilledRaw = po?.total_billed;
+    const totalBilled = toNum(totalBilledRaw);
+
+    if (!Number.isFinite(totalBilled))
+      return { error: "Invalid total_billed (NaN)", remaining: NaN };
+    if (totalBilled < 0)
+      return { error: "total_billed cannot be < 0", remaining: NaN };
+
+    const alreadySales = toNum(po?.total_sales_value) || 0;
+    const cap = Math.max(0, poValue - totalBilled);
+    const remaining = Math.max(0, cap - alreadySales);
+    return { error: null, remaining };
   };
 
   function ItemNameCell({ text }) {
@@ -1970,7 +1988,7 @@ const Customer_Payment_Summary = () => {
                           {isLoading ? (
                             <tr>
                               <td
-                                colSpan={8}
+                                colSpan={9}
                                 style={{ textAlign: "center", padding: 20 }}
                               >
                                 <Typography
@@ -1984,17 +2002,17 @@ const Customer_Payment_Summary = () => {
                           ) : ClientSummary.length > 0 ? (
                             ClientSummary.map((client) => (
                               <tr key={client._id}>
-                                {/* PO: wrap freely, no title */}
+                             
                                 <td className="poCell">
                                   {client.po_number || "N/A"}
                                 </td>
 
-                                {/* Vendor: wrap freely, no title */}
+                            
                                 <td className="vendorCell">
                                   {client.vendor || "N/A"}
                                 </td>
 
-                                {/* Item: compact ellipsis + native title inside ItemNameCell */}
+                           
                                 <td className="itemCell">
                                   <ItemNameCell text={client.item_name} />
                                 </td>
@@ -2047,7 +2065,7 @@ const Customer_Payment_Summary = () => {
                           ) : (
                             <tr>
                               <td
-                                colSpan={8}
+                                colSpan={9}
                                 style={{ textAlign: "center", padding: 20 }}
                               >
                                 <Typography level="body-md">
@@ -2066,6 +2084,7 @@ const Customer_Payment_Summary = () => {
                                 backgroundColor: "#f5f5f5",
                               }}
                             >
+                        
                               <td colSpan={3} style={{ textAlign: "right" }}>
                                 Total:
                               </td>
@@ -2084,6 +2103,12 @@ const Customer_Payment_Summary = () => {
                               <td>
                                 ₹{" "}
                                 {ClientTotal?.total_remaining_amount?.toLocaleString(
+                                  "en-IN"
+                                )}
+                              </td>
+                              <td>
+                                ₹{" "}
+                                {ClientTotal?.total_po_remaining_amount?.toLocaleString(
                                   "en-IN"
                                 )}
                               </td>
@@ -2160,7 +2185,7 @@ const Customer_Payment_Summary = () => {
                               border: "1px solid #ccc",
                             },
                           },
-                          // Only keep ellipsis behavior for Item
+                     
                           "& th.itemCell, & td.itemCell": {
                             maxWidth: { xs: 180, sm: 220, md: 280 },
                             whiteSpace: { xs: "normal", md: "nowrap" },
@@ -2231,7 +2256,7 @@ const Customer_Payment_Summary = () => {
                                 <tr
                                   key={sale._id || `${sale.po_number}-${idx}`}
                                 >
-                                  {/* PO number: no tooltip/ellipsis, free to wrap */}
+                         
                                   <td>
                                     <Stack spacing={0.75}>
                                       <Stack
@@ -2326,7 +2351,7 @@ const Customer_Payment_Summary = () => {
                                     {formatDateTime(sale?.converted_at)}
                                   </td>
 
-                                  {/* Vendor: no tooltip/ellipsis, free to wrap */}
+                                 
                                   <td
                                     style={{
                                       whiteSpace: "normal",
@@ -2336,7 +2361,7 @@ const Customer_Payment_Summary = () => {
                                     {sale.vendor || "N/A"}
                                   </td>
 
-                                  {/* Item: ellipsis + native title only here */}
+                        
                                   <td
                                     className="itemCell"
                                     title={getItemLabel(sale) || "N/A"}
@@ -2358,7 +2383,7 @@ const Customer_Payment_Summary = () => {
                                   <td>
                                     ₹{" "}
                                     {Math.round(
-                                      sale?.po_value || 0
+                                      sale?.total_sales_value || 0
                                     ).toLocaleString("en-IN")}
                                   </td>
                                 </tr>
@@ -2381,7 +2406,7 @@ const Customer_Payment_Summary = () => {
                               <td>
                                 ₹{" "}
                                 {Math.round(
-                                  saleTotalsFiltered?.total_sale
+                                  SalesTotal?.total_sales_value
                                 )?.toLocaleString("en-IN")}
                               </td>
                             </tr>
@@ -2395,6 +2420,7 @@ const Customer_Payment_Summary = () => {
                         <DialogTitle>Sales Conversion</DialogTitle>
                         <DialogContent>
                           <Stack spacing={1.25}>
+                            {/* --- Header Info --- */}
                             <Typography level="title-sm">
                               PO:{" "}
                               <strong>{activeSale?.po_number ?? "—"}</strong>
@@ -2428,6 +2454,66 @@ const Customer_Payment_Summary = () => {
                                 : "—"}
                             </Typography>
 
+                            {/* --- Sales Amounts --- */}
+                            {(() => {
+                              const basic = Number(activeSale?.basic_sales);
+                              const gst = Number(activeSale?.gst_on_sales);
+                              const hasBasic = Number.isFinite(basic);
+                              const hasGst = Number.isFinite(gst);
+                              const total =
+                                (hasBasic ? basic : 0) + (hasGst ? gst : 0);
+
+                              const fmt = (n) =>
+                                Number.isFinite(n)
+                                  ? n.toLocaleString("en-IN")
+                                  : "—";
+
+                              return (
+                                <Sheet
+                                  variant="soft"
+                                  sx={{
+                                    p: 1,
+                                    borderRadius: "md",
+                                    display: "grid",
+                                    gridTemplateColumns: "1fr 1fr 1fr",
+                                    gap: 1,
+                                    backgroundColor: "neutral.softBg",
+                                  }}
+                                >
+                                  <Box>
+                                    <Typography level="body-xs" color="neutral">
+                                      Basic Sales
+                                    </Typography>
+                                    <Typography level="title-sm">
+                                      {fmt(basic)}
+                                    </Typography>
+                                  </Box>
+
+                                  <Box>
+                                    <Typography level="body-xs" color="neutral">
+                                      GST on Sales
+                                    </Typography>
+                                    <Typography level="title-sm">
+                                      {fmt(gst)}
+                                    </Typography>
+                                  </Box>
+
+                                  <Box sx={{ textAlign: "right" }}>
+                                    <Typography level="body-xs" color="neutral">
+                                      Entry Total
+                                    </Typography>
+                                    <Typography
+                                      level="title-sm"
+                                      sx={{ fontWeight: 600 }}
+                                    >
+                                      {fmt(total)}
+                                    </Typography>
+                                  </Box>
+                                </Sheet>
+                              );
+                            })()}
+
+                            {/* --- Attachments --- */}
                             <Box>
                               <Typography level="body-sm" sx={{ mb: 0.5 }}>
                                 <strong>Attachments</strong>
@@ -2492,6 +2578,7 @@ const Customer_Payment_Summary = () => {
                               </Sheet>
                             </Box>
 
+                            {/* --- Footer --- */}
                             <Stack
                               direction="row"
                               spacing={1}
@@ -2849,6 +2936,7 @@ const Customer_Payment_Summary = () => {
               {selectedClients.length > 1 ? "s" : ""}? This will convert them to
               Sales.
             </DialogContent>
+
             <Stack direction="row" spacing={1} justifyContent="flex-end">
               <Button
                 variant="plain"
@@ -2861,6 +2949,29 @@ const Customer_Payment_Summary = () => {
                 color="danger"
                 onClick={() => {
                   setConfirmCloseOpen(false);
+
+                  if (!selectedClients.length) {
+                    toast.error("Select at least 1 PO for Sales Conversion.");
+                    return;
+                  }
+
+                  const selectedPOsData = ClientSummary.filter((po) =>
+                    selectedClients.includes(po._id)
+                  );
+
+                  if (!selectedPOsData.length) {
+                    toast.error("Selected PO(s) not found in current list.");
+                    return;
+                  }
+
+                  setSelectedPO(selectedPOsData);
+                  setSalesAmounts(
+                    selectedPOsData.reduce((acc, po) => {
+                      acc[po._id] = { basic: "", gst: "" };
+                      return acc;
+                    }, {})
+                  );
+
                   setSalesOpen(true);
                 }}
               >
@@ -2870,80 +2981,214 @@ const Customer_Payment_Summary = () => {
           </ModalDialog>
         </Modal>
 
-        {/* Sales Conversion modal */}
+        {/* ================= Sales Conversion Modal ================= */}
         <Modal open={salesOpen} onClose={() => setSalesOpen(false)}>
           <ModalDialog
             aria-labelledby="sales-convert-title"
-            sx={{ width: 520, borderRadius: "md", boxShadow: "lg", p: 3 }}
+            sx={{
+              width: 720,
+              borderRadius: "lg",
+              boxShadow: "xl",
+              p: 3,
+              background: "linear-gradient(180deg, #fff 0%, #f9f9f9 100%)",
+            }}
           >
-            <DialogTitle id="sales-convert-title">Sales Conversion</DialogTitle>
+            <DialogTitle
+              id="sales-convert-title"
+              sx={{ fontWeight: 700, mb: 1 }}
+            >
+              Sales Conversion
+            </DialogTitle>
+
             <DialogContent>
-              <Stack spacing={2}>
-                {/* ---- CAP CONTEXT ---- */}
-                {(() => {
-                  const poValue = Number(selectedPO?.po_value ?? 0);
-                  const totalBilled = Number(selectedPO?.total_billed ?? 0); // string in DB → number here
-                  const totalSalesValue = Number(
-                    selectedPO?.total_sales_value ?? 0
-                  );
-
-                  const cap = Math.max(0, poValue - totalBilled);
-                  const remainingAllowed = Math.max(0, cap - totalSalesValue);
-
-                  const basic = Number(salesBasic);
-                  const gst = Number(salesGst);
-                  const entryTotal =
-                    (Number.isFinite(basic) ? basic : 0) +
-                    (Number.isFinite(gst) ? gst : 0);
-                  const overLimit = entryTotal > remainingAllowed;
-
-                  // expose for button below
-                  window._salesUI = { remainingAllowed, entryTotal, overLimit };
-
-                  return (
-                    <Sheet
-                      variant="soft"
-                      sx={{
-                        p: 1.25,
-                        borderRadius: "md",
-                        display: "grid",
-                        gridTemplateColumns: "1fr 1fr",
-                        gap: 1,
-                      }}
-                    >
-                      <Typography level="body-xs" color="neutral">
-                        PO Value: <b>{poValue.toLocaleString()}</b>
-                      </Typography>
+              <Stack spacing={2.5}>
+                {/* ---- PO Table ---- */}
+                <Sheet
+                  variant="outlined"
+                  sx={{
+                    borderRadius: "md",
+                    overflow: "auto",
+                    maxHeight: 280,
+                    borderColor: "neutral.outlinedBorder",
+                  }}
+                >
+                  {/* Header Row */}
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr",
+                      gap: 1,
+                      px: 1.5,
+                      py: 1,
+                      backgroundColor: "neutral.softBg",
+                      position: "sticky",
+                      top: 0,
+                      borderBottom: "1px solid",
+                      borderColor: "neutral.outlinedBorder",
+                      fontWeight: 600,
+                      zIndex: 2,
+                    }}
+                  >
+                    {[
+                      { label: "PO No.", align: "left" },
+                      { label: "PO Value", align: "right" },
+                      { label: "Total Billed", align: "right" },
+                      { label: "Advance Paid", align: "right" },
+                      { label: "Basic Sales", align: "right" },
+                      { label: "GST on Sales", align: "right" },
+                    ].map((col) => (
                       <Typography
-                        level="body-xs"
-                        color="neutral"
-                        sx={{ textAlign: "right" }}
+                        key={col.label}
+                        level="body-sm"
+                        textAlign={col.align}
+                        sx={{ fontWeight: 700 }}
                       >
-                        Total Billed: <b>{totalBilled.toLocaleString()}</b>
+                        {col.label}
                       </Typography>
-                      <Typography level="body-xs" color="neutral">
-                        Sales Recorded:{" "}
-                        <b>{totalSalesValue.toLocaleString()}</b>
-                      </Typography>
-                      <Typography
-                        level="body-xs"
-                        sx={{
-                          textAlign: "right",
-                          color:
-                            remainingAllowed > 0
-                              ? "success.plainColor"
-                              : "danger.plainColor",
-                        }}
-                      >
-                        Remaining Allowed:{" "}
-                        <b>{remainingAllowed.toLocaleString()}</b>
-                      </Typography>
-                    </Sheet>
-                  );
-                })()}
+                    ))}
+                  </Box>
 
-                {/* ---- DROPZONE ---- */}
-                <Box
+                  {/* Data Rows */}
+                  {(selectedPO || [])
+                    .filter((po) => Number(po.total_billed_value) > 0)
+                    .map((po, idx) => {
+                      const id = po._id;
+                      const poValue = Number(po.po_value || 0);
+                      const totalBilled = Number(po.total_billed_value || 0);
+                      const totalAdvance = Number(po.advance_paid || 0);
+                      const basic = Number(salesAmounts[id]?.basic || 0);
+                      const gst = Number(salesAmounts[id]?.gst || 0);
+                      const totalEntry = basic + gst;
+
+                      const basicExceeds = basic > totalBilled;
+                      const combinedExceeds = totalEntry > totalBilled;
+                      const disableGst = basic === totalBilled;
+
+                      const showInfo = totalBilled > totalAdvance;
+                      const infoText = `Billed (${totalBilled.toLocaleString()}) exceeds advance paid (${totalAdvance.toLocaleString()})`;
+
+                      return (
+                        <Box
+                          key={id}
+                          sx={{
+                            display: "grid",
+                            gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr",
+                            gap: 1,
+                            px: 1.5,
+                            py: 0.9,
+                            alignItems: "center",
+                            borderBottom: "1px dashed",
+                            borderColor: "neutral.outlinedBorder",
+                            backgroundColor:
+                              idx % 2 === 0
+                                ? "background.body"
+                                : "neutral.softBg",
+                            "&:hover": {
+                              backgroundColor: "neutral.plainHoverBg",
+                            },
+                          }}
+                        >
+                          {/* PO No + Info Icon */}
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 0.75,
+                              justifyContent: "flex-start",
+                            }}
+                          >
+                            {showInfo && (
+                              <Tooltip title={infoText} placement="top-start">
+                                <InfoOutlined
+                                  sx={{
+                                    color: "danger.solidBg",
+                                    fontSize: 18,
+                                    cursor: "pointer",
+                                    flexShrink: 0,
+                                  }}
+                                />
+                              </Tooltip>
+                            )}
+                            <Typography
+                              level="body-sm"
+                              sx={{ fontWeight: 600 }}
+                            >
+                              {po.po_number}
+                            </Typography>
+                          </Box>
+
+                          {/* PO Value */}
+                          <Typography level="body-sm" textAlign="right">
+                            {poValue.toLocaleString()}
+                          </Typography>
+
+                          {/* Total Billed */}
+                          <Typography level="body-sm" textAlign="right">
+                            {totalBilled.toLocaleString()}
+                          </Typography>
+
+                          {/* Advance Paid */}
+                          <Typography
+                            level="body-sm"
+                            textAlign="right"
+                            color={showInfo ? "danger.plainColor" : "neutral"}
+                          >
+                            {totalAdvance.toLocaleString()}
+                          </Typography>
+
+                          {/* Basic Sales */}
+                          <Input
+                            size="sm"
+                            type="number"
+                            value={salesAmounts[id]?.basic ?? ""}
+                            placeholder="Basic"
+                            onChange={(e) =>
+                              setSalesAmounts((prev) => ({
+                                ...prev,
+                                [id]: { ...prev[id], basic: e.target.value },
+                              }))
+                            }
+                            sx={{
+                              width: 100,
+                              ml: "auto",
+                              borderColor: basicExceeds
+                                ? "danger.solidBg"
+                                : combinedExceeds
+                                ? "warning.solidBg"
+                                : undefined,
+                            }}
+                          />
+
+                          {/* GST on Sales */}
+                          <Input
+                            size="sm"
+                            type="number"
+                            value={salesAmounts[id]?.gst ?? ""}
+                            placeholder="GST"
+                            disabled={disableGst}
+                            onChange={(e) =>
+                              setSalesAmounts((prev) => ({
+                                ...prev,
+                                [id]: { ...prev[id], gst: e.target.value },
+                              }))
+                            }
+                            sx={{
+                              width: 100,
+                              ml: "auto",
+                              opacity: disableGst ? 0.5 : 1,
+                              borderColor: combinedExceeds
+                                ? "warning.solidBg"
+                                : undefined,
+                            }}
+                          />
+                        </Box>
+                      );
+                    })}
+                </Sheet>
+
+                {/* ---- File Upload ---- */}
+                <Sheet
+                  variant="soft"
                   onClick={() => fileInputRef.current?.click()}
                   onDrop={onDrop}
                   onDragOver={onDragOver}
@@ -2953,217 +3198,53 @@ const Customer_Payment_Summary = () => {
                     borderColor: isDragging
                       ? "primary.solidBg"
                       : "neutral.outlinedBorder",
-                    backgroundColor: isDragging
-                      ? "neutral.softBg"
-                      : "transparent",
-                    borderRadius: "md",
+                    borderRadius: "lg",
                     p: 3,
                     textAlign: "center",
                     cursor: "pointer",
-                    transition: "all .15s ease",
+                    transition: "all .2s ease-in-out",
                     "&:hover": {
                       borderColor: "primary.solidBg",
                       backgroundColor: "neutral.softBg",
                     },
                   }}
                 >
-                  <Typography level="title-sm" sx={{ mb: 0.5 }}>
-                    Drop files here or <u>browse</u>
+                  <Typography level="title-sm">
+                    <strong>Drop files here</strong> or <u>browse</u>
                   </Typography>
                   <Typography level="body-xs" color="neutral">
-                    You can select multiple files. (PNG/JPG/PDF)
+                    Supports multiple files (.PNG, .JPG, .PDF)
                   </Typography>
-
-                  {/* Hidden native input */}
                   <input
                     ref={fileInputRef}
                     type="file"
-                    name="file"
                     multiple
                     accept="image/*,application/pdf"
                     onChange={onFileInputChange}
                     style={{ display: "none" }}
                   />
-
-                  <Typography level="body-sm" sx={{ mt: 1.25 }}>
+                  <Typography level="body-sm" sx={{ mt: 1 }}>
                     {salesFiles.length
                       ? `${salesFiles.length} file(s) selected`
                       : "No files selected"}
                   </Typography>
-                </Box>
+                </Sheet>
 
-                {/* ---- PREVIEW ---- */}
-                {salesFiles.length > 0 && (
-                  <Sheet
-                    variant="soft"
-                    sx={{
-                      p: 1,
-                      borderRadius: "md",
-                      maxHeight: 240,
-                      overflow: "auto",
-                    }}
-                  >
-                    <Stack spacing={0.75}>
-                      {salesFiles.map((f, idx) => {
-                        const key = `${f.file.name}-${f.file.size}-${f.file.lastModified}`;
-                        return (
-                          <Box
-                            key={key}
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "space-between",
-                              gap: 1,
-                              px: 1,
-                              py: 0.75,
-                              borderRadius: "sm",
-                              "&:hover": {
-                                backgroundColor: "neutral.plainHoverBg",
-                              },
-                            }}
-                          >
-                            <Box
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 1,
-                                flexGrow: 1,
-                              }}
-                            >
-                              <InsertDriveFileRounded fontSize="small" />
-                              <Box sx={{ flexGrow: 1 }}>
-                                <Typography
-                                  level="body-sm"
-                                  sx={{ lineHeight: 1.1 }}
-                                >
-                                  {f.file.name}
-                                </Typography>
-                                <Typography level="body-xs" color="neutral">
-                                  {formatBytes(f.file.size)}
-                                </Typography>
-
-                                <Input
-                                  size="sm"
-                                  placeholder="Attachment name"
-                                  value={f.attachment_name}
-                                  onChange={(e) => {
-                                    const newName = e.target.value;
-                                    setSalesFiles((prev) =>
-                                      prev.map((item, i) =>
-                                        i === idx
-                                          ? {
-                                              ...item,
-                                              attachment_name: newName,
-                                            }
-                                          : item
-                                      )
-                                    );
-                                  }}
-                                  sx={{ mt: 0.5 }}
-                                />
-                              </Box>
-                            </Box>
-
-                            <IconButton
-                              size="sm"
-                              variant="plain"
-                              color="danger"
-                              onClick={() => removeFile(f.file)}
-                              aria-label={`Remove ${f.file.name}`}
-                            >
-                              <CloseRounded />
-                            </IconButton>
-                          </Box>
-                        );
-                      })}
-                      <Box sx={{ textAlign: "right", mt: 0.5 }}>
-                        <Button
-                          size="sm"
-                          variant="plain"
-                          color="neutral"
-                          onClick={clearAllFiles}
-                        >
-                          Clear all
-                        </Button>
-                      </Box>
-                    </Stack>
-                  </Sheet>
-                )}
-
-                {/* ---- AMOUNTS ---- */}
-                <Stack direction="row" spacing={1.25}>
-                  <FormControl sx={{ flex: 1 }}>
-                    <FormLabel>Basic Sales</FormLabel>
-                    <Input
-                      type="number"
-                      placeholder="0"
-                      value={salesBasic}
-                      onChange={(e) => setSalesBasic(e.target.value)}
-                      slotProps={{
-                        input: { min: 0, step: "0.01", inputMode: "decimal" },
-                      }}
-                    />
-                  </FormControl>
-                  <FormControl sx={{ flex: 1 }}>
-                    <FormLabel>GST on Sales</FormLabel>
-                    <Input
-                      type="number"
-                      placeholder="0"
-                      value={salesGst}
-                      onChange={(e) => setSalesGst(e.target.value)}
-                      slotProps={{
-                        input: { min: 0, step: "0.01", inputMode: "decimal" },
-                      }}
-                    />
-                  </FormControl>
-                </Stack>
-
-                {/* ---- ENTRY TOTAL / HINT ---- */}
-                {(() => {
-                  const basic = Number(salesBasic);
-                  const gst = Number(salesGst);
-                  const entryTotal =
-                    (Number.isFinite(basic) ? basic : 0) +
-                    (Number.isFinite(gst) ? gst : 0);
-                  const remaining = window._salesUI?.remainingAllowed ?? 0;
-                  const overLimit = entryTotal > remaining;
-
-                  return (
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "baseline",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      <Typography level="title-sm">
-                        Entry Total: <b>{entryTotal.toLocaleString()}</b>
-                      </Typography>
-                      <Typography
-                        level="body-xs"
-                        color={overLimit ? "danger" : "neutral"}
-                        sx={{ textAlign: "right" }}
-                      >
-                        {overLimit
-                          ? `Exceeds remaining allowed by ${(
-                              entryTotal - remaining
-                            ).toLocaleString()}`
-                          : `Within remaining allowed`}
-                      </Typography>
-                    </Box>
-                  );
-                })()}
-
-                {/* ---- REMARKS ---- */}
+                {/* ---- Remarks ---- */}
                 <Textarea
                   minRows={3}
                   placeholder="Enter remarks..."
                   variant="soft"
                   value={salesRemarks}
                   onChange={(e) => setSalesRemarks(e.target.value)}
+                  sx={{
+                    fontSize: "sm",
+                    borderRadius: "md",
+                    backgroundColor: "background.body",
+                  }}
                 />
 
-                {/* ---- ACTIONS ---- */}
+                {/* ---- Actions ---- */}
                 <Stack direction="row" spacing={1.5} justifyContent="flex-end">
                   <Button
                     variant="plain"
@@ -3178,11 +3259,15 @@ const Customer_Payment_Summary = () => {
                     loading={isConverting}
                     disabled={
                       !salesRemarks.trim() ||
-                      !Number.isFinite(Number(salesBasic)) ||
-                      !Number.isFinite(Number(salesGst)) ||
-                      Number(salesBasic) < 0 ||
-                      Number(salesGst) < 0 ||
-                      (window._salesUI?.overLimit ?? false)
+                      selectedPO.some((po) => {
+                        const id = po._id;
+                        const totalBilled = Number(po.total_billed_value || 0);
+                        const basic = Number(salesAmounts[id]?.basic || 0);
+                        const gst = Number(salesAmounts[id]?.gst || 0);
+                        return (
+                          basic < 0 || gst < 0 || basic + gst > totalBilled
+                        );
+                      })
                     }
                     onClick={handleSalesConvert}
                   >
