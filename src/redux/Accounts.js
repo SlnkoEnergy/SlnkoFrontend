@@ -155,9 +155,14 @@ export const AccountsApi = createApi({
     }),
 
     updateSalesPO: builder.mutation({
-      query: ({ id, remarks, files }) => {
+      query: ({ id, po_number, remarks, basic_sales, gst_on_sales, files }) => {
         const form = new FormData();
-        form.append("remarks", remarks ?? "");
+
+        if (remarks) form.append("remarks", remarks);
+        if (basic_sales !== undefined) form.append("basic_sales", basic_sales);
+        if (gst_on_sales !== undefined)
+          form.append("gst_on_sales", gst_on_sales);
+        if (po_number) form.append("po_number", po_number);
 
         if (Array.isArray(files)) {
           files.forEach((f) => {
@@ -170,9 +175,10 @@ export const AccountsApi = createApi({
             }
           });
         }
+        const url = id ? `sales-update/${id}` : `sales-update/by-number`;
 
         return {
-          url: `sales-update/${id}`,
+          url,
           method: "PUT",
           body: form,
         };
