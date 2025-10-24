@@ -27,7 +27,6 @@ export const purchasesApi = createApi({
       query: () => "get-all-pO-IT",
       providesTags: ["Purchase"],
     }),
-   
 
     getPaginatedPOs: builder.query({
       query: (args = {}) => ({
@@ -35,7 +34,7 @@ export const purchasesApi = createApi({
         params: clean({
           page: args.page ?? 1,
           search: args.search ?? "",
-          status: args.status,          // disappears when empty -> new key
+          status: args.status, // disappears when empty -> new key
           pageSize: args.pageSize ?? 10,
           type: args.type,
           project_id: args.project_id,
@@ -70,14 +69,12 @@ export const purchasesApi = createApi({
     }),
 
     exportPos: builder.mutation({
-      query: ({ purchaseorders }) => {
-        return {
-          url: `get-export-po`,
-          method: "POST",
-          body: { purchaseorders },
-          responseHandler: (response) => response.blob(),
-        };
-      },
+      query: (payload) => ({
+        url: "get-export-po",
+        method: "POST",
+        body: payload,
+        responseHandler: (res) => res.blob(),
+      }),
     }),
 
     addPurchases: builder.mutation({
@@ -226,14 +223,14 @@ export const purchasesApi = createApi({
       invalidatesTags: ["Logistic"],
     }),
     // 👇 NEW: Bulk mark as delivered
-   bulkDeliverPOs: builder.mutation({
-     query: ({ ids, remarks, date }) => ({
-       url: `bulk-mark-delivered`,
-       method: "PUT",
-       body: clean({ ids, remarks, date }),
-     }),
-     invalidatesTags: ["Purchase", "Logistic"], // refresh PO table (& logistics if you display them)
-   }),
+    bulkDeliverPOs: builder.mutation({
+      query: ({ ids, remarks, date }) => ({
+        url: `bulk-mark-delivered`,
+        method: "PUT",
+        body: clean({ ids, remarks, date }),
+      }),
+      invalidatesTags: ["Purchase", "Logistic"], // refresh PO table (& logistics if you display them)
+    }),
   }),
 });
 
@@ -256,5 +253,5 @@ export const {
   useUpdateLogisticStatusMutation,
   useLazyGetLogisticsHistoryQuery,
   useAddLogisticHistoryMutation,
-   useBulkDeliverPOsMutation,
+  useBulkDeliverPOsMutation,
 } = purchasesApi;

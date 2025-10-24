@@ -173,20 +173,21 @@ const PurchaseReqDetail = () => {
           </Stack>
 
           <Stack direction="row" spacing={1} alignItems="center">
-  <Typography
-    fontWeight={700}
-    level="body-sm"
-    textColor="text.secondary"
-  >
-    Item:
-  </Typography>
-  <Typography level="body-md">
-    {getPurchaseRequest?.item?.item_id?.name === "Others"
-      ? `Other: ${getPurchaseRequest?.item?.other_item_name || "-"} - ₹${getPurchaseRequest?.item?.amount || "0"}`
-      : getPurchaseRequest?.item?.item_id?.name || "-"}
-  </Typography>
-</Stack>
-
+            <Typography
+              fontWeight={700}
+              level="body-sm"
+              textColor="text.secondary"
+            >
+              Item:
+            </Typography>
+            <Typography level="body-md">
+              {getPurchaseRequest?.item?.item_id?.name === "Others"
+                ? `Other: ${
+                    getPurchaseRequest?.item?.other_item_name || "-"
+                  } - ₹${getPurchaseRequest?.item?.amount || "0"}`
+                : getPurchaseRequest?.item?.item_id?.name || "-"}
+            </Typography>
+          </Stack>
 
           <Stack direction="row" spacing={1} alignItems="center">
             <Typography

@@ -16,7 +16,6 @@ import Input from "@mui/joy/Input";
 import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
 import EditNoteIcon from "@mui/icons-material/EditNote";
-import DownloadIcon from "@mui/icons-material/Download";
 import MenuItem from "@mui/joy/MenuItem";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
@@ -38,14 +37,12 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
 import { ClickAwayListener } from "@mui/base";
 import {
-  useExportPosMutation,
   useGetPaginatedPOsQuery,
   useUpdateEtdOrDeliveryDateMutation,
   useUpdatePurchasesStatusMutation,
   useBulkDeliverPOsMutation,
 } from "../redux/purchasesSlice";
 import { CircularProgress, Option, Select, Textarea, Tooltip } from "@mui/joy";
-import DoneAllIcon from "@mui/icons-material/DoneAll";
 
 import {
   Calendar,
@@ -70,19 +67,14 @@ import {
 import SearchPickerModal from "../component/SearchPickerModal";
 
 const PurchaseOrderSummary = forwardRef((props, ref) => {
-  const { project_code, onSelectionChange = () => {}} = props;
+  const { project_code, onSelectionChange = () => {} } = props;
   const [po, setPO] = useState("");
   const [selectedpo, setSelectedpo] = useState("");
   const [selectedtype, setSelectedtype] = useState("");
   const [selected, setSelected] = useState([]);
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
- const [bulkRemarks, setBulkRemarks] = useState("");
- const [bulkDate, setBulkDate] = useState("");
-  const [selectedPoNumber, setSelectedPoNumber] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const [modalAction, setModalAction] = useState("");
-  const [open, setOpen] = useState(false);
+  const [bulkRemarks, setBulkRemarks] = useState("");
+  const [bulkDate, setBulkDate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [openFilter, setOpenFilter] = useState(false);
@@ -133,12 +125,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       .filter((x) => x.name);
   }, [catInitialData]);
 
-  const totalCats =
-    catInitialData?.total ??
-    catInitialData?.count ??
-    catInitialData?.totalCount ??
-    topCategories.length;
-
   const { search, state } = useLocation();
   const [sp] = useSearchParams();
   const navigate = useNavigate();
@@ -172,20 +158,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     itemSearch: selecteditem || "",
   });
 
-  const handleOpen = (po_number, action) => {
-    setSelectedPoNumber(po_number);
-    setModalAction(action);
-    setOpen(true);
-  };
-  const handleClose = () => {
-    setOpen(false);
-    setSelectedPoNumber("");
-    setModalAction("");
-  };
-
-  const [exportPos, { loading: isExporting }] = useExportPosMutation();
-  const [updateEtdOrDeliveryDate] = useUpdateEtdOrDeliveryDateMutation();
-  const [bulkDeliverPOs, { isLoading: isBulkDelivering }] = useBulkDeliverPOsMutation();
+  const [bulkDeliverPOs, { isLoading: isBulkDelivering }] =
+    useBulkDeliverPOsMutation();
   const { data: getPoData = [], total = 0, count = 0 } = getPO;
   const totalPages = Math.ceil(total / perPage);
 
@@ -215,8 +189,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     return `${day}-${month}-${year}`;
   };
 
-
-
   const handleDateFilterSelect = (type) => {
     setActiveDateFilter((prev) => (prev === type ? null : type));
     setOpenFilter(false);
@@ -224,30 +196,30 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
   const handleOpenBulkModal = () => setBulkModalOpen(true);
 
- const handleCloseBulkModal = () => {
-   setBulkModalOpen(false);
-   setBulkRemarks("");
-   setBulkDate("");
- };
+  const handleCloseBulkModal = () => {
+    setBulkModalOpen(false);
+    setBulkRemarks("");
+    setBulkDate("");
+  };
 
- const handleConfirmBulkDeliver = async () => {
-  try {
-    if (!selected.length) {
-      toast.error("Please select at least one PO.");
-      return;
+  const handleConfirmBulkDeliver = async () => {
+    try {
+      if (!selected.length) {
+        toast.error("Please select at least one PO.");
+        return;
+      }
+      await bulkDeliverPOs({
+        ids: selected, // we selected by _id; backend accepts _id or po_number
+        remarks: bulkRemarks || "Bulk marked as delivered",
+        date: bulkDate || undefined, // if empty, backend uses IST now
+      }).unwrap();
+      toast.success("Selected POs marked as Delivered");
+      setSelected([]); // clear selection
+      handleCloseBulkModal();
+    } catch (e) {
+      toast.error(e?.data?.message || "Bulk deliver failed");
     }
-    await bulkDeliverPOs({
-      ids: selected,          // we selected by _id; backend accepts _id or po_number
-      remarks: bulkRemarks || "Bulk marked as delivered",
-      date: bulkDate || undefined, // if empty, backend uses IST now
-    }).unwrap();
-    toast.success("Selected POs marked as Delivered");
-    setSelected([]);      // clear selection
-    handleCloseBulkModal();
-  } catch (e) {
-    toast.error(e?.data?.message || "Bulk deliver failed");
-  }
- };
+  };
 
   const formatStatus = (status, etd) => {
     if (status?.toLowerCase() === "draft") {
@@ -278,7 +250,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     setSelectedpo(po);
     setSelecteditem(itemSearch);
   }, [searchParams]);
-
 
   const applyCategory = (value) => {
     setSelecteditem(value || "");
@@ -452,7 +423,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             ))}
           </Select>
         </FormControl>
-
 
         {!isLogisticsPage && (
           <Dropdown>
@@ -686,8 +656,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const handleSelectAll = (event) => {
     if (event.target.checked) {
       const next = paginatedPo.map((row) => row._id);
-     setSelected(next);
-     onSelectionChange(next);
+      setSelected(next);
+      onSelectionChange(next);
     } else {
       setSelected([]);
       onSelectionChange([]);
@@ -710,29 +680,49 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     setCurrentPage(page);
   }, [searchParams]);
 
-  useImperativeHandle(
-    ref,
-    () => ({
-      getSelectedPOSeed: () => {
-        // build a light-weight seed for the logistics form
-        const pos = selected.map((id) => {
-          const r = paginatedPo.find((x) => x._id === id);
-          return {
-            _id: id,
-            po_number: r?.po_number || "",
-            p_id: r?.p_id || "",
-            project_id: r?.project_id?._id ?? r?.project_id ?? "",
-            vendor: r?.vendor ?? "",
-            pr_id: r?.pr?._id ?? r?.pr_id ?? "",
-          };
-        });
-        return { pos };
-      },
-      clearSelection: () => { setSelected([]); onSelectionChange([]); },
-       openBulkDeliverModal: () => handleOpenBulkModal(),
+ useImperativeHandle(
+  ref,
+  () => ({
+    getSelectedPOSeed: () => {
+      const pos = selected.map((id) => {
+        const r = paginatedPo.find((x) => x._id === id);
+        return {
+          _id: id,
+          po_number: r?.po_number || "",
+          p_id: r?.p_id || "",
+          project_id: r?.project_id?._id ?? r?.project_id ?? "",
+          vendor: r?.vendor ?? "",
+          pr_id: r?.pr?._id ?? r?.pr_id ?? "",
+        };
+      });
+      return { pos };
+    },
+
+    clearSelection: () => {
+      setSelected([]);
+      onSelectionChange([]);
+    },
+
+    openBulkDeliverModal: () => handleOpenBulkModal(),
+
+    getCurrentFilters: () => ({
+      status: selectedpo,                
+      search: searchQuery,
+      type: selectedtype,
+      etdFrom,
+      etdTo,
+      deliveryFrom,
+      deliveryTo,
+      filter: selectedStatusFilter,    
+      project_id: project_code ? project_code : "",
+      pr_id: pr_id ? String(pr_id) : "",
+      item_id: item_id ? String(item_id) : "",
+      itemSearch: selecteditem || "",
     }),
-    [selected, paginatedPo] // keep fresh
-  );
+  }),
+  [selected, paginatedPo, selectedpo, searchQuery, selectedtype, etdFrom, etdTo, deliveryFrom, deliveryTo, selectedStatusFilter, project_code, pr_id, item_id, selecteditem]
+);
+
 
   const BillingStatusChip = ({ status }) => {
     const isFullyBilled = status === "Fully Billed";
@@ -1244,7 +1234,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
       case "partially_delivered":
         return "#f59e0b";
       case "short_quantity":
-        return "#b45309"; 
+        return "#b45309";
       case "delivered":
         return "green";
       case "etd pending":
@@ -1776,7 +1766,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
               setCurrentPage(1);
             }}
           >
-            {[10, 30, 60, 100].map((num) => (
+            {[10, 30, 60, 100, 500, 1000].map((num) => (
               <Option key={num} value={num}>
                 {num}/Page
               </Option>
@@ -1848,60 +1838,61 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
         {/* Bulk Deliver Modal */}
         <Modal open={bulkModalOpen} onClose={handleCloseBulkModal}>
-   <Sheet
-     variant="outlined"
-     sx={{
-       maxWidth: 420,
-       borderRadius: "md",
-       p: 3,
-       boxShadow: "lg",
-       mx: "auto",
-       mt: "10%",
-     }}
-   >
-     <Typography level="h5" mb={1}>
-       Mark {selected.length} PO{selected.length > 1 ? "s" : ""} as Delivered?
-     </Typography>
-     <Typography level="body-sm" mb={2}>
-       This will set <b>ETD</b>, <b>MR</b>, <b>RTD</b>, and <b>Delivery</b> dates to the same day
-       (from the date you provide below, or “now” in IST if left blank).
-     </Typography>
+          <Sheet
+            variant="outlined"
+            sx={{
+              maxWidth: 420,
+              borderRadius: "md",
+              p: 3,
+              boxShadow: "lg",
+              mx: "auto",
+              mt: "10%",
+            }}
+          >
+            <Typography level="h5" mb={1}>
+              Mark {selected.length} PO{selected.length > 1 ? "s" : ""} as
+              Delivered?
+            </Typography>
+            <Typography level="body-sm" mb={2}>
+              This will set <b>ETD</b>, <b>MR</b>, <b>RTD</b>, and{" "}
+              <b>Delivery</b> dates to the same day (from the date you provide
+              below, or “now” in IST if left blank).
+            </Typography>
 
-     <FormControl size="sm" sx={{ mb: 1.5 }}>
-       <FormLabel>Delivery Date (optional)</FormLabel>
-       <Input
-         type="datetime-local"
-         value={bulkDate}
-         onChange={(e) => setBulkDate(e.target.value)}
-       />
-     </FormControl>
+            <FormControl size="sm" sx={{ mb: 1.5 }}>
+              <FormLabel>Delivery Date (optional)</FormLabel>
+              <Input
+                type="datetime-local"
+                value={bulkDate}
+                onChange={(e) => setBulkDate(e.target.value)}
+              />
+            </FormControl>
 
-     <FormControl size="sm" sx={{ mb: 2 }}>
-       <FormLabel>Remarks</FormLabel>
-       <Textarea
-         minRows={3}
-         placeholder="Delivered via bulk action"
-         value={bulkRemarks}
-         onChange={(e) => setBulkRemarks(e.target.value)}
-       />
-     </FormControl>
+            <FormControl size="sm" sx={{ mb: 2 }}>
+              <FormLabel>Remarks</FormLabel>
+              <Textarea
+                minRows={3}
+                placeholder="Delivered via bulk action"
+                value={bulkRemarks}
+                onChange={(e) => setBulkRemarks(e.target.value)}
+              />
+            </FormControl>
 
-     <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
-       <Button variant="plain" onClick={handleCloseBulkModal}>
-         Cancel
-       </Button>
-       <Button
-         variant="solid"
-         color="success"
-         loading={isBulkDelivering}
-         onClick={handleConfirmBulkDeliver}
-       >
-         Confirm
-       </Button>
-     </Box>
-   </Sheet>
- </Modal>
-
+            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
+              <Button variant="plain" onClick={handleCloseBulkModal}>
+                Cancel
+              </Button>
+              <Button
+                variant="solid"
+                color="success"
+                loading={isBulkDelivering}
+                onClick={handleConfirmBulkDeliver}
+              >
+                Confirm
+              </Button>
+            </Box>
+          </Sheet>
+        </Modal>
 
         <SearchPickerModal
           open={categoryModalOpen}
