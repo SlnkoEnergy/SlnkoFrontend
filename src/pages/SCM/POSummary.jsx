@@ -13,6 +13,8 @@ import Header from "../../component/Partials/Header";
 import PurchaseOrder from "../../component/PurchaseOrderSummary";
 import { toast } from "react-toastify";
 import { useExportPosMutation } from "../../redux/purchasesSlice";
+import { Dropdown, Menu, MenuButton, MenuItem, CircularProgress } from "@mui/joy";
+import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
 
 function POSummary() {
   const navigate = useNavigate();
@@ -37,30 +39,44 @@ function POSummary() {
   const poSummaryRef = useRef();
 
   const [exportPos, { isLoading: isExporting }] = useExportPosMutation();
+  const [exportingScope, setExportingScope] = useState(null); // "selected" | "all" | null
 
-const handleExportToCSV = async () => {
+  const handleExportToCSV = async ({ scope }) => {
+    setExportingScope(scope);
     try {
-      const ids = (selectedPOIds || []).filter(Boolean);
-
-      if (!ids.length) {
-        toast.info("Please select at least one PO from the table.");
+      if (scope === "selected") {
+        const ids = (selectedPOIds || []).filter(Boolean);
+        if (!ids.length) {
+          toast.info("Please select at least one PO from the table.");
+          return;
+        }
+        const blob = await exportPos({ purchaseorders: ids }).unwrap();
+        const fileName = `po_${new Date().toISOString().slice(0, 10)}.csv`;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        toast.success(`Exported ${ids.length} PO${ids.length > 1 ? "s" : ""}`);
         return;
       }
 
-      const blob = await exportPos({ purchaseorders: ids }).unwrap();
-
-      const fileName = `po_${new Date().toISOString().slice(0, 10)}.csv`;
-
+      // scope === "all"
+      const filters = poSummaryRef.current?.getCurrentFilters?.() || {};
+      const blob = await exportPos({ filters }).unwrap();
+      const fileName = `po_filtered_${new Date().toISOString().slice(0, 10)}.csv`;
       const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
       URL.revokeObjectURL(url);
-
-      toast.success(`Exported ${ids.length} PO${ids.length > 1 ? "s" : ""}`);
+      toast.success("Exported all matching POs");
     } catch (error) {
       console.error("Export POs failed:", error);
       const msg =
@@ -68,10 +84,10 @@ const handleExportToCSV = async () => {
         error?.error ||
         "Failed to export POs. Please try again.";
       toast.error(msg);
+    } finally {
+      setExportingScope(null);
     }
   };
-
- 
 
   // NEW: open logistics with selected PO(s)
   const handleOpenLogisticsWithSeed = () => {
@@ -133,10 +149,7 @@ const handleExportToCSV = async () => {
               >
                 SCM
               </Link>
-              <Typography
-                color="primary"
-                sx={{ fontWeight: 500, fontSize: 12 }}
-              >
+              <Typography color="primary" sx={{ fontWeight: 500, fontSize: 12 }}>
                 Purchase Order Summary
               </Typography>
             </Breadcrumbs>
@@ -175,12 +188,11 @@ const handleExportToCSV = async () => {
                     color="primary"
                     variant="outlined"
                     size="sm"
-                    onClick={() =>
-                      poSummaryRef.current?.openBulkDeliverModal?.()
-                    }
+                    onClick={() => poSummaryRef.current?.openBulkDeliverModal?.()}
                   >
                     Change Status to Delivered
                   </Button>
+
                   <Button
                     color="primary"
                     variant="outlined"
@@ -189,16 +201,55 @@ const handleExportToCSV = async () => {
                   >
                     Logistics Form
                   </Button>
-                  <Button
-                    color="primary"
-                    variant="outlined"
-                    size="sm"
-                    onClick={handleExportToCSV}
-                  >
-                    Export to CSV
-                  </Button>
+
+                  <Dropdown>
+                    <MenuButton
+                      variant="outlined"
+                      color="primary"
+                      size="sm"
+                      disabled={isExporting}
+                      endDecorator={
+                        isExporting ? (
+                          <CircularProgress size="sm" />
+                        ) : (
+                          <KeyboardArrowDownRoundedIcon />
+                        )
+                      }
+                    >
+                      {isExporting ? "Exporting…" : "Export CSV"}
+                    </MenuButton>
+                    <Menu placement="bottom-start">
+                      <MenuItem
+                        disabled={selectedCount === 0 || isExporting}
+                        onClick={() => handleExportToCSV({ scope: "selected" })}
+                      >
+                        {isExporting && exportingScope === "selected" ? (
+                          <>
+                            <CircularProgress size="sm" sx={{ mr: 1 }} />
+                            Exporting Selected…
+                          </>
+                        ) : (
+                          "Selected"
+                        )}
+                      </MenuItem>
+                      <MenuItem
+                        disabled={isExporting}
+                        onClick={() => handleExportToCSV({ scope: "all" })}
+                      >
+                        {isExporting && exportingScope === "all" ? (
+                          <>
+                            <CircularProgress size="sm" sx={{ mr: 1 }} />
+                            Exporting All…
+                          </>
+                        ) : (
+                          "All"
+                        )}
+                      </MenuItem>
+                    </Menu>
+                  </Dropdown>
                 </>
               )}
+
               <Button
                 color="primary"
                 variant="solid"
