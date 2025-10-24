@@ -325,8 +325,8 @@ function Edit_Expense() {
           }}
         >
           <UpdateExpense 
-            RejectAll = {showRejectAllDialog}
-            ApproveAll = {approveConfirmOpen}
+            showRejectAllDialog = {showRejectAllDialog}
+            approveConfirmOpen = {approveConfirmOpen}
           />
         </Box>
 
