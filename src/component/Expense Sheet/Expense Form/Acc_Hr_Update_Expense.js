@@ -30,13 +30,27 @@ import {
   useUpdateExpenseSheetMutation,
   useUpdateExpenseStatusOverallMutation,
   useGetExpenseByIdQuery,
-  useExportExpenseToPDFMutation,
-  useExportExpenseToCSVMutation,
 } from "../../../redux/expenseSlice";
 import PieChartByCategory from "./Expense_Chart";
 import CircularProgress from "@mui/joy/CircularProgress";
-const UpdateExpenseAccounts = () => {
+
+const UpdateExpenseAccounts = ({
+  onRowsUpdate, // ⬅️ NEW: send rows up
+  rejectConfirmOpen,
+  setRejectConfirmOpen,
+  showHoldAllDialog,
+  setShowHoldAllDialog,
+  approveHRConfirmOpen,
+  setHRApproveConfirmOpen,
+  showAccountsRejectAllDialog,
+  setAccountsShowRejectAllDialog,
+  approveAccountsConfirmOpen,
+  showAccountsHoldAllDialog,
+  setAccountsShowHoldAllDialog,
+  setAccountsApproveConfirmOpen,
+}) => {
   const navigate = useNavigate();
+
   const [rows, setRows] = useState([
     {
       items: [
@@ -47,123 +61,34 @@ const UpdateExpenseAccounts = () => {
           project_name: "",
           description: "",
           expense_date: "",
-          invoice: {
-            invoice_number: "",
-            invoice_amount: "",
-          },
-
-          item_status_history: [
-            {
-              status: "",
-              remarks: "",
-              user_id: "",
-            },
-          ],
+          invoice: { invoice_number: "", invoice_amount: "" },
+          item_status_history: [{ status: "", remarks: "", user_id: "" }],
           approved_amount: "",
           remarks: "",
-          item_current_status: {
-            user_id: "",
-            remarks: "",
-            status: "",
-          },
+          item_current_status: { user_id: "", remarks: "", status: "" },
         },
       ],
-      expense_term: {
-        from: "",
-        to: "",
-      },
-      status_history: [
-        {
-          status: "",
-          remarks: "",
-          user_id: "",
-        },
-      ],
-
+      expense_term: { from: "", to: "" },
+      status_history: [{ status: "", remarks: "", user_id: "" }],
       total_requested_amount: "",
       total_approved_amount: "",
       disbursement_date: "",
     },
   ]);
 
-  const [approveHRConfirmOpen, setHRApproveConfirmOpen] = useState(false);
-  const [approveAccountsConfirmOpen, setAccountsApproveConfirmOpen] =
-    useState(false);
-
-  const [rejectConfirmOpen, setRejectConfirmOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
-
-  const [showAccountsRejectAllDialog, setAccountsShowRejectAllDialog] =
-    useState(false);
   const [accountsRejectionReason, setAccountsRejectionReason] = useState("");
-
-  const [showHoldAllDialog, setShowHoldAllDialog] = useState(false);
   const [holdReason, setHoldReason] = useState("");
-
-  const [showAccountsHoldAllDialog, setAccountsShowHoldAllDialog] =
-    useState(false);
   const [accountsHoldReason, setAccountsHoldReason] = useState("");
 
   const [disbursementData, setDisbursementData] = useState("");
   const [previewImage, setPreviewImage] = useState(null);
   const [isPdfLoading, setIsPdfLoading] = useState(false);
-  
 
   const [commentDialog, setCommentDialog] = useState({
     open: false,
     rowIndex: null,
   });
-
-  const [downloadStatus, setDownloadStatus] = useState("");
-
-  const [triggerExportPdf, { isLoading }] = useExportExpenseToPDFMutation();
-
-  const handleExportPDFById = async (expenseIds, withAttachment = true) => {
-    try {
-      setDownloadStatus("Preparing download...");
-
-      const blob = await triggerExportPdf({ expenseIds, withAttachment }).unwrap();
-
-      const url = window.URL.createObjectURL(
-        new Blob([blob], { type: "application/pdf" })
-      );
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `expenses_${Date.now()}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-
-        setTimeout(() => {
-        setDownloadStatus("");
-      }, 1000);
-    } catch (err) {
-      console.error("Error downloading PDF:", err);
-      setDownloadStatus("Download failed.");
-    }
-  };
-
-const [triggerExport] = useExportExpenseToCSVMutation();
-
-const handleExportCSV = async (sheetIds) => {
-  try {
-    const blob = await triggerExport({ sheetIds }).unwrap();
-    const url = window.URL.createObjectURL(
-      new Blob([blob], { type: "text/csv" })
-    );
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `expenses_${Date.now()}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(url);
-  } catch (err) {
-    toast.error("Error exporting CSV");
-  }
-};
-
 
   const [user, setUser] = useState(null);
 
@@ -174,9 +99,7 @@ const handleExportCSV = async (sheetIds) => {
 
   const getUserData = () => {
     const userData = localStorage.getItem("userDetails");
-    if (userData) {
-      return JSON.parse(userData);
-    }
+    if (userData) return JSON.parse(userData);
     return null;
   };
 
@@ -249,21 +172,14 @@ const handleExportCSV = async (sheetIds) => {
       "Please select this head to book all expenses incurred for repair and maintenance of less than INR 10,000 for office equipments and computers. Please make sure to collect receipts or bills. Please make sure all payment above INR 10,000 is to be made directly from bank after raising PO.",
   };
 
-  function getCategoryOptionsByDepartment(department) {
+  function getCategoryOptionsByDepartment(dept) {
     const common = officeAdminCategoryOptions;
-
-    if (
-      department === "Projects" ||
-      department === "Engineering" ||
-      department === "Infra"
-    ) {
+    if (dept === "Projects" || dept === "Engineering" || dept === "Infra") {
       return [...common, ...categoryOptions];
     }
-
-    if (department === "BD" || department === "Marketing") {
+    if (dept === "BD" || dept === "Marketing") {
       return [...common, ...bdAndSalesCategoryOptions];
     }
-
     return common;
   }
 
@@ -277,58 +193,54 @@ const handleExportCSV = async (sheetIds) => {
   }
 
   const ExpenseCode = localStorage.getItem("edit_expense");
-
   const { data: response = {} } = useGetExpenseByIdQuery({
     expense_code: ExpenseCode,
   });
-
   const expenses = response?.data || [];
 
   const [updateExpense, { isLoading: isUpdating }] =
     useUpdateExpenseSheetMutation();
-
   const [updateStatus] = useUpdateExpenseStatusOverallMutation();
-
   const [updateDisbursement] = useUpdateDisbursementDateMutation();
 
+  // ⬇️ set rows from API and notify parent once
   useEffect(() => {
     if (!ExpenseCode) {
       console.warn("No expense_code in localStorage");
       return;
     }
-
     if (!expenses || typeof expenses !== "object") {
       console.warn("No valid expense data available");
       return;
     }
-
     const isMatch =
       String(expenses.expense_code).trim() === String(ExpenseCode).trim();
-
     if (isMatch) {
       const enrichedExpense = { ...expenses };
-      setRows([enrichedExpense]);
+      const next = [enrichedExpense];
+      setRows(next);
+      onRowsUpdate?.(next); // 🔔 send up
     } else {
       console.warn("Expense code does not match");
     }
-  }, [ExpenseCode, expenses]);
+  }, [ExpenseCode, expenses, onRowsUpdate]);
+
+  // helper to update rows locally + notify parent
+  const setRowsAndNotify = (updater) => {
+    setRows((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      onRowsUpdate?.(next); // 🔔 keep parent in sync
+      return next;
+    });
+  };
 
   const handleSubmit = async () => {
     try {
       const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
       const ExpenseCode = localStorage.getItem("edit_expense");
-
-      if (!userID) {
-        toast.error("User ID not found. Please login again.");
-        return;
-      }
-
-      if (!ExpenseCode) {
-        toast.error(
-          "No Expense Code found. Please re-select the form to edit."
-        );
-        return;
-      }
+      if (!userID) return toast.error("User ID not found. Please login again.");
+      if (!ExpenseCode)
+        return toast.error("No Expense Code found. Please re-select the form to edit.");
 
       const expenseSheetId = rows[0]?._id;
 
@@ -358,12 +270,9 @@ const handleExportCSV = async (sheetIds) => {
               ...(typeof item.item_current_status === "object"
                 ? item.item_current_status
                 : {}),
-              ...statusObj, // Overwrite or add
+              ...statusObj,
             },
-            item_status_history: [
-              ...(item.item_status_history || []),
-              statusObj,
-            ],
+            item_status_history: [...(item.item_status_history || []), statusObj],
           };
         })
       );
@@ -403,103 +312,96 @@ const handleExportCSV = async (sheetIds) => {
   };
 
   const handleRowChange = (rowIndex, field, value, itemIndex = null) => {
-    const updatedRows = [...rows];
-    const updatedRow = { ...updatedRows[rowIndex] };
+    setRowsAndNotify((prevRows) => {
+      const updatedRows = [...prevRows];
+      const updatedRow = { ...updatedRows[rowIndex] };
 
-    if (field === "expense_term") {
-      updatedRow.expense_term = value;
-      updatedRows[rowIndex] = updatedRow;
-      setRows(updatedRows);
-      return;
-    }
-
-    updatedRow.items = [...updatedRow.items];
-    const item = { ...updatedRow.items[itemIndex] };
-
-    if (field === "approved_amount") {
-      const invoiceAmount = Number(item.invoice?.invoice_amount || 0);
-      const numericValue = Number(value);
-
-      if (numericValue > invoiceAmount) {
-        toast.warning("Approved amount cannot be greater than invoice amount.");
-        return;
+      if (field === "expense_term") {
+        updatedRow.expense_term = value;
+        updatedRows[rowIndex] = updatedRow;
+        return updatedRows;
       }
-      item[field] = value;
-    } else if (field.startsWith("item_status_history")) {
-      const pathParts = field.split(".");
-      if (pathParts.length === 3) {
-        const [arrKey, indexStr, key] = pathParts;
-        const index = parseInt(indexStr, 10);
-        const arr = item[arrKey] ? [...item[arrKey]] : [];
-        if (!arr[index]) arr[index] = {};
-        arr[index] = { ...arr[index], [key]: value };
-        item[arrKey] = arr;
+
+      updatedRow.items = [...updatedRow.items];
+      const item = { ...updatedRow.items[itemIndex] };
+
+      if (field === "approved_amount") {
+        const invoiceAmount = Number(item.invoice?.invoice_amount || 0);
+        const numericValue = Number(value);
+        if (numericValue > invoiceAmount) {
+          toast.warning("Approved amount cannot be greater than invoice amount.");
+          return prevRows;
+        }
+        item[field] = value;
+      } else if (field.startsWith("item_status_history")) {
+        const pathParts = field.split(".");
+        if (pathParts.length === 3) {
+          const [arrKey, indexStr, key] = pathParts;
+          const index = parseInt(indexStr, 10);
+          const arr = item[arrKey] ? [...item[arrKey]] : [];
+          if (!arr[index]) arr[index] = {};
+          arr[index] = { ...arr[index], [key]: value };
+          item[arrKey] = arr;
+        } else {
+          item[field] = value;
+        }
       } else {
         item[field] = value;
       }
-    } else {
-      item[field] = value;
-    }
 
-    updatedRow.items[itemIndex] = item;
-    updatedRows[rowIndex] = updatedRow;
-    setRows(updatedRows);
+      updatedRow.items[itemIndex] = item;
+      updatedRows[rowIndex] = updatedRow;
+      return updatedRows;
+    });
   };
 
   const handleApproval = (rowIndex, itemIndex, status) => {
     const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
 
-    const updatedRows = [...rows];
-    const updatedRow = {
-      ...updatedRows[rowIndex],
-      items: [...updatedRows[rowIndex].items],
-    };
+    setRowsAndNotify((prevRows) => {
+      const updatedRows = [...prevRows];
+      const updatedRow = {
+        ...updatedRows[rowIndex],
+        items: [...updatedRows[rowIndex].items],
+      };
 
-    updatedRow.items[itemIndex] = {
-      ...updatedRow.items[itemIndex],
-      approvalStatus: status,
-      item_current_status: {
-        status,
-        remarks:
-          status === "rejected"
-            ? updatedRow.items[itemIndex].remarks || ""
-            : "",
-        user_id: userID,
-        updatedAt: new Date().toISOString(),
-      },
-    };
+      updatedRow.items[itemIndex] = {
+        ...updatedRow.items[itemIndex],
+        approvalStatus: status,
+        item_current_status: {
+          status,
+          remarks: status === "rejected" ? updatedRow.items[itemIndex].remarks || "" : "",
+          user_id: userID,
+          updatedAt: new Date().toISOString(),
+        },
+      };
 
-    updatedRows[rowIndex] = updatedRow;
-    setRows(updatedRows);
+      updatedRows[rowIndex] = updatedRow;
+      return updatedRows;
+    });
 
     if (status === "rejected") {
       setCommentDialog({ open: true, rowIndex, itemIndex });
     }
   };
 
-  const handleHrApproveAll = () => {
-    setHRApproveConfirmOpen(true);
-  };
-
   const applyHrApproveAll = async () => {
     try {
       const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
-      if (!userID) {
-        toast.error("User ID not found. Please login again.");
-        return;
-      }
+      if (!userID) return toast.error("User ID not found. Please login again.");
+
+      const timestamp = new Date().toISOString();
 
       const updated = rows.map((row) => {
         const updatedItems = row.items.map((item) => {
           const invoiceAmount = Number(item.invoice?.invoice_amount) || 0;
-
           return {
             ...item,
             item_current_status: {
               status: "hr approval",
               remarks: item.remarks || "",
               user_id: userID,
-              updatedAt: new Date().toISOString(),
+              updatedAt: timestamp,
             },
             approved_amount: invoiceAmount,
           };
@@ -510,14 +412,10 @@ const handleExportCSV = async (sheetIds) => {
           0
         );
 
-        return {
-          ...row,
-          items: updatedItems,
-          approved_amount: totalApprovedAmount,
-        };
+        return { ...row, items: updatedItems, approved_amount: totalApprovedAmount };
       });
 
-      setRows(updated);
+      setRowsAndNotify(updated);
 
       await Promise.all(
         updated.map((row) =>
@@ -537,18 +435,10 @@ const handleExportCSV = async (sheetIds) => {
     }
   };
 
-  const handleHrRejectAll = () => {
-    setRejectConfirmOpen(true);
-  };
-
   const applyHrRejectAll = async (reason) => {
     try {
       const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
-      if (!userID) {
-        toast.error("User ID not found. Please login again.");
-        return;
-      }
-
+      if (!userID) return toast.error("User ID not found. Please login again.");
       const timestamp = new Date().toISOString();
 
       const updated = rows.map((row) => {
@@ -564,39 +454,24 @@ const handleExportCSV = async (sheetIds) => {
           },
           item_status_history: [
             ...(item.item_status_history || []),
-            {
-              status: "rejected",
-              remarks: reason,
-              user_id: userID,
-              updatedAt: timestamp,
-            },
+            { status: "rejected", remarks: reason, user_id: userID, updatedAt: timestamp },
           ],
         }));
 
         return {
           ...row,
           items: updatedItems,
-          current_status: {
-            status: "rejected",
-            remarks: reason,
-            user_id: userID,
-            updatedAt: timestamp,
-          },
+          current_status: { status: "rejected", remarks: reason, user_id: userID, updatedAt: timestamp },
           status_history: [
             ...(row.status_history || []),
-            {
-              status: "rejected",
-              remarks: reason,
-              user_id: userID,
-              updatedAt: timestamp,
-            },
+            { status: "rejected", remarks: reason, user_id: userID, updatedAt: timestamp },
           ],
           approved_amount: 0,
           remarks: reason,
         };
       });
 
-      setRows(updated);
+      setRowsAndNotify(updated);
 
       await Promise.all(
         updated.map((row) =>
@@ -610,7 +485,6 @@ const handleExportCSV = async (sheetIds) => {
       );
 
       toast.success("All items rejected successfully");
-      setRejectConfirmOpen(false);
       setRejectionReason("");
     } catch (error) {
       console.error("Failed to reject all items:", error);
@@ -618,18 +492,10 @@ const handleExportCSV = async (sheetIds) => {
     }
   };
 
-  const handleHrHoldAll = () => {
-    setShowHoldAllDialog(true);
-  };
-
   const applyHrHoldAll = async (reason) => {
     try {
       const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
-      if (!userID) {
-        toast.error("User ID not found. Please login again.");
-        return;
-      }
-
+      if (!userID) return toast.error("User ID not found. Please login again.");
       const timestamp = new Date().toISOString();
 
       const updated = rows.map((row) => {
@@ -644,38 +510,23 @@ const handleExportCSV = async (sheetIds) => {
           },
           item_status_history: [
             ...(item.item_status_history || []),
-            {
-              status: "hold",
-              remarks: reason,
-              user_id: userID,
-              updatedAt: timestamp,
-            },
+            { status: "hold", remarks: reason, user_id: userID, updatedAt: timestamp },
           ],
         }));
 
         return {
           ...row,
           items: updatedItems,
-          current_status: {
-            status: "hold",
-            remarks: reason,
-            user_id: userID,
-            updatedAt: timestamp,
-          },
+          current_status: { status: "hold", remarks: reason, user_id: userID, updatedAt: timestamp },
           status_history: [
             ...(row.status_history || []),
-            {
-              status: "hold",
-              remarks: reason,
-              user_id: userID,
-              updatedAt: timestamp,
-            },
+            { status: "hold", remarks: reason, user_id: userID, updatedAt: timestamp },
           ],
           remarks: reason,
         };
       });
 
-      setRows(updated);
+      setRowsAndNotify(updated);
 
       await Promise.all(
         updated.map((row) =>
@@ -696,39 +547,28 @@ const handleExportCSV = async (sheetIds) => {
     }
   };
 
-  const handleAccountsApproveAll = () => {
-    setAccountsApproveConfirmOpen(true);
-  };
+  const handleAccountsApproveAll = () => setAccountsApproveConfirmOpen(true);
 
   const applyAccountsApproveAll = async () => {
     try {
       const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
-      if (!userID) {
-        toast.error("User ID not found. Please login again.");
-        return;
-      }
-
+      if (!userID) return toast.error("User ID not found. Please login again.");
       const timestamp = new Date().toISOString();
 
       const updated = rows.map((row) => {
         const updatedItems = row.items.map((item) => {
           const invoiceAmount = Number(item.invoice?.invoice_amount) || 0;
-
           const statusObj = {
             status: "final approval",
             remarks: "",
             user_id: userID,
             updatedAt: timestamp,
           };
-
           return {
             ...item,
             approved_amount: invoiceAmount,
             item_current_status: statusObj,
-            item_status_history: [
-              ...(item.item_status_history || []),
-              statusObj,
-            ],
+            item_status_history: [...(item.item_status_history || []), statusObj],
           };
         });
 
@@ -753,7 +593,7 @@ const handleExportCSV = async (sheetIds) => {
         };
       });
 
-      setRows(updated);
+      setRowsAndNotify(updated);
 
       await Promise.all(
         updated.map((row) =>
@@ -773,17 +613,12 @@ const handleExportCSV = async (sheetIds) => {
     }
   };
 
-  const handleAccountsRejectAll = () => {
-    setAccountsShowRejectAllDialog(true);
-  };
+  const handleAccountsRejectAll = () => setAccountsShowRejectAllDialog(true);
 
   const applyAccountsRejectAll = async () => {
     try {
       const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
-      if (!userID) {
-        toast.error("User ID not found. Please login again.");
-        return;
-      }
+      if (!userID) return toast.error("User ID not found. Please login again.");
 
       const reason = showAccountsRejectAllDialog;
       const timestamp = new Date().toISOString();
@@ -796,16 +631,12 @@ const handleExportCSV = async (sheetIds) => {
             user_id: userID,
             updatedAt: timestamp,
           };
-
           return {
             ...item,
             approved_amount: 0,
             remarks: reason,
             item_current_status: statusObj,
-            item_status_history: [
-              ...(item.item_status_history || []),
-              statusObj,
-            ],
+            item_status_history: [...(item.item_status_history || []), statusObj],
           };
         });
 
@@ -826,7 +657,7 @@ const handleExportCSV = async (sheetIds) => {
         };
       });
 
-      setRows(updated);
+      setRowsAndNotify(updated);
 
       await Promise.all(
         updated.map((row) =>
@@ -847,18 +678,12 @@ const handleExportCSV = async (sheetIds) => {
     }
   };
 
-  const handleAccountsHoldAll = () => {
-    setAccountsShowHoldAllDialog(true);
-  };
+  const handleAccountsHoldAll = () => setAccountsShowHoldAllDialog(true);
 
   const applyAccountsHoldAll = async (reason) => {
     try {
       const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
-      if (!userID) {
-        toast.error("User ID not found. Please login again.");
-        return;
-      }
-
+      if (!userID) return toast.error("User ID not found. Please login again.");
       const timestamp = new Date().toISOString();
 
       const updated = rows.map((row) => {
@@ -869,15 +694,11 @@ const handleExportCSV = async (sheetIds) => {
             user_id: userID,
             updatedAt: timestamp,
           };
-
           return {
             ...item,
             remarks: reason,
             item_current_status: statusObj,
-            item_status_history: [
-              ...(item.item_status_history || []),
-              statusObj,
-            ],
+            item_status_history: [...(item.item_status_history || []), statusObj],
           };
         });
 
@@ -897,7 +718,7 @@ const handleExportCSV = async (sheetIds) => {
         };
       });
 
-      setRows(updated);
+      setRowsAndNotify(updated);
 
       await Promise.all(
         updated.map((row) =>
@@ -925,22 +746,17 @@ const handleExportCSV = async (sheetIds) => {
         toast.error("Expense Sheet ID is missing. Please reload the page.");
         return;
       }
-
       const rawDate = disbursementData?.disbursement_date;
-
       if (!rawDate || typeof rawDate !== "string") {
         toast.error("Please select a valid disbursement date.");
         return;
       }
-
       const safeDateStr = rawDate.replace(/\//g, "-");
-
       const isValid = /^\d{4}-\d{2}-\d{2}$/.test(safeDateStr);
       if (!isValid) {
         toast.error("Invalid disbursement date format.");
         return;
       }
-
       await updateDisbursement({
         _id: expenseSheetId,
         disbursement_date: safeDateStr,
@@ -968,30 +784,14 @@ const handleExportCSV = async (sheetIds) => {
   ];
 
   return (
-    <Box
-      p={2}
-      sx={{
-        width: "-webkit-fill-available",
-      }}
-    >
-      <Box
-        sx={{
-          maxWidth: "100%",
-          overflowX: "auto",
-          p: 1,
-        }}
-      >
-        {/* Action Buttons */}
-
+    <Box p={2} sx={{ width: "-webkit-fill-available" }}>
+      <Box sx={{ maxWidth: "100%", overflowX: "auto", p: 1 }}>
         <Box
           sx={{
-            // px: { xs: 2, md: 2 },
-            // py: 3,
             marginLeft: { lg: "20%", md: "0%", xl: "15%" },
             maxWidth: "100%",
           }}
         >
-          {/* Action Controls */}
           <Box
             mb={2}
             display="flex"
@@ -1000,7 +800,7 @@ const handleExportCSV = async (sheetIds) => {
             alignItems="center"
             gap={2}
           >
-            {/* Expense Term (from-to) */}
+            {/* Expense Term */}
             <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
               <Typography level="body-md" fontWeight="lg">
                 Select Expense Term:
@@ -1028,6 +828,7 @@ const handleExportCSV = async (sheetIds) => {
                   })
                 }
               />
+
               <Typography level="body-md" fontWeight="lg">
                 Employee Name:
               </Typography>
@@ -1040,214 +841,22 @@ const handleExportCSV = async (sheetIds) => {
               />
             </Box>
 
-            {/* Right: Bulk Actions */}
-            <Box display="flex" gap={2}>
-              {user?.name === "Shruti Tripathi" ||
-              user?.department === "admin" ||
-              user?.name === "IT Team" ? (
-                <>
-                  <Button
-                    color="danger"
-                    size="sm"
-                    onClick={handleHrRejectAll}
-                    disabled={rows.every((row) =>
-                      [
-                        "rejected",
-                        "hold",
-                        "hr approval",
-                        "final approval",
-                      ].includes(
-                        typeof row.current_status === "string"
-                          ? row.current_status
-                          : row.current_status?.status
-                      )
-                    )}
-                  >
-                    Reject All
-                  </Button>
-                  <Button
-                    color="warning"
-                    size="sm"
-                    onClick={handleHrHoldAll}
-                    disabled={rows.every((row) =>
-                      [
-                        "rejected",
-                        "hold",
-                        "hr approval",
-                        "final approval",
-                      ].includes(
-                        typeof row.current_status === "string"
-                          ? row.current_status
-                          : row.current_status?.status
-                      )
-                    )}
-                  >
-                    Hold All
-                  </Button>
-                  <Button
-                    color="success"
-                    size="sm"
-                    onClick={handleHrApproveAll}
-                    disabled={rows.every((row) =>
-                      [
-                        "rejected",
-                        "hold",
-                        "hr approval",
-                        "final approval",
-                      ].includes(
-                        typeof row.current_status === "string"
-                          ? row.current_status
-                          : row.current_status?.status
-                      )
-                    )}
-                  >
-                    Approve All
-                  </Button>
-                </>
-              ) : (
-                user?.department === "Accounts" && (
-                  <>
-                    <Button
-                      color="danger"
-                      size="sm"
-                      onClick={handleAccountsRejectAll}
-                      disabled={rows.every((row) =>
-                        [
-                          "rejected",
-                          "hold",
-                          "final approval",
-                          "submitted",
-                          "manager approval",
-                        ].includes(
-                          typeof row.current_status === "string"
-                            ? row.current_status
-                            : row.current_status?.status
-                        )
-                      )}
-                    >
-                      Reject All
-                    </Button>
-                    <Button
-                      color="warning"
-                      size="sm"
-                      onClick={handleAccountsHoldAll}
-                      disabled={rows.every((row) =>
-                        [
-                          "rejected",
-                          "hold",
-                          "final approval",
-                          "submitted",
-                          "manager approval",
-                        ].includes(
-                          typeof row.current_status === "string"
-                            ? row.current_status
-                            : row.current_status?.status
-                        )
-                      )}
-                    >
-                      Hold All
-                    </Button>
-                    <Button
-                      color="success"
-                      size="sm"
-                      onClick={handleAccountsApproveAll}
-                      disabled={rows.every((row) =>
-                        [
-                          "rejected",
-                          "hold",
-                          "final approval",
-                          "submitted",
-                          "manager approval",
-                        ].includes(
-                          typeof row.current_status === "string"
-                            ? row.current_status
-                            : row.current_status?.status
-                        )
-                      )}
-                    >
-                      Approve All
-                    </Button>
-
-                    <Stack direction="row" spacing={1}>
-                      <Button
-                       onClick={() => handleExportCSV([rows[0]?._id])}
-                        size="sm"
-                        variant="outlined"
-                      >
-                        Export CSV
-                      </Button>
-
-                      <Dropdown>
-                        <MenuButton variant="outlined" size="sm" color="danger">
-                          PDF
-                        </MenuButton>
-                        {downloadStatus && (
-                          <Box
-                            mt={2}
-                            display="flex"
-                            alignItems="center"
-                            gap={1}
-                          >
-                            {(downloadStatus.startsWith("Preparing") ||
-                              downloadStatus.startsWith("Downloading")) && (
-                              <CircularProgress size="sm" />
-                            )}
-                            <Typography level="body-sm">
-                              {downloadStatus}
-                            </Typography>
-                          </Box>
-                        )}
-
-                        <Menu>
-                          <MenuItem
-                            onClick={() =>
-                              handleExportPDFById([rows[0]?._id], true)
-                            }
-                          >
-                            Download with Attachment
-                          </MenuItem>
-                          <MenuItem
-                            onClick={() =>
-                              handleExportPDFById([rows[0]?._id], false)
-                            }
-                          >
-                            Download without Attachment
-                          </MenuItem>
-                        </Menu>
-                      </Dropdown>
-                    </Stack>
-                  </>
-                )
-              )}
-            </Box>
+            {/* NOTE: Export buttons removed from child; parent renders them */}
           </Box>
 
           {/* Table */}
           <Sheet
             variant="outlined"
-            sx={{
-              borderRadius: "md",
-              overflow: "auto",
-              boxShadow: "sm",
-              maxHeight: "70vh",
-            }}
+            sx={{ borderRadius: "md", overflow: "auto", boxShadow: "sm", maxHeight: "70vh" }}
           >
-            {/* Desktop Table View */}
-            <Box
-              sx={{
-                display: {
-                  xs: "none",
-                  sm: "block",
-                },
-              }}
-            >
+            {/* Desktop */}
+            <Box sx={{ display: { xs: "none", sm: "block" } }}>
               <Table
                 variant="soft"
                 size="sm"
                 stickyHeader
                 hoverRow
                 sx={{
-                  // minWidth: 900,
                   "& thead th": {
                     backgroundColor: "neutral.softBg",
                     fontWeight: "md",
@@ -1273,37 +882,34 @@ const handleExportCSV = async (sheetIds) => {
                         <td>
                           {item.expense_date
                             ? new Date(item.expense_date)
-                                .toISOString()
-                                .split("T")[0]
+                              .toISOString()
+                              .split("T")[0]
                             : ""}
                         </td>
                         <td>{item.invoice?.invoice_amount}</td>
                         <td>
                           {item.attachment_url ? (
                             <Stack direction="row" spacing={1}>
-                              {/* 👁️ View Button — show for images and PDFs */}
+                              {/* View */}
                               {/\.(jpg|jpeg|png|webp|gif|pdf)$/i.test(
                                 item.attachment_url
                               ) && (
-                                <Button
-                                  variant="soft"
-                                  color="neutral"
-                                  size="sm"
-                                  onClick={() => {
-                                    setPreviewImage(item.attachment_url);
-                                    if (
-                                      /\.pdf(\?|$)/i.test(item.attachment_url)
-                                    ) {
-                                      setIsPdfLoading(true);
-                                    }
-                                  }}
-                                  sx={{ textTransform: "none" }}
-                                >
-                                  👁️ View
-                                </Button>
-                              )}
-
-                              {/* ⬇️ Download Button */}
+                                  <Button
+                                    variant="soft"
+                                    color="neutral"
+                                    size="sm"
+                                    onClick={() => {
+                                      setPreviewImage(item.attachment_url);
+                                      if (/\.pdf(\?|$)/i.test(item.attachment_url)) {
+                                        setIsPdfLoading(true);
+                                      }
+                                    }}
+                                    sx={{ textTransform: "none" }}
+                                  >
+                                    👁️ View
+                                  </Button>
+                                )}
+                              {/* Download */}
                               <Button
                                 component="a"
                                 href={item.attachment_url}
@@ -1320,26 +926,16 @@ const handleExportCSV = async (sheetIds) => {
                               </Button>
                             </Stack>
                           ) : (
-                            <span
-                              style={{ color: "#999", fontStyle: "italic" }}
-                            >
+                            <span style={{ color: "#999", fontStyle: "italic" }}>
                               No Attachment
                             </span>
                           )}
 
-                          {/* 📄 Preview Modal */}
-                          <Modal
-                            open={!!previewImage}
-                            onClose={() => setPreviewImage(null)}
-                          >
+                          {/* Preview Modal */}
+                          <Modal open={!!previewImage} onClose={() => setPreviewImage(null)}>
                             <ModalDialog>
-                              <Box
-                                sx={{ textAlign: "center", minWidth: "60vw" }}
-                              >
-                                {/* Image Preview */}
-                                {/\.(jpg|jpeg|png|webp|gif)$/i.test(
-                                  previewImage
-                                ) ? (
+                              <Box sx={{ textAlign: "center", minWidth: "60vw" }}>
+                                {/\.(jpg|jpeg|png|webp|gif)$/i.test(previewImage) ? (
                                   <img
                                     src={previewImage}
                                     alt="Preview"
@@ -1358,10 +954,7 @@ const handleExportCSV = async (sheetIds) => {
                                     {isPdfLoading && (
                                       <Box sx={{ py: 3 }}>
                                         <CircularProgress size="sm" />
-                                        <Typography
-                                          level="body-sm"
-                                          sx={{ mt: 1 }}
-                                        >
+                                        <Typography level="body-sm" sx={{ mt: 1 }}>
                                           Loading PDF preview...
                                         </Typography>
                                       </Box>
@@ -1376,9 +969,7 @@ const handleExportCSV = async (sheetIds) => {
                                       height="500px"
                                       style={{
                                         border: "none",
-                                        display: isPdfLoading
-                                          ? "none"
-                                          : "block",
+                                        display: isPdfLoading ? "none" : "block",
                                       }}
                                       onLoad={() => setIsPdfLoading(false)}
                                       onError={() => setIsPdfLoading(false)}
@@ -1396,18 +987,12 @@ const handleExportCSV = async (sheetIds) => {
                                     </Button>
                                   </>
                                 ) : (
-                                  <Typography
-                                    level="body-sm"
-                                    sx={{ color: "gray" }}
-                                  >
+                                  <Typography level="body-sm" sx={{ color: "gray" }}>
                                     ⚠️ Preview not available for this file type.
                                   </Typography>
                                 )}
 
-                                <Button
-                                  onClick={() => setPreviewImage(null)}
-                                  sx={{ mt: 2 }}
-                                >
+                                <Button onClick={() => setPreviewImage(null)} sx={{ mt: 2 }}>
                                   Close
                                 </Button>
                               </Box>
@@ -1417,8 +1002,6 @@ const handleExportCSV = async (sheetIds) => {
 
                         <td></td>
                         <td>{item.invoice?.invoice_number || "NA"}</td>
-                        {/* <td>{item.approved_amount || "-"}</td> */}
-
                         <td>{item?.approved_amount || "NA"}</td>
                       </tr>
                     ))
@@ -1426,12 +1009,11 @@ const handleExportCSV = async (sheetIds) => {
                 </tbody>
               </Table>
             </Box>
+
+            {/* Mobile */}
             <Box
               sx={{
-                display: {
-                  xs: "flex",
-                  sm: "none",
-                },
+                display: { xs: "flex", sm: "none" },
                 flexDirection: "column",
                 gap: 2,
               }}
@@ -1463,23 +1045,19 @@ const handleExportCSV = async (sheetIds) => {
                     <span>
                       <b>Expense Date:</b>{" "}
                       {item.expense_date
-                        ? new Date(item.expense_date)
-                            .toISOString()
-                            .split("T")[0]
+                        ? new Date(item.expense_date).toISOString().split("T")[0]
                         : "N/A"}
                     </span>
                     <span>
                       <b>Invoice Amount:</b> ₹{item.invoice?.invoice_amount}
                     </span>
                     <span>
-                      <b>Invoice Number:</b>{" "}
-                      {item.invoice?.invoice_number || "NA"}
+                      <b>Invoice Number:</b> {item.invoice?.invoice_number || "NA"}
                     </span>
                     <Box>
                       <b>Attachment:</b>{" "}
                       {item.attachment_url ? (
                         <Stack direction="row" spacing={1}>
-                          {/*  View Button */}
                           <Button
                             component="a"
                             href={item.attachment_url}
@@ -1492,8 +1070,6 @@ const handleExportCSV = async (sheetIds) => {
                           >
                             👁️ View
                           </Button>
-
-                          {/* ⬇️ Download Button */}
                           <Button
                             component="a"
                             href={item.attachment_url}
@@ -1529,12 +1105,7 @@ const handleExportCSV = async (sheetIds) => {
                         }
                         placeholder="₹"
                         onChange={(e) =>
-                          handleRowChange(
-                            rowIndex,
-                            "approved_amount",
-                            e.target.value,
-                            itemIndex
-                          )
+                          handleRowChange(rowIndex, "approved_amount", e.target.value, itemIndex)
                         }
                         inputProps={{ min: 0 }}
                         sx={{ mt: 1, minWidth: 100 }}
@@ -1547,30 +1118,18 @@ const handleExportCSV = async (sheetIds) => {
                       (typeof item.item_current_status === "string"
                         ? item.item_current_status === "submitted"
                         : item.item_current_status?.status === "submitted") && (
-                        <Box
-                          display="flex"
-                          justifyContent="center"
-                          gap={1}
-                          mt={1}
-                        >
+                        <Box display="flex" justifyContent="center" gap={1} mt={1}>
                           <Button
                             size="sm"
                             variant={
                               (typeof item.item_current_status === "string"
                                 ? item.item_current_status
-                                : item.item_current_status?.status) ===
-                              "manager approval"
+                                : item.item_current_status?.status) === "manager approval"
                                 ? "solid"
                                 : "outlined"
                             }
                             color="success"
-                            onClick={() =>
-                              handleApproval(
-                                rowIndex,
-                                itemIndex,
-                                "manager approval"
-                              )
-                            }
+                            onClick={() => handleApproval(rowIndex, itemIndex, "manager approval")}
                           >
                             <CheckIcon />
                           </Button>
@@ -1579,15 +1138,12 @@ const handleExportCSV = async (sheetIds) => {
                             variant={
                               (typeof item.item_current_status === "string"
                                 ? item.item_current_status
-                                : item.item_current_status?.status) ===
-                              "rejected"
+                                : item.item_current_status?.status) === "rejected"
                                 ? "solid"
                                 : "outlined"
                             }
                             color="danger"
-                            onClick={() =>
-                              handleApproval(rowIndex, itemIndex, "rejected")
-                            }
+                            onClick={() => handleApproval(rowIndex, itemIndex, "rejected")}
                           >
                             <CloseIcon />
                           </Button>
@@ -1601,56 +1157,23 @@ const handleExportCSV = async (sheetIds) => {
         </Box>
       </Box>
 
-      {/* Comment Dialog */}
-
-      {/* HR Approve All Confirmation Modal */}
-      <Modal
-        open={approveHRConfirmOpen}
-        onClose={() => setHRApproveConfirmOpen(false)}
-      >
-        <ModalDialog
-          layout="center"
-          sx={{
-            minWidth: 300,
-            padding: 3,
-            textAlign: "center",
-          }}
-        >
-          <Typography level="h6" mb={1}>
-            Confirm Approval
-          </Typography>
-          <Typography level="body-sm">
-            Are you sure you want to approve all items?
-          </Typography>
-
+      {/* Modals (unchanged) */}
+      <Modal open={approveHRConfirmOpen} onClose={() => setHRApproveConfirmOpen(false)}>
+        <ModalDialog layout="center" sx={{ minWidth: 300, padding: 3, textAlign: "center" }}>
+          <Typography level="h6" mb={1}>Confirm Approval</Typography>
+          <Typography level="body-sm">Are you sure you want to approve all items?</Typography>
           <Box display="flex" justifyContent="center" gap={1} mt={3}>
-            <Button
-              variant="outlined"
-              size="sm"
-              onClick={() => setHRApproveConfirmOpen(false)}
-            >
+            <Button variant="outlined" size="sm" onClick={() => setHRApproveConfirmOpen(false)}>
               Cancel
             </Button>
-            <Button
-              color="primary"
-              size="sm"
-              onClick={() => {
-                applyHrApproveAll();
-                setHRApproveConfirmOpen(false);
-              }}
-            >
+            <Button color="primary" size="sm" onClick={() => { applyHrApproveAll(); setHRApproveConfirmOpen(false); }}>
               Yes, Approve All
             </Button>
           </Box>
         </ModalDialog>
       </Modal>
 
-      {/* HR Reject All Confirmation Modal */}
-
-      <Modal
-        open={rejectConfirmOpen}
-        onClose={() => setRejectConfirmOpen(false)}
-      >
+      <Modal open={rejectConfirmOpen} onClose={() => setRejectConfirmOpen(false)}>
         <ModalDialog>
           <DialogTitle>Confirm Rejection</DialogTitle>
           <DialogContent>
@@ -1665,23 +1188,14 @@ const handleExportCSV = async (sheetIds) => {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setRejectConfirmOpen(false)}>Cancel</Button>
-            <Button
-              color="danger"
-              disabled={!rejectionReason.trim()}
-              onClick={() => applyHrRejectAll(rejectionReason)}
-            >
+            <Button color="danger" disabled={!rejectionReason.trim()} onClick={() => applyHrRejectAll(rejectionReason)}>
               Submit
             </Button>
           </DialogActions>
         </ModalDialog>
       </Modal>
 
-      {/* HR hOLD All Confirmation Modal */}
-
-      <Modal
-        open={showHoldAllDialog}
-        onClose={() => setShowHoldAllDialog(false)}
-      >
+      <Modal open={showHoldAllDialog} onClose={() => setShowHoldAllDialog(false)}>
         <ModalDialog>
           <DialogTitle>Confirm Hold</DialogTitle>
           <DialogContent>
@@ -1696,64 +1210,29 @@ const handleExportCSV = async (sheetIds) => {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setShowHoldAllDialog(false)}>Cancel</Button>
-            <Button
-              color="warning"
-              disabled={!holdReason.trim()}
-              onClick={() => applyHrHoldAll(holdReason)}
-            >
+            <Button color="warning" disabled={!holdReason.trim()} onClick={() => applyHrHoldAll(holdReason)}>
               Submit
             </Button>
           </DialogActions>
         </ModalDialog>
       </Modal>
 
-      {/* Accounts Approve All Confirmation Modal */}
-      <Modal
-        open={approveAccountsConfirmOpen}
-        onClose={() => setAccountsApproveConfirmOpen(false)}
-      >
-        <ModalDialog
-          layout="center"
-          sx={{
-            minWidth: 300,
-            padding: 3,
-            textAlign: "center",
-          }}
-        >
-          <Typography level="h6" mb={1}>
-            Confirm Approval
-          </Typography>
-          <Typography level="body-sm">
-            Are you sure you want to approve all items?
-          </Typography>
-
+      <Modal open={approveAccountsConfirmOpen} onClose={() => setAccountsApproveConfirmOpen(false)}>
+        <ModalDialog layout="center" sx={{ minWidth: 300, padding: 3, textAlign: "center" }}>
+          <Typography level="h6" mb={1}>Confirm Approval</Typography>
+          <Typography level="body-sm">Are you sure you want to approve all items?</Typography>
           <Box display="flex" justifyContent="center" gap={1} mt={3}>
-            <Button
-              variant="outlined"
-              size="sm"
-              onClick={() => setAccountsApproveConfirmOpen(false)}
-            >
+            <Button variant="outlined" size="sm" onClick={() => setAccountsApproveConfirmOpen(false)}>
               Cancel
             </Button>
-            <Button
-              color="primary"
-              size="sm"
-              onClick={() => {
-                applyAccountsApproveAll();
-                setAccountsApproveConfirmOpen(false);
-              }}
-            >
+            <Button color="primary" size="sm" onClick={() => { applyAccountsApproveAll(); setAccountsApproveConfirmOpen(false); }}>
               Yes, Approve All
             </Button>
           </Box>
         </ModalDialog>
       </Modal>
 
-      {/* Accounts Reject All Confirmation Modal */}
-      <Modal
-        open={showAccountsRejectAllDialog}
-        onClose={() => setAccountsShowRejectAllDialog(false)}
-      >
+      <Modal open={showAccountsRejectAllDialog} onClose={() => setAccountsShowRejectAllDialog(false)}>
         <ModalDialog>
           <DialogTitle>Confirm Rejection</DialogTitle>
           <DialogContent>
@@ -1767,25 +1246,15 @@ const handleExportCSV = async (sheetIds) => {
             />
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setAccountsShowRejectAllDialog(false)}>
-              Cancel
-            </Button>
-            <Button
-              color="danger"
-              disabled={!accountsRejectionReason.trim()}
-              onClick={() => applyAccountsRejectAll(accountsRejectionReason)}
-            >
+            <Button onClick={() => setAccountsShowRejectAllDialog(false)}>Cancel</Button>
+            <Button color="danger" disabled={!accountsRejectionReason.trim()} onClick={() => applyAccountsRejectAll(accountsRejectionReason)}>
               Submit
             </Button>
           </DialogActions>
         </ModalDialog>
       </Modal>
 
-      {/* Accounts hOLD All Confirmation Modal */}
-      <Modal
-        open={showAccountsHoldAllDialog}
-        onClose={() => setAccountsShowHoldAllDialog(false)}
-      >
+      <Modal open={showAccountsHoldAllDialog} onClose={() => setAccountsShowHoldAllDialog(false)}>
         <ModalDialog>
           <DialogTitle>Confirm Hold</DialogTitle>
           <DialogContent>
@@ -1799,14 +1268,8 @@ const handleExportCSV = async (sheetIds) => {
             />
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setAccountsShowHoldAllDialog(false)}>
-              Cancel
-            </Button>
-            <Button
-              color="warning"
-              disabled={!accountsHoldReason.trim()}
-              onClick={() => applyAccountsHoldAll(accountsHoldReason)}
-            >
+            <Button onClick={() => setAccountsShowHoldAllDialog(false)}>Cancel</Button>
+            <Button color="warning" disabled={!accountsHoldReason.trim()} onClick={() => applyAccountsHoldAll(accountsHoldReason)}>
               Submit
             </Button>
           </DialogActions>
@@ -1815,12 +1278,9 @@ const handleExportCSV = async (sheetIds) => {
 
       {/* Summary */}
       <Box mt={4} sx={{ margin: "0 auto", width: { md: "60%", sm: "100%" } }}>
-        <Typography level="h5" mb={1}>
-          Expense Summary
-        </Typography>
+        <Typography level="h5" mb={1}>Expense Summary</Typography>
 
         <Box display="flex" gap={4} flexWrap="wrap">
-          {/* Summary Table */}
           <Sheet
             variant="outlined"
             sx={{
@@ -1846,10 +1306,7 @@ const handleExportCSV = async (sheetIds) => {
                   fontSize: "sm",
                   textAlign: "left",
                 },
-                "& td": {
-                  fontSize: "sm",
-                  textAlign: "left",
-                },
+                "& td": { fontSize: "sm", textAlign: "left" },
               }}
             >
               <thead>
@@ -1861,16 +1318,16 @@ const handleExportCSV = async (sheetIds) => {
               </thead>
               <tbody>
                 {(user?.role === "manager" ||
-                user?.department === "admin" ||
-                user?.department === "HR" ||
-                user?.name === "IT Team"
+                  user?.department === "admin" ||
+                  user?.department === "HR" ||
+                  user?.name === "IT Team"
                   ? [
-                      ...new Set([
-                        ...categoryOptions,
-                        ...bdAndSalesCategoryOptions,
-                        ...officeAdminCategoryOptions,
-                      ]),
-                    ]
+                    ...new Set([
+                      ...categoryOptions,
+                      ...bdAndSalesCategoryOptions,
+                      ...officeAdminCategoryOptions,
+                    ]),
+                  ]
                   : getCategoryOptionsByDepartment(user?.department)
                 ).map((category, idx) => {
                   let total = 0;
@@ -1883,10 +1340,7 @@ const handleExportCSV = async (sheetIds) => {
                           ? item.item_current_status
                           : item.item_current_status?.status;
 
-                      if (
-                        item.category === category &&
-                        itemStatus !== "rejected"
-                      ) {
+                      if (item.category === category && itemStatus !== "rejected") {
                         total += Number(item.invoice?.invoice_amount || 0);
 
                         if (
@@ -1926,38 +1380,27 @@ const handleExportCSV = async (sheetIds) => {
                             </Sheet>
                           }
                         >
-                          <span
-                            style={{
-                              cursor: "help",
-                              textDecoration: "underline dotted",
-                            }}
-                          >
+                          <span style={{ cursor: "help", textDecoration: "underline dotted" }}>
                             {category}
                           </span>
                         </Tooltip>
                       </td>
                       <td>{total > 0 ? total.toFixed(2) : "-"}</td>
-                      <td>
-                        {approvedTotal > 0 ? approvedTotal.toFixed(2) : "-"}
-                      </td>
+                      <td>{approvedTotal > 0 ? approvedTotal.toFixed(2) : "-"}</td>
                     </tr>
                   );
                 })}
 
-                {/* Grand Total */}
                 <tr>
                   <td>
-                    <Typography level="body-md" fontWeight="lg">
-                      Total
-                    </Typography>
+                    <Typography level="body-md" fontWeight="lg">Total</Typography>
                   </td>
                   <td>
                     <Typography level="body-md" fontWeight="lg">
                       {rows
                         .flatMap((row) => row.items || [])
                         .reduce(
-                          (sum, item) =>
-                            sum + Number(item.invoice?.invoice_amount || 0),
+                          (sum, item) => sum + Number(item.invoice?.invoice_amount || 0),
                           0
                         )
                         .toFixed(2)}
@@ -1981,18 +1424,14 @@ const handleExportCSV = async (sheetIds) => {
                                 Number(item.approved_amount) > 0))
                           );
                         })
-                        .reduce(
-                          (sum, item) =>
-                            sum + Number(item.approved_amount || 0),
-                          0
-                        )
+                        .reduce((sum, item) => sum + Number(item.approved_amount || 0), 0)
                         .toFixed(2)}
                     </Typography>
                   </td>
                 </tr>
               </tbody>
             </Table>
-            {/* Submit & Back Buttons */}
+
             <Box display="flex" justifyContent="center" p={2}>
               <Box
                 display="flex"
@@ -2005,8 +1444,7 @@ const handleExportCSV = async (sheetIds) => {
                 {(user?.role === "manager" ||
                   user?.department === "admin" ||
                   user?.name === "IT Team") &&
-                  (rows[0]?.current_status?.status ||
-                    rows[0]?.current_status) === "submitted" && (
+                  (rows[0]?.current_status?.status || rows[0]?.current_status) === "submitted" && (
                     <Button
                       variant="solid"
                       color="primary"
@@ -2014,15 +1452,8 @@ const handleExportCSV = async (sheetIds) => {
                       disabled={
                         isUpdating ||
                         (Number(rows[0]?.total_approved_amount || 0) === 0 &&
-                          [
-                            "manager approval",
-                            "rejected",
-                            "hr approval",
-                            "final approval",
-                            "hold",
-                          ].includes(
-                            rows[0]?.current_status?.status ||
-                              rows[0]?.current_status
+                          ["manager approval", "rejected", "hr approval", "final approval", "hold"].includes(
+                            rows[0]?.current_status?.status || rows[0]?.current_status
                           ))
                       }
                     >
@@ -2031,14 +1462,8 @@ const handleExportCSV = async (sheetIds) => {
                   )}
 
                 {user?.department === "Accounts" &&
-                  (rows[0]?.current_status?.status ||
-                    rows[0]?.current_status) === "final approval" && (
-                    <Box
-                      display="flex"
-                      alignItems="center"
-                      gap={2}
-                      sx={{ mt: 2 }}
-                    >
+                  (rows[0]?.current_status?.status || rows[0]?.current_status) === "final approval" && (
+                    <Box display="flex" alignItems="center" gap={2} sx={{ mt: 2 }}>
                       <Box>
                         <FormLabel sx={{ justifyContent: "center" }}>
                           Disbursement Date
@@ -2047,9 +1472,7 @@ const handleExportCSV = async (sheetIds) => {
                           type="date"
                           value={
                             disbursementData?.disbursement_date
-                              ? new Date(disbursementData.disbursement_date)
-                                  .toISOString()
-                                  .split("T")[0]
+                              ? new Date(disbursementData.disbursement_date).toISOString().split("T")[0]
                               : ""
                           }
                           onChange={(e) =>
@@ -2061,12 +1484,7 @@ const handleExportCSV = async (sheetIds) => {
                         />
                       </Box>
                       <Box mt={2}>
-                        <Button
-                          variant="solid"
-                          color="success"
-                          onClick={handleFinalApproval}
-                          // disabled={!!disbursementData?.disbursement_date}
-                        >
+                        <Button variant="solid" color="success" onClick={handleFinalApproval}>
                           Final Approval
                         </Button>
                       </Box>
@@ -2076,7 +1494,7 @@ const handleExportCSV = async (sheetIds) => {
             </Box>
           </Sheet>
 
-          {/* Pie Chart on Right */}
+          {/* Pie chart */}
           <Box flex={1} minWidth={400}>
             <PieChartByCategory rows={rows} />
           </Box>

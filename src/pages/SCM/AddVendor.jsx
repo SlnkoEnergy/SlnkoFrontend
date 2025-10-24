@@ -5,7 +5,7 @@ import CssBaseline from "@mui/joy/CssBaseline";
 import Link from "@mui/joy/Link";
 import { CssVarsProvider } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import ADDVENDOR from "../../component/Forms/Add_Vendor";
 import Header from "../../component/Partials/Header";
 import Sidebar from "../../component/Partials/Sidebar";
@@ -17,6 +17,20 @@ import { useNavigate } from "react-router-dom";
 function Add_Vendor() {
 
   const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -24,7 +38,30 @@ function Add_Vendor() {
         <Sidebar />
         <MainHeader title="SCM" sticky>
           <Box display="flex" gap={1}>
-            <Button
+            {(user?.name === "IT Team" ||
+              user?.department === "admin" ||
+              (user?.department === "Accounts" &&
+                (user?.name === "Deepak Kumar Maurya" ||
+                  user?.name === "Gagan Tayal" ||
+                  user?.name === "Ajay Singh" ||
+                  user?.name === "Sachin Raghav" ||
+                  user?.name === "Anamika Poonia" ||
+                  user?.name === "Meena Verma" ||
+                  user?.name === "Kailash Chand" ||
+                  user?.name === "Chandan Singh")) ||
+              (user?.department === "Accounts" &&
+                user?.name === "Sujan Maharjan") ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" && (user?.name === "Naresh Kumar")) ||
+              (user?.role === "visitor" &&
+                (user?.name === "Sanjiv Kumar" ||
+                  user?.name === "Sushant Ranjan Dubey")) ||
+              (user?.department === "CAM" && user?.name === "Shantanu Sameer")
+
+            ) ? (<Button
               size="sm"
               onClick={() => navigate("/purchase-order")}
               sx={{
@@ -42,9 +79,17 @@ function Add_Vendor() {
               }}
             >
               Purchase Order
-            </Button>
+            </Button>) : (null)}
 
-            <Button
+            {(user?.name === "IT Team" ||
+              user?.department === "admin" ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" && (user?.name === "Naresh Kumar")) ||
+              user?.department === "Logistic"
+            ) ? (<Button
               size="sm"
               onClick={() => navigate(`/logistics`)}
               sx={{
@@ -62,9 +107,27 @@ function Add_Vendor() {
               }}
             >
               Logistics
-            </Button>
+            </Button>) : (null)}
 
-            <Button
+            {(user?.name === "IT Team" ||
+              user?.department === "admin" ||
+              (user?.department === "Accounts" &&
+                (user?.name === "Deepak Kumar Maurya" ||
+                  user?.name === "Gagan Tayal" ||
+                  user?.name === "Ajay Singh" ||
+                  user?.name === "Sachin Raghav" ||
+                  user?.name === "Anamika Poonia" ||
+                  user?.name === "Meena Verma" ||
+                  user?.name === "Kailash Chand" ||
+                  user?.name === "Chandan Singh")) ||
+              (user?.department === "Accounts" &&
+                user?.name === "Sujan Maharjan") ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" && (user?.name === "Naresh Kumar"))
+            ) ? (<Button
               size="sm"
               onClick={() => navigate(`/vendor_bill`)}
               sx={{
@@ -82,7 +145,8 @@ function Add_Vendor() {
               }}
             >
               Vendor Bill
-            </Button>
+            </Button>) : (null)}
+
           </Box>
         </MainHeader>
         <SubHeader title="Add Vendor" isBackEnabled={true} sticky></SubHeader>

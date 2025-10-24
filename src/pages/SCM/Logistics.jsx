@@ -131,15 +131,36 @@ function Logistics() {
 
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
-      <Box
-        sx={{ display: "flex", minHeight: "100dvh", flexDirection: "column" }}
-      >
+      <Box sx={{ display: "flex", minHeight: "100dvh" }}>
         <Sidebar />
         <MainHeader title="SCM" sticky>
           <Box display="flex" gap={1}>
-            <Button
+            {(user?.name === "IT Team" ||
+              user?.department === "admin" ||
+              (user?.department === "Accounts" &&
+                (user?.name === "Deepak Kumar Maurya" ||
+                  user?.name === "Gagan Tayal" ||
+                  user?.name === "Ajay Singh" ||
+                  user?.name === "Sachin Raghav" ||
+                  user?.name === "Anamika Poonia" ||
+                  user?.name === "Meena Verma" ||
+                  user?.name === "Kailash Chand" ||
+                  user?.name === "Chandan Singh")) ||
+              (user?.department === "Accounts" &&
+                user?.name === "Sujan Maharjan") ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" && (user?.name === "Naresh Kumar")) ||
+              (user?.role === "visitor" &&
+                (user?.name === "Sanjiv Kumar" ||
+                  user?.name === "Sushant Ranjan Dubey")) ||
+              (user?.department === "CAM" && user?.name === "Shantanu Sameer")
+
+            ) ? (<Button
               size="sm"
-              onClick={() => navigate('/purchase-order')}
+              onClick={() => navigate("/purchase-order")}
               sx={{
                 color: "white",
                 bgcolor: "transparent",
@@ -155,8 +176,17 @@ function Logistics() {
               }}
             >
               Purchase Order
-            </Button>
-            <Button
+            </Button>) : (null)}
+
+            {(user?.name === "IT Team" ||
+              user?.department === "admin" ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" && (user?.name === "Naresh Kumar")) ||
+              user?.department === "Logistic"
+            ) ? (<Button
               size="sm"
               onClick={() => navigate(`/logistics`)}
               sx={{
@@ -174,8 +204,27 @@ function Logistics() {
               }}
             >
               Logistics
-            </Button>
-            <Button
+            </Button>) : (null)}
+
+            {(user?.name === "IT Team" ||
+              user?.department === "admin" ||
+              (user?.department === "Accounts" &&
+                (user?.name === "Deepak Kumar Maurya" ||
+                  user?.name === "Gagan Tayal" ||
+                  user?.name === "Ajay Singh" ||
+                  user?.name === "Sachin Raghav" ||
+                  user?.name === "Anamika Poonia" ||
+                  user?.name === "Meena Verma" ||
+                  user?.name === "Kailash Chand" ||
+                  user?.name === "Chandan Singh")) ||
+              (user?.department === "Accounts" &&
+                user?.name === "Sujan Maharjan") ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" && (user?.name === "Naresh Kumar"))
+            ) ? (<Button
               size="sm"
               onClick={() => navigate(`/vendor_bill`)}
               sx={{
@@ -193,7 +242,8 @@ function Logistics() {
               }}
             >
               Vendor Bill
-            </Button>
+            </Button>) : (null)}
+
           </Box>
         </MainHeader>
 
@@ -214,9 +264,8 @@ function Logistics() {
             flexDirection: "column",
             gap: 1,
             mt: "108px",
-            mr:"28px",
-            pr: "20px",
-            ml: "24px",
+            p: "16px",
+            px: "24px",
             overflow: "hidden"
           }}
         >

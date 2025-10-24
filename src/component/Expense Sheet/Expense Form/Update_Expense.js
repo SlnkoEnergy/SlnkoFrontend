@@ -21,7 +21,7 @@ import {
   useUpdateExpenseStatusOverallMutation,
 } from "../../../redux/expenseSlice";
 import PieChartByCategory from "./Expense_Chart";
-const UpdateExpense = ({showRejectAllDialog, approveConfirmOpen}) => {
+const UpdateExpense = () => {
   const navigate = useNavigate();
   const [rows, setRows] = useState([
     {
@@ -72,9 +72,9 @@ const UpdateExpense = ({showRejectAllDialog, approveConfirmOpen}) => {
     },
   ]);
 
-  const [approveConfirmOpen, setApproveConfirmOpen] = useState(approveConfirmOpen);
+  const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
   const [sharedRejectionComment, setSharedRejectionComment] = useState("");
-  const [showRejectAllDialog, setShowRejectAllDialog] = useState(showRejectAllDialog);
+  const [showRejectAllDialog, setShowRejectAllDialog] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
 
   const [commentDialog, setCommentDialog] = useState({

@@ -425,7 +425,6 @@ export default function LogisticsDashboard() {
         display="flex"
         justifyContent="space-between"
         alignItems="center"
-        pt={2}
         pb={0.5}
         flexWrap="wrap"
         gap={1}           // ⬅️ single, uniform gap before the table
@@ -769,7 +768,7 @@ export default function LogisticsDashboard() {
       {/* Pagination */}
       <Box
         sx={{
-          pt: 2,
+          pt: 1,
           gap: 1,
           display: "flex",
           flexDirection: { xs: "column", sm: "row" },

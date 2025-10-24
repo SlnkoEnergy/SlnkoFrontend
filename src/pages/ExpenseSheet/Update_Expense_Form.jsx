@@ -41,65 +41,7 @@ function Edit_Expense() {
     return null;
   };
 
-  // const handleRejectAllSubmit = async () => {
-  //   try {
-  //     const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
 
-  //     if (!userID) {
-  //       toast.error("User ID not found. Please login again.");
-  //       return;
-  //     }
-
-  //     const requests = rows.map((row) =>
-  //       updateStatus({
-  //         _id: row._id,
-  //         status: "rejected",
-  //         remarks: sharedRejectionComment || "Rejected without comment",
-  //       }).unwrap()
-  //     );
-
-  //     await Promise.all(requests);
-  //     toast.success("All sheets rejected successfully");
-
-  //     const updated = rows.map((row) => {
-  //       const newStatus = {
-  //         status: "rejected",
-  //         remarks: sharedRejectionComment || "Rejected without comment",
-  //         user_id: userID,
-  //         updatedAt: new Date().toISOString(),
-  //       };
-
-  //       const updatedItems = row.items.map((item) => ({
-  //         ...item,
-  //         item_current_status: newStatus,
-  //         remarks: sharedRejectionComment || "Rejected without comment",
-  //         item_status_history: [
-  //           ...(Array.isArray(item.item_status_history)
-  //             ? item.item_status_history
-  //             : []),
-  //           newStatus,
-  //         ],
-  //       }));
-
-  //       return {
-  //         ...row,
-  //         items: updatedItems,
-  //         current_status: newStatus,
-  //         status_history: [
-  //           ...(Array.isArray(row.status_history) ? row.status_history : []),
-  //           newStatus,
-  //         ],
-  //       };
-  //     });
-
-  //     setRows(updated);
-  //     setShowRejectAllDialog(false);
-  //     setSharedRejectionComment("");
-  //   } catch (error) {
-  //     console.error("Failed to reject all sheets:", error);
-  //     toast.error("Failed to reject sheets");
-  //   }
-  // };
 
   const handleRejectAll = () => {
     setShowRejectAllDialog(true);
@@ -109,63 +51,8 @@ function Edit_Expense() {
     setApproveConfirmOpen(true);
   };
 
-  // const applyApproveAll = async () => {
-  //   try {
-  //     const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
 
-  //     if (!userID) {
-  //       toast.error("User ID not found. Please login again.");
-  //       return;
-  //     }
 
-  //     // Send approval requests to backend
-  //     const requests = rows.map((row) => {
-  //       const approved_items = row.items.map((item) => ({
-  //         _id: item._id,
-  //         approved_amount: Number(item.invoice?.invoice_amount) || 0,
-  //       }));
-
-  //       return updateStatus({
-  //         _id: row._id,
-  //         approved_items,
-  //         remarks: "approved",
-  //         status: "manager approval",
-  //       }).unwrap();
-  //     });
-
-  //     await Promise.all(requests);
-
-  //     // Locally update rows without setting status manually
-  //     const updatedRows = rows.map((row) => {
-  //       const updatedItems = row.items.map((item) => {
-  //         const approvedAmount = Number(item.invoice?.invoice_amount) || 0;
-
-  //         return {
-  //           ...item,
-  //           approved_amount: String(approvedAmount),
-  //         };
-  //       });
-
-  //       const total_approved_amount = updatedItems.reduce(
-  //         (sum, item) => sum + Number(item.approved_amount),
-  //         0
-  //       );
-
-  //       return {
-  //         ...row,
-  //         items: updatedItems,
-  //         total_approved_amount: String(total_approved_amount),
-  //       };
-  //     });
-
-  //     setRows(updatedRows);
-  //     setApproveConfirmOpen(false);
-  //     toast.success("All items approved successfully");
-  //   } catch (error) {
-  //     console.error("Failed to approve all items:", error);
-  //     toast.error("Failed to approve all items");
-  //   }
-  // };
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -174,7 +61,27 @@ function Edit_Expense() {
         <Sidebar />
         <MainHeader title="Expense Sheet" sticky>
           <Box display="flex" gap={1}>
-            <Button
+            {(user?.name === "Chandan Singh" ||
+              user?.name === "IT Team" ||
+              user?.department === "admin" ||
+              user?.department === "BD" ||
+              user?.department === "HR" ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" &&
+                (user?.name === "Naresh Kumar" || user?.name === "Ranvijay Singh" || user?.name === "Shruti Tripathi")) ||
+              user?.name === "Shantanu Sameer" ||
+              user?.department === "Projects" ||
+              user?.department === "Infra" ||
+              user?.department === "Marketing" ||
+              user?.department === "Internal" ||
+              user?.department === "Loan" ||
+              user?.department === "Logistic" ||
+              (user?.department === "Tender" &&
+                user?.name === "Satyadeep Mohanty")
+            ) ? (<Button
               size="sm"
               onClick={() => navigate(`/expense_dashboard`)}
               sx={{
@@ -191,7 +98,32 @@ function Edit_Expense() {
             >
               DashBoard
             </Button>
-            <Button
+            ) : (null)}
+
+            {(user?.name === "IT Team" ||
+              user?.department === "BD" ||
+              (user?.department === "BD" &&
+                (user?.emp_id === "SE-277" ||
+                  user?.emp_id === "SE-046")) ||
+              user?.department === "admin" ||
+              (user?.department === "Accounts" &&
+                user?.name === "Sujan Maharjan") ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              (user?.role === "manager" &&
+                (user?.name === "Naresh Kumar" || user?.name === "Ranvijay Singh" || user?.name === "Shruti Tripathi")) ||
+              (user?.role === "visitor" &&
+                (user?.name === "Sanjiv Kumar" ||
+                  user?.name === "Sushant Ranjan Dubey")) ||
+              (((user?.department === "Projects" &&
+                (user?.emp_id === "SE-203" ||
+                  user?.emp_id === "SE-212" ||
+                  user?.emp_id === "SE-205" ||
+                  user?.emp_id === "SE-010")) ||
+                user?.name === "Disha Sharma")) ||
+              user?.department === "Engineering"
+            ) ? (<Button
               size="sm"
               onClick={() => navigate(`/expense_approval`)}
               sx={{
@@ -207,27 +139,47 @@ function Edit_Expense() {
               }}
             >
               Expense Approval
-            </Button>
+            </Button>) : (null)}
 
-            <Button
-              size="sm"
-              onClick={() => navigate(`/expense_hr`)}
-              sx={{
-                color: "white",
-                bgcolor: "transparent",
-                fontWeight: 500,
-                fontSize: "1rem",
-                letterSpacing: 0.5,
-                borderRadius: "6px",
-                px: 1.5,
-                py: 0.5,
-                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
-              }}
-            >
-              HR Expense Approval
-            </Button>
 
-            <Button
+            {(user?.name === "IT Team" ||
+              user?.department === "admin" ||
+              (user?.role === "manager" && user?.name === "Shruti Tripathi")) ? (<Button
+                size="sm"
+                onClick={() => navigate(`/expense_hr`)}
+                sx={{
+                  color: "white",
+                  bgcolor: "transparent",
+                  fontWeight: 500,
+                  fontSize: "1rem",
+                  letterSpacing: 0.5,
+                  borderRadius: "6px",
+                  px: 1.5,
+                  py: 0.5,
+                  "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+                }}
+              >
+                HR Expense Approval
+              </Button>) : (null)}
+
+
+            {((user?.department === "Accounts" &&
+              (user?.name === "Deepak Kumar Maurya" ||
+                user?.name === "Gagan Tayal" ||
+                user?.name === "Ajay Singh" ||
+                user?.name === "Sachin Raghav" ||
+                user?.name === "Anamika Poonia" ||
+                user?.name === "Meena Verma" ||
+                user?.name === "Kailash Chand" ||
+                user?.name === "Chandan Singh")) ||
+              user?.name === "IT Team" ||
+              (user?.department === "Accounts" &&
+                user?.name === "Sujan Maharjan" ||
+                user?.name === "Guddu Rani Dubey" ||
+                user?.name === "Varun Mishra" ||
+                user?.name === "Prachi Singh") ||
+              user?.department === "admin"
+            ) ? (<Button
               size="sm"
               onClick={() => navigate(`/expense_accounts`)}
               sx={{
@@ -243,7 +195,8 @@ function Edit_Expense() {
               }}
             >
               Account Expense Approval
-            </Button>
+            </Button>) : (null)}
+
           </Box>
         </MainHeader>
         <SubHeader title="Update Expense" isBackEnabled={true} sticky>
@@ -263,8 +216,8 @@ function Edit_Expense() {
               user?.role === "visitor" ||
               user?.name === "IT Team" ||
               user?.department === "admin") && (
-              <>
-                <Button
+                <>
+                  {/* <Button
                   color="danger"
                   size="sm"
                   onClick={handleRejectAll}
@@ -306,9 +259,9 @@ function Edit_Expense() {
                   // })}
                 >
                   Approve All
-                </Button>
-              </>
-            )}
+                </Button> */}
+                </>
+              )}
           </Box>
         </SubHeader>
         <Box
@@ -324,44 +277,13 @@ function Edit_Expense() {
             px: "24px",
           }}
         >
-          <UpdateExpense 
-            showRejectAllDialog = {showRejectAllDialog}
-            approveConfirmOpen = {approveConfirmOpen}
+          <UpdateExpense
+          // showRejectAllDialog={showRejectAllDialog}
+          // approveConfirmOpen={approveConfirmOpen}
           />
         </Box>
 
-        {/* <Modal
-          open={showRejectAllDialog}
-          onClose={() => setShowRejectAllDialog(false)}
-        >
-          <ModalDialog sx={{ minWidth: 320 }}>
-            <Typography level="h6">Reject All Items</Typography>
-            <Typography level="body-sm">
-              Provide remarks for rejection:
-            </Typography>
 
-            <Textarea
-              minRows={2}
-              placeholder="Enter rejection remarks..."
-              value={sharedRejectionComment}
-              onChange={(e) => setSharedRejectionComment(e.target.value)}
-              sx={{ mt: 1 }}
-            />
-
-            <Box display="flex" justifyContent="flex-end" gap={1} mt={2}>
-              <Button
-                variant="outlined"
-                onClick={() => setShowRejectAllDialog(false)}
-                size="sm"
-              >
-                Cancel
-              </Button>
-              <Button color="danger" onClick={handleRejectAllSubmit} size="sm">
-                Reject All
-              </Button>
-            </Box>
-          </ModalDialog>
-        </Modal> */}
       </Box>
     </CssVarsProvider>
   );

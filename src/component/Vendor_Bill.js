@@ -134,8 +134,8 @@ function VendorBillSummary() {
     const rawLabel = isFullyBilled
       ? "Fully Billed"
       : isPending
-      ? `${balance} - Waiting Bills`
-      : status;
+        ? `${balance} - Waiting Bills`
+        : status;
     return (
       <Chip
         variant="soft"
@@ -240,7 +240,6 @@ function VendorBillSummary() {
         display="flex"
         justifyContent="flex-end"
         alignItems="center"
-        pt={2}
         pb={0.5}
         flexWrap="wrap"
         gap={1}
@@ -431,46 +430,46 @@ function VendorBillSummary() {
                     >
                       {Array.isArray(bill.item) && bill.item.length
                         ? (() => {
-                            const unique = [
-                              ...new Set(
-                                bill.item
-                                  .map((it) => it?.category_name)
-                                  .filter(Boolean)
-                              ),
-                            ];
-                            const first = unique[0];
-                            const remaining = unique.slice(1);
-                            return (
-                              <>
-                                {first}
-                                {remaining.length > 0 && (
-                                  <Tooltip title={remaining.join(", ")} arrow>
-                                    <Box
-                                      component="span"
-                                      sx={{
-                                        ml: 1,
-                                        px: 1,
-                                        borderRadius: "50%",
-                                        backgroundColor: "primary.solidBg",
-                                        color: "white",
-                                        fontSize: "12px",
-                                        fontWeight: 500,
-                                        display: "inline-flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        minWidth: "22px",
-                                        height: "22px",
-                                        lineHeight: 1,
-                                        cursor: "pointer",
-                                      }}
-                                    >
-                                      +{remaining.length}
-                                    </Box>
-                                  </Tooltip>
-                                )}
-                              </>
-                            );
-                          })()
+                          const unique = [
+                            ...new Set(
+                              bill.item
+                                .map((it) => it?.category_name)
+                                .filter(Boolean)
+                            ),
+                          ];
+                          const first = unique[0];
+                          const remaining = unique.slice(1);
+                          return (
+                            <>
+                              {first}
+                              {remaining.length > 0 && (
+                                <Tooltip title={remaining.join(", ")} arrow>
+                                  <Box
+                                    component="span"
+                                    sx={{
+                                      ml: 1,
+                                      px: 1,
+                                      borderRadius: "50%",
+                                      backgroundColor: "primary.solidBg",
+                                      color: "white",
+                                      fontSize: "12px",
+                                      fontWeight: 500,
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      minWidth: "22px",
+                                      height: "22px",
+                                      lineHeight: 1,
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    +{remaining.length}
+                                  </Box>
+                                </Tooltip>
+                              )}
+                            </>
+                          );
+                        })()
                         : bill.item?.category_name || "-"}
                     </Box>
 

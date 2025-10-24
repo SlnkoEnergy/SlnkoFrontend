@@ -94,7 +94,6 @@ const HrExpense = forwardRef((props, ref) => {
 
     return pages;
   };
-  debugger;
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -318,10 +317,10 @@ const HrExpense = forwardRef((props, ref) => {
   const ExpenseCode = ({ currentPage, expense_code, createdAt }) => {
     const formattedDate = createdAt
       ? new Date(createdAt).toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        })
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
       : "N/A";
     return (
       <>
@@ -601,8 +600,8 @@ const HrExpense = forwardRef((props, ref) => {
                   >
                     {expense.disbursement_date
                       ? new Date(expense.disbursement_date).toLocaleDateString(
-                          "en-GB"
-                        )
+                        "en-GB"
+                      )
                       : "-"}
                   </Box>
                   <Box

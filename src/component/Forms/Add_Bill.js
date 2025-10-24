@@ -658,7 +658,7 @@ export default function VendorBillForm({
         display: "flex",
         flexDirection: "column",
         gap: 2,
-        ml: fromModal ? 0 : { xs: "0%", lg: "0%", xl: "10%" },
+        ml: fromModal ? 0 : { xs: "0%", lg: "12%", xl: "20%" },
         maxWidth: fromModal ? "full" : 1400,
         p: 3,
       }}

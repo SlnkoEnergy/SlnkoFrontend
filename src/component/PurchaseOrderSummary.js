@@ -62,14 +62,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const {
     project_code,
     onSelectionChange = () => { },
-    selectStatus,
-    selectBillStatus,
     selectItem,
-    delivery_From,
-    delivery_To,
-    etdDateFrom,
-    etdDateTo,
-    filtersVersion = 0, // NEW
   } = props;
 
   const [po, setPO] = useState("");
@@ -187,85 +180,33 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     return pages;
   };
 
-  /** ------------------ URL <-> State Sync ------------------ */
 
-  const nonEmpty = (v) => typeof v === "string" && v.trim() !== "";
-  const isDefined = (v) => v !== undefined && v !== null;
 
-  // 1) Initialize state from URL once (prefer non-empty props over URL)
+
   useEffect(() => {
-    const urlStatus = searchParams.get("status") || "";
-    const urlPoStatus = searchParams.get("poStatus") || "";
-    const urlItem = searchParams.get("itemSearch") || "";
-    const urlEtdFrom = searchParams.get("etdFrom") || "";
-    const urlEtdTo = searchParams.get("etdTo") || "";
-    const urlDeliveryFrom = searchParams.get("deliveryFrom") || "";
-    const urlDeliveryTo = searchParams.get("deliveryTo") || "";
+    const statusParam = searchParams.get("status") || "";
+    if (statusParam !== selectedStatusFilter) setSelectedStatusFilter(statusParam);
 
-    setSelectedStatusFilter(nonEmpty(selectStatus) ? selectStatus : urlStatus);
-    setSelectedpo(nonEmpty(selectBillStatus) ? selectBillStatus : urlPoStatus);
-    setSelecteditem(nonEmpty(selectItem) ? selectItem : urlItem);
+    const etdFromParam = searchParams.get("etdFrom") || "";
+    if (etdFromParam !== etdFrom) setEtdFrom(etdFromParam);
 
-    setEtdFrom(nonEmpty(etdDateFrom) ? etdDateFrom : urlEtdFrom);
-    setEtdTo(nonEmpty(etdDateTo) ? etdDateTo : urlEtdTo);
-    setDeliveryFrom(nonEmpty(delivery_From) ? delivery_From : urlDeliveryFrom);
-    setDeliveryTo(nonEmpty(delivery_To) ? delivery_To : urlDeliveryTo);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const etdToParam = searchParams.get("etdTo") || "";
+    if (etdToParam !== etdTo) setEtdTo(etdToParam);
 
-  // 2) Reflect parent prop changes ONLY when user applied/reset filters
-  useEffect(() => {
-    if (!filtersVersion) return; // ignore first mount (prevents clobbering URL)
-    setSelectedStatusFilter(selectStatus ?? "");
-    setSelectedpo(selectBillStatus ?? "");
-    setSelecteditem(selectItem ?? "");
-    setEtdFrom(etdDateFrom ?? "");
-    setEtdTo(etdDateTo ?? "");
-    setDeliveryFrom(delivery_From ?? "");
-    setDeliveryTo(delivery_To ?? "");
-    // page reset will be handled by writer effect below
-  }, [filtersVersion]); // eslint-disable-line react-hooks/exhaustive-deps
+    const deliveryFromParam = searchParams.get("deliveryFrom") || "";
+    if (deliveryFromParam !== deliveryFrom) setDeliveryFrom(deliveryFromParam);
 
-  // 3) Whenever filters change, write them to URL (and reset to page=1)
-  useEffect(() => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
+    const deliveryToParam = searchParams.get("deliveryTo") || "";
+    if (deliveryToParam !== deliveryTo) setDeliveryTo(deliveryToParam);
 
-      if (selectedStatusFilter) next.set("status", selectedStatusFilter);
-      else next.delete("status");
+    const selectPoParam = searchParams.get("poStatus") || "";
+    if (selectPoParam !== selectedpo) setSelectedpo(selectPoParam);
 
-      if (selectedpo) next.set("poStatus", selectedpo);
-      else next.delete("poStatus");
+    const selectItemParam = searchParams.get("itemSearch") || "";
+    if (selectItemParam !== selectItem) setSelecteditem(selectItemParam)
+  }, [searchParams]);
 
-      if (selecteditem) next.set("itemSearch", selecteditem);
-      else next.delete("itemSearch");
 
-      // date ranges
-      if (etdFrom) next.set("etdFrom", etdFrom);
-      else next.delete("etdFrom");
-      if (etdTo) next.set("etdTo", etdTo);
-      else next.delete("etdTo");
-      if (deliveryFrom) next.set("deliveryFrom", deliveryFrom);
-      else next.delete("deliveryFrom");
-      if (deliveryTo) next.set("deliveryTo", deliveryTo);
-      else next.delete("deliveryTo");
-
-      // reset pagination when filters change
-      next.set("page", "1");
-      return next;
-    });
-  }, [
-    selectedStatusFilter,
-    selectedpo,
-    selecteditem,
-    etdFrom,
-    etdTo,
-    deliveryFrom,
-    deliveryTo,
-    setSearchParams,
-  ]);
-
-  /** ------------------ /URL <-> State Sync ------------------ */
 
   const handleOpenBulkModal = () => setBulkModalOpen(true);
   const handleCloseBulkModal = () => {

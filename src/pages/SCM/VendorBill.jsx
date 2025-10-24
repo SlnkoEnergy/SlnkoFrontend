@@ -20,7 +20,20 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 function Bill_History() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [user, setUser] = useState(null);
 
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
   const [open, setOpen] = useState(false);
 
   const status = [
@@ -127,7 +140,30 @@ function Bill_History() {
         <Sidebar />
         <MainHeader title="SCM" sticky>
           <Box display="flex" gap={1}>
-            <Button
+            {(user?.name === "IT Team" ||
+              user?.department === "admin" ||
+              (user?.department === "Accounts" &&
+                (user?.name === "Deepak Kumar Maurya" ||
+                  user?.name === "Gagan Tayal" ||
+                  user?.name === "Ajay Singh" ||
+                  user?.name === "Sachin Raghav" ||
+                  user?.name === "Anamika Poonia" ||
+                  user?.name === "Meena Verma" ||
+                  user?.name === "Kailash Chand" ||
+                  user?.name === "Chandan Singh")) ||
+              (user?.department === "Accounts" &&
+                user?.name === "Sujan Maharjan") ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" && (user?.name === "Naresh Kumar")) ||
+              (user?.role === "visitor" &&
+                (user?.name === "Sanjiv Kumar" ||
+                  user?.name === "Sushant Ranjan Dubey")) ||
+              (user?.department === "CAM" && user?.name === "Shantanu Sameer")
+
+            ) ? (<Button
               size="sm"
               onClick={() => navigate("/purchase-order")}
               sx={{
@@ -145,9 +181,17 @@ function Bill_History() {
               }}
             >
               Purchase Order
-            </Button>
+            </Button>) : (null)}
 
-            <Button
+            {(user?.name === "IT Team" ||
+              user?.department === "admin" ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" && (user?.name === "Naresh Kumar")) ||
+              user?.department === "Logistic"
+            ) ? (<Button
               size="sm"
               onClick={() => navigate(`/logistics`)}
               sx={{
@@ -165,8 +209,27 @@ function Bill_History() {
               }}
             >
               Logistics
-            </Button>
-            <Button
+            </Button>) : (null)}
+
+            {(user?.name === "IT Team" ||
+              user?.department === "admin" ||
+              (user?.department === "Accounts" &&
+                (user?.name === "Deepak Kumar Maurya" ||
+                  user?.name === "Gagan Tayal" ||
+                  user?.name === "Ajay Singh" ||
+                  user?.name === "Sachin Raghav" ||
+                  user?.name === "Anamika Poonia" ||
+                  user?.name === "Meena Verma" ||
+                  user?.name === "Kailash Chand" ||
+                  user?.name === "Chandan Singh")) ||
+              (user?.department === "Accounts" &&
+                user?.name === "Sujan Maharjan") ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" && (user?.name === "Naresh Kumar"))
+            ) ? (<Button
               size="sm"
               onClick={() => navigate(`/vendor_bill`)}
               sx={{
@@ -184,7 +247,8 @@ function Bill_History() {
               }}
             >
               Vendor Bill
-            </Button>
+            </Button>) : (null)}
+
           </Box>
         </MainHeader>
 
@@ -233,10 +297,8 @@ function Bill_History() {
             flexDirection: "column",
             gap: 1,
             mt: "108px",
-            mr: "28px",
-            pr: "30px",
-            ml: "24px",
-            overflow: "hidden",
+            p: "16px",
+            px: "24px",
           }}
         >
           <VendorBill />

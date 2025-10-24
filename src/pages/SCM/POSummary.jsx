@@ -13,12 +13,26 @@ import { useGetAllCategoriesDropdownQuery } from "../../redux/productsSlice";
 
 function DashboardSCM() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [selectedPOIds, setSelectedPOIds] = useState([]);
   const selectedCount = selectedPOIds.length;
   const [open, setOpen] = useState(false);
   const poSummaryRef = useRef();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
 
   const [exportPos, { isLoading: isExporting }] = useExportPosMutation();
 
@@ -141,13 +155,34 @@ function DashboardSCM() {
     searchParams.get("deliveryTo") || ""
   );
 
-  // Version flag to let child know Apply/Reset happened
-  const [filtersVersion, setFiltersVersion] = useState(0);
-
   useEffect(() => {
-    // dev log
-    // console.log("PARENT selectItem ->", selectItem);
-  }, [selectItem]);
+    const sp = new URLSearchParams(searchParams);
+
+    if (selectStatus) sp.set("status", selectStatus);
+    else sp.delete("status");
+
+    if (selectBillStatus) sp.set("poStatus", selectBillStatus);
+    else sp.delete("poStatus");
+
+    if (selectItem) sp.set("itemSearch", selectItem);
+    else sp.delete("itemSearch");
+
+    if (etdDateTo) sp.set("etdTo", etdDateTo);
+    else sp.delete("etdTo");
+
+    if (etdDateFrom) sp.set("etdFrom", etdDateFrom);
+    else sp.delete("etdFrom");
+
+    if (deliveryFrom) sp.set("deliveryFrom", deliveryFrom);
+    else sp.delete("deliveryFrom");
+
+    if (deliveryTo) sp.set("deliveryTo", deliveryTo);
+    else sp.delete("deliveryTo");
+
+    setSearchParams(sp);
+  }, [selectStatus, selectBillStatus, selectItem, etdDateFrom, etdDateTo, deliveryFrom, deliveryTo])
+
+  // Version flag to let child know Apply/Reset happened
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -156,7 +191,30 @@ function DashboardSCM() {
         <Sidebar />
         <MainHeader title="SCM" sticky>
           <Box display="flex" gap={1}>
-            <Button
+            {(user?.name === "IT Team" ||
+              user?.department === "admin" ||
+              (user?.department === "Accounts" &&
+                (user?.name === "Deepak Kumar Maurya" ||
+                  user?.name === "Gagan Tayal" ||
+                  user?.name === "Ajay Singh" ||
+                  user?.name === "Sachin Raghav" ||
+                  user?.name === "Anamika Poonia" ||
+                  user?.name === "Meena Verma" ||
+                  user?.name === "Kailash Chand" ||
+                  user?.name === "Chandan Singh")) ||
+              (user?.department === "Accounts" &&
+                user?.name === "Sujan Maharjan") ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" && (user?.name === "Naresh Kumar")) ||
+              (user?.role === "visitor" &&
+                (user?.name === "Sanjiv Kumar" ||
+                  user?.name === "Sushant Ranjan Dubey")) ||
+              (user?.department === "CAM" && user?.name === "Shantanu Sameer")
+
+            ) ? (<Button
               size="sm"
               onClick={() => navigate("/purchase-order")}
               sx={{
@@ -174,9 +232,17 @@ function DashboardSCM() {
               }}
             >
               Purchase Order
-            </Button>
+            </Button>) : (null)}
 
-            <Button
+            {(user?.name === "IT Team" ||
+              user?.department === "admin" ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" && (user?.name === "Naresh Kumar")) ||
+              user?.department === "Logistic"
+            ) ? (<Button
               size="sm"
               onClick={() => navigate(`/logistics`)}
               sx={{
@@ -194,9 +260,27 @@ function DashboardSCM() {
               }}
             >
               Logistics
-            </Button>
+            </Button>) : (null)}
 
-            <Button
+            {(user?.name === "IT Team" ||
+              user?.department === "admin" ||
+              (user?.department === "Accounts" &&
+                (user?.name === "Deepak Kumar Maurya" ||
+                  user?.name === "Gagan Tayal" ||
+                  user?.name === "Ajay Singh" ||
+                  user?.name === "Sachin Raghav" ||
+                  user?.name === "Anamika Poonia" ||
+                  user?.name === "Meena Verma" ||
+                  user?.name === "Kailash Chand" ||
+                  user?.name === "Chandan Singh")) ||
+              (user?.department === "Accounts" &&
+                user?.name === "Sujan Maharjan") ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" && (user?.name === "Naresh Kumar"))
+            ) ? (<Button
               size="sm"
               onClick={() => navigate(`/vendor_bill`)}
               sx={{
@@ -214,7 +298,8 @@ function DashboardSCM() {
               }}
             >
               Vendor Bill
-            </Button>
+            </Button>) : (null)}
+
           </Box>
         </MainHeader>
 
@@ -280,7 +365,6 @@ function DashboardSCM() {
                   setDeliveryFrom(values?.delivery_date?.from || "");
                   setDeliveryTo(values?.delivery_date?.to || "");
 
-                  setFiltersVersion((v) => v + 1); // ← signal child
                   setOpen(false);
                 }}
                 onReset={() => {
@@ -292,7 +376,6 @@ function DashboardSCM() {
                   setDeliveryFrom("");
                   setDeliveryTo("");
 
-                  setFiltersVersion((v) => v + 1); // ← signal child (clear)
                   setOpen(false);
                 }}
               />
@@ -309,7 +392,7 @@ function DashboardSCM() {
             flexDirection: "column",
             gap: 1,
             mt: "108px",
-            mr: "28px",
+
             pr: "30px",
             ml: "24px",
             overflow: "hidden",
@@ -326,7 +409,6 @@ function DashboardSCM() {
             delivery_To={deliveryTo}
             etdDateFrom={etdDateFrom}
             etdDateTo={etdDateTo}
-            filtersVersion={filtersVersion} // ← NEW
           />
         </Box>
       </Box>

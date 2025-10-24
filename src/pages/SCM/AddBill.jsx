@@ -12,10 +12,25 @@ import SubHeader from "../../component/Partials/SubHeader";
 import MainHeader from "../../component/Partials/MainHeader";
 import { Button } from "@mui/joy";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 function Add_Bill() {
 
   const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -23,7 +38,30 @@ function Add_Bill() {
         <Sidebar />
         <MainHeader title="SCM" sticky>
           <Box display="flex" gap={1}>
-            <Button
+            {(user?.name === "IT Team" ||
+              user?.department === "admin" ||
+              (user?.department === "Accounts" &&
+                (user?.name === "Deepak Kumar Maurya" ||
+                  user?.name === "Gagan Tayal" ||
+                  user?.name === "Ajay Singh" ||
+                  user?.name === "Sachin Raghav" ||
+                  user?.name === "Anamika Poonia" ||
+                  user?.name === "Meena Verma" ||
+                  user?.name === "Kailash Chand" ||
+                  user?.name === "Chandan Singh")) ||
+              (user?.department === "Accounts" &&
+                user?.name === "Sujan Maharjan") ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" && (user?.name === "Naresh Kumar")) ||
+              (user?.role === "visitor" &&
+                (user?.name === "Sanjiv Kumar" ||
+                  user?.name === "Sushant Ranjan Dubey")) ||
+              (user?.department === "CAM" && user?.name === "Shantanu Sameer")
+
+            ) ? (<Button
               size="sm"
               onClick={() => navigate("/purchase-order")}
               sx={{
@@ -41,9 +79,17 @@ function Add_Bill() {
               }}
             >
               Purchase Order
-            </Button>
+            </Button>) : (null)}
 
-            <Button
+            {(user?.name === "IT Team" ||
+              user?.department === "admin" ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" && (user?.name === "Naresh Kumar")) ||
+              user?.department === "Logistic"
+            ) ? (<Button
               size="sm"
               onClick={() => navigate(`/logistics`)}
               sx={{
@@ -61,9 +107,27 @@ function Add_Bill() {
               }}
             >
               Logistics
-            </Button>
+            </Button>) : (null)}
 
-            <Button
+            {(user?.name === "IT Team" ||
+              user?.department === "admin" ||
+              (user?.department === "Accounts" &&
+                (user?.name === "Deepak Kumar Maurya" ||
+                  user?.name === "Gagan Tayal" ||
+                  user?.name === "Ajay Singh" ||
+                  user?.name === "Sachin Raghav" ||
+                  user?.name === "Anamika Poonia" ||
+                  user?.name === "Meena Verma" ||
+                  user?.name === "Kailash Chand" ||
+                  user?.name === "Chandan Singh")) ||
+              (user?.department === "Accounts" &&
+                user?.name === "Sujan Maharjan") ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" && (user?.name === "Naresh Kumar"))
+            ) ? (<Button
               size="sm"
               onClick={() => navigate(`/vendor_bill`)}
               sx={{
@@ -81,7 +145,8 @@ function Add_Bill() {
               }}
             >
               Vendor Bill
-            </Button>
+            </Button>) : (null)}
+
           </Box>
         </MainHeader>
         <SubHeader title="Edit Vendor Bill" isBackEnabled={true} sticky></SubHeader>

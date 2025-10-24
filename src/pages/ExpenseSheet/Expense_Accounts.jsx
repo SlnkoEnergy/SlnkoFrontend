@@ -33,7 +33,7 @@ function Accounts_Expense() {
   const [triggerExport] = useExportExpenseToCSVMutation();
   const [sheetIds, setSheetIds] = useState([]);
   const [downloadStatus, setDownloadStatus] = useState("");
-
+  const [user, setUser] = useState(null);
   const [open, setOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -43,6 +43,20 @@ function Accounts_Expense() {
   const [status, setStatus] = useState(searchParams.get("status" || ""));
   const [dateFrom, setDateFrom] = useState(searchParams.get("from" || ""));
   const [dateTo, setDateTo] = useState(searchParams.get("to" || ""));
+
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
+
 
   const departments = [
     "Accounts",
@@ -89,20 +103,20 @@ function Accounts_Expense() {
 
     const sp = new URLSearchParams(searchParams);
 
-    if(department) sp.set("department", department);
+    if (department) sp.set("department", department);
     else sp.delete("department");
 
-    if(status) sp.set("status", status);
+    if (status) sp.set("status", status);
     else sp.delete("status");
 
-    if(dateFrom) sp.set("from", dateFrom);
+    if (dateFrom) sp.set("from", dateFrom);
     else sp.delete("from");
 
-    if(dateTo) sp.set("to", dateTo);
+    if (dateTo) sp.set("to", dateTo);
     else sp.delete("to");
 
     setSearchParams(sp);
-  })
+  }, [searchParams])
 
   const handleExportCSV = async (sheetIds, view = "detailed") => {
     try {
@@ -114,9 +128,8 @@ function Accounts_Expense() {
       );
       const a = document.createElement("a");
       a.href = url;
-      a.download = `expenses_${
-        dashboard ? "list" : "detailed"
-      }_${Date.now()}.csv`;
+      a.download = `expenses_${dashboard ? "list" : "detailed"
+        }_${Date.now()}.csv`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -164,7 +177,27 @@ function Accounts_Expense() {
         <Sidebar />
         <MainHeader title="Expense Sheet" sticky>
           <Box display="flex" gap={1}>
-            <Button
+            {(user?.name === "Chandan Singh" ||
+              user?.name === "IT Team" ||
+              user?.department === "admin" ||
+              user?.department === "BD" ||
+              user?.department === "HR" ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" &&
+                (user?.name === "Naresh Kumar" || user?.name === "Ranvijay Singh" || user?.name === "Shruti Tripathi")) ||
+              user?.name === "Shantanu Sameer" ||
+              user?.department === "Projects" ||
+              user?.department === "Infra" ||
+              user?.department === "Marketing" ||
+              user?.department === "Internal" ||
+              user?.department === "Loan" ||
+              user?.department === "Logistic" ||
+              (user?.department === "Tender" &&
+                user?.name === "Satyadeep Mohanty")
+            ) ? (<Button
               size="sm"
               onClick={() => navigate(`/expense_dashboard`)}
               sx={{
@@ -181,7 +214,32 @@ function Accounts_Expense() {
             >
               DashBoard
             </Button>
-            <Button
+            ) : (null)}
+
+            {(user?.name === "IT Team" ||
+              user?.department === "BD" ||
+              (user?.department === "BD" &&
+                (user?.emp_id === "SE-277" ||
+                  user?.emp_id === "SE-046")) ||
+              user?.department === "admin" ||
+              (user?.department === "Accounts" &&
+                user?.name === "Sujan Maharjan") ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              (user?.role === "manager" &&
+                (user?.name === "Naresh Kumar" || user?.name === "Ranvijay Singh" || user?.name === "Shruti Tripathi")) ||
+              (user?.role === "visitor" &&
+                (user?.name === "Sanjiv Kumar" ||
+                  user?.name === "Sushant Ranjan Dubey")) ||
+              (((user?.department === "Projects" &&
+                (user?.emp_id === "SE-203" ||
+                  user?.emp_id === "SE-212" ||
+                  user?.emp_id === "SE-205" ||
+                  user?.emp_id === "SE-010")) ||
+                user?.name === "Disha Sharma")) ||
+              user?.department === "Engineering"
+            ) ? (<Button
               size="sm"
               onClick={() => navigate(`/expense_approval`)}
               sx={{
@@ -197,27 +255,47 @@ function Accounts_Expense() {
               }}
             >
               Expense Approval
-            </Button>
+            </Button>) : (null)}
 
-            <Button
-              size="sm"
-              onClick={() => navigate(`/expense_hr`)}
-              sx={{
-                color: "white",
-                bgcolor: "transparent",
-                fontWeight: 500,
-                fontSize: "1rem",
-                letterSpacing: 0.5,
-                borderRadius: "6px",
-                px: 1.5,
-                py: 0.5,
-                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
-              }}
-            >
-              HR Expense Approval
-            </Button>
 
-            <Button
+            {(user?.name === "IT Team" ||
+              user?.department === "admin" ||
+              (user?.role === "manager" && user?.name === "Shruti Tripathi")) ? (<Button
+                size="sm"
+                onClick={() => navigate(`/expense_hr`)}
+                sx={{
+                  color: "white",
+                  bgcolor: "transparent",
+                  fontWeight: 500,
+                  fontSize: "1rem",
+                  letterSpacing: 0.5,
+                  borderRadius: "6px",
+                  px: 1.5,
+                  py: 0.5,
+                  "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+                }}
+              >
+                HR Expense Approval
+              </Button>) : (null)}
+
+
+            {((user?.department === "Accounts" &&
+              (user?.name === "Deepak Kumar Maurya" ||
+                user?.name === "Gagan Tayal" ||
+                user?.name === "Ajay Singh" ||
+                user?.name === "Sachin Raghav" ||
+                user?.name === "Anamika Poonia" ||
+                user?.name === "Meena Verma" ||
+                user?.name === "Kailash Chand" ||
+                user?.name === "Chandan Singh")) ||
+              user?.name === "IT Team" ||
+              (user?.department === "Accounts" &&
+                user?.name === "Sujan Maharjan" ||
+                user?.name === "Guddu Rani Dubey" ||
+                user?.name === "Varun Mishra" ||
+                user?.name === "Prachi Singh") ||
+              user?.department === "admin"
+            ) ? (<Button
               size="sm"
               onClick={() => navigate(`/expense_accounts`)}
               sx={{
@@ -233,10 +311,10 @@ function Accounts_Expense() {
               }}
             >
               Account Expense Approval
-            </Button>
+            </Button>) : (null)}
+
           </Box>
         </MainHeader>
-
         <SubHeader
           title="Accounts Expense Approval Dashboard"
           isBackEnabled={false}
@@ -281,8 +359,8 @@ function Accounts_Expense() {
                 <Box mt={2} display="flex" alignItems="center" gap={1}>
                   {(downloadStatus.startsWith("Preparing") ||
                     downloadStatus.startsWith("Downloading")) && (
-                    <CircularProgress size="sm" />
-                  )}
+                      <CircularProgress size="sm" />
+                    )}
                   <Typography level="body-sm">{downloadStatus}</Typography>
                 </Box>
               )}
