@@ -1,4 +1,3 @@
-// src/pages/vendors/AddVendor.jsx
 import React, { useMemo, useState, useEffect } from "react";
 import {
   Box,
@@ -20,11 +19,17 @@ import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUp from "@mui/icons-material/KeyboardArrowUp";
 import CloudUploadRoundedIcon from "@mui/icons-material/CloudUploadRounded";
 import { toast } from "react-toastify";
-import { useAddVendorMutation } from "../../redux/vendorSlice";
+
+// ⬇️ existing API import kept, plus edit/get APIs added
+import {
+  useAddVendorMutation,
+  useGetVendorByIdQuery,
+  useUpdateVendorMutation,
+} from "../../redux/vendorSlice";
 
 const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/i;
 
-const initialForm = {
+const initialFormDefault = {
   type: "company",
   name: "",
   company_name: "",
@@ -41,13 +46,59 @@ const initialForm = {
   Bank_Name: "",
 };
 
-function AddVendor({ setOpenAddVendorModal }) {
-  const [form, setForm] = useState(initialForm);
+function AddVendor({ setOpenAddVendorModal, vendorId }) {
+  const isEdit = Boolean(vendorId);
+  const {
+    data: vendorResp,
+    isLoading: isVendorLoading,
+    isError: isVendorError,
+    error: vendorError,
+  } = useGetVendorByIdQuery(vendorId, { skip: !isEdit });
+
+  const [addVendor, { isLoading: isCreating }] = useAddVendorMutation();
+  const [updateVendor, { isLoading: isUpdating }] = useUpdateVendorMutation();
+
+  const vendor = vendorResp?.data;
+
+  const initialFormFromVendor = useMemo(() => {
+    if (!vendor) return null;
+    return {
+      type: vendor.type || "company",
+      name: vendor.name || "",
+      company_name: vendor.company_name || "",
+      email: vendor?.contact_details?.email || "",
+      phone: vendor?.contact_details?.phone || "",
+      street1: vendor?.address?.line1 || "",
+      street2: vendor?.address?.line2 || "",
+      city: vendor?.address?.city || "",
+      zip: vendor?.address?.pincode || "",
+      state: vendor?.address?.state || "",
+      Beneficiary_Name: vendor?.Beneficiary_Name || "",
+      Account_No: vendor?.Account_No || "",
+      IFSC_Code: vendor?.IFSC_Code || "",
+      Bank_Name: vendor?.Bank_Name || "",
+    };
+  }, [vendor]);
+
+  const [form, setForm] = useState(
+    isEdit ? initialFormFromVendor || initialFormDefault : initialFormDefault
+  );
   const [bankOpen, setBankOpen] = useState(true);
   const [errors, setErrors] = useState({});
-  const [addVendor, { isLoading }] = useAddVendorMutation();
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState("");
+
+  useEffect(() => {
+    if (isEdit && initialFormFromVendor) {
+      setForm(initialFormFromVendor);
+    }
+  }, [isEdit, initialFormFromVendor]);
+
+  useEffect(() => {
+    return () => {
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
+    };
+  }, [photoPreview]);
 
   const titlePlaceholder = useMemo(
     () => (form.type === "company" ? "e.g. ABC Pvt Ltd" : "e.g. Ramesh Singh"),
@@ -57,12 +108,6 @@ function AddVendor({ setOpenAddVendorModal }) {
   const setField = (name, value) => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
-
-  useEffect(() => {
-    return () => {
-      if (photoPreview) URL.revokeObjectURL(photoPreview);
-    };
-  }, [photoPreview]);
 
   const handlePhotoChange = (e) => {
     const file = e.target.files?.[0];
@@ -83,7 +128,6 @@ function AddVendor({ setOpenAddVendorModal }) {
   const validate = () => {
     const e = {};
 
-    // required by schema
     if (!form.name?.trim()) e.name = "Name is required.";
     if (!form.email?.trim()) e.email = "Email is required.";
     else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = "Invalid email.";
@@ -108,6 +152,28 @@ function AddVendor({ setOpenAddVendorModal }) {
     return Object.keys(e).length === 0;
   };
 
+  const buildPayload = () => ({
+    type: form.type,
+    name: form.name.trim(),
+    company_name:
+      form.type === "person" ? form.company_name?.trim() || "" : undefined,
+    Beneficiary_Name: form.Beneficiary_Name.trim(),
+    Account_No: form.Account_No,
+    IFSC_Code: form.IFSC_Code.toUpperCase(),
+    Bank_Name: form.Bank_Name.trim(),
+    contact_details: {
+      email: form.email.trim(),
+      phone: form.phone?.trim() || "",
+    },
+    address: {
+      line1: form.street1?.trim() || "",
+      line2: form.street2?.trim() || "",
+      pincode: form.zip?.toString().trim() || "",
+      city: form.city?.trim() || "",
+      state: form.state?.trim() || "",
+    },
+  });
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) {
@@ -115,38 +181,33 @@ function AddVendor({ setOpenAddVendorModal }) {
       return;
     }
 
-    const payload = {
-      type: form.type,
-      name: form.name.trim(),
-      company_name:
-        form.type === "person" ? form.company_name?.trim() || "" : undefined,
-      Beneficiary_Name: form.Beneficiary_Name.trim(),
-      Account_No: form.Account_No,
-      IFSC_Code: form.IFSC_Code.toUpperCase(),
-      Bank_Name: form.Bank_Name.trim(),
-      contact_details: {
-        email: form.email.trim(),
-        phone: form.phone?.trim() || "",
-      },
-      address: {
-        line1: form.street1?.trim() || "",
-        line2: form.street2?.trim() || "",
-        pincode: form.zip?.toString().trim() || "",
-        city: form.city?.trim() || "",
-        state: form.state?.trim() || "",
-      },
-    };
+    const payload = buildPayload();
 
     try {
-      await addVendor({ data: payload, profileFile: photoFile }).unwrap();
-      toast.success("Vendor added successfully!");
-      setForm(initialForm);
+      if (isEdit) {
+        // UPDATE vendor
+        await updateVendor({ id: vendorId, data: payload }).unwrap();
+        toast.success("Vendor updated successfully!");
+      } else {
+        // CREATE vendor (existing functionality)
+        await addVendor({ data: payload }).unwrap();
+        toast.success("Vendor added successfully!");
+      }
+
+      // reset and close
+      setErrors({});
       setPhotoFile(null);
       setPhotoPreview("");
-      setOpenAddVendorModal(false);
+      if (!isEdit) {
+        setForm(initialFormDefault);
+      }
+      setOpenAddVendorModal?.(false);
     } catch (err) {
       const msg =
-        err?.data?.msg || err?.error || err?.message || "Failed to add vendor.";
+        err?.data?.msg ||
+        err?.error ||
+        err?.message ||
+        (isEdit ? "Failed to update vendor." : "Failed to add vendor.");
       toast.error(msg);
     }
   };
@@ -187,7 +248,6 @@ function AddVendor({ setOpenAddVendorModal }) {
               style={{ display: "none" }}
               onChange={handlePhotoChange}
             />
-            {/* Clickable label that looks like a big upload box */}
             <label htmlFor="vendor-photo-input" style={{ cursor: "pointer" }}>
               <Sheet
                 sx={{
@@ -246,7 +306,11 @@ function AddVendor({ setOpenAddVendorModal }) {
             <Input
               size="lg"
               variant="plain"
-              placeholder={titlePlaceholder}
+              placeholder={
+                form.type === "company"
+                  ? "e.g. ABC Pvt Ltd"
+                  : "e.g. Ramesh Singh"
+              }
               value={form.name}
               onChange={(e) => setField("name", e.target.value)}
               error={!!errors.name}
@@ -468,7 +532,7 @@ function AddVendor({ setOpenAddVendorModal }) {
           )}
         </Sheet>
 
-        {/* Buttons */}
+        {/* Footer Buttons */}
         <Stack
           direction="row"
           spacing={1.5}
@@ -485,8 +549,8 @@ function AddVendor({ setOpenAddVendorModal }) {
               "--Button-hoverBorderColor": "#3366a3",
               "&:hover": { color: "#3366a3" },
             }}
-            onClick={() => setOpenAddVendorModal(false)}
-            disabled={isLoading}
+            onClick={() => setOpenAddVendorModal?.(false)}
+            disabled={isEdit ? isVendorLoading || isUpdating : isCreating}
           >
             Cancel
           </Button>
@@ -498,11 +562,25 @@ function AddVendor({ setOpenAddVendorModal }) {
               "&:hover": { backgroundColor: "#285680" },
             }}
             variant="solid"
-            disabled={isLoading}
+            disabled={isEdit ? isVendorLoading || isUpdating : isCreating}
           >
-            {isLoading ? "Saving…" : "Save Vendor"}
+            {isEdit
+              ? isUpdating || isVendorLoading
+                ? "Updating…"
+                : "Update Vendor"
+              : isCreating
+              ? "Saving…"
+              : "Save Vendor"}
           </Button>
         </Stack>
+
+        {/* Edit-mode inline status */}
+        {isEdit && isVendorError && (
+          <Typography level="body-sm" color="danger" sx={{ mt: 1 }}>
+            Failed to load vendor:{" "}
+            {vendorError?.data?.msg || vendorError?.error || "Unknown error"}
+          </Typography>
+        )}
       </Sheet>
     </Box>
   );

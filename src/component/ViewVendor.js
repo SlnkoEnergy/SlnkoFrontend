@@ -20,6 +20,7 @@ import { useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import PurchaseRequestCard from "./PurchaseRequestCard";
 import { useGetVendorByIdQuery } from "../redux/vendorSlice";
+import PayRequestByVendor from "./PayRequestByVendor";
 
 /* ---------------- helpers ---------------- */
 const getUserData = () => {
@@ -31,13 +32,11 @@ const getUserData = () => {
   }
 };
 
-const VALID_TABS = new Set(["purchaseorders", "payments", "emails", "balance"]);
+const VALID_TABS = new Set(["purchaseorders", "payments"]);
 
 const NUM_TO_KEY = {
   0: "purchaseorders",
   1: "payments",
-  2: "emails",
-  3: "balance",
 };
 
 const sanitizeTabFromQuery = (raw) => {
@@ -100,7 +99,14 @@ export default function Vendor_Detail() {
   }, [postsResp, currentUserId]);
 
   const headerOffset = 72;
-
+  const formatINR = (value) => {
+    if (value == null || value === 0) return "0";
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
   return (
     <Box
       sx={{
@@ -237,7 +243,12 @@ export default function Vendor_Detail() {
               </Typography>
               <Divider sx={{ my: 1 }} />
               <Typography level="body-sm">
-                <b>Balance:</b> ₹ {vendorDetails?.balance ?? "-"}
+                <b>Total PO Value:</b>{" "}
+                {formatINR(getVendor?.totals?.totalPOValue) ?? "-"}
+              </Typography>
+              <Typography level="body-sm">
+                <b>Total Amount Paid:</b>{" "}
+                {formatINR(getVendor?.totals?.totalAmountPaid) ?? "-"}
               </Typography>
             </Stack>
           </Card>
@@ -267,8 +278,6 @@ export default function Vendor_Detail() {
               <TabList>
                 <Tab value="purchaseorders">Purchase Orders</Tab>
                 <Tab value="payments">Payments</Tab>
-                <Tab value="emails">Emails</Tab>
-                <Tab value="balance">Summary</Tab>
               </TabList>
 
               {/* Purchase Orders */}
@@ -289,41 +298,13 @@ export default function Vendor_Detail() {
               <TabPanel
                 value="payments"
                 sx={{
-                  p: { xs: 1, md: 1.5 },
+                  p: { xs: 1, md: 1 },
                   height: { xs: "auto", md: `100%` },
                   overflowY: { md: "auto" },
                 }}
               >
                 <Typography level="body-md">
-                  Payments view coming soon.
-                </Typography>
-              </TabPanel>
-
-              {/* Emails (placeholder) */}
-              <TabPanel
-                value="emails"
-                sx={{
-                  p: { xs: 1, md: 1.5 },
-                  height: { xs: "auto", md: `100%` },
-                  overflowY: { md: "auto" },
-                }}
-              >
-                <Typography level="body-md">
-                  Emails view coming soon.
-                </Typography>
-              </TabPanel>
-
-              {/* Summary / Balance (placeholder) */}
-              <TabPanel
-                value="balance"
-                sx={{
-                  p: { xs: 1, md: 1.5 },
-                  height: { xs: "auto", md: `100%` },
-                  overflowY: { md: "auto" },
-                }}
-              >
-                <Typography level="body-md">
-                  Vendor summary will appear here.
+                  <PayRequestByVendor vendor={vendorDetails?.name} />
                 </Typography>
               </TabPanel>
             </Tabs>

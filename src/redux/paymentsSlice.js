@@ -49,6 +49,17 @@ export const paymentsApi = createApi({
       }),
       invalidatesTags: ["Payment"],
     }),
+    getPayRequestByVendor: builder.query({
+      query: ({ vendor, page = 1, limit = 10, search = "" }) => {
+        const params = new URLSearchParams();
+        if (vendor) params.set("vendor", vendor);
+        if (page) params.set("page", page);
+        if (limit) params.set("limit", limit);
+        if (search) params.set("search", search);
+        return `/payrequestvendor?${params.toString()}`;
+      },
+      providesTags: ["Payment"],
+    })
   }),
 });
 
@@ -58,4 +69,5 @@ export const {
   useAddPaymentsMutation,
   useAddHoldPaymentsMutation,
   useAddHoldToPaymentsMutation,
+  useGetPayRequestByVendorQuery
 } = paymentsApi;

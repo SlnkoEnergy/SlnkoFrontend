@@ -55,6 +55,17 @@ export const vendorsApi = createApi({
             ]
           : [{ type: "Vendors", id: "LIST" }],
     }),
+    updateVendor: builder.mutation({
+      query: ({ id, data }) => ({
+        url: `/vendor/vendor/${id}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Vendors", id },
+        { type: "Vendors", id: "LIST" },
+      ],
+    }),
   }),
 });
 
@@ -64,4 +75,5 @@ export const {
   useGetVendorByIdQuery,
   useGetVendorsNameSearchQuery,
   useLazyGetVendorsNameSearchQuery,
+  useUpdateVendorMutation,
 } = vendorsApi;

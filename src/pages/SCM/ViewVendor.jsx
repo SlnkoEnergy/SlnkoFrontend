@@ -2,21 +2,32 @@ import { CssVarsProvider } from "@mui/joy/styles";
 import CssBaseline from "@mui/joy/CssBaseline";
 import Box from "@mui/joy/Box";
 import Sidebar from "../../component/Partials/Sidebar";
-import AllVendors from "../../component/AllVendors";
 import MainHeader from "../../component/Partials/MainHeader";
 import SubHeader from "../../component/Partials/SubHeader";
-import { useNavigate } from "react-router-dom";
-import { Button, IconButton, Modal, ModalDialog } from "@mui/joy";
-import { Add } from "@mui/icons-material";
-import AddVendor from "../../component/Forms/Add_Vendor";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Button, Modal, ModalDialog } from "@mui/joy";
 import { useState } from "react";
-import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import Vendor_Detail from "../../component/ViewVendor";
+import AddVendor from "../../component/Forms/Add_Vendor";
 
 function ViewVendors() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const id = searchParams.get("id") || "";
+
   const [openAddVendorModal, setOpenAddVendorModal] = useState(false);
-  console.log({ openAddVendorModal });
+  const [editVendorId, setEditVendorId] = useState(null);
+
+  const openEditModal = () => {
+    setEditVendorId(id);
+    setOpenAddVendorModal(true);
+  };
+
+  const closeModal = () => {
+    setOpenAddVendorModal(false);
+    setEditVendorId(null);
+  };
+
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -100,7 +111,28 @@ function ViewVendors() {
           title="Vendor Detail"
           isBackEnabled={true}
           sticky
-        ></SubHeader>
+          rightSlot={
+            <>
+              <Button
+                variant="outlined"
+                size="sm"
+                onClick={openEditModal}
+                sx={{
+                  color: "#3366a3",
+                  borderColor: "#3366a3",
+                  backgroundColor: "transparent",
+                  "--Button-hoverBg": "#e0e0e0",
+                  "--Button-hoverBorderColor": "#3366a3",
+                  "&:hover": { color: "#3366a3" },
+                  height: "8px",
+                }}
+              >
+                Edit Detail
+              </Button>
+            </>
+          }
+        />
+
         <Box
           component="main"
           className="MainContent"
@@ -116,6 +148,20 @@ function ViewVendors() {
         >
           <Vendor_Detail />
         </Box>
+
+        {/* Modal: opens AddVendor; if editVendorId is set, AddVendor runs in edit mode */}
+        <Modal open={openAddVendorModal} onClose={closeModal}>
+          <ModalDialog
+            aria-labelledby="edit-vendor-modal"
+            layout="center"
+            sx={{ p: 0, maxWidth: 1200, width: "96vw" }}
+          >
+            <AddVendor
+              setOpenAddVendorModal={setOpenAddVendorModal}
+              vendorId={editVendorId}
+            />
+          </ModalDialog>
+        </Modal>
       </Box>
     </CssVarsProvider>
   );
