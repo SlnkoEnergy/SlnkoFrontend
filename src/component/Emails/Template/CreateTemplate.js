@@ -254,7 +254,7 @@ const CreateTemplate = forwardRef(function CreateTemplate(
   const removeAttachment = (i) => {
     setFormData((p) => ({
       ...p,
-      attachments: p.attachments.filter((_, idx) => idx !== i),
+      attachments: p.attachments?.filter((_, idx) => idx !== i),
     }));
   };
 
@@ -270,7 +270,7 @@ const CreateTemplate = forwardRef(function CreateTemplate(
   const removeTag = (t) =>
     setTemplateMeta((meta) => ({
       ...meta,
-      tags: meta.tags.filter((x) => x !== t),
+      tags: meta.tags?.filter((x) => x !== t),
     }));
   const onTagKeyDown = (e) => {
     if ((e.key === "Enter" || e.key === ",") && tagInput.trim()) {
@@ -327,7 +327,7 @@ const CreateTemplate = forwardRef(function CreateTemplate(
     });
     setFormData({
       from: Array.isArray(tpl.from) ? tpl.from[0] || "" : tpl.from || "",
-      to: tpl.to ? String(tpl.to).split(",").filter(Boolean) : [""],
+      to: tpl.to ? String(tpl.to).split(",")?.filter(Boolean) : [""],
       cc: Array.isArray(tpl.cc) && tpl.cc.length ? tpl.cc : [""],
       bcc: Array.isArray(tpl.bcc) && tpl.bcc.length ? tpl.bcc : [""],
       subject: tpl.subject || "",
@@ -344,9 +344,9 @@ const CreateTemplate = forwardRef(function CreateTemplate(
   const buildPayload = () => ({
     name: templateMeta.name?.trim(),
     identifier: templateMeta.identifier?.trim(),
-    to: (formData.to || []).filter(Boolean).join(","),
-    cc: (formData.cc || []).filter(Boolean),
-    bcc: (formData.bcc || []).filter(Boolean),
+    to: (formData.to || [])?.filter(Boolean).join(","),
+    cc: (formData.cc || [])?.filter(Boolean),
+    bcc: (formData.bcc || [])?.filter(Boolean),
     from: formData.from ? [formData.from] : [],
     subject: formData.subject || "",
     body: sanitizeRich(formData.body || ""),

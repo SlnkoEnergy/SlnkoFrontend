@@ -48,8 +48,8 @@ export const emailApi = createApi({
 
     //Templates
     getEmailTemplate: builder.query({
-      query: ({ page = 1, search = "", limit = 10, tags }) =>
-        `/template?page=${page}&search=${search}&limit=${limit}&tags=${tags}`,
+      query: ({ page = 1, search = "", limit = 10, tag, status }) =>
+        `/template?page=${page}&search=${search}&limit=${limit}&tag=${tag}&status=${status}`,
       transformResponse: (response) => ({
         data: response.data || [],
         pagination: response?.pagination || {},

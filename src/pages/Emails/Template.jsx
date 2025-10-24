@@ -28,7 +28,7 @@ import Navigation from "../../component/Emails/Template/Navigation";
 import SubHeader from "../../component/Partials/SubHeader";
 import MainHeader from "../../component/Partials/MainHeader";
 import Sidebar from "../../component/Partials/Sidebar";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   useGetEmailTemplateQuery,
   useUpdateEmailTemplateStatusMutation,
@@ -43,11 +43,15 @@ export default function Template() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedTag, setSelectedTag] = useState("");
   const [snack, setSnack] = useState({
     open: false,
     color: "success",
     msg: "",
   });
+
   useEffect(() => {
     const onKey = (e) => {
       const isMac = navigator.platform.toUpperCase().includes("MAC");
@@ -72,8 +76,8 @@ export default function Template() {
     isLoading,
     isFetching,
     error,
-  } = useGetEmailTemplateQuery({});
-
+  } = useGetEmailTemplateQuery({ status: selectedStatus, tag: selectedTag });
+  const status = searchParams.get("status") || "";
   const templates = Array.isArray(getTemplate?.data) ? getTemplate.data : [];
 
   const formatDate = (iso) => {
@@ -112,7 +116,6 @@ export default function Template() {
     }
   };
 
-
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -121,7 +124,10 @@ export default function Template() {
 
         {drawerOpen && (
           <Layout.SideDrawer onClose={() => setDrawerOpen(false)}>
-            <Navigation />
+            <Navigation
+              setSelectedStatus={setSelectedStatus}
+              setSelectedTag={setSelectedTag}
+            />
           </Layout.SideDrawer>
         )}
 
@@ -278,7 +284,10 @@ export default function Template() {
             ]}
           >
             <Layout.SideNav>
-              <Navigation />
+              <Navigation
+                setSelectedStatus={setSelectedStatus}
+                setSelectedTag={setSelectedTag}
+              />
             </Layout.SideNav>
 
             <Layout.Main>
@@ -402,8 +411,12 @@ export default function Template() {
                                 setSelectedTemplate(tpl._id);
                                 handleMoveToTrash();
                               }}
+                              disabled={status === "trash"}
                             >
-                              <DeleteRoundedIcon color="danger" />
+                              <DeleteRoundedIcon
+                                variant="plain"
+                                color="danger"
+                              />
                               Move to Trash
                             </MenuItem>
                           </Menu>

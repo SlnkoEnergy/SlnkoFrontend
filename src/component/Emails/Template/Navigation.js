@@ -7,9 +7,10 @@ import ListItemDecorator from "@mui/joy/ListItemDecorator";
 import ListItemContent from "@mui/joy/ListItemContent";
 import FolderRoundedIcon from "@mui/icons-material/FolderRounded";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
-import { useGetTemplateUniqueTagsQuery } from "../../../redux/emailSlice";
 import { Skeleton } from "@mui/joy";
+import { useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useGetTemplateUniqueTagsQuery } from "../../../redux/emailSlice";
 
 const tagDotColor = (label = "") => {
   const palette = [
@@ -25,47 +26,80 @@ const tagDotColor = (label = "") => {
     h = (h * 31 + label.charCodeAt(i)) >>> 0;
   return palette[h % palette.length];
 };
-export default function Navigation() {
+
+export default function Navigation({
+  setSelectedStatus = () => {},
+  setSelectedTag = () => {},
+}) {
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // current url state
+  const tagParam = (searchParams.get("tags") || "").trim();
+  const statusParam = (searchParams.get("status") || "").trim();
+
+  const isTrash = statusParam === "trash";
+  const hasTag = !!tagParam;
+  const isMyTemplates = !isTrash && !hasTag;
+
+  useEffect(() => {
+    setSelectedStatus(statusParam || (isMyTemplates ? "active" : ""));
+    setSelectedTag(tagParam || "");
+  }, [statusParam, tagParam, isMyTemplates, setSelectedStatus, setSelectedTag]);
+
+  // tags data
   const {
     data: tagsResponse,
     isLoading: tagsLoading,
     isError: tagsError,
   } = useGetTemplateUniqueTagsQuery();
-  const tagParam = (searchParams.get("tags") || "").trim();
-  const tagsRaw = Array.isArray(tagsResponse?.data)
-    ? tagsResponse.tags
-    : Array.isArray(tagsResponse)
-    ? tagsResponse
-    : [];
-  const updateParam = (key, value) => {
-    const next = new URLSearchParams(searchParams);
-    if (value) next.set(key, value);
-    else next.delete(key);
 
-    if (key === "status") next.delete("tags");
-    if (key === "tags") next.delete("status");
+  const tags = useMemo(() => {
+    const raw = Array.isArray(tagsResponse?.data)
+      ? tagsResponse.data
+      : Array.isArray(tagsResponse)
+      ? tagsResponse
+      : [];
+    return raw
+      .filter((t) => typeof t === "string")
+      .map((t) => t.trim())
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b));
+  }, [tagsResponse]);
+
+  const writeParam = (key, value) => {
+    const next = new URLSearchParams(searchParams);
+
+    if (key === "status") {
+      if (value) next.set("status", value);
+      else next.delete("status");
+      next.delete("tags");
+      setSelectedStatus(value || "active");
+      setSelectedTag("");
+    }
+
+    if (key === "tags") {
+      if (value) next.set("tags", value);
+      else next.delete("tags");
+      next.delete("status");
+      setSelectedTag(value || "");
+      setSelectedStatus("");
+    }
 
     next.delete("page");
     setSearchParams(next);
   };
-  const tags = tagsRaw
-    .filter((t) => typeof t === "string")
-    .map((t) => t.trim())
-    .filter(Boolean)
-    .sort((a, b) => a.localeCompare(b));
-  console.log({ tags });
-  const selectedTag = tagParam || null;
-  const handleClickTag = (tag) => {
-    updateParam("tags", tag);
-  };
+
+  // click handlers
+  const handleMyTemplates = () => writeParam("status", ""); // clears both
+  const handleTrash = () => writeParam("status", "trash");
+  const handleClickTag = (tag) => writeParam("tags", tag);
 
   return (
     <List size="sm" sx={{ "--ListItem-radius": "8px", "--List-gap": "4px" }}>
-      {/* ----- Browse Section ----- */}
+      {/* Browse */}
       <ListItem nested>
-        <ListSubheader sx={{ letterSpacing: "2px", fontWeight: "800" }}>
-          Browse
+        <ListSubheader sx={{ letterSpacing: "2px", fontWeight: 800 }}>
+          BROWSE
         </ListSubheader>
 
         <List
@@ -73,7 +107,10 @@ export default function Navigation() {
           sx={{ "& .JoyListItemButton-root": { p: "8px" } }}
         >
           <ListItem>
-            <ListItemButton selected>
+            <ListItemButton
+              selected={isMyTemplates}
+              onClick={handleMyTemplates}
+            >
               <ListItemDecorator>
                 <FolderRoundedIcon fontSize="small" />
               </ListItemDecorator>
@@ -82,7 +119,7 @@ export default function Navigation() {
           </ListItem>
 
           <ListItem>
-            <ListItemButton>
+            <ListItemButton selected={isTrash} onClick={handleTrash}>
               <ListItemDecorator>
                 <DeleteRoundedIcon fontSize="small" />
               </ListItemDecorator>
@@ -92,9 +129,10 @@ export default function Navigation() {
         </List>
       </ListItem>
 
+      {/* Tags */}
       <ListItem nested sx={{ mt: 2 }}>
         <ListSubheader sx={{ letterSpacing: "2px", fontWeight: 800 }}>
-          Tags
+          TAGS
         </ListSubheader>
 
         <List
@@ -104,7 +142,7 @@ export default function Navigation() {
         >
           {tagsLoading &&
             [...Array(4)].map((_, i) => (
-              <ListItem key={`skeleton-${i}`}>
+              <ListItem key={`sk-${i}`}>
                 <ListItemButton disabled>
                   <ListItemDecorator>
                     <Skeleton
@@ -144,7 +182,7 @@ export default function Navigation() {
           {!tagsLoading &&
             !tagsError &&
             tags.map((tag) => {
-              const isSelected = selectedTag === tag;
+              const isSelected = tagParam === tag; // exactly one tag can be active
               return (
                 <ListItem key={tag}>
                   <ListItemButton
