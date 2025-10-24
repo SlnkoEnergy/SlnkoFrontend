@@ -1,12 +1,10 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { CssVarsProvider } from "@mui/joy/styles";
-import { FocusTrap } from "@mui/base/FocusTrap";
 import CssBaseline from "@mui/joy/CssBaseline";
 import Box from "@mui/joy/Box";
 import Typography from "@mui/joy/Typography";
 import Button from "@mui/joy/Button";
 import Stack from "@mui/joy/Stack";
-import CreateRoundedIcon from "@mui/icons-material/CreateRounded";
 import EmailRoundedIcon from "@mui/icons-material/EmailRounded";
 import PeopleAltRoundedIcon from "@mui/icons-material/PeopleAltRounded";
 import FolderRoundedIcon from "@mui/icons-material/FolderRounded";
@@ -14,7 +12,6 @@ import Layout from "../../component/Emails/Email/Layout";
 import Navigation from "../../component/Emails/Email/Navigation";
 import Mails from "../../component/Emails/Email/Mails";
 import EmailContent from "../../component/Emails/Email/EmailContent";
-import WriteEmail from "../../component/Emails/Email/WriteEmail";
 import SubHeader from "../../component/Partials/SubHeader";
 import MainHeader from "../../component/Partials/MainHeader";
 import { useNavigate } from "react-router-dom";
@@ -26,22 +23,6 @@ export default function Email() {
   const [selectedEmail, setSelectedEmail] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState("queued");
   const [selectedTag, setSelectedTag] = useState(null);
-  const [open, setOpen] = useState(false);
-
-  React.useEffect(() => {
-    const onKey = (e) => {
-      const isMac = navigator.platform.toUpperCase().includes("MAC");
-      if (
-        (isMac && e.metaKey && e.key.toLowerCase() === "n") ||
-        (!isMac && e.ctrlKey && e.key.toLowerCase() === "n")
-      ) {
-        e.preventDefault();
-        setOpen(true);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -194,19 +175,6 @@ export default function Email() {
                     My inbox
                   </Typography>
                 </Box>
-
-                <Button
-                  size="sm"
-                  startDecorator={<CreateRoundedIcon />}
-                  onClick={() => setOpen(true)}
-                  sx={{ ml: "auto" }}
-                >
-                  Compose email
-                </Button>
-
-                <FocusTrap open={open} disableAutoFocus disableEnforceFocus>
-                  <WriteEmail open={open} onClose={() => setOpen(false)} />
-                </FocusTrap>
               </Box>
 
               {/* Mails list */}

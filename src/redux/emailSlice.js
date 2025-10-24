@@ -56,6 +56,44 @@ export const emailApi = createApi({
       }),
       providesTags: () => [{ type: "Email", id: "LIST" }],
     }),
+    createEmailTemplate: builder.mutation({
+      query: (data) => ({
+        url: `/template`,
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: [{ type: "Email", id: "LIST" }],
+    }),
+    getEmailTemplateById: builder.query({
+      query: (id) => `/template/${id}`,
+      providesTags: (result, error, id) => [{ type: "Email", id }],
+    }),
+    updateEmailTemplate: builder.mutation({
+      query: ({ id, data }) => ({
+        url: `/template/${id}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Email", id },
+        { type: "Email", id: "LIST" },
+      ],
+    }),
+    updateEmailTemplateStatus: builder.mutation({
+      query: ({ id, status }) => ({
+        url: `/template/${id}/status`,
+        method: "PUT",
+        body: { status },
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Email", id },
+        { type: "Email", id: "LIST" },
+      ],
+    }),
+    getTemplateUniqueTags: builder.query({
+      query: () => `/template/tags`,
+      providesTags: (result, error, id) => [{ type: "Email", id }],
+    }),
   }),
 });
 
@@ -64,5 +102,10 @@ export const {
   useGetEmailByIdQuery,
   useUpdateEmailStatusMutation,
   useGetUniqueTagsQuery,
-  useGetEmailTemplateQuery
+  useGetEmailTemplateQuery,
+  useCreateEmailTemplateMutation,
+  useGetEmailTemplateByIdQuery,
+  useUpdateEmailTemplateMutation,
+  useUpdateEmailTemplateStatusMutation,
+  useGetTemplateUniqueTagsQuery,
 } = emailApi;

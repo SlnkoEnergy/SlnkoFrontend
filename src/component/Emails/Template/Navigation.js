@@ -1,4 +1,3 @@
-import React from "react";
 import Box from "@mui/joy/Box";
 import List from "@mui/joy/List";
 import ListSubheader from "@mui/joy/ListSubheader";
@@ -7,10 +6,60 @@ import ListItemButton from "@mui/joy/ListItemButton";
 import ListItemDecorator from "@mui/joy/ListItemDecorator";
 import ListItemContent from "@mui/joy/ListItemContent";
 import FolderRoundedIcon from "@mui/icons-material/FolderRounded";
-import ShareRoundedIcon from "@mui/icons-material/ShareRounded";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
+import { useGetTemplateUniqueTagsQuery } from "../../../redux/emailSlice";
+import { Skeleton } from "@mui/joy";
+import { useSearchParams } from "react-router-dom";
 
+const tagDotColor = (label = "") => {
+  const palette = [
+    "primary.500",
+    "success.500",
+    "warning.500",
+    "danger.500",
+    "info.500",
+    "neutral.500",
+  ];
+  let h = 0;
+  for (let i = 0; i < label.length; i++)
+    h = (h * 31 + label.charCodeAt(i)) >>> 0;
+  return palette[h % palette.length];
+};
 export default function Navigation() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const {
+    data: tagsResponse,
+    isLoading: tagsLoading,
+    isError: tagsError,
+  } = useGetTemplateUniqueTagsQuery();
+  const tagParam = (searchParams.get("tags") || "").trim();
+  const tagsRaw = Array.isArray(tagsResponse?.data)
+    ? tagsResponse.tags
+    : Array.isArray(tagsResponse)
+    ? tagsResponse
+    : [];
+  const updateParam = (key, value) => {
+    const next = new URLSearchParams(searchParams);
+    if (value) next.set(key, value);
+    else next.delete(key);
+
+    if (key === "status") next.delete("tags");
+    if (key === "tags") next.delete("status");
+
+    next.delete("page");
+    setSearchParams(next);
+  };
+  const tags = tagsRaw
+    .filter((t) => typeof t === "string")
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b));
+  console.log({ tags });
+  const selectedTag = tagParam || null;
+  const handleClickTag = (tag) => {
+    updateParam("tags", tag);
+  };
+
   return (
     <List size="sm" sx={{ "--ListItem-radius": "8px", "--List-gap": "4px" }}>
       {/* ----- Browse Section ----- */}
@@ -28,16 +77,7 @@ export default function Navigation() {
               <ListItemDecorator>
                 <FolderRoundedIcon fontSize="small" />
               </ListItemDecorator>
-              <ListItemContent>My files</ListItemContent>
-            </ListItemButton>
-          </ListItem>
-
-          <ListItem>
-            <ListItemButton>
-              <ListItemDecorator>
-                <ShareRoundedIcon fontSize="small" />
-              </ListItemDecorator>
-              <ListItemContent>Shared files</ListItemContent>
+              <ListItemContent>My Templates</ListItemContent>
             </ListItemButton>
           </ListItem>
 
@@ -52,83 +92,88 @@ export default function Navigation() {
         </List>
       </ListItem>
 
-      {/* ----- Tags Section ----- */}
       <ListItem nested sx={{ mt: 2 }}>
-        <ListSubheader sx={{ letterSpacing: "2px", fontWeight: "800" }}>
+        <ListSubheader sx={{ letterSpacing: "2px", fontWeight: 800 }}>
           Tags
         </ListSubheader>
 
         <List
           aria-labelledby="nav-list-tags"
           size="sm"
-          sx={{
-            "--ListItemDecorator-size": "32px",
-            "& .JoyListItemButton-root": { p: "8px" },
-          }}
+          sx={{ "--ListItemDecorator-size": "32px" }}
         >
-          <ListItem>
-            <ListItemButton>
-              <ListItemDecorator>
-                <Box
-                  sx={{
-                    width: "10px",
-                    height: "10px",
-                    borderRadius: "99px",
-                    bgcolor: "primary.500",
-                  }}
-                />
-              </ListItemDecorator>
-              <ListItemContent>Personal</ListItemContent>
-            </ListItemButton>
-          </ListItem>
+          {tagsLoading &&
+            [...Array(4)].map((_, i) => (
+              <ListItem key={`skeleton-${i}`}>
+                <ListItemButton disabled>
+                  <ListItemDecorator>
+                    <Skeleton
+                      variant="circular"
+                      width={10}
+                      height={10}
+                      sx={{ borderRadius: 99 }}
+                    />
+                  </ListItemDecorator>
+                  <ListItemContent>
+                    <Skeleton variant="text" level="body-sm" width={120} />
+                  </ListItemContent>
+                </ListItemButton>
+              </ListItem>
+            ))}
 
-          <ListItem>
-            <ListItemButton>
-              <ListItemDecorator>
-                <Box
-                  sx={{
-                    width: "10px",
-                    height: "10px",
-                    borderRadius: "99px",
-                    bgcolor: "danger.500",
-                  }}
-                />
-              </ListItemDecorator>
-              <ListItemContent>Work</ListItemContent>
-            </ListItemButton>
-          </ListItem>
+          {tagsError && (
+            <ListItem>
+              <ListItemContent>
+                <Box sx={{ color: "danger.600", fontSize: 12 }}>
+                  Failed to load tags
+                </Box>
+              </ListItemContent>
+            </ListItem>
+          )}
 
-          <ListItem>
-            <ListItemButton>
-              <ListItemDecorator>
-                <Box
-                  sx={{
-                    width: "10px",
-                    height: "10px",
-                    borderRadius: "99px",
-                    bgcolor: "warning.400",
-                  }}
-                />
-              </ListItemDecorator>
-              <ListItemContent>Travels</ListItemContent>
-            </ListItemButton>
-          </ListItem>
+          {!tagsLoading && !tagsError && tags.length === 0 && (
+            <ListItem>
+              <ListItemContent>
+                <Box sx={{ color: "text.tertiary", fontSize: 12 }}>
+                  No tags found
+                </Box>
+              </ListItemContent>
+            </ListItem>
+          )}
 
-          <ListItem>
-            <ListItemButton>
-              <ListItemDecorator>
-                <Box
-                  sx={{
-                    width: "10px",
-                    height: "10px",
-                    borderRadius: "99px",
-                    bgcolor: "success.400",
-                  }}
-                />
-              </ListItemDecorator>
-              <ListItemContent>Concert tickets</ListItemContent>
-            </ListItemButton>
-          </ListItem>
+          {!tagsLoading &&
+            !tagsError &&
+            tags.map((tag) => {
+              const isSelected = selectedTag === tag;
+              return (
+                <ListItem key={tag}>
+                  <ListItemButton
+                    selected={isSelected}
+                    onClick={() => handleClickTag(tag)}
+                    sx={{
+                      ...(isSelected && {
+                        bgcolor: "neutral.softBg",
+                        "&:hover": { bgcolor: "neutral.softHoverBg" },
+                      }),
+                    }}
+                  >
+                    <ListItemDecorator>
+                      <Box
+                        sx={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: "99px",
+                          bgcolor: tagDotColor(tag),
+                        }}
+                      />
+                    </ListItemDecorator>
+                    <ListItemContent>
+                      {tag.charAt(0).toUpperCase() + tag.slice(1)}
+                    </ListItemContent>
+                  </ListItemButton>
+                </ListItem>
+              );
+            })}
         </List>
       </ListItem>
     </List>

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { CssVarsProvider } from "@mui/joy/styles";
 import CssBaseline from "@mui/joy/CssBaseline";
 import AspectRatio from "@mui/joy/AspectRatio";
@@ -14,30 +14,59 @@ import Menu from "@mui/joy/Menu";
 import MenuButton from "@mui/joy/MenuButton";
 import MenuItem from "@mui/joy/MenuItem";
 import Chip from "@mui/joy/Chip";
-
+import { FocusTrap } from "@mui/base/FocusTrap";
 import FolderRoundedIcon from "@mui/icons-material/FolderRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import MoreVertRoundedIcon from "@mui/icons-material/MoreVertRounded";
 import InsertDriveFileRoundedIcon from "@mui/icons-material/InsertDriveFileRounded";
-import ShareRoundedIcon from "@mui/icons-material/ShareRounded";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
 import EmailRoundedIcon from "@mui/icons-material/EmailRounded";
 import PeopleAltRoundedIcon from "@mui/icons-material/PeopleAltRounded";
-
+import CreateRoundedIcon from "@mui/icons-material/CreateRounded";
 import Layout from "../../component/Emails/Template/Layout";
 import Navigation from "../../component/Emails/Template/Navigation";
 import SubHeader from "../../component/Partials/SubHeader";
 import MainHeader from "../../component/Partials/MainHeader";
 import Sidebar from "../../component/Partials/Sidebar";
-
 import { useNavigate } from "react-router-dom";
-import { useGetEmailTemplateQuery } from "../../redux/emailSlice";
+import {
+  useGetEmailTemplateQuery,
+  useUpdateEmailTemplateStatusMutation,
+} from "../../redux/emailSlice";
+import CreateTemplate from "../../component/Emails/Template/CreateTemplate";
+import Portal from "../../component/Portal";
+import { Snackbar } from "@mui/joy";
+import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 
 export default function Template() {
-  const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [snack, setSnack] = useState({
+    open: false,
+    color: "success",
+    msg: "",
+  });
+  useEffect(() => {
+    const onKey = (e) => {
+      const isMac = navigator.platform.toUpperCase().includes("MAC");
+      const key = e.key?.toLowerCase();
+      if (
+        (isMac && e.metaKey && key === "n") ||
+        (!isMac && e.ctrlKey && key === "n")
+      ) {
+        e.preventDefault();
+        setSelectedTemplate(null);
+        setOpen(true);
+      } else if (key === "escape") {
+        setOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
-  // ✅ Fetch templates
   const {
     data: getTemplate,
     isLoading,
@@ -60,6 +89,29 @@ export default function Template() {
       return "";
     }
   };
+  const [updateEmailTemplateStatus] = useUpdateEmailTemplateStatusMutation();
+
+  const handleMoveToTrash = async () => {
+    if (!selectedTemplate) return;
+    try {
+      await updateEmailTemplateStatus({
+        id: selectedTemplate,
+        status: "trash",
+      }).unwrap();
+      setSnack({
+        open: true,
+        color: "success",
+        msg: "Email Template moved to trash.",
+      });
+    } catch (err) {
+      setSnack({
+        open: true,
+        color: "danger",
+        msg: String(err?.data?.message || err?.message || "Failed to move."),
+      });
+    }
+  };
+
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -164,7 +216,37 @@ export default function Template() {
           </Box>
         </MainHeader>
 
-        <SubHeader title="Email Templates" isBackEnabled sticky />
+        <SubHeader
+          title="Email Templates"
+          isBackEnabled
+          sticky
+          rightSlot={
+            <>
+              <Button
+                size="sm"
+                startDecorator={<CreateRoundedIcon />}
+                onClick={() => {
+                  setSelectedTemplate(null);
+                  setOpen(true);
+                }}
+                sx={{ ml: "auto" }}
+              >
+                Compose email
+              </Button>
+              {open && (
+                <Portal>
+                  <FocusTrap open disableAutoFocus disableEnforceFocus>
+                    <CreateTemplate
+                      selectedTemplate={selectedTemplate}
+                      open={open}
+                      onClose={() => setOpen(false)}
+                    />
+                  </FocusTrap>
+                </Portal>
+              )}
+            </>
+          }
+        />
 
         {/* Main content */}
         <Box
@@ -219,8 +301,16 @@ export default function Template() {
                   }}
                 >
                   {templates.map((tpl) => (
-                    <Card key={tpl._id} variant="outlined" size="sm">
-                      {/* Header section */}
+                    <Card
+                      key={tpl._id}
+                      variant="outlined"
+                      size="sm"
+                      sx={{
+                        cursor: "default",
+                        "&:hover": { boxShadow: "sm" },
+                      }}
+                    >
+                      {/* Header */}
                       <Box sx={{ display: "flex", alignItems: "center" }}>
                         <Box sx={{ flex: 1 }}>
                           <Typography level="title-md" noWrap>
@@ -258,15 +348,17 @@ export default function Template() {
                           </Box>
                         </Box>
 
-                        {/* Menu */}
+                        {/* Menu (only place that opens editor for edit) */}
                         <Dropdown>
                           <MenuButton
                             variant="plain"
                             size="sm"
+                            onClick={(e) => e.stopPropagation()}
                             sx={{
                               maxWidth: 32,
                               maxHeight: 32,
                               borderRadius: "9999999px",
+                              cursor: "pointer",
                             }}
                           >
                             <IconButton
@@ -274,6 +366,7 @@ export default function Template() {
                               variant="plain"
                               color="neutral"
                               size="sm"
+                              sx={{ cursor: "pointer" }}
                             >
                               <MoreVertRoundedIcon />
                             </IconButton>
@@ -287,14 +380,31 @@ export default function Template() {
                               gap: 1,
                               "--ListItem-radius": "var(--joy-radius-sm)",
                             }}
+                            onClick={(e) => e.stopPropagation()}
                           >
-                            <MenuItem>
+                            <MenuItem
+                              onClick={() => {
+                                setSelectedTemplate(tpl._id);
+                                setOpen(true);
+                              }}
+                              sx={{ cursor: "pointer" }}
+                            >
                               <EditRoundedIcon />
                               Edit template
                             </MenuItem>
-                            <MenuItem sx={{ textColor: "danger.500" }}>
+                            <MenuItem
+                              sx={{
+                                textColor: "danger.500",
+                                cursor: "pointer",
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedTemplate(tpl._id);
+                                handleMoveToTrash();
+                              }}
+                            >
                               <DeleteRoundedIcon color="danger" />
-                              Delete template
+                              Move to Trash
                             </MenuItem>
                           </Menu>
                         </Dropdown>
@@ -311,10 +421,7 @@ export default function Template() {
                         <AspectRatio
                           ratio="16/9"
                           color="primary"
-                          sx={{
-                            borderRadius: 0,
-                            color: "primary.plainColor",
-                          }}
+                          sx={{ borderRadius: 0, color: "primary.plainColor" }}
                         >
                           <Box
                             sx={{
@@ -340,6 +447,25 @@ export default function Template() {
           </Layout.Root>
         </Box>
       </Box>
+      <Snackbar
+        color={snack.color}
+        open={snack.open}
+        onClose={() => setSnack((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        startDecorator={<CheckCircleRoundedIcon />}
+        endDecorator={
+          <Button
+            onClick={() => setSnack((s) => ({ ...s, open: false }))}
+            size="sm"
+            variant="soft"
+            color="neutral"
+          >
+            Dismiss
+          </Button>
+        }
+      >
+        {snack.msg}
+      </Snackbar>
     </CssVarsProvider>
   );
 }
