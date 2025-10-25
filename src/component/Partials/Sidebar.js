@@ -1797,7 +1797,7 @@ function Sidebar() {
               </ListItemButton>
             </ListItem>
           </List>
-        ) : user?.department === "Logistic" ? (
+        ) : user?.department === "Logistic" || user?.name === "Rajan Jha" ? (
           <List
             size="sm"
             sx={{
