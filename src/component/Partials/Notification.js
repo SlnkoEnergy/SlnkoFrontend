@@ -187,6 +187,8 @@ const AppNotification = () => {
         <NovuProvider
           subscriberId={subscribeId}
           applicationIdentifier={process.env.REACT_APP_NOVU_IDENTIFIER}
+          backendUrl={process.env.REACT_APP_NOVU_BACKEND_URL}
+          socketUrl={process.env.REACT_APP_NOVU_SOCKET_URL}
         >
           <div
             style={{

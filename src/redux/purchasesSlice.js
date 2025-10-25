@@ -27,12 +27,11 @@ export const purchasesApi = createApi({
       query: () => "get-all-pO-IT",
       providesTags: ["Purchase"],
     }),
-   
+
 
     getPaginatedPOs: builder.query({
-      query: (args = {}) => ({
-        url: "get-paginated-po",
-        params: clean({
+      query: (args = {}) => {
+        const params = clean({
           page: args.page ?? 1,
           search: args.search ?? "",
           status: args.status,         
@@ -55,6 +54,7 @@ export const purchasesApi = createApi({
         total: response.meta?.total || 0,
         count: response.meta?.count || 0,
       }),
+
       providesTags: ["Purchase"],
 
       forceRefetch({ currentArg, previousArg }) {
@@ -64,6 +64,7 @@ export const purchasesApi = createApi({
         );
       },
     }),
+
 
     getItems: builder.query({
       query: () => "get-iteM-IT",
@@ -227,14 +228,14 @@ export const purchasesApi = createApi({
       invalidatesTags: ["Logistic"],
     }),
     // 👇 NEW: Bulk mark as delivered
-   bulkDeliverPOs: builder.mutation({
-     query: ({ ids, remarks, date }) => ({
-       url: `bulk-mark-delivered`,
-       method: "PUT",
-       body: clean({ ids, remarks, date }),
-     }),
-     invalidatesTags: ["Purchase", "Logistic"], // refresh PO table (& logistics if you display them)
-   }),
+    bulkDeliverPOs: builder.mutation({
+      query: ({ ids, remarks, date }) => ({
+        url: `bulk-mark-delivered`,
+        method: "PUT",
+        body: clean({ ids, remarks, date }),
+      }),
+      invalidatesTags: ["Purchase", "Logistic"], // refresh PO table (& logistics if you display them)
+    }),
   }),
 });
 
@@ -257,5 +258,5 @@ export const {
   useUpdateLogisticStatusMutation,
   useLazyGetLogisticsHistoryQuery,
   useAddLogisticHistoryMutation,
-   useBulkDeliverPOsMutation,
+  useBulkDeliverPOsMutation,
 } = purchasesApi;

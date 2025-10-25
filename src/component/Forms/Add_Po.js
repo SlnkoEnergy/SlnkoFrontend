@@ -1628,7 +1628,7 @@ const AddPurchaseOrder = ({
       display={"flex"}
       flexDirection={"column"}
       sx={{
-        ml: fromModal ? 0 : { xs: "2%", lg: "6%", xl: "12%" },
+        ml: fromModal ? 0 : { xs: "0%", lg: "12%", xl: "20%" },
         maxWidth: fromModal ? "full" : 1400,
         p: 3,
       }}

@@ -17,7 +17,6 @@ import { toast } from "react-toastify";
 const Add_Money = () => {
   const navigate = useNavigate();
   const [formValues, setFormValues] = useState({
-    submittedBy: "",
     p_id: "",
     name: "",
     code: "",
@@ -29,63 +28,52 @@ const Add_Money = () => {
     comment: "",
   });
 
+  const [submittedBy, setSubmittedBy] = useState("");
   const [error, setError] = useState("");
-  const [responseMessage, setResponseMessage] = useState("");
-  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-   useEffect(() => {
-    const userData = getUserData();
-  if (userData && userData.name) {
-    setFormValues((prev) => ({
-      ...prev,
-      submittedBy: userData.name,
-    }));
-  }
-  setUser(userData);
-  // console.log("details are :", userData);
-}, []);
-  
-    const getUserData = () => {
-      const userData = localStorage.getItem("userDetails");
-      console.log("Add money :", userData);
-      if (userData) {
-        return JSON.parse(userData);
-      }
-      return null;
-    };
-
+  useEffect(() => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      const parsed = JSON.parse(userData);
+      if (parsed?.name) setSubmittedBy(parsed.name);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchProjectData = async () => {
       try {
         const token = localStorage.getItem("authToken");
-        const response = await Axios.get("/get-all-projecT-IT", {
-          headers: {
-            "x-auth-token": token,
-          },
+        const storedProjectId = Number(localStorage.getItem("add_money"));
+
+        console.log(storedProjectId);
+
+        if (!storedProjectId) {
+          setError("No project ID found in local storage.");
+          return;
+        }
+
+        const response = await Axios.get(`/project?p_id=${storedProjectId}`, {
+          headers: { "x-auth-token": token },
         });
-        let project = localStorage.getItem("add_money");
 
-        project = Number.parseInt(project);
+        let project = response?.data?.data;
 
+        if (Array.isArray(project)) {
+          project = project[0];
+        }
 
-
-        if (response && response.data && response.data.data) {
-          const matchingItem = response.data.data.find(
-            (item) => item.p_id === project
-          );
-
-          if (matchingItem) {
+        if (project) {
           setFormValues((prev) => ({
             ...prev,
-            p_id: matchingItem.p_id || "",
-            code: matchingItem.code || "",
-            name: matchingItem.name || "",
-            customer: matchingItem.customer || "",
-            p_group: matchingItem.p_group || "",
+            p_id: project.p_id || "",
+            code: project.code || "",
+            name: project.name || "",
+            customer: project.customer || "",
+            p_group: project.p_group || "",
           }));
-        }} else {
-          setError("No projects found. Please add projects before proceeding.");
+        } else {
+          setError("No project found for the given Project ID.");
         }
       } catch (err) {
         console.error("Error fetching project data:", err);
@@ -98,10 +86,10 @@ const Add_Money = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if(name === "cr_amount" && value < 0){
-          toast.warning("Credit Amount can't be Negative !!")
-          return;
-        }
+    if (name === "cr_amount" && value < 0) {
+      toast.warning("Credit Amount cannot be negative!");
+      return;
+    }
     setFormValues((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -109,40 +97,32 @@ const Add_Money = () => {
     setFormValues((prev) => ({ ...prev, cr_mode: newValue || "" }));
   };
 
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const { cr_amount, cr_date, cr_mode, comment, submittedBy, p_id } = formValues;
+    const { p_id, cr_amount, cr_date, cr_mode, comment } = formValues;
 
-    if (!cr_amount || !cr_date || !cr_mode || !comment || !submittedBy) {
-      alert("All fields are required. Please fill out the form completely.");
+    if (!p_id || !cr_amount || !cr_date || !cr_mode || !comment) {
+      toast.error("Please fill all required fields.");
       return;
     }
 
-    const payload = {
-      p_id,
-      p_group: formValues.p_group,
-      cr_amount,
-      cr_date,
-      cr_mode,
-      comment,
-      submittedBy
-    };
+    const payload = { p_id, cr_amount, cr_date, cr_mode, comment };
 
     try {
+      setLoading(true);
       const token = localStorage.getItem("authToken");
-      await Axios.post("/Add-MoneY-IT", payload , {
-        headers: {"x-auth-token": token}
+      await Axios.post("/Add-MoneY-IT", payload, {
+        headers: { "x-auth-token": token },
       });
-      setResponseMessage("Form submitted successfully!");
-      toast.success("Money Added Successfully ")
+
+      toast.success("Money added successfully!");
       navigate("/project-balance");
-      // console.log("Form submission response:", response.data);
     } catch (error) {
       console.error("Error submitting form:", error);
-      toast.error("Something went Error !!")
-      setResponseMessage("Failed to add money. Please try again.");
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -153,28 +133,27 @@ const Add_Money = () => {
         justifyContent: "center",
         alignItems: "center",
         minHeight: "100vh",
-        width:'100%',
+        width: "100%",
         backgroundColor: "neutral.softBg",
-        padding: 3,
-        
+        p: 3,
       }}
     >
       <Box
         sx={{
           maxWidth: 900,
-          width: '100%',
-          padding: { xs: 2, md: 4 },
+          width: "100%",
+          p: { xs: 2, md: 4 },
           boxShadow: 3,
           borderRadius: "md",
           backgroundColor: "background.surface",
-          
         }}
       >
-        <Box textAlign="center" mb={4}>
+        {/* Header */}
+        <Box textAlign="center" mb={3}>
           <img
             src={Img6}
             alt="Add Money"
-            style={{ height: "50px", marginBottom: "10px", maxWidth: "100%" }}
+            style={{ height: 50, marginBottom: 10 }}
           />
           <Typography
             level="h4"
@@ -206,16 +185,15 @@ const Add_Money = () => {
               <Input
                 fullWidth
                 placeholder="Submitted By"
-                name="submittedBy"
-                value={formValues.submittedBy || "Loading ..."}
+                value={submittedBy || "Loading..."}
                 disabled
               />
             </Grid>
             <Grid xs={12} sm={6}>
               <Input
                 fullWidth
-                placeholder="Project ID"
-                name="p_id"
+                placeholder="Project Code"
+                name="code"
                 value={formValues.code}
                 disabled
               />
@@ -248,11 +226,11 @@ const Add_Money = () => {
               />
             </Grid>
 
-            {/* Dynamic Fields */}
+            {/* Editable Fields */}
             <Grid xs={12}>
               <Input
                 fullWidth
-                placeholder="Credit Amount (INR ₹)"
+                placeholder="Credit Amount (₹)"
                 type="number"
                 name="cr_amount"
                 value={formValues.cr_amount}
@@ -276,12 +254,9 @@ const Add_Money = () => {
                 options={["Cash", "Account Transfer"]}
                 value={formValues.cr_mode}
                 onChange={handleAutocompleteChange}
-                isOptionEqualToValue={(option, value) =>
-                  option === value || value === ""
-                }
                 renderInput={(params) => (
                   <TextField
-                    {...params} // Spread the params onto TextField
+                    {...params}
                     fullWidth
                     placeholder="Credit Mode"
                     required
@@ -305,6 +280,7 @@ const Add_Money = () => {
               <Box textAlign="center" mt={2}>
                 <Button
                   type="submit"
+                  loading={loading}
                   sx={{
                     backgroundColor: "warning.400",
                     color: "text.primary",
@@ -324,12 +300,6 @@ const Add_Money = () => {
                 </Button>
               </Box>
             </Grid>
-
-            {responseMessage && (
-              <Typography level="body2" textAlign="center" sx={{ mt: 2 }}>
-                {responseMessage}
-              </Typography>
-            )}
           </Grid>
         </form>
       </Box>

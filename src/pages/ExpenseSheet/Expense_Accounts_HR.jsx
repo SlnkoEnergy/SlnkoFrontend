@@ -9,15 +9,383 @@ import Header from "../../component/Partials/Header";
 import Sidebar from "../../component/Partials/Sidebar";
 import { useNavigate } from "react-router-dom";
 import UpdateExpenseAccounts from "../../component/Expense Sheet/Expense Form/Acc_Hr_Update_Expense";
+import SubHeader from "../../component/Partials/SubHeader";
+import MainHeader from "../../component/Partials/MainHeader";
+import {
+  Button,
+  Stack,
+  Dropdown,
+  MenuButton,
+  Menu,
+  MenuItem,
+  CircularProgress,
+} from "@mui/joy";
+import { useEffect, useState } from "react";
+
+// export mutations
+import {
+  useExportExpenseToPDFMutation,
+  useExportExpenseToCSVMutation,
+} from "../../redux/expenseSlice";
 
 function Update_Expense() {
   const navigate = useNavigate();
+
+  const [rejectConfirmOpen, setRejectConfirmOpen] = useState(false);
+  const [showHoldAllDialog, setShowHoldAllDialog] = useState(false);
+  const [approveHRConfirmOpen, setHRApproveConfirmOpen] = useState(false);
+
+  const [showAccountsRejectAllDialog, setAccountsShowRejectAllDialog] =
+    useState(false);
+  const [showAccountsHoldAllDialog, setAccountsShowHoldAllDialog] =
+    useState(false);
+  const [approveAccountsConfirmOpen, setAccountsApproveConfirmOpen] =
+    useState(false);
+
+  const [user, setUser] = useState(null);
+
+  // lifted state from child
+  const [rows, setRows] = useState([]);
+  // 👇 NEW: disabled flags from child
+  const [isDisabledHR, setIsDisabledHR] = useState(true);
+  const [isDisabledAccounts, setIsDisabledAccounts] = useState(true);
+
+  const [downloadStatus, setDownloadStatus] = useState("");
+
+  const [triggerExportPdf] = useExportExpenseToPDFMutation();
+  const [triggerExportCsv] = useExportExpenseToCSVMutation();
+
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
+
+  const handleHrRejectAll = () => setRejectConfirmOpen(true);
+  const handleHrHoldAll = () => setShowHoldAllDialog(true);
+  const handleHrApproveAll = () => setHRApproveConfirmOpen(true);
+
+  // receive rows from child
+  const handleRowsUpdate = (incomingRows) => {
+    setRows(incomingRows || []);
+  };
+
+  // receive disabled flags from child
+  const handleDisabledChange = ({ hr, accounts }) => {
+    setIsDisabledHR(!!hr);
+    setIsDisabledAccounts(!!accounts);
+  };
+
+  // parent-side export handlers
+  const handleExportPDFById = async (expenseIds, withAttachment = true) => {
+    try {
+      setDownloadStatus("Preparing download...");
+      const blob = await triggerExportPdf({ expenseIds, withAttachment }).unwrap();
+
+      const url = window.URL.createObjectURL(
+        new Blob([blob], { type: "application/pdf" })
+      );
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `expenses_${Date.now()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      setTimeout(() => setDownloadStatus(""), 1000);
+    } catch (err) {
+      console.error("Error downloading PDF:", err);
+      setDownloadStatus("Download failed.");
+    }
+  };
+
+  const handleExportCSV = async (sheetIds) => {
+    try {
+      const blob = await triggerExportCsv({ sheetIds }).unwrap();
+      const url = window.URL.createObjectURL(
+        new Blob([blob], { type: "text/csv" })
+      );
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `expenses_${Date.now()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
-      <Box sx={{ display: "flex", minHeight: "100%" }}>
-        <Header />
+      <Box sx={{ display: "flex", minHeight: "100dvh" }}>
         <Sidebar />
+        <MainHeader title="Expense Sheet" sticky>
+          <Box display="flex" gap={1}>
+            {(user?.name === "Chandan Singh" ||
+              user?.name === "IT Team" ||
+              user?.department === "admin" ||
+              user?.department === "BD" ||
+              user?.department === "HR" ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" &&
+                (user?.name === "Naresh Kumar" ||
+                  user?.name === "Ranvijay Singh" ||
+                  user?.name === "Shruti Tripathi")) ||
+              user?.name === "Shantanu Sameer" ||
+              user?.department === "Projects" ||
+              user?.department === "Infra" ||
+              user?.department === "Marketing" ||
+              user?.department === "Internal" ||
+              user?.department === "Loan" ||
+              user?.department === "Logistic" ||
+              (user?.department === "Tender" &&
+                user?.name === "Satyadeep Mohanty")) ? (
+              <Button
+                size="sm"
+                onClick={() => navigate(`/expense_dashboard`)}
+                sx={{
+                  color: "white",
+                  bgcolor: "transparent",
+                  fontWeight: 500,
+                  fontSize: "1rem",
+                  letterSpacing: 0.5,
+                  borderRadius: "6px",
+                  px: 1.5,
+                  py: 0.5,
+                  "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+                }}
+              >
+                DashBoard
+              </Button>
+            ) : null}
+
+            {(user?.name === "IT Team" ||
+              user?.department === "BD" ||
+              (user?.department === "BD" &&
+                (user?.emp_id === "SE-277" || user?.emp_id === "SE-046")) ||
+              user?.department === "admin" ||
+              (user?.department === "Accounts" &&
+                user?.name === "Sujan Maharjan") ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              (user?.role === "manager" &&
+                (user?.name === "Naresh Kumar" ||
+                  user?.name === "Ranvijay Singh" ||
+                  user?.name === "Shruti Tripathi")) ||
+              (user?.role === "visitor" &&
+                (user?.name === "Sanjiv Kumar" ||
+                  user?.name === "Sushant Ranjan Dubey")) ||
+              ((user?.department === "Projects" &&
+                (user?.emp_id === "SE-203" ||
+                  user?.emp_id === "SE-212" ||
+                  user?.emp_id === "SE-205" ||
+                  user?.emp_id === "SE-010")) ||
+                user?.name === "Disha Sharma") ||
+              user?.department === "Engineering") ? (
+              <Button
+                size="sm"
+                onClick={() => navigate(`/expense_approval`)}
+                sx={{
+                  color: "white",
+                  bgcolor: "transparent",
+                  fontWeight: 500,
+                  fontSize: "1rem",
+                  letterSpacing: 0.5,
+                  borderRadius: "6px",
+                  px: 1.5,
+                  py: 0.5,
+                  "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+                }}
+              >
+                Expense Approval
+              </Button>
+            ) : null}
+
+            {(user?.name === "IT Team" ||
+              user?.department === "admin" ||
+              (user?.role === "manager" && user?.name === "Shruti Tripathi")) ? (
+              <Button
+                size="sm"
+                onClick={() => navigate(`/expense_hr`)}
+                sx={{
+                  color: "white",
+                  bgcolor: "transparent",
+                  fontWeight: 500,
+                  fontSize: "1rem",
+                  letterSpacing: 0.5,
+                  borderRadius: "6px",
+                  px: 1.5,
+                  py: 0.5,
+                  "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+                }}
+              >
+                HR Expense Approval
+              </Button>
+            ) : null}
+
+            {((user?.department === "Accounts" &&
+              (user?.name === "Deepak Kumar Maurya" ||
+                user?.name === "Gagan Tayal" ||
+                user?.name === "Ajay Singh" ||
+                user?.name === "Sachin Raghav" ||
+                user?.name === "Anamika Poonia" ||
+                user?.name === "Meena Verma" ||
+                user?.name === "Kailash Chand" ||
+                user?.name === "Chandan Singh")) ||
+              user?.name === "IT Team" ||
+              (user?.department === "Accounts" &&
+                user?.name === "Sujan Maharjan") ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.department === "admin") ? (
+              <Button
+                size="sm"
+                onClick={() => navigate(`/expense_accounts`)}
+                sx={{
+                  color: "white",
+                  bgcolor: "transparent",
+                  fontWeight: 500,
+                  fontSize: "1rem",
+                  letterSpacing: 0.5,
+                  borderRadius: "6px",
+                  px: 1.5,
+                  py: 0.5,
+                  "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+                }}
+              >
+                Account Expense Approval
+              </Button>
+            ) : null}
+          </Box>
+        </MainHeader>
+
+        <SubHeader title="Update Expense" isBackEnabled={true} sticky>
+          <Box display="flex" gap={2}>
+            {/* HR buttons */}
+            {(user?.name === "Shruti Tripathi" ||
+              user?.department === "admin" ||
+              user?.name === "IT Team") ? (
+              <>
+                <Button
+                  color="danger"
+                  size="sm"
+                  onClick={() => setRejectConfirmOpen(true)}
+                  disabled={isDisabledHR}              // 👈 use HR disabled
+                >
+                  Reject All
+                </Button>
+                <Button
+                  color="warning"
+                  size="sm"
+                  onClick={() => setShowHoldAllDialog(true)}
+                  disabled={isDisabledHR}              // 👈 use HR disabled
+                >
+                  Hold All
+                </Button>
+                <Button
+                  color="success"
+                  size="sm"
+                  onClick={() => setHRApproveConfirmOpen(true)}
+                  disabled={isDisabledHR}              // 👈 use HR disabled
+                >
+                  Approve All
+                </Button>
+              </>
+            ) : (
+              // Accounts buttons
+              user?.department === "Accounts" && (
+                <>
+                  <Button
+                    color="danger"
+                    size="sm"
+                    onClick={() => setAccountsShowRejectAllDialog(true)}
+                    disabled={isDisabledAccounts}       // 👈 use Accounts disabled
+                  >
+                    Reject All
+                  </Button>
+                  <Button
+                    color="warning"
+                    size="sm"
+                    onClick={() => setAccountsShowHoldAllDialog(true)}
+                    disabled={isDisabledAccounts}       // 👈 use Accounts disabled
+                  >
+                    Hold All
+                  </Button>
+                  <Button
+                    color="success"
+                    size="sm"
+                    onClick={() => setAccountsApproveConfirmOpen(true)}
+                    disabled={isDisabledAccounts}       // 👈 use Accounts disabled
+                  >
+                    Approve All
+                  </Button>
+
+                  {/* Export controls */}
+                  <Stack direction="row" spacing={1}>
+                    <Button
+                      onClick={() => handleExportCSV([rows[0]?._id])}
+                      size="sm"
+                      variant="outlined"
+                      disabled={!rows?.[0]?._id || isDisabledAccounts}  // optional
+                    >
+                      Export CSV
+                    </Button>
+
+                    <Dropdown>
+                      <MenuButton variant="outlined" size="sm" color="danger" disabled={!rows?.[0]?._id}>
+                        PDF
+                      </MenuButton>
+
+                      {downloadStatus && (
+                        <Box mt={2} display="flex" alignItems="center" gap={1}>
+                          {(downloadStatus.startsWith("Preparing") ||
+                            downloadStatus.startsWith("Downloading")) && (
+                              <CircularProgress size="sm" />
+                            )}
+                          <Typography level="body-sm">
+                            {downloadStatus}
+                          </Typography>
+                        </Box>
+                      )}
+
+                      <Menu>
+                        <MenuItem
+                          disabled={!rows?.[0]?._id}
+                          onClick={() => handleExportPDFById([rows[0]?._id], true)}
+                        >
+                          Download with Attachment
+                        </MenuItem>
+                        <MenuItem
+                          disabled={!rows?.[0]?._id}
+                          onClick={() => handleExportPDFById([rows[0]?._id], false)}
+                        >
+                          Download without Attachment
+                        </MenuItem>
+                      </Menu>
+                    </Dropdown>
+                  </Stack>
+                </>
+              )
+            )}
+          </Box>
+        </SubHeader>
+
         <Box
           component="main"
           className="MainContent"
@@ -25,68 +393,29 @@ function Update_Expense() {
             flex: 1,
             display: "flex",
             flexDirection: "column",
-            minWidth: 0,
-            height: "100dvh",
             gap: 1,
+            mt: "108px",
+            p: "16px",
+            px: "24px",
           }}
         >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              marginLeft: {
-                xs: "3vw",
-                sm: "3vw",
-                md: "3vw",
-                lg: "22vw",
-                xl: "16vw",
-              },
-              marginTop: {
-                xs: "10vh",
-                sm: "8vh",
-                md: "4vh",
-                lg: "2vh",
-                xl: "0vh",
-              },
-            }}
-          >
-            <Breadcrumbs
-              size="sm"
-              aria-label="breadcrumbs"
-              separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
-            >
-              <Link
-                underline="hover"
-                color="neutral"
-                href=""
-                sx={{ fontSize: 12, fontWeight: 500 }}
-               
-              >
-                Expense Approval Dashboard
-              </Link>
-              <Typography
-                color="primary"
-                sx={{ fontWeight: 500, fontSize: 12 }}
-              >
-                Update Expense
-              </Typography>
-            </Breadcrumbs>
-          </Box>
+          <UpdateExpenseAccounts
+            onRowsUpdate={handleRowsUpdate}
+            onDisabledChange={handleDisabledChange}  // 👈 capture disabled flags from child
 
-          <Box
-            sx={{
-              display: "flex",
-              mb: 1,
-              gap: 1,
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: { xs: "start", sm: "center" },
-              flexWrap: "wrap",
-              justifyContent: "space-between",
-            }}
-          >
-            <UpdateExpenseAccounts />
-          </Box>
+            rejectConfirmOpen={rejectConfirmOpen}
+            setRejectConfirmOpen={setRejectConfirmOpen}
+            showHoldAllDialog={showHoldAllDialog}
+            setShowHoldAllDialog={setShowHoldAllDialog}
+            approveHRConfirmOpen={approveHRConfirmOpen}
+            setHRApproveConfirmOpen={setHRApproveConfirmOpen}
+            showAccountsRejectAllDialog={showAccountsRejectAllDialog}
+            setAccountsShowRejectAllDialog={setAccountsShowRejectAllDialog}
+            setAccountsApproveConfirmOpen={setAccountsApproveConfirmOpen}
+            setAccountsShowHoldAllDialog={setAccountsShowHoldAllDialog}
+            showAccountsHoldAllDialog={showAccountsHoldAllDialog}
+            approveAccountsConfirmOpen={approveAccountsConfirmOpen}
+          />
         </Box>
       </Box>
     </CssVarsProvider>
