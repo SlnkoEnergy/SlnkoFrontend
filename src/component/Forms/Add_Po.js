@@ -64,13 +64,13 @@ const VENDOR_LIMIT = 7;
 const SEARCH_MORE_VENDOR = "__SEARCH_MORE_VENDOR__";
 const SEARCH_MORE_PRODUCT = "__SEARCH_MORE_PRODUCT__";
 const SEARCH_MORE_CATEGORY = "__SEARCH_MORE_CATEGORY__";
-const CREATE_PRODUCT = "__CREATE_PRODUCT__"
+const CREATE_PRODUCT = "__CREATE_PRODUCT__";
 
 /* ---------- DARK DISABLED HELPERS ---------- */
 const DISABLED_SX = {
-  opacity: 1, // prevent Joy default dimming (keeps text crisp)
-  pointerEvents: "none", // truly non-interactive
-  bgcolor: "neutral.softBg", // darker bg
+  opacity: 1,
+  pointerEvents: "none",
+  bgcolor: "neutral.softBg",
   color: "text.primary",
   borderColor: "neutral.outlinedBorder",
 };
@@ -87,7 +87,6 @@ const disabledTextareaProps = {
   slotProps: { textarea: { sx: { color: "text.primary" } } },
 };
 
-// react-select dark-disabled styles (uses Joy palette CSS vars)
 const rsx = {
   control: (base, state) => ({
     ...base,
@@ -113,8 +112,8 @@ const rsx = {
   }),
   input: (base) => ({ ...base, color: "var(--joy-palette-text-primary)" }),
 };
-/* ------------------------------------------- */
 
+/* ------------------------------------------- */
 const makeEmptyLine = () => ({
   id: crypto.randomUUID(),
   productId: "",
@@ -319,11 +318,7 @@ const AddPurchaseOrder = ({
       "taxPercent",
       Number(getInputValueByName(row, "GST", 0))
     );
-    updateLine(
-      activeLineId,
-      "make",
-      getInputValueByName(row, "Make", "N/A")
-    );
+    updateLine(activeLineId, "make", getInputValueByName(row, "Make", "N/A"));
     updateLine(activeLineId, "uom", getInputValueByName(row, "UoM", "N/A"));
 
     // ⛔️ No productCategoryId / productCategoryName updates
@@ -365,7 +360,11 @@ const AddPurchaseOrder = ({
 
   const onPickVendor = (row) => {
     if (!row) return;
-    setFormData((prev) => ({ ...prev, name: row.name || "" }));
+    setFormData((p) => ({
+      ...p,
+      vendor_id: row._id || "",
+      name: row.name || "",
+    }));
     setVendorModalOpen(false);
   };
 
@@ -379,6 +378,7 @@ const AddPurchaseOrder = ({
     project_code: project_code || "",
     po_number: poNumberPreset || poNumberQ || "",
     name: "",
+    vendor_id: "",
     date: "",
     po_value: "",
     po_basic: "",
@@ -409,10 +409,10 @@ const AddPurchaseOrder = ({
   const [lines, setLines] = useState(() =>
     Array.isArray(initialLines) && initialLines.length
       ? initialLines.map((l) => ({
-        ...makeEmptyLine(),
-        ...l,
-        id: crypto.randomUUID(),
-      }))
+          ...makeEmptyLine(),
+          ...l,
+          id: crypto.randomUUID(),
+        }))
       : [makeEmptyLine()]
   );
 
@@ -473,27 +473,27 @@ const AddPurchaseOrder = ({
     const arr = Array.isArray(po?.items)
       ? po.items
       : Array.isArray(po?.item)
-        ? po.item
-        : [];
+      ? po.item
+      : [];
     return arr.length
       ? arr.map((it) => ({
-        ...makeEmptyLine(),
-        isShow: true,
-        productCategoryId:
-          typeof it?.category === "object"
-            ? it?.category?._id ?? ""
-            : it?.category ?? "",
-        productCategoryName:
-          typeof it?.category === "object" ? it?.category?.name ?? "" : "",
-        productName: it?.product_name ?? "",
-        make: isValidMake(it?.product_make) ? it.product_make : "",
-        makeQ: isValidMake(it?.product_make) ? it.product_make : "",
-        briefDescription: it?.description ?? "",
-        uom: it?.uom ?? "",
-        quantity: Number(it?.quantity ?? 0),
-        unitPrice: Number(it?.cost ?? 0),
-        taxPercent: Number(it?.gst_percent ?? it?.gst ?? 0),
-      }))
+          ...makeEmptyLine(),
+          isShow: true,
+          productCategoryId:
+            typeof it?.category === "object"
+              ? it?.category?._id ?? ""
+              : it?.category ?? "",
+          productCategoryName:
+            typeof it?.category === "object" ? it?.category?.name ?? "" : "",
+          productName: it?.product_name ?? "",
+          make: isValidMake(it?.product_make) ? it.product_make : "",
+          makeQ: isValidMake(it?.product_make) ? it.product_make : "",
+          briefDescription: it?.description ?? "",
+          uom: it?.uom ?? "",
+          quantity: Number(it?.quantity ?? 0),
+          unitPrice: Number(it?.cost ?? 0),
+          taxPercent: Number(it?.gst_percent ?? it?.gst ?? 0),
+        }))
       : [makeEmptyLine()];
   };
 
@@ -521,6 +521,14 @@ const AddPurchaseOrder = ({
           toast.error("PO not found.");
           return;
         }
+
+        // 🔽 normalize vendor
+        const vObj =
+          po.vendor && typeof po.vendor === "object" ? po.vendor : null;
+
+        const vendor_id = vObj?._id || po.vendor_id || "";
+        const vendor_name = vObj?.name || po.vendor || "";
+
         setFetchedPoStatus(po?.current_status?.status || "draft");
         setFormData((prev) => ({
           ...prev,
@@ -532,7 +540,8 @@ const AddPurchaseOrder = ({
           total_bills: po?.total_bills ?? prev.total_bills ?? "",
           inspectionCount: po?.inspectionCount ?? prev.inspectionCount ?? "",
           createdAt: po?.createdAt ?? prev.createdAt ?? "",
-          name: po?.vendor ?? "",
+          vendor_id,
+          name: vendor_name,
           date: po?.date ?? "",
           partial_billing: po?.partial_billing ?? "",
           submitted_By: po?.submitted_By ?? prev.submitted_By,
@@ -549,7 +558,6 @@ const AddPurchaseOrder = ({
         setPoLoading(false);
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [poNumberQ, effectiveMode]);
 
   const statusNow = fetchedPoStatus;
@@ -577,9 +585,16 @@ const AddPurchaseOrder = ({
   };
 
   const handleVendorChange = (opt) => {
-    if (!opt) return setFormData((prev) => ({ ...prev, name: "" }));
-    if (opt.value === SEARCH_MORE_VENDOR) return setVendorModalOpen(true);
-    setFormData((prev) => ({ ...prev, name: opt.value || "" }));
+    if (!opt) {
+      setFormData((p) => ({ ...p, vendor_id: "", name: "" }));
+      return;
+    }
+    if (opt.value === SEARCH_MORE_VENDOR) {
+      setVendorModalOpen(true);
+      return;
+    }
+    // ✅ id goes to vendor_id, text to name
+    setFormData((p) => ({ ...p, vendor_id: opt.value, name: opt.label }));
   };
 
   useGetProductsQuery(
@@ -606,6 +621,7 @@ const AddPurchaseOrder = ({
     if (!categoryId || !productName) return [];
     const key = mkKey(categoryId, productName);
     if (makesCache[key]) return makesCache[key];
+
     const res = await triggerGetProducts(
       {
         search: productName,
@@ -626,8 +642,21 @@ const AddPurchaseOrder = ({
       )
       .map((r) => String(getProdField(r, "Make") || "").trim())
       .filter(isValidMake);
+
     const unique = Array.from(new Set(makes));
-    setMakesCache((prev) => ({ ...prev, [key]: unique }));
+
+    // ✅ only set if different
+    setMakesCache((prev) => {
+      if (
+        prev[key] &&
+        prev[key].length === unique.length &&
+        prev[key].every((v, i) => v === unique[i])
+      ) {
+        return prev;
+      }
+      return { ...prev, [key]: unique };
+    });
+
     return unique;
   };
 
@@ -658,7 +687,6 @@ const AddPurchaseOrder = ({
   const [createProdLineId, setCreateProdLineId] = useState(null);
 
   const openCreateProductForLine = (line) => {
-
     // if (!line?.productCategoryId || !line?.productName) {
     //   toast.error("Pick category and product name first.");
     //   return;
@@ -696,12 +724,10 @@ const AddPurchaseOrder = ({
       const cost = Number(getProdField(newProduct, "Cost") || 0);
       const desc = getProdField(newProduct, "Description") || "";
 
-      const catId =
-        newProduct?.category?._id || newProduct?.category || "";
+      const catId = newProduct?.category?._id || newProduct?.category || "";
 
       const currentLine = lines.find((x) => x.id === createProdLineId);
-      let catName =
-        (newProduct?.category && newProduct?.category?.name) || "";
+      let catName = (newProduct?.category && newProduct?.category?.name) || "";
       if (!catName && catId) {
         const found = categoryData?.find((c) => c._id === catId);
         if (found?.name) catName = found.name;
@@ -737,20 +763,27 @@ const AddPurchaseOrder = ({
     }
   };
 
-
   useEffect(() => {
-    setLines((prev) =>
-      prev.map((l) => {
+    setLines((prev) => {
+      let changed = false;
+      const next = prev.map((l) => {
         if (!l.productCategoryId || !l.productName || !l.make) return l;
+
         const list =
           makesCache[mkKey(l.productCategoryId, l.productName)] || [];
         const ok = list.some(
           (m) => String(m).toLowerCase() === String(l.make).toLowerCase()
         );
-        return ok ? l : { ...l, make: "" };
-      })
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+        if (!ok && l.make) {
+          changed = true;
+          return { ...l, make: "" };
+        }
+        return l;
+      });
+
+      return changed ? next : prev;
+    });
   }, [makesCache]);
 
   const [historyItems, setHistoryItems] = useState([]);
@@ -816,9 +849,9 @@ const AddPurchaseOrder = ({
         note: doc.message || "",
         attachments: Array.isArray(doc?.attachments)
           ? doc.attachments.map((a) => ({
-            name: a?.name || a?.attachment_name,
-            url: a?.url || a?.attachment_url,
-          }))
+              name: a?.name || a?.attachment_name,
+              url: a?.url || a?.attachment_url,
+            }))
           : [],
       };
     }
@@ -889,19 +922,19 @@ const AddPurchaseOrder = ({
     } else if (itemShape.kind === "amount_change") {
       const changes = Array.isArray(itemShape.changes)
         ? itemShape.changes.map((c, idx) => ({
-          label: c.label || c.path || `field_${idx + 1}`,
-          path: c.path,
-          from: Number(c.from ?? 0),
-          to: Number(c.to ?? 0),
-        }))
+            label: c.label || c.path || `field_${idx + 1}`,
+            path: c.path,
+            from: Number(c.from ?? 0),
+            to: Number(c.to ?? 0),
+          }))
         : [
-          {
-            label: itemShape.label || itemShape.field || "amount",
-            path: itemShape.path,
-            from: Number(itemShape.from || 0),
-            to: Number(itemShape.to || 0),
-          },
-        ];
+            {
+              label: itemShape.label || itemShape.field || "amount",
+              path: itemShape.path,
+              from: Number(itemShape.from || 0),
+              to: Number(itemShape.to || 0),
+            },
+          ];
 
       normalized = {
         ...base,
@@ -994,8 +1027,8 @@ const AddPurchaseOrder = ({
           typeof l.productCategoryId === "object" && l.productCategoryId?._id
             ? String(l.productCategoryId._id)
             : l.productCategoryId != null
-              ? String(l.productCategoryId)
-              : "";
+            ? String(l.productCategoryId)
+            : "";
         return {
           category: String(categoryId),
           category_name: String(l.productCategoryName || ""),
@@ -1023,7 +1056,7 @@ const AddPurchaseOrder = ({
       try {
         const body = {
           po_number: formData.po_number,
-          vendor: formData?.name,
+          vendor: formData?.vendor_id,
           date: formData.date,
           partial_billing: formData.partial_billing || "",
           delivery_type: formData.delivery_type,
@@ -1120,7 +1153,6 @@ const AddPurchaseOrder = ({
         toast.success("PO confirmed.");
         onSuccess?.({ created: false, updated: true, status: "po_created" });
 
-        // >>> HISTORY (optimistic + server)
         pushHistoryItem({
           kind: "status",
           statusFrom: statusNow,
@@ -1196,7 +1228,7 @@ const AddPurchaseOrder = ({
           if (!formData?._id) return toast.error("PO id missing.");
           const body = {
             po_number: formData.po_number,
-            vendor: formData.name,
+            vendor: formData.vendor_id,
             date: formData.date,
             partial_billing: formData.partial_billing || "",
             delivery_type: formData.delivery_type,
@@ -1224,10 +1256,10 @@ const AddPurchaseOrder = ({
       }
       return;
     }
-
+    console.log({ formData });
     /* ---------- CREATE ---------- */
     if (effectiveMode === "create" || fromModal) {
-      if (!formData.name) return toast.error("Vendor is required.");
+      if (!formData.vendor_id) return toast.error("Vendor is required.");
       if (!formData.date) return toast.error("PO Date is required.");
       if (!hasValidLine)
         return toast.error("Add at least one valid product row.");
@@ -1245,7 +1277,7 @@ const AddPurchaseOrder = ({
           p_id: formData.project_code,
           po_number:
             action === "send_approval" ? undefined : formData.po_number,
-          vendor: formData.name,
+          vendor: formData.vendor_id,
           date: formData.date,
           partial_billing: formData.partial_billing || "",
           delivery_type: formData.delivery_type,
@@ -1289,12 +1321,11 @@ const AddPurchaseOrder = ({
   const [fetchPdf, { isFetching }] = useLazyGetPurchaseOrderPdfQuery();
 
   const exportPdf = async () => {
-
     if (!poNumberQ && !_id) {
       console.warn("Missing po_number or _id in URL");
       return;
     }
-    const po_number = poNumberQ || undefined
+    const po_number = poNumberQ || undefined;
     const payload = po_number ? { po_number } : { _id };
     const blob = await fetchPdf(payload).unwrap();
     const url = URL.createObjectURL(blob);
@@ -1305,7 +1336,7 @@ const AddPurchaseOrder = ({
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-  }
+  };
 
   const handleApprove = async () => {
     try {
@@ -1399,13 +1430,22 @@ const AddPurchaseOrder = ({
   const user = getUserData();
 
   /* -------- vendor options -------- */
-  const vendorOptions = [
-    ...(formData.name && !vendorRows.some((v) => v.name === formData.name)
-      ? [{ value: formData.name, label: formData.name }]
-      : []),
-    ...vendorRows.map((v) => ({ value: v.name, label: v.name, _raw: v })),
-    { value: SEARCH_MORE_VENDOR, label: "Search more…" },
-  ];
+  const vendorOptions = useMemo(
+    () => [
+      ...(formData.vendor_id &&
+      !vendorRows.some((v) => v._id === formData.vendor_id)
+        ? [{ value: formData.vendor_id, label: formData.name }]
+        : []),
+      ...vendorRows.map((v) => ({ value: v._id, label: v.name, _raw: v })),
+      { value: SEARCH_MORE_VENDOR, label: "Search more…" },
+    ],
+    [vendorRows, formData.vendor_id, formData.name]
+  );
+
+  const selectedVendorOption = useMemo(
+    () => vendorOptions.find((o) => o.value === formData.vendor_id) ?? null,
+    [vendorOptions, formData.vendor_id]
+  );
 
   const location = useLocation();
   const goToVendorList = () => {
@@ -1560,11 +1600,11 @@ const AddPurchaseOrder = ({
           },
           attachments: last
             ? [
-              {
-                name: last.attachment_name,
-                url: last.attachment_url,
-              },
-            ]
+                {
+                  name: last.attachment_name,
+                  url: last.attachment_url,
+                },
+              ]
             : [],
         }).unwrap();
       } catch (e) {
@@ -1649,7 +1689,7 @@ const AddPurchaseOrder = ({
                   {/* Send Approval Button */}
                   {(effectiveMode === "edit" &&
                     statusNow === "approval_rejected") ||
-                    fromModal ? (
+                  fromModal ? (
                     <Button
                       component="button"
                       type="submit"
@@ -1748,17 +1788,17 @@ const AddPurchaseOrder = ({
                       user?.name === "Guddu Rani Dubey" ||
                       user?.name === "Varun Mishra" ||
                       user?.name === "IT Team") && (
-                        <Box>
-                          <Button
-                            variant={manualEdit ? "outlined" : "solid"}
-                            color={manualEdit ? "neutral" : "primary"}
-                            onClick={() => setManualEdit((s) => !s)}
-                            sx={{ width: "fit-content" }}
-                          >
-                            {manualEdit ? "Cancel Edit" : "Edit"}
-                          </Button>
-                        </Box>
-                      )}
+                      <Box>
+                        <Button
+                          variant={manualEdit ? "outlined" : "solid"}
+                          color={manualEdit ? "neutral" : "primary"}
+                          onClick={() => setManualEdit((s) => !s)}
+                          sx={{ width: "fit-content" }}
+                        >
+                          {manualEdit ? "Cancel Edit" : "Edit"}
+                        </Button>
+                      </Box>
+                    )}
                   </Box>
                 )}
             </Box>
@@ -2067,11 +2107,7 @@ const AddPurchaseOrder = ({
                     }}
                     filterOption={() => true}
                     options={vendorOptions}
-                    value={
-                      formData.name
-                        ? { value: formData.name, label: formData.name }
-                        : null
-                    }
+                    value={selectedVendorOption}
                     onChange={(opt) => handleVendorChange(opt)}
                     placeholder="Search vendor"
                     noOptionsMessage={() =>
@@ -2109,14 +2145,14 @@ const AddPurchaseOrder = ({
                     value={
                       formData.delivery_type
                         ? {
-                          value: formData.delivery_type,
-                          label:
-                            formData.delivery_type === "for"
-                              ? "For"
-                              : formData.delivery_type === "slnko"
+                            value: formData.delivery_type,
+                            label:
+                              formData.delivery_type === "for"
+                                ? "For"
+                                : formData.delivery_type === "slnko"
                                 ? "Slnko"
                                 : "",
-                        }
+                          }
                         : null
                     }
                     onChange={(selected) =>
@@ -2190,7 +2226,8 @@ const AddPurchaseOrder = ({
                 </thead>
                 <tbody>
                   {lines.map((l) => {
-                    const base = Number(l.quantity || 0) * Number(l.unitPrice || 0);
+                    const base =
+                      Number(l.quantity || 0) * Number(l.unitPrice || 0);
                     const taxAmt = (base * Number(l.taxPercent || 0)) / 100;
                     const gross = base + taxAmt;
                     const show = l.isShow;
@@ -2199,11 +2236,14 @@ const AddPurchaseOrder = ({
 
                     const selectedMakeSafe = isValidMake(l.make) ? l.make : "";
                     const inList = rowMakes.some(
-                      (m) => String(m).toLowerCase() === String(selectedMakeSafe).toLowerCase()
+                      (m) =>
+                        String(m).toLowerCase() ===
+                        String(selectedMakeSafe).toLowerCase()
                     );
                     const selectValue = inList ? selectedMakeSafe : "";
 
-                    const makeDisabled = inputsDisabled || !l.productCategoryId || !l.productName;
+                    const makeDisabled =
+                      inputsDisabled || !l.productCategoryId || !l.productName;
 
                     return (
                       <tr
@@ -2236,24 +2276,32 @@ const AddPurchaseOrder = ({
                                   return;
                                 }
 
-                                const picked = categoryData.find((c) => c._id === v);
+                                const picked = categoryData.find(
+                                  (c) => c._id === v
+                                );
                                 updateLine(l.id, "productCategoryId", v);
-                                updateLine(l.id, "productCategoryName", picked?.name || l.productCategoryName || "");
+                                updateLine(
+                                  l.id,
+                                  "productCategoryName",
+                                  picked?.name || l.productCategoryName || ""
+                                );
                               }}
                               placeholder="Select Category"
                               renderValue={(selected) => (
                                 <Typography level="body-sm" noWrap>
-                                  {categoryData.find((c) => c._id === selected)?.name ||
-                                    l.productCategoryName || "Select Category"}
+                                  {categoryData.find((c) => c._id === selected)
+                                    ?.name ||
+                                    l.productCategoryName ||
+                                    "Select Category"}
                                 </Typography>
                               )}
                               className="min-w-[150px] rounded-md"
                               sx={{
-                                '& .MuiSelect-listbox': {
+                                "& .MuiSelect-listbox": {
                                   maxHeight: 250,
-                                  overflowY: 'auto',
-                                  borderRadius: '0.5rem',
-                                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                  overflowY: "auto",
+                                  borderRadius: "0.5rem",
+                                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                                   paddingY: 0.5,
                                 },
                               }}
@@ -2263,7 +2311,12 @@ const AddPurchaseOrder = ({
                                 <Option
                                   key={cat._id}
                                   value={cat._id}
-                                  sx={{ paddingY: 1, paddingX: 2, fontSize: '0.875rem', '&:hover': { bgcolor: 'gray.100' } }}
+                                  sx={{
+                                    paddingY: 1,
+                                    paddingX: 2,
+                                    fontSize: "0.875rem",
+                                    "&:hover": { bgcolor: "gray.100" },
+                                  }}
                                 >
                                   {cat.name}
                                 </Option>
@@ -2271,19 +2324,26 @@ const AddPurchaseOrder = ({
 
                               {/* ✅ ensure the currently selected category is visible even if it's not in categoryData */}
                               {l.productCategoryId &&
-                                !categoryData.some((c) => c._id === l.productCategoryId) && (
+                                !categoryData.some(
+                                  (c) => c._id === l.productCategoryId
+                                ) && (
                                   <Option value={l.productCategoryId}>
-                                    {l.productCategoryName || "Current category"}
+                                    {l.productCategoryName ||
+                                      "Current category"}
                                   </Option>
                                 )}
 
-                              <Option value={SEARCH_MORE_CATEGORY} color="primary">
+                              <Option
+                                value={SEARCH_MORE_CATEGORY}
+                                color="primary"
+                              >
                                 Search more…
                               </Option>
                             </JSelect>
-
                           ) : (
-                            <Typography level="body-sm">{l.productCategoryName}</Typography>
+                            <Typography level="body-sm">
+                              {l.productCategoryName}
+                            </Typography>
                           )}
                         </td>
 
@@ -2314,16 +2374,24 @@ const AddPurchaseOrder = ({
                                   return;
                                 }
 
-                                const picked = productData.find((p) => p._id === v);
+                                const picked = productData.find(
+                                  (p) => p._id === v
+                                );
                                 if (!picked) return;
 
                                 const getVal = (prod, field, def = "") => {
-                                  const f = prod?.data?.find((d) => d?.name === field);
+                                  const f = prod?.data?.find(
+                                    (d) => d?.name === field
+                                  );
                                   return f?.values?.[0]?.input_values ?? def;
                                 };
 
                                 const name =
-                                  getVal(picked, "Product Name", picked.name || "") ||
+                                  getVal(
+                                    picked,
+                                    "Product Name",
+                                    picked.name || ""
+                                  ) ||
                                   getVal(picked, "Name", picked.name || "");
 
                                 updateLine(l.id, "productId", picked._id);
@@ -2343,14 +2411,26 @@ const AddPurchaseOrder = ({
                                   "taxPercent",
                                   Number(getVal(picked, "GST", 0))
                                 );
-                                updateLine(l.id, "make", getVal(picked, "Make", "N/A"));
-                                updateLine(l.id, "uom", getVal(picked, "UoM", "N/A"));
+                                updateLine(
+                                  l.id,
+                                  "make",
+                                  getVal(picked, "Make", "N/A")
+                                );
+                                updateLine(
+                                  l.id,
+                                  "uom",
+                                  getVal(picked, "UoM", "N/A")
+                                );
                               }}
                               placeholder="Select Product"
                               renderValue={(selected) => {
-                                const picked = productData.find((p) => p._id === selected);
+                                const picked = productData.find(
+                                  (p) => p._id === selected
+                                );
                                 const getVal = (prod, field, def = "") => {
-                                  const f = prod?.data?.find((d) => d?.name === field);
+                                  const f = prod?.data?.find(
+                                    (d) => d?.name === field
+                                  );
                                   return f?.values?.[0]?.input_values ?? def;
                                 };
                                 const label =
@@ -2371,19 +2451,23 @@ const AddPurchaseOrder = ({
                               disabled={!l.productCategoryId || inputsDisabled}
                               className="min-w-[240px] rounded-md"
                               sx={{
-                                '& .MuiSelect-listbox': {
+                                "& .MuiSelect-listbox": {
                                   maxHeight: 300,
-                                  overflowY: 'auto',
-                                  borderRadius: '0.5rem',
-                                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                  overflowY: "auto",
+                                  borderRadius: "0.5rem",
+                                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                                   paddingY: 0.5,
                                 },
                               }}
                             >
                               {productData.map((prod) => {
-                                const f = prod?.data?.find((d) => d?.name === "Product Name");
+                                const f = prod?.data?.find(
+                                  (d) => d?.name === "Product Name"
+                                );
                                 const label =
-                                  f?.values?.[0]?.input_values ?? prod?.name ?? "Unnamed";
+                                  f?.values?.[0]?.input_values ??
+                                  prod?.name ??
+                                  "Unnamed";
                                 return (
                                   <Option
                                     key={prod._id}
@@ -2391,9 +2475,9 @@ const AddPurchaseOrder = ({
                                     sx={{
                                       paddingY: 1,
                                       paddingX: 2,
-                                      fontSize: '0.875rem',
-                                      whiteSpace: 'normal',
-                                      '&:hover': { bgcolor: 'gray.100' },
+                                      fontSize: "0.875rem",
+                                      whiteSpace: "normal",
+                                      "&:hover": { bgcolor: "gray.100" },
                                     }}
                                   >
                                     <Typography noWrap>{label}</Typography>
@@ -2402,7 +2486,9 @@ const AddPurchaseOrder = ({
                               })}
 
                               {l.productId &&
-                                !productData.some((p) => p._id === l.productId) && (
+                                !productData.some(
+                                  (p) => p._id === l.productId
+                                ) && (
                                   <Option value={l.productId}>
                                     <Typography noWrap>
                                       {l.productName || "Unnamed"}
@@ -2423,7 +2509,9 @@ const AddPurchaseOrder = ({
                               )}
                             </JSelect>
                           ) : (
-                            <Typography level="body-sm">{l.productName}</Typography>
+                            <Typography level="body-sm">
+                              {l.productName}
+                            </Typography>
                           )}
                         </td>
 
@@ -2436,7 +2524,13 @@ const AddPurchaseOrder = ({
                               variant="outlined"
                               placeholder="Brief Description"
                               value={l.briefDescription}
-                              onChange={(e) => updateLine(l.id, "briefDescription", e.target.value)}
+                              onChange={(e) =>
+                                updateLine(
+                                  l.id,
+                                  "briefDescription",
+                                  e.target.value
+                                )
+                              }
                               {...disabledTextareaProps}
                               className="w-56 rounded-md"
                               sx={{
@@ -2446,7 +2540,9 @@ const AddPurchaseOrder = ({
                               }}
                             />
                           ) : (
-                            <Typography level="body-sm">{l.briefDescription}</Typography>
+                            <Typography level="body-sm">
+                              {l.briefDescription}
+                            </Typography>
                           )}
                         </td>
 
@@ -2476,7 +2572,9 @@ const AddPurchaseOrder = ({
                             type="number"
                             variant="outlined"
                             value={l.quantity}
-                            onChange={(e) => updateLine(l.id, "quantity", e.target.value)}
+                            onChange={(e) =>
+                              updateLine(l.id, "quantity", e.target.value)
+                            }
                             slotProps={{ input: { min: 0, step: "0.00001" } }}
                             {...(inputsDisabled ? disabledInputProps : {})}
                             className="w-20 rounded-md"
@@ -2490,7 +2588,9 @@ const AddPurchaseOrder = ({
                             type="number"
                             variant="outlined"
                             value={l.unitPrice}
-                            onChange={(e) => updateLine(l.id, "unitPrice", e.target.value)}
+                            onChange={(e) =>
+                              updateLine(l.id, "unitPrice", e.target.value)
+                            }
                             slotProps={{ input: { min: 0, step: "0.00001" } }}
                             {...(inputsDisabled ? disabledInputProps : {})}
                             className="w-24 rounded-md"
@@ -2504,7 +2604,9 @@ const AddPurchaseOrder = ({
                             type="number"
                             variant="outlined"
                             value={l.taxPercent}
-                            onChange={(e) => updateLine(l.id, "taxPercent", e.target.value)}
+                            onChange={(e) =>
+                              updateLine(l.id, "taxPercent", e.target.value)
+                            }
                             slotProps={{ input: { min: 0, step: "0.00001" } }}
                             {...(inputsDisabled ? disabledInputProps : {})}
                             className="w-20 rounded-md"
@@ -2516,7 +2618,8 @@ const AddPurchaseOrder = ({
                           <Typography className="text-green-700 font-semibold text-sm">
                             ₹{" "}
                             {(
-                              Number(l.quantity || 0) * Number(l.unitPrice || 0) +
+                              Number(l.quantity || 0) *
+                                Number(l.unitPrice || 0) +
                               ((Number(l.quantity || 0) *
                                 Number(l.unitPrice || 0) *
                                 Number(l.taxPercent || 0)) /
@@ -2544,8 +2647,6 @@ const AddPurchaseOrder = ({
                       </tr>
                     );
                   })}
-
-
                 </tbody>
               </Box>
 
@@ -2761,8 +2862,8 @@ const AddPurchaseOrder = ({
                 } catch (e) {
                   toast.error(
                     e?.data?.message ||
-                    e?.error ||
-                    "Failed to submit inspection request"
+                      e?.error ||
+                      "Failed to submit inspection request"
                   );
                 }
               }}
@@ -2878,7 +2979,8 @@ const AddPurchaseOrder = ({
         fetchPage={(args) =>
           fetchProductPageCat({
             ...args,
-            categoryId: lines.find(x => x.id === activeLineId)?.productCategoryId || "",
+            categoryId:
+              lines.find((x) => x.id === activeLineId)?.productCategoryId || "",
           })
         }
         searchKey="name"

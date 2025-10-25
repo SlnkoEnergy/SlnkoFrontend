@@ -82,7 +82,10 @@ function Sidebar() {
   };
 
   const isSalesPage = location.pathname === "/sales";
-  const isProjecsPage = location.pathname === "/view_pm";
+  const isProjectsPage =
+    location.pathname === "/view_pm" ||
+    location.pathname === "/email" ||
+    location.pathname === "/email_template";
   return (
     <Sheet
       className="Sidebar"
@@ -104,7 +107,7 @@ function Sidebar() {
         transform: {
           xs: "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1)))",
           lg:
-            isSalesPage || isProjecsPage
+            isSalesPage || isProjectsPage
               ? "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1)))"
               : "none",
         },
@@ -124,7 +127,7 @@ function Sidebar() {
         className="Sidebar-overlay"
         sx={{
           position: "fixed",
-          zIndex: 200,
+          zIndex: 202,
           top: 0,
           left: 0,
           width: "100vw",
@@ -137,7 +140,7 @@ function Sidebar() {
             sm: "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1) + var(--SideNavigation-slideIn, 0) * var(--Sidebar-width, 0px)))",
             md: "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1) + var(--SideNavigation-slideIn, 0) * var(--Sidebar-width, 0px)))",
             lg:
-              isSalesPage || isProjecsPage
+              isSalesPage || isProjectsPage
                 ? "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1) + var(--SideNavigation-slideIn, 0) * var(--Sidebar-width, 0px)))"
                 : "translateX(-100%)",
           },

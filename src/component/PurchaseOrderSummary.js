@@ -61,12 +61,12 @@ import {
 const PurchaseOrderSummary = forwardRef((props, ref) => {
   const {
     project_code,
-    onSelectionChange = () => { },
-    selectItem,
+    vendor_id,
+    onSelectionChange,
+    selectItem = () => {},
   } = props;
-
   const [po, setPO] = useState("");
-  const [selectedpo, setSelectedpo] = useState(""); // billing status
+  const [selectedpo, setSelectedpo] = useState("");
   const [selectedtype, setSelectedtype] = useState("");
   const [selected, setSelected] = useState([]);
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
@@ -138,21 +138,26 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const pr_id = searchParams.get("pr_id") || state?.pr_id || "";
   const item_id = searchParams.get("item_id") || state?.item_id || "";
 
-  const { data: getPO = [], isLoading, error } = useGetPaginatedPOsQuery({
+  const {
+    data: getPO = [],
+    isLoading,
+    error,
+  } = useGetPaginatedPOsQuery({
     page: currentPage,
     pageSize: perPage,
-    status: selectedpo, // billing status (Fully Billed / Bill Pending / All Status)
+    status: selectedpo,
     search: searchQuery,
     type: selectedtype,
     etdFrom,
     etdTo,
     deliveryFrom,
     deliveryTo,
-    filter: selectedStatusFilter, // delivery status filter
+    filter: selectedStatusFilter,
     project_id: project_code ? project_code : "",
     pr_id: pr_id ? pr_id.toString() : "",
     item_id: item_id ? item_id.toString() : "",
     itemSearch: selecteditem || "",
+    vendor_id: vendor_id ? vendor_id : "",
   });
 
   const [bulkDeliverPOs, { isLoading: isBulkDelivering }] =
@@ -180,12 +185,10 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     return pages;
   };
 
-
-
-
   useEffect(() => {
     const statusParam = searchParams.get("status") || "";
-    if (statusParam !== selectedStatusFilter) setSelectedStatusFilter(statusParam);
+    if (statusParam !== selectedStatusFilter)
+      setSelectedStatusFilter(statusParam);
 
     const etdFromParam = searchParams.get("etdFrom") || "";
     if (etdFromParam !== etdFrom) setEtdFrom(etdFromParam);
@@ -203,19 +206,15 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     if (selectPoParam !== selectedpo) setSelectedpo(selectPoParam);
 
     const selectItemParam = searchParams.get("itemSearch") || "";
-    if (selectItemParam !== selectItem) setSelecteditem(selectItemParam)
+    if (selectItemParam !== selectItem) setSelecteditem(selectItemParam);
   }, [searchParams]);
 
-
-
-  const handleOpenBulkModal = () => setBulkModalOpen(true);
   const handleCloseBulkModal = () => {
     setBulkModalOpen(false);
     setBulkRemarks("");
     setBulkDate("");
   };
 
-  const handleConfirmBulkDeliver = async () => { try { if (!selected.length) { toast.error("Please select at least one PO."); return; } await bulkDeliverPOs({ ids: selected, remarks: bulkRemarks || "Bulk marked as delivered", date: bulkDate || undefined, }).unwrap(); toast.success("Selected POs marked as Delivered"); setSelected([]); handleCloseBulkModal(); } catch (e) { toast.error(e?.data?.message || "Bulk deliver failed"); } };
   const [updateStatus] = useUpdatePurchasesStatusMutation();
   const [selectedStatus, setSelectedStatus] = useState("");
   const handleStatusChange = async () => {
@@ -305,7 +304,10 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                     setNextStatus("out_for_delivery");
                   } else if (current_status?.status === "out_for_delivery") {
                     setNextStatus("delivered");
-                  } else if (po.etd && current_status?.status !== "material_ready") {
+                  } else if (
+                    po.etd &&
+                    current_status?.status !== "material_ready"
+                  ) {
                     setNextStatus("material_ready");
                   } else {
                     setNextStatus("ready_to_dispatch");
@@ -399,9 +401,17 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     const isFullyBilled = status === "Fully Billed";
     const isPending = status === "Bill Pending";
 
-    const label = isFullyBilled ? "Fully Billed" : isPending ? "Pending" : status;
+    const label = isFullyBilled
+      ? "Fully Billed"
+      : isPending
+      ? "Pending"
+      : status;
 
-    const icon = isFullyBilled ? <CheckRoundedIcon /> : isPending ? <AutorenewRoundedIcon /> : null;
+    const icon = isFullyBilled ? (
+      <CheckRoundedIcon />
+    ) : isPending ? (
+      <AutorenewRoundedIcon />
+    ) : null;
 
     const color = isFullyBilled ? "success" : isPending ? "warning" : "neutral";
 
@@ -461,8 +471,12 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     return (
       <>
         {po_number ? (
-          <Box onClick={() => navigate(`/add_po?mode=edit&po_number=${po_number}`)}>
-            <span style={{ cursor: "pointer", fontWeight: 500, color: "#1976d2" }}>
+          <Box
+            onClick={() => navigate(`/add_po?mode=edit&po_number=${po_number}`)}
+          >
+            <span
+              style={{ cursor: "pointer", fontWeight: 500, color: "#1976d2" }}
+            >
               {po_number}
             </span>
           </Box>
@@ -621,7 +635,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         {current_status?.toLowerCase() === "delivered" && (
           <Box display="flex" alignItems="center" mt={0.5}>
             <Calendar size={12} />
-            <span style={{ fontSize: 12, fontWeight: 600 }}>Delivery Date : </span>
+            <span style={{ fontSize: 12, fontWeight: 600 }}>
+              Delivery Date :{" "}
+            </span>
             &nbsp;
             {deliveryDate ? (
               <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
@@ -647,14 +663,27 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           </Box>
         )}
 
-        <Modal open={openConfirmDialog} onClose={() => setOpenConfirmDialog(false)}>
+        <Modal
+          open={openConfirmDialog}
+          onClose={() => setOpenConfirmDialog(false)}
+        >
           <ModalDialog>
             <Typography level="title-md">Confirm Submission</Typography>
             <Typography level="body-sm" sx={{ mt: 0.5 }}>
               Are you sure you want to submit this date?
             </Typography>
-            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mt: 2 }}>
-              <Button onClick={() => setOpenConfirmDialog(false)} variant="plain">
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: 1,
+                mt: 2,
+              }}
+            >
+              <Button
+                onClick={() => setOpenConfirmDialog(false)}
+                variant="plain"
+              >
                 Cancel
               </Button>
               <Button
@@ -683,8 +712,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     const categories = Array.isArray(item)
       ? item.filter(Boolean).map(String)
       : item
-        ? [String(item)]
-        : [];
+      ? [String(item)]
+      : [];
 
     const onlyOther =
       categories.length === 1 && categories[0].trim().toLowerCase() === "other";
@@ -806,7 +835,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
         <Box display="flex" alignItems="center" mt={0.5}>
           <span style={{ fontSize: 12, fontWeight: 600 }}>Vendor : </span>&nbsp;
-          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>{vendor}</Typography>
+          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+            {vendor}
+          </Typography>
         </Box>
       </>
     );
@@ -817,9 +848,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     const formattedAmount =
       billed > 0
         ? new Intl.NumberFormat("en-IN", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 2,
-        }).format(billed)
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2,
+          }).format(billed)
         : null;
 
     return (
@@ -882,12 +913,16 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         return "error";
     }
   };
-
+  const isViewVendor =
+    location.pathname === "/view_vendor" ||
+    location.pathname === "/project_detail";
   return (
     <Box
       sx={{
-        ml: { lg: "var(--Sidebar-width)" },
-        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+        ml: isViewVendor ? 0 : { lg: "var(--Sidebar-width)" },
+        width: isViewVendor
+          ? "100%"
+          : { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
       }}
     >
       <Box
@@ -930,7 +965,10 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           overflow: "auto",
         }}
       >
-        <Box component="table" sx={{ width: "100%", borderCollapse: "collapse" }}>
+        <Box
+          component="table"
+          sx={{ width: "100%", borderCollapse: "collapse" }}
+        >
           <thead
             style={{
               position: "sticky",
@@ -947,7 +985,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                     selected.length > 0 && selected.length < paginatedPo.length
                   }
                   checked={
-                    selected.length === paginatedPo.length && paginatedPo.length > 0
+                    selected.length === paginatedPo.length &&
+                    paginatedPo.length > 0
                   }
                   onChange={handleSelectAll}
                   color={selected.length > 0 ? "primary" : "neutral"}
@@ -983,13 +1022,19 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           <tbody>
             {error ? (
               <tr>
-                <td colSpan={13} style={{ padding: "8px", textAlign: "center" }}>
+                <td
+                  colSpan={13}
+                  style={{ padding: "8px", textAlign: "center" }}
+                >
                   <Typography color="danger">Something went wrong</Typography>
                 </td>
               </tr>
             ) : isLoading ? (
               <tr>
-                <td colSpan={13} style={{ padding: "8px", textAlign: "center" }}>
+                <td
+                  colSpan={13}
+                  style={{ padding: "8px", textAlign: "center" }}
+                >
                   <Box
                     sx={{
                       fontStyle: "italic",
@@ -1043,16 +1088,24 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                   <Box
                     component="tr"
                     key={index}
-                    sx={{ "&:hover": { backgroundColor: "neutral.plainHoverBg" } }}
+                    sx={{
+                      "&:hover": { backgroundColor: "neutral.plainHoverBg" },
+                    }}
                   >
                     <Box
                       component="td"
-                      sx={{ padding: 1, textAlign: "left", borderBottom: "1px solid" }}
+                      sx={{
+                        padding: 1,
+                        textAlign: "left",
+                        borderBottom: "1px solid",
+                      }}
                     >
                       <Checkbox
                         checked={selected.includes(po._id)}
                         onChange={() => handleRowSelect(po._id)}
-                        color={selected.includes(po._id) ? "primary" : "neutral"}
+                        color={
+                          selected.includes(po._id) ? "primary" : "neutral"
+                        }
                       />
                     </Box>
 
@@ -1097,7 +1150,11 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       }}
                     >
                       <RenderItem_Vendor
-                        item={po.category_names === "Other" ? "other" : po.category_names}
+                        item={
+                          po.category_names === "Other"
+                            ? "other"
+                            : po.category_names
+                        }
                         other_item={po?.pr?.other_item_name}
                         amount={po?.pr?.amount}
                         vendor={po.vendor}
@@ -1236,7 +1293,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                               0,
                               Math.floor(
                                 (new Date(po.dispatch_date) - etd) /
-                                (1000 * 60 * 60 * 24)
+                                  (1000 * 60 * 60 * 24)
                               )
                             );
                           } else if (now > etd) {
@@ -1245,11 +1302,15 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                             );
                           }
                           return delay > 0 ? (
-                            <Typography sx={{ color: "red", fontSize: 13, mt: 0.5 }}>
+                            <Typography
+                              sx={{ color: "red", fontSize: 13, mt: 0.5 }}
+                            >
                               ⏱ Delayed by {delay} day{delay > 1 ? "s" : ""}
                             </Typography>
                           ) : (
-                            <Typography sx={{ color: "green", fontSize: 13, mt: 0.5 }}>
+                            <Typography
+                              sx={{ color: "green", fontSize: 13, mt: 0.5 }}
+                            >
                               ✅ No delay
                             </Typography>
                           );
@@ -1272,16 +1333,21 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
                     <Box
                       component="td"
-                      sx={{ padding: 1, textAlign: "left", borderBottom: "1px solid" }}
+                      sx={{
+                        padding: 1,
+                        textAlign: "left",
+                        borderBottom: "1px solid",
+                      }}
                     >
-                      {po?.current_status?.status !== "delivered" && po?.etd !== null && (
-                        <RowMenu
-                          currentPage={currentPage}
-                          po_number={po.po_number}
-                          current_status={po.current_status}
-                          etd={po.etd}
-                        />
-                      )}
+                      {po?.current_status?.status !== "delivered" &&
+                        po?.etd !== null && (
+                          <RowMenu
+                            currentPage={currentPage}
+                            po_number={po.po_number}
+                            current_status={po.current_status}
+                            etd={po.etd}
+                          />
+                        )}
                     </Box>
                   </Box>
                 );
@@ -1301,7 +1367,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                       alt="No data Image"
                       style={{ width: "50px", height: "50px" }}
                     />
-                    <Typography fontStyle={"italic"}>No PO available</Typography>
+                    <Typography fontStyle={"italic"}>
+                      No PO available
+                    </Typography>
                   </Box>
                 </td>
               </tr>
@@ -1339,7 +1407,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
           </Typography>
         </Box>
 
-        <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
+        <Box
+          sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
+        >
           {getPaginationRange().map((page, idx) =>
             page === "..." ? (
               <Box key={`ellipsis-${idx}`} sx={{ px: 1 }}>
@@ -1409,7 +1479,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
               Confirm Status Change
             </Typography>
             <Typography mb={2}>
-              Do you want to change status to <b>{nextStatus.replace(/_/g, " ")}</b>?
+              Do you want to change status to{" "}
+              <b>{nextStatus.replace(/_/g, " ")}</b>?
             </Typography>
 
             <Textarea
@@ -1420,7 +1491,13 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
               sx={{ mb: 2 }}
             />
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "1rem" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "1rem",
+              }}
+            >
               <Button variant="plain" onClick={() => setOpenModal(false)}>
                 Cancel
               </Button>
@@ -1450,12 +1527,13 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
             }}
           >
             <Typography level="h5" mb={1}>
-              Mark {selected.length} PO{selected.length > 1 ? "s" : ""} as Delivered?
+              Mark {selected.length} PO{selected.length > 1 ? "s" : ""} as
+              Delivered?
             </Typography>
             <Typography level="body-sm" mb={2}>
-              This will set <b>ETD</b>, <b>MR</b>, <b>RTD</b>, and <b>Delivery</b> dates
-              to the same day (from the date you provide below, or “now” in IST if
-              left blank).
+              This will set <b>ETD</b>, <b>MR</b>, <b>RTD</b>, and{" "}
+              <b>Delivery</b> dates to the same day (from the date you provide
+              below, or “now” in IST if left blank).
             </Typography>
 
             <FormControl size="sm" sx={{ mb: 1.5 }}>
