@@ -831,6 +831,7 @@ const Customer_Payment_Summary = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [selectedPO, setSelectedPO] = useState([]);
   const [salesAmounts, setSalesAmounts] = useState({});
+  const [salesInvoice, setSalesInvoice] = useState("");
 
   const handleSalesConvert = async () => {
     try {
@@ -844,13 +845,28 @@ const Customer_Payment_Summary = () => {
         return;
       }
 
+      // ✅ Sales Invoice required
+      const inv = (salesInvoice || "").trim();
+      if (!inv) {
+        toast.error("Sales Invoice No. is required.");
+        return;
+      }
+
+      // ✅ Optional: basic invoice format validation (A-Z, 0-9, / - .)
+      const invoiceOk = /^[A-Za-z0-9\/\-.]+$/.test(inv);
+      if (!invoiceOk) {
+        toast.error(
+          "Sales Invoice No. can contain letters, numbers, '/', '-' or '.'."
+        );
+        return;
+      }
+
       // ✅ Validate all selected POs for salesAmounts presence and values
       const invalidPOs = selectedPO.filter((po) => {
         const id = po._id;
         const basic = salesAmounts[id]?.basic;
         const gst = salesAmounts[id]?.gst;
-
-        // Ensure both fields are filled and numeric
+        // Both must exist & be numeric
         return (
           basic === undefined ||
           gst === undefined ||
@@ -869,6 +885,21 @@ const Customer_Payment_Summary = () => {
         return;
       }
 
+      // ✅ Guard: client-side cap check (basic + gst <= total_billed_value)
+      const capErrors = selectedPO.filter((po) => {
+        const id = po._id;
+        const totalBilled = Number(po.total_billed_value || 0);
+        const basic = Number(salesAmounts[id]?.basic || 0);
+        const gst = Number(salesAmounts[id]?.gst || 0);
+        return basic < 0 || gst < 0 || basic + gst > totalBilled;
+      });
+
+      if (capErrors.length > 0) {
+        const poList = capErrors.map((p) => p.po_number).join(", ");
+        toast.error(`Basic + GST must not exceed Total Billed for: ${poList}`);
+        return;
+      }
+
       const results = await Promise.allSettled(
         selectedPO.map(async (po) => {
           const id = po._id;
@@ -877,12 +908,13 @@ const Customer_Payment_Summary = () => {
           const gst = Number(salesAmounts[id]?.gst || 0);
 
           return await updateSalesPO({
-            id,
+            id, // keep your API flexible: id or po_number
             po_number: poNumber,
             remarks: salesRemarks.trim(),
             basic_sales: basic,
             gst_on_sales: gst,
-            files: salesFiles,
+            sales_invoice: inv, // ✅ include invoice number
+            files: salesFiles, // keep as-is
           }).unwrap();
         })
       );
@@ -898,8 +930,8 @@ const Customer_Payment_Summary = () => {
           const err = r.reason?.data || r.reason?.response?.data || {};
           const msg =
             err?.message || "Sales conversion failed due to server validation.";
-
           const d = err?.details || err?.cap_context;
+
           if (d) {
             const details = Object.entries(d)
               .map(([k, v]) => `${k}: ${v}`)
@@ -914,15 +946,16 @@ const Customer_Payment_Summary = () => {
       if (ok) toast.success(`Converted ${ok} PO(s) successfully.`);
       if (fail) toast.warning(`Failed ${fail} PO(s).`);
 
-      // ✅ Reset form only on success
+      // ✅ Reset on any success
       if (ok) {
         setSalesOpen(false);
         setSelectedPO([]);
-        setSelectedClients([]);
+        setSelectedClients?.([]);
         setSalesFiles([]);
         setSalesRemarks("");
+        setSalesInvoice?.(""); // ✅ clear invoice
         setSalesAmounts({});
-        refetch();
+        refetch?.();
       }
     } catch (err) {
       const msg =
@@ -2261,256 +2294,297 @@ const Customer_Payment_Summary = () => {
                     </Box>
 
                     <Sheet
-  variant="outlined"
-  sx={{
-    borderRadius: "12px",
-    overflowX: "auto",
-    overflowY: "hidden",
-    p: { xs: 1, sm: 2 },
-    boxShadow: "md",
-    bgcolor: "#fff",
-    width: "100%",
-    maxWidth: "100%",
-    "@media print": {
-      boxShadow: "none",
-      border: "none",
-      borderRadius: 0,
-      overflow: "visible",
-      p: 0,
-    },
-  }}
->
-  <Table
-    borderAxis="both"
-    stickyHeader
-    sx={{
-      minWidth: 820,
-      width: "100%",
-      tableLayout: "fixed",
-      fontSize: { xs: 12, sm: 14 },
-      "& thead": {
-        backgroundColor: "neutral.softBg",
-        "@media print": { backgroundColor: "#eee" },
-      },
-      "& tbody tr:nth-of-type(even)": {
-        backgroundColor: "rgba(0,0,0,0.02)",
-      },
-      "& th, & td": {
-        px: { xs: 1, sm: 2 },
-        py: { xs: 1, sm: 1.25 },
-        verticalAlign: "top",
-        wordBreak: "break-word",
-        overflowWrap: "anywhere",
-        textAlign: "left",
-        lineHeight: 1.4,
-        "@media print": {
-          px: 1,
-          py: 1,
-          fontSize: "11px",
-          border: "1px solid #ccc",
-        },
-      },
-
-      // Responsive column widths
-      "& th:nth-of-type(1), & td:nth-of-type(1)": {
-        width: { xs: "30%", sm: "25%", md: "24%" }, // Converted PO
-      },
-      "& th:nth-of-type(2), & td:nth-of-type(2)": {
-        width: { xs: "18%", sm: "18%", md: "16%" }, // Date
-        whiteSpace: "nowrap",
-      },
-      "& th:nth-of-type(3), & td:nth-of-type(3)": {
-        width: { xs: "22%", sm: "20%", md: "18%" }, // Vendor
-      },
-      "& th:nth-of-type(4), & td:nth-of-type(4)": {
-        width: { xs: "25%", sm: "25%", md: "26%" }, // Item
-      },
-      "& th:nth-of-type(5), & td:nth-of-type(5)": {
-        width: { xs: "20%", sm: "12%", md: "12%" }, // Value
-        textAlign: "right",
-      },
-
-      "& th.num, & td.num": {
-        textAlign: "right",
-        fontVariantNumeric: "tabular-nums",
-        whiteSpace: "nowrap",
-      },
-    }}
-  >
-    <thead>
-      <tr>
-        <th>Converted PO's</th>
-        <th>Conversion Date</th>
-        <th>Vendor</th>
-        <th>Item</th>
-        <th className="num">Sales Value (₹)</th>
-      </tr>
-    </thead>
-
-    <tbody>
-      {isLoading ? (
-        <tr>
-          <td colSpan={5} style={{ textAlign: "center", padding: 20 }}>
-            <Typography level="body-md" sx={{ fontStyle: "italic" }}>
-              Loading sales history...
-            </Typography>
-          </td>
-        </tr>
-      ) : (SalesSummary?.length || 0) === 0 ? (
-        <tr>
-          <td colSpan={5} style={{ textAlign: "center", padding: 20 }}>
-            <Typography level="body-md">No sales history available</Typography>
-          </td>
-        </tr>
-      ) : filteredSales.length === 0 ? (
-        <tr>
-          <td colSpan={5} style={{ textAlign: "center", padding: 20 }}>
-            <Typography level="body-md">No matching results</Typography>
-          </td>
-        </tr>
-      ) : (
-        filteredSales.map((sale, idx) => {
-          const atts = normalizeAttachments(sale.attachments);
-          return (
-            <tr key={sale._id || `${sale.po_number}-${idx}`}>
-              {/* Converted PO Column */}
-              <td>
-                <Stack spacing={0.75}>
-                  <Stack
-                    direction="row"
-                    spacing={0.5}
-                    alignItems="center"
-                    flexWrap="wrap"
-                  >
-                    <Chip size="sm" variant="soft" color="primary">
-                      <Typography level="body-sm" sx={{ fontWeight: 700 }}>
-                        {sale.po_number || "N/A"}
-                      </Typography>
-                    </Chip>
-
-                    <Tooltip title="View conversion" placement="top">
-                      <IconButton
-                        size="sm"
-                        variant="plain"
-                        onClick={() => openSaleDetail(sale)}
-                        aria-label={`View conversion for PO ${
-                          sale.po_number || sale._id
-                        }`}
-                      >
-                        <VisibilityRounded fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </Stack>
-
-                  {/* Attachments */}
-                  <Stack
-                    direction="row"
-                    spacing={0.75}
-                    flexWrap="wrap"
-                    useFlexGap
-                    sx={{ mt: 0.5 }}
-                  >
-                    {atts.length > 0 ? (
-                      atts.map((att, i) => (
-                        <Link
-                          key={att.url || `${sale._id}-att-${i}`}
-                          href={att.url}
-                          target="_blank"
-                          rel="noopener"
-                          underline="hover"
-                          sx={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 0.5,
-                            fontSize: 12,
-                            px: 1,
-                            py: 0.25,
-                            borderRadius: "8px",
+                      variant="outlined"
+                      sx={{
+                        borderRadius: "12px",
+                        overflowX: "auto",
+                        overflowY: "hidden",
+                        p: { xs: 1, sm: 2 },
+                        boxShadow: "md",
+                        bgcolor: "#fff",
+                        width: "100%",
+                        maxWidth: "100%",
+                        "@media print": {
+                          boxShadow: "none",
+                          border: "none",
+                          borderRadius: 0,
+                          overflow: "visible",
+                          p: 0,
+                        },
+                      }}
+                    >
+                      <Table
+                        borderAxis="both"
+                        stickyHeader
+                        sx={{
+                          minWidth: 820,
+                          width: "100%",
+                          tableLayout: "fixed",
+                          fontSize: { xs: 12, sm: 14 },
+                          "& thead": {
                             backgroundColor: "neutral.softBg",
-                            maxWidth: 160,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
+                            "@media print": { backgroundColor: "#eee" },
+                          },
+                          "& tbody tr:nth-of-type(even)": {
+                            backgroundColor: "rgba(0,0,0,0.02)",
+                          },
+                          "& th, & td": {
+                            px: { xs: 1, sm: 2 },
+                            py: { xs: 1, sm: 1.25 },
+                            verticalAlign: "top",
+                            wordBreak: "break-word",
+                            overflowWrap: "anywhere",
+                            textAlign: "left",
+                            lineHeight: 1.4,
+                            "@media print": {
+                              px: 1,
+                              py: 1,
+                              fontSize: "11px",
+                              border: "1px solid #ccc",
+                            },
+                          },
+
+                          // Responsive column widths
+                          "& th:nth-of-type(1), & td:nth-of-type(1)": {
+                            width: { xs: "30%", sm: "25%", md: "24%" }, // Converted PO
+                          },
+                          "& th:nth-of-type(2), & td:nth-of-type(2)": {
+                            width: { xs: "18%", sm: "18%", md: "16%" }, // Date
                             whiteSpace: "nowrap",
-                          }}
-                          title={att.name}
-                        >
-                          <AttachFileIcon sx={{ fontSize: 15 }} />
-                          {att.name || `File ${i + 1}`}
-                        </Link>
-                      ))
-                    ) : (
-                      <Typography
-                        level="body-xs"
-                        sx={{ opacity: 0.6, fontStyle: "italic" }}
+                          },
+                          "& th:nth-of-type(3), & td:nth-of-type(3)": {
+                            width: { xs: "22%", sm: "20%", md: "18%" }, // Vendor
+                          },
+                          "& th:nth-of-type(4), & td:nth-of-type(4)": {
+                            width: { xs: "25%", sm: "25%", md: "26%" }, // Item
+                          },
+                          "& th:nth-of-type(5), & td:nth-of-type(5)": {
+                            width: { xs: "20%", sm: "12%", md: "12%" }, // Value
+                            textAlign: "right",
+                          },
+
+                          "& th.num, & td.num": {
+                            textAlign: "right",
+                            fontVariantNumeric: "tabular-nums",
+                            whiteSpace: "nowrap",
+                          },
+                        }}
                       >
-                        No attachments
-                      </Typography>
-                    )}
-                  </Stack>
-                </Stack>
-              </td>
+                        <thead>
+                          <tr>
+                            <th>Converted PO's</th>
+                            <th>Conversion Date</th>
+                            <th>Vendor</th>
+                            <th>Item</th>
+                            <th className="num">Sales Value (₹)</th>
+                          </tr>
+                        </thead>
 
-              {/* Conversion Date */}
-              <td style={{ whiteSpace: "nowrap" }}>
-                {formatDateTime(sale?.converted_at)}
-              </td>
+                        <tbody>
+                          {isLoading ? (
+                            <tr>
+                              <td
+                                colSpan={5}
+                                style={{ textAlign: "center", padding: 20 }}
+                              >
+                                <Typography
+                                  level="body-md"
+                                  sx={{ fontStyle: "italic" }}
+                                >
+                                  Loading sales history...
+                                </Typography>
+                              </td>
+                            </tr>
+                          ) : (SalesSummary?.length || 0) === 0 ? (
+                            <tr>
+                              <td
+                                colSpan={5}
+                                style={{ textAlign: "center", padding: 20 }}
+                              >
+                                <Typography level="body-md">
+                                  No sales history available
+                                </Typography>
+                              </td>
+                            </tr>
+                          ) : filteredSales.length === 0 ? (
+                            <tr>
+                              <td
+                                colSpan={5}
+                                style={{ textAlign: "center", padding: 20 }}
+                              >
+                                <Typography level="body-md">
+                                  No matching results
+                                </Typography>
+                              </td>
+                            </tr>
+                          ) : (
+                            filteredSales.map((sale, idx) => {
+                              const atts = normalizeAttachments(
+                                sale.attachments
+                              );
+                              return (
+                                <tr
+                                  key={sale._id || `${sale.po_number}-${idx}`}
+                                >
+                                  {/* Converted PO Column */}
+                                  <td>
+                                    <Stack spacing={0.75}>
+                                      <Stack
+                                        direction="row"
+                                        spacing={0.5}
+                                        alignItems="center"
+                                        flexWrap="wrap"
+                                      >
+                                        <Chip
+                                          size="sm"
+                                          variant="soft"
+                                          color="primary"
+                                        >
+                                          <Typography
+                                            level="body-sm"
+                                            sx={{ fontWeight: 700 }}
+                                          >
+                                            {sale.po_number || "N/A"}
+                                          </Typography>
+                                        </Chip>
 
-              {/* Vendor */}
-              <td
-                style={{
-                  whiteSpace: "normal",
-                  overflowWrap: "anywhere",
-                }}
-              >
-                {sale.vendor || "N/A"}
-              </td>
+                                        <Tooltip
+                                          title="View conversion"
+                                          placement="top"
+                                        >
+                                          <IconButton
+                                            size="sm"
+                                            variant="plain"
+                                            onClick={() => openSaleDetail(sale)}
+                                            aria-label={`View conversion for PO ${
+                                              sale.po_number || sale._id
+                                            }`}
+                                          >
+                                            <VisibilityRounded fontSize="small" />
+                                          </IconButton>
+                                        </Tooltip>
+                                      </Stack>
 
-              {/* Item */}
-              <td
-                title={getItemLabel(sale) || "N/A"}
-                style={{
-                  whiteSpace: "nowrap",
-                  textOverflow: "ellipsis",
-                  overflow: "hidden",
-                  maxWidth: "100%",
-                }}
-              >
-                {getItemLabel(sale) || "N/A"}
-              </td>
+                                      {/* Attachments */}
+                                      <Stack
+                                        direction="row"
+                                        spacing={0.75}
+                                        flexWrap="wrap"
+                                        useFlexGap
+                                        sx={{ mt: 0.5 }}
+                                      >
+                                        {atts.length > 0 ? (
+                                          atts.map((att, i) => (
+                                            <Link
+                                              key={
+                                                att.url ||
+                                                `${sale._id}-att-${i}`
+                                              }
+                                              href={att.url}
+                                              target="_blank"
+                                              rel="noopener"
+                                              underline="hover"
+                                              sx={{
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                gap: 0.5,
+                                                fontSize: 12,
+                                                px: 1,
+                                                py: 0.25,
+                                                borderRadius: "8px",
+                                                backgroundColor:
+                                                  "neutral.softBg",
+                                                maxWidth: 160,
+                                                overflow: "hidden",
+                                                textOverflow: "ellipsis",
+                                                whiteSpace: "nowrap",
+                                              }}
+                                              title={att.name}
+                                            >
+                                              <AttachFileIcon
+                                                sx={{ fontSize: 15 }}
+                                              />
+                                              {att.name || `File ${i + 1}`}
+                                            </Link>
+                                          ))
+                                        ) : (
+                                          <Typography
+                                            level="body-xs"
+                                            sx={{
+                                              opacity: 0.6,
+                                              fontStyle: "italic",
+                                            }}
+                                          >
+                                            No attachments
+                                          </Typography>
+                                        )}
+                                      </Stack>
+                                    </Stack>
+                                  </td>
 
-              {/* Value */}
-              <td className="num">
-                ₹ {Math.round(sale?.total_sales_value || 0).toLocaleString("en-IN")}
-              </td>
-            </tr>
-          );
-        })
-      )}
-    </tbody>
+                                  {/* Conversion Date */}
+                                  <td style={{ whiteSpace: "nowrap" }}>
+                                    {formatDateTime(sale?.converted_at)}
+                                  </td>
 
-    {filteredSales.length > 0 && (
-      <tfoot>
-        <tr
-          style={{
-            fontWeight: "bold",
-            backgroundColor: "#FFF9C4",
-          }}
-        >
-          <td colSpan={4} style={{ textAlign: "right" }}>
-            Total:
-          </td>
-          <td className="num">
-            ₹{" "}
-            {Math.round(SalesTotal?.total_sales_value || 0).toLocaleString(
-              "en-IN"
-            )}
-          </td>
-        </tr>
-      </tfoot>
-    )}
-  </Table>
-</Sheet>
+                                  {/* Vendor */}
+                                  <td
+                                    style={{
+                                      whiteSpace: "normal",
+                                      overflowWrap: "anywhere",
+                                    }}
+                                  >
+                                    {sale.vendor || "N/A"}
+                                  </td>
 
+                                  {/* Item */}
+                                  <td
+                                    title={getItemLabel(sale) || "N/A"}
+                                    style={{
+                                      whiteSpace: "nowrap",
+                                      textOverflow: "ellipsis",
+                                      overflow: "hidden",
+                                      maxWidth: "100%",
+                                    }}
+                                  >
+                                    {getItemLabel(sale) || "N/A"}
+                                  </td>
+
+                                  {/* Value */}
+                                  <td className="num">
+                                    ₹{" "}
+                                    {Math.round(
+                                      sale?.total_sales_value || 0
+                                    ).toLocaleString("en-IN")}
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+
+                        {filteredSales.length > 0 && (
+                          <tfoot>
+                            <tr
+                              style={{
+                                fontWeight: "bold",
+                                backgroundColor: "#FFF9C4",
+                              }}
+                            >
+                              <td colSpan={4} style={{ textAlign: "right" }}>
+                                Total:
+                              </td>
+                              <td className="num">
+                                ₹{" "}
+                                {Math.round(
+                                  SalesTotal?.total_sales_value || 0
+                                ).toLocaleString("en-IN")}
+                              </td>
+                            </tr>
+                          </tfoot>
+                        )}
+                      </Table>
+                    </Sheet>
 
                     <Modal open={saleDetailOpen} onClose={closeSaleDetail}>
                       <ModalDialog sx={{ width: 520 }}>
@@ -2540,6 +2614,28 @@ const Customer_Payment_Summary = () => {
                               <strong>Converted By:</strong>{" "}
                               {activeSale?.user_name ?? "—"}
                             </Typography>
+                            <Stack
+                              direction="row"
+                              spacing={1}
+                              alignItems="center"
+                            >
+                              <Typography level="body-sm">
+                                <strong>Sales Invoice No.:</strong>
+                              </Typography>
+                              <Chip
+                                size="sm"
+                                variant="soft"
+                                color={
+                                  activeSale?.sales_invoice
+                                    ? "primary"
+                                    : "neutral"
+                                }
+                              >
+                                {activeSale?.sales_invoice?.trim()
+                                  ? activeSale.sales_invoice
+                                  : "—"}
+                              </Chip>
+                            </Stack>
 
                             <Typography
                               level="body-sm"
@@ -3326,6 +3422,23 @@ const Customer_Payment_Summary = () => {
                       : "No files selected"}
                   </Typography>
                 </Sheet>
+
+                <FormControl>
+                  <FormLabel sx={{ fontWeight: 600 }}>
+                    Sales Invoice No.
+                  </FormLabel>
+                  <Input
+                    size="md"
+                    variant="outlined"
+                    placeholder="Enter Sales Invoice Number"
+                    value={salesInvoice}
+                    onChange={(e) => setSalesInvoice(e.target.value)}
+                    sx={{
+                      borderRadius: "md",
+                      backgroundColor: "background.body",
+                    }}
+                  />
+                </FormControl>
 
                 {/* ---- Remarks ---- */}
                 <Textarea
