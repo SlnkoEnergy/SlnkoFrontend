@@ -27,7 +27,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useAddExpenseMutation } from "../../../redux/expenseSlice";
 
-const Expense_Form = () => {
+const Expense_Form = ({ dateFrom, dateTo}) => {
   const navigate = useNavigate();
 
   const [rows, setRows] = useState([
@@ -282,8 +282,8 @@ const Expense_Form = () => {
       return;
     }
 
-    const { from, to } = rows[0]?.expense_term || {};
-    if (!from || !to) {
+   
+    if (!dateFrom || !dateTo) {
       toast.error("Expense Term is required.");
       setIsSubmitting(false);
       return;
@@ -327,7 +327,10 @@ const Expense_Form = () => {
       );
 
       const cleanedData = {
-        expense_term: rows[0]?.expense_term || {},
+        expense_term: {
+          from: dateFrom || "",
+          to: dateTo || "",
+        },
         disbursement_date: rows[0]?.disbursement_date ?? null,
         items,
         user_id: userID,
@@ -574,51 +577,7 @@ const Expense_Form = () => {
             mb: 2,
           }}
         >
-          {/* Select Expense Term – always first on mobile */}
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              flexWrap: "wrap",
-              gap: 1.5,
-            }}
-          >
-            <Typography level="body-sm" fontWeight="md">
-              📅 Select Expense Term:
-            </Typography>
 
-            <Input
-              type="date"
-              size="sm"
-              value={rows[0].expense_term.from}
-              required
-              onChange={(e) =>
-                handleRowChange(0, "expense_term", {
-                  ...rows[0].expense_term,
-                  from: e.target.value,
-                })
-              }
-              sx={{ minWidth: 130 }}
-            />
-
-            <Typography level="body-sm">to</Typography>
-
-            <Input
-              type="date"
-              size="sm"
-              value={rows[0].expense_term.to}
-              required
-              onChange={(e) =>
-                handleRowChange(0, "expense_term", {
-                  ...rows[0].expense_term,
-                  to: e.target.value,
-                })
-              }
-              sx={{ minWidth: 130 }}
-            />
-          </Box>
-
-          {/* Action Buttons – below on mobile */}
         </Box>
 
         <Box sx={{ display: { xs: "none", md: "block" } }}>
