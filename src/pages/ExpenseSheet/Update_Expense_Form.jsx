@@ -17,16 +17,28 @@ import { Button, Modal, ModalDialog, Textarea } from "@mui/joy";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useUpdateExpenseStatusOverallMutation } from "../../redux/expenseSlice";
+import Filter from "../../component/Partials/Filter";
 
 function Edit_Expense() {
   const navigate = useNavigate();
 
-  const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(null);
   const [showRejectAllDialog, setShowRejectAllDialog] = useState(false);
-  const [sharedRejectionComment, setSharedRejectionComment] = useState("");
-  const [updateStatus] = useUpdateExpenseStatusOverallMutation();
   const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
+
+  const [open, setOpen] = useState(false);
+
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+
+  const fields = [
+    {
+      key: "dates",
+      label: "Select Term",
+      type: "daterange",
+    }
+  ];
+
 
   useEffect(() => {
     const userData = getUserData();
@@ -41,15 +53,6 @@ function Edit_Expense() {
     return null;
   };
 
-
-
-  const handleRejectAll = () => {
-    setShowRejectAllDialog(true);
-  };
-
-  const handleApproveAll = () => {
-    setApproveConfirmOpen(true);
-  };
 
 
 
@@ -200,69 +203,95 @@ function Edit_Expense() {
           </Box>
         </MainHeader>
         <SubHeader title="Update Expense" isBackEnabled={true} sticky>
-          <Box display="flex" gap={2}>
-            {(([
-              "Engineering",
-              "BD",
-              "Projects",
-              "Infra",
-              "Loan",
-              "CAM",
-              "Accounts",
-              "HR",
-              "Marketing",
-            ].includes(user?.department) &&
-              user?.role === "manager") ||
-              user?.role === "visitor" ||
-              user?.name === "IT Team" ||
-              user?.department === "admin") && (
-                <>
-                  {/* <Button
-                  color="danger"
-                  size="sm"
-                  onClick={handleRejectAll}
-                  // disabled={rows.every((row) => {
-                  //   const status =
-                  //     typeof row.current_status === "string"
-                  //       ? row.current_status
-                  //       : row.current_status?.status;
+          <>
+            <Box display="flex" gap={2}>
+              {(([
+                "Engineering",
+                "BD",
+                "Projects",
+                "Infra",
+                "Loan",
+                "CAM",
+                "Accounts",
+                "HR",
+                "Marketing",
+              ].includes(user?.department) &&
+                user?.role === "manager") ||
+                user?.role === "visitor" ||
+                user?.name === "IT Team" ||
+                user?.department === "admin") && (
+                  <>
+                    <Button
+                      color="danger"
+                      size="sm"
+                      onClick={() => {
+                        setShowRejectAllDialog(true);
+                      }}
+                    // disabled={rows.every((row) => {
+                    //   const status =
+                    //     typeof row.current_status === "string"
+                    //       ? row.current_status
+                    //       : row.current_status?.status;
 
-                  //   return [
-                  //     "rejected",
-                  //     "hold",
-                  //     "hr approval",
-                  //     "manager approval",
-                  //     "final approval",
-                  //   ].includes(status);
-                  // })}
-                >
-                  Reject All
-                </Button>
+                    //   return [
+                    //     "rejected",
+                    //     "hold",
+                    //     "hr approval",
+                    //     "manager approval",
+                    //     "final approval",
+                    //   ].includes(status);
+                    // })}
+                    >
+                      Reject All
+                    </Button>
 
-                <Button
-                  color="success"
-                  size="sm"
-                  onClick={handleApproveAll}
-                  // disabled={rows.every((row) => {
-                  //   const status =
-                  //     typeof row.current_status === "string"
-                  //       ? row.current_status
-                  //       : row.current_status?.status;
+                    <Button
+                      color="success"
+                      size="sm"
+                      onClick={() => {
+                        setApproveConfirmOpen(true);
+                      }}
+                    // disabled={rows.every((row) => {
+                    //   const status =
+                    //     typeof row.current_status === "string"
+                    //       ? row.current_status
+                    //       : row.current_status?.status;
 
-                  //   return [
-                  //     "rejected",
-                  //     "hold",
-                  //     "hr approval",
-                  //     "manager approval",
-                  //     "final approval",
-                  //   ].includes(status);
-                  // })}
-                >
-                  Approve All
-                </Button> */}
-                </>
-              )}
-          </Box>
+                    //   return [
+                    //     "rejected",
+                    //     "hold",
+                    //     "hr approval",
+                    //     "manager approval",
+                    //     "final approval",
+                    //   ].includes(status);
+                    // })}
+                    >
+                      Approve All
+                    </Button>
+                  </>
+                )}
+            </Box>
+            <Filter
+              open={open}
+              onOpenChange={setOpen}
+              fields={fields}
+
+              onApply={(values) => {
+                setFrom(values?.dates?.from);
+                setTo(values?.dates?.to);
+
+                setOpen(false)
+              }}
+
+              onReset={() => {
+                setFrom("");
+                setTo("");
+
+                setOpen(false);
+              }}
+            />
+          </>
+
         </SubHeader>
         <Box
           component="main"
@@ -278,8 +307,12 @@ function Edit_Expense() {
           }}
         >
           <UpdateExpense
-          // showRejectAllDialog={showRejectAllDialog}
-          // approveConfirmOpen={approveConfirmOpen}
+            showRejectAllDialog={showRejectAllDialog}
+            approveConfirmOpen={approveConfirmOpen}
+            setShowRejectAllDialog={setShowRejectAllDialog}
+            setApproveConfirmOpen={setApproveConfirmOpen}
+            from={from}
+            to={to}
           />
         </Box>
 

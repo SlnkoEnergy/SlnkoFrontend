@@ -21,7 +21,13 @@ import {
   useUpdateExpenseStatusOverallMutation,
 } from "../../../redux/expenseSlice";
 import PieChartByCategory from "./Expense_Chart";
-const UpdateExpense = () => {
+const UpdateExpense = ({ showRejectAllDialog,
+  approveConfirmOpen,
+  setShowRejectAllDialog,
+  setApproveConfirmOpen,
+  from,
+  to
+ }) => {
   const navigate = useNavigate();
   const [rows, setRows] = useState([
     {
@@ -48,9 +54,9 @@ const UpdateExpense = () => {
           approved_amount: "",
           remarks: "",
           item_current_status: {
-            user_id:"",
-            remarks:"",
-            status:""
+            user_id: "",
+            remarks: "",
+            status: ""
           },
         },
       ],
@@ -72,9 +78,9 @@ const UpdateExpense = () => {
     },
   ]);
 
-  const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
+  // const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
   const [sharedRejectionComment, setSharedRejectionComment] = useState("");
-  const [showRejectAllDialog, setShowRejectAllDialog] = useState(false);
+  // const [showRejectAllDialog, setShowRejectAllDialog] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
 
   const [commentDialog, setCommentDialog] = useState({
@@ -319,8 +325,6 @@ const UpdateExpense = () => {
         ],
       };
 
-      console.log("payload:", payload);
-
       await updateExpense({
         _id: expenseSheetId,
         ...payload,
@@ -465,13 +469,13 @@ const UpdateExpense = () => {
     }
   };
 
-  const handleRejectAll = () => {
-    setShowRejectAllDialog(true);
-  };
+  // const handleRejectAll = () => {
+  //   setShowRejectAllDialog(true);
+  // };
 
-  const handleApproveAll = () => {
-    setApproveConfirmOpen(true);
-  };
+  // const handleApproveAll = () => {
+  //   setApproveConfirmOpen(true);
+  // };
 
   const applyApproveAll = async () => {
     try {
@@ -493,7 +497,7 @@ const UpdateExpense = () => {
           _id: row._id,
           approved_items,
           remarks: "approved",
-          status:"manager approval" 
+          status: "manager approval"
         }).unwrap();
       });
 
@@ -543,9 +547,9 @@ const UpdateExpense = () => {
     "Invoice Number",
     "Approved Amount",
     ...(user?.role === "manager" ||
-    user?.department === "admin" ||
-    user?.role === "visitor" ||
-    user?.name === "IT Team"
+      user?.department === "admin" ||
+      user?.role === "visitor" ||
+      user?.name === "IT Team"
       ? ["Approval"]
       : []),
   ];
@@ -578,114 +582,67 @@ const UpdateExpense = () => {
             display="flex"
             justifyContent="space-between"
             flexWrap="wrap"
-            alignItems="center"
+            alignItems="end"
             gap={2}
           >
             {/* Expense Term (from-to) */}
-            <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
-              <Typography level="body-md" fontWeight="lg">
-                Select Expense Term:
-              </Typography>
-              <Input
-                type="date"
-                size="sm"
-                value={rows[0].expense_term?.from.slice(0, 10) || ""}
-                onChange={(e) =>
-                  handleRowChange(0, "expense_term", {
-                    ...rows[0].expense_term,
-                    from: e.target.value,
-                  })
-                }
-              />
-              <Typography level="body-sm">to</Typography>
-              <Input
-                type="date"
-                size="sm"
-                value={rows[0].expense_term?.to.slice(0, 10) || ""}
-                onChange={(e) =>
-                  handleRowChange(0, "expense_term", {
-                    ...rows[0].expense_term,
-                    to: e.target.value,
-                  })
-                }
-              />
-              <Typography level="body-md" fontWeight="lg">
-                Employee Name:
-              </Typography>
-              <Input
-                type="text"
-                size="sm"
-                value={rows[0].emp_name || "NA"}
-                onChange={(e) => handleRowChange(0, "emp_name", e.target.value)}
-                placeholder="Enter employee name"
-              />
-            </Box>
+            <Box
+              display="flex"
+              alignItems="center"
+              gap={3}
+              flexWrap="wrap"
+              sx={{ ml: "auto" }} // 👈 pushes the box to the end (right side)
+            >
+              <Sheet
+                variant="outlined"
+                sx={{
+                  borderRadius: "10px",
+                  p: 2,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "start",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: 2,
+                  backgroundColor: "neutral.softBg",
+                  minWidth: 280,
+                }}
+              >
+                {/* Employee Name */}
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Typography level="body-md" fontWeight="lg">
+                    Employee Name:
+                  </Typography>
+                  <Typography level="body-md">{rows[0]?.emp_name || "NA"}</Typography>
+                </Box>
 
-            {/* Right: Bulk Actions */}
-            <Box display="flex" gap={2}>
-              {(([
-                "Engineering",
-                "BD",
-                "Projects",
-                "Infra",
-                "Loan",
-                "CAM",
-                "Accounts",
-                "HR",
-                "Marketing",
-              ].includes(user?.department) &&
-                user?.role === "manager") ||
-                user?.role === "visitor" ||
-                user?.name === "IT Team" ||
-                user?.department === "admin") && (
-                <>
-                  <Button
-                    color="danger"
-                    size="sm"
-                    onClick={handleRejectAll}
-                    disabled={rows.every((row) => {
-                      const status =
-                        typeof row.current_status === "string"
-                          ? row.current_status
-                          : row.current_status?.status;
-
-                      return [
-                        "rejected",
-                        "hold",
-                        "hr approval",
-                        "manager approval",
-                        "final approval",
-                      ].includes(status);
-                    })}
-                  >
-                    Reject All
-                  </Button>
-
-                  <Button
-                    color="success"
-                    size="sm"
-                    onClick={handleApproveAll}
-                    disabled={rows.every((row) => {
-                      const status =
-                        typeof row.current_status === "string"
-                          ? row.current_status
-                          : row.current_status?.status;
-
-                      return [
-                        "rejected",
-                        "hold",
-                        "hr approval",
-                        "manager approval",
-                        "final approval",
-                      ].includes(status);
-                    })}
-                  >
-                    Approve All
-                  </Button>
-                </>
-              )}
+                {/* Expense Term */}
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Typography level="body-md" fontWeight="lg">
+                    Expense Term:
+                  </Typography>
+                  <Typography level="body-md">
+                    {rows[0]?.expense_term?.from
+                      ? new Date(rows[0].expense_term.from).toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })
+                      : "NA"}{" "}
+                    to{" "}
+                    {rows[0]?.expense_term?.to
+                      ? new Date(rows[0].expense_term.to).toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })
+                      : "NA"}
+                  </Typography>
+                </Box>
+              </Sheet>
             </Box>
           </Box>
+
 
           {/* Table */}
           <Sheet
@@ -738,8 +695,8 @@ const UpdateExpense = () => {
                         <td>
                           {item.expense_date
                             ? new Date(item.expense_date)
-                                .toISOString()
-                                .split("T")[0]
+                              .toISOString()
+                              .split("T")[0]
                             : ""}
                         </td>
                         <td>{item.invoice?.invoice_amount}</td>
@@ -775,18 +732,18 @@ const UpdateExpense = () => {
                               {/\.(jpg|jpeg|png|webp|gif|pdf)$/i.test(
                                 item.attachment_url
                               ) && (
-                                <Button
-                                  variant="soft"
-                                  color="neutral"
-                                  size="sm"
-                                  onClick={() =>
-                                    setPreviewImage(item.attachment_url)
-                                  }
-                                  sx={{ textTransform: "none" }}
-                                >
-                                  👁️ View
-                                </Button>
-                              )}
+                                  <Button
+                                    variant="soft"
+                                    color="neutral"
+                                    size="sm"
+                                    onClick={() =>
+                                      setPreviewImage(item.attachment_url)
+                                    }
+                                    sx={{ textTransform: "none" }}
+                                  >
+                                    👁️ View
+                                  </Button>
+                                )}
 
                               {/* ⬇️ Download Button */}
                               <Button
@@ -835,8 +792,8 @@ const UpdateExpense = () => {
                                 ) : previewImage?.endsWith(".pdf") ? (
                                   <iframe
                                     src={`https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(
-                                        previewImage
-                                      )}`}
+                                      previewImage
+                                    )}`}
                                     title="PDF Preview"
                                     style={{
                                       width: "100%",
@@ -877,7 +834,7 @@ const UpdateExpense = () => {
                             type="number"
                             value={
                               item.approved_amount !== undefined &&
-                              item.approved_amount !== null
+                                item.approved_amount !== null
                                 ? item.approved_amount
                                 : item.invoice?.invoice_amount || ""
                             }
@@ -910,7 +867,7 @@ const UpdateExpense = () => {
                                   size="sm"
                                   variant={
                                     item.item_current_status ===
-                                    "manager approval"
+                                      "manager approval"
                                       ? "solid"
                                       : "outlined"
                                   }
@@ -1025,8 +982,8 @@ const UpdateExpense = () => {
                       <b>Expense Date:</b>{" "}
                       {item.expense_date
                         ? new Date(item.expense_date)
-                            .toISOString()
-                            .split("T")[0]
+                          .toISOString()
+                          .split("T")[0]
                         : "N/A"}
                     </span>
                     <span>
@@ -1342,17 +1299,17 @@ const UpdateExpense = () => {
               </thead>
               <tbody>
                 {(user?.role === "manager" ||
-                user?.role === "visitor" ||
-                user?.department === "admin" ||
-                user?.department === "HR" ||
-                user?.name === "IT Team"
+                  user?.role === "visitor" ||
+                  user?.department === "admin" ||
+                  user?.department === "HR" ||
+                  user?.name === "IT Team"
                   ? [
-                      ...new Set([
-                        ...categoryOptions,
-                        ...bdAndSalesCategoryOptions,
-                        ...officeAdminCategoryOptions,
-                      ]),
-                    ]
+                    ...new Set([
+                      ...categoryOptions,
+                      ...bdAndSalesCategoryOptions,
+                      ...officeAdminCategoryOptions,
+                    ]),
+                  ]
                   : getCategoryOptionsByDepartment(user?.department)
                 ).map((category, idx) => {
                   let total = 0;
