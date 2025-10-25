@@ -180,7 +180,15 @@ function DashboardSCM() {
     else sp.delete("deliveryTo");
 
     setSearchParams(sp);
-  }, [selectStatus, selectBillStatus, selectItem, etdDateFrom, etdDateTo, deliveryFrom, deliveryTo])
+  }, [
+    selectStatus,
+    selectBillStatus,
+    selectItem,
+    etdDateFrom,
+    etdDateTo,
+    deliveryFrom,
+    deliveryTo,
+  ]);
 
   // Version flag to let child know Apply/Reset happened
 
@@ -191,32 +199,80 @@ function DashboardSCM() {
         <Sidebar />
         <MainHeader title="SCM" sticky>
           <Box display="flex" gap={1}>
-            {(user?.name === "IT Team" ||
-              user?.department === "admin" ||
-              (user?.department === "Accounts" &&
-                (user?.name === "Deepak Kumar Maurya" ||
-                  user?.name === "Gagan Tayal" ||
-                  user?.name === "Ajay Singh" ||
-                  user?.name === "Sachin Raghav" ||
-                  user?.name === "Anamika Poonia" ||
-                  user?.name === "Meena Verma" ||
-                  user?.name === "Kailash Chand" ||
-                  user?.name === "Chandan Singh")) ||
-              (user?.department === "Accounts" &&
-                user?.name === "Sujan Maharjan") ||
-              user?.name === "Guddu Rani Dubey" ||
-              user?.name === "Varun Mishra" ||
-              user?.name === "Prachi Singh" ||
-              user?.role === "purchase" ||
-              (user?.role === "manager" && (user?.name === "Naresh Kumar")) ||
-              (user?.role === "visitor" &&
-                (user?.name === "Sanjiv Kumar" ||
-                  user?.name === "Sushant Ranjan Dubey")) ||
-              (user?.department === "CAM" && user?.name === "Shantanu Sameer")
+            {user?.name === "IT Team" ||
+            user?.department === "admin" ||
+            (user?.department === "Accounts" &&
+              (user?.name === "Deepak Kumar Maurya" ||
+                user?.name === "Gagan Tayal" ||
+                user?.name === "Ajay Singh" ||
+                user?.name === "Sachin Raghav" ||
+                user?.name === "Anamika Poonia" ||
+                user?.name === "Meena Verma" ||
+                user?.name === "Kailash Chand" ||
+                user?.name === "Chandan Singh")) ||
+            (user?.department === "Accounts" &&
+              user?.name === "Sujan Maharjan") ||
+            user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Varun Mishra" ||
+            user?.name === "Prachi Singh" ||
+            user?.role === "purchase" ||
+            (user?.role === "manager" && user?.name === "Naresh Kumar") ||
+            (user?.role === "visitor" &&
+              (user?.name === "Sanjiv Kumar" ||
+                user?.name === "Sushant Ranjan Dubey")) ||
+            (user?.department === "CAM" && user?.name === "Shantanu Sameer") ? (
+              <Button
+                size="sm"
+                onClick={() => navigate("/purchase-order")}
+                sx={{
+                  color: "white",
+                  bgcolor: "transparent",
+                  fontWeight: 500,
+                  fontSize: "1rem",
+                  letterSpacing: 0.5,
+                  borderRadius: "6px",
+                  px: 1.5,
+                  py: 0.5,
+                  "&:hover": {
+                    bgcolor: "rgba(255,255,255,0.15)",
+                  },
+                }}
+              >
+                Purchase Order
+              </Button>
+            ) : null}
 
-            ) ? (<Button
+            {user?.name === "IT Team" ||
+            user?.department === "admin" ||
+            user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Varun Mishra" ||
+            user?.name === "Prachi Singh" ||
+            user?.role === "purchase" ||
+            (user?.role === "manager" && user?.name === "Naresh Kumar") ||
+            user?.department === "Logistic" ? (
+              <Button
+                size="sm"
+                onClick={() => navigate(`/logistics`)}
+                sx={{
+                  color: "white",
+                  bgcolor: "transparent",
+                  fontWeight: 500,
+                  fontSize: "1rem",
+                  letterSpacing: 0.5,
+                  borderRadius: "6px",
+                  px: 1.5,
+                  py: 0.5,
+                  "&:hover": {
+                    bgcolor: "rgba(255,255,255,0.15)",
+                  },
+                }}
+              >
+                Logistics
+              </Button>
+            ) : null}
+            <Button
               size="sm"
-              onClick={() => navigate("/purchase-order")}
+              onClick={() => navigate(`/vendors`)}
               sx={{
                 color: "white",
                 bgcolor: "transparent",
@@ -226,80 +282,49 @@ function DashboardSCM() {
                 borderRadius: "6px",
                 px: 1.5,
                 py: 0.5,
-                "&:hover": {
-                  bgcolor: "rgba(255,255,255,0.15)",
-                },
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
               }}
             >
-              Purchase Order
-            </Button>) : (null)}
-
-            {(user?.name === "IT Team" ||
-              user?.department === "admin" ||
-              user?.name === "Guddu Rani Dubey" ||
-              user?.name === "Varun Mishra" ||
-              user?.name === "Prachi Singh" ||
-              user?.role === "purchase" ||
-              (user?.role === "manager" && (user?.name === "Naresh Kumar")) ||
-              user?.department === "Logistic"
-            ) ? (<Button
-              size="sm"
-              onClick={() => navigate(`/logistics`)}
-              sx={{
-                color: "white",
-                bgcolor: "transparent",
-                fontWeight: 500,
-                fontSize: "1rem",
-                letterSpacing: 0.5,
-                borderRadius: "6px",
-                px: 1.5,
-                py: 0.5,
-                "&:hover": {
-                  bgcolor: "rgba(255,255,255,0.15)",
-                },
-              }}
-            >
-              Logistics
-            </Button>) : (null)}
-
-            {(user?.name === "IT Team" ||
-              user?.department === "admin" ||
-              (user?.department === "Accounts" &&
-                (user?.name === "Deepak Kumar Maurya" ||
-                  user?.name === "Gagan Tayal" ||
-                  user?.name === "Ajay Singh" ||
-                  user?.name === "Sachin Raghav" ||
-                  user?.name === "Anamika Poonia" ||
-                  user?.name === "Meena Verma" ||
-                  user?.name === "Kailash Chand" ||
-                  user?.name === "Chandan Singh")) ||
-              (user?.department === "Accounts" &&
-                user?.name === "Sujan Maharjan") ||
-              user?.name === "Guddu Rani Dubey" ||
-              user?.name === "Varun Mishra" ||
-              user?.name === "Prachi Singh" ||
-              user?.role === "purchase" ||
-              (user?.role === "manager" && (user?.name === "Naresh Kumar"))
-            ) ? (<Button
-              size="sm"
-              onClick={() => navigate(`/vendor_bill`)}
-              sx={{
-                color: "white",
-                bgcolor: "transparent",
-                fontWeight: 500,
-                fontSize: "1rem",
-                letterSpacing: 0.5,
-                borderRadius: "6px",
-                px: 1.5,
-                py: 0.5,
-                "&:hover": {
-                  bgcolor: "rgba(255,255,255,0.15)",
-                },
-              }}
-            >
-              Vendor Bill
-            </Button>) : (null)}
-
+              Vendors
+            </Button>
+            {user?.name === "IT Team" ||
+            user?.department === "admin" ||
+            (user?.department === "Accounts" &&
+              (user?.name === "Deepak Kumar Maurya" ||
+                user?.name === "Gagan Tayal" ||
+                user?.name === "Ajay Singh" ||
+                user?.name === "Sachin Raghav" ||
+                user?.name === "Anamika Poonia" ||
+                user?.name === "Meena Verma" ||
+                user?.name === "Kailash Chand" ||
+                user?.name === "Chandan Singh")) ||
+            (user?.department === "Accounts" &&
+              user?.name === "Sujan Maharjan") ||
+            user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Varun Mishra" ||
+            user?.name === "Prachi Singh" ||
+            user?.role === "purchase" ||
+            (user?.role === "manager" && user?.name === "Naresh Kumar") ? (
+              <Button
+                size="sm"
+                onClick={() => navigate(`/vendor_bill`)}
+                sx={{
+                  color: "white",
+                  bgcolor: "transparent",
+                  fontWeight: 500,
+                  fontSize: "1rem",
+                  letterSpacing: 0.5,
+                  borderRadius: "6px",
+                  px: 1.5,
+                  py: 0.5,
+                  "&:hover": {
+                    bgcolor: "rgba(255,255,255,0.15)",
+                  },
+                }}
+              >
+                Vendor Bill
+              </Button>
+            ) : null}
           </Box>
         </MainHeader>
 
@@ -339,17 +364,6 @@ function DashboardSCM() {
                   </Button>
                 </>
               )}
-
-
-
-              <Button
-                color="primary"
-                variant="solid"
-                size="sm"
-                onClick={() => navigate("/add_vendor")}
-              >
-                Add Vendor
-              </Button>
 
               <Filter
                 open={open}
@@ -392,7 +406,6 @@ function DashboardSCM() {
             flexDirection: "column",
             gap: 1,
             mt: "108px",
-
             pr: "30px",
             ml: "24px",
             overflow: "hidden",
