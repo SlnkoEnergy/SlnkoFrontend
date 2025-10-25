@@ -237,7 +237,7 @@ export default function Template() {
                 }}
                 sx={{ ml: "auto" }}
               >
-                Compose email
+                Create Template
               </Button>
               {open && (
                 <Portal>

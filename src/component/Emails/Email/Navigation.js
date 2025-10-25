@@ -30,22 +30,18 @@ const tagDotColor = (label = "") => {
   return palette[h % palette.length];
 };
 
-export default function Navigation({ setSelectedStatus, setSelectedTag }) {
+export default function Navigation({ setSelectedStatus }) {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const statusParam = (searchParams.get("status") || "").trim();
-  const tagParam = (searchParams.get("tags") || "").trim();
 
-  const selectedTag = tagParam || null;
   const selectedStatus = statusParam || "queued";
 
   React.useEffect(() => {
-    if (selectedTag && typeof setSelectedTag === "function") {
-      setSelectedTag(selectedTag);
-    } else if (!selectedTag && typeof setSelectedStatus === "function") {
+    if (typeof setSelectedStatus === "function") {
       setSelectedStatus(selectedStatus);
     }
-  }, [selectedTag, selectedStatus, setSelectedStatus, setSelectedTag]);
+  }, [selectedStatus, setSelectedStatus]);
 
   const {
     data: tagsResponse,
@@ -77,19 +73,12 @@ export default function Navigation({ setSelectedStatus, setSelectedTag }) {
     if (value) next.set(key, value);
     else next.delete(key);
 
-    if (key === "status") next.delete("tags");
-    if (key === "tags") next.delete("status");
-
     next.delete("page");
     setSearchParams(next);
   };
 
   const handleClickStatus = (value) => {
     updateParam("status", value);
-  };
-
-  const handleClickTag = (tag) => {
-    updateParam("tags", tag);
   };
 
   return (
@@ -102,14 +91,13 @@ export default function Navigation({ setSelectedStatus, setSelectedTag }) {
           {items.map(({ label, value, Icon }) => (
             <ListItem key={value}>
               <ListItemButton
-                selected={selectedTag === null && selectedStatus === value}
+                selected={selectedStatus === value}
                 onClick={() => handleClickStatus(value)}
                 sx={{
-                  ...(selectedTag === null &&
-                    selectedStatus === value && {
-                      bgcolor: "neutral.softBg",
-                      "&:hover": { bgcolor: "neutral.softHoverBg" },
-                    }),
+                  ...(selectedStatus === value && {
+                    bgcolor: "neutral.softBg",
+                    "&:hover": { bgcolor: "neutral.softHoverBg" },
+                  }),
                 }}
               >
                 <ListItemDecorator>
@@ -174,12 +162,12 @@ export default function Navigation({ setSelectedStatus, setSelectedTag }) {
           {!tagsLoading &&
             !tagsError &&
             tags.map((tag) => {
-              const isSelected = selectedTag === tag;
+              const isSelected = selectedStatus === tag;
               return (
                 <ListItem key={tag}>
                   <ListItemButton
                     selected={isSelected}
-                    onClick={() => handleClickTag(tag)}
+                    onClick={() => handleClickStatus(tag)}
                     sx={{
                       ...(isSelected && {
                         bgcolor: "neutral.softBg",

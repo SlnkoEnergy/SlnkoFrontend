@@ -12,7 +12,7 @@ import Typography from "@mui/joy/Typography";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
-import { CircularProgress, Option, Select } from "@mui/joy";
+import { Chip, CircularProgress, Option, Select } from "@mui/joy";
 import { useGetAllVendorsQuery } from "../redux/vendorSlice";
 
 const AllVendors = () => {
@@ -126,7 +126,6 @@ const AllVendors = () => {
     setSelected([]);
   };
 
-  // ---- Sync state when URL changes (back/forward, manual edits) ----
   useEffect(() => {
     const page = readInt("page", 1);
     const size = readInt("pageSize", 10);
@@ -306,7 +305,14 @@ const AllVendors = () => {
                     component="td"
                     style={{ padding: 8, borderBottom: "1px solid #ddd" }}
                   >
-                    {vendor.name || "-"}
+                    <Chip
+                      color="primary"
+                      variant="outlined"
+                      size="md"
+                      sx={{ fontWeight: "md", borderRadius: "lg" }}
+                    >
+                      {vendor?.name || "-"}
+                    </Chip>
                   </Box>
 
                   <Box

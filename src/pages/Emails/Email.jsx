@@ -22,7 +22,6 @@ export default function Email() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedEmail, setSelectedEmail] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState("queued");
-  const [selectedTag, setSelectedTag] = useState(null);
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -151,7 +150,6 @@ export default function Email() {
           >
             <Layout.SideNav>
               <Navigation
-                setSelectedTag={setSelectedTag}
                 setSelectedStatus={setSelectedStatus}
               />
             </Layout.SideNav>
@@ -183,8 +181,6 @@ export default function Email() {
                 selectedEmail={selectedEmail}
                 selectedStatus={selectedStatus}
                 setSelectedStatus={setSelectedStatus}
-                selectedTag={selectedTag}
-                setSelectedTag={setSelectedTag}
               />
             </Layout.SidePane>
 

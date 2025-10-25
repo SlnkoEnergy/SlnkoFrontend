@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import Box from "@mui/joy/Box";
 import Typography from "@mui/joy/Typography";
 import Avatar from "@mui/joy/Avatar";
@@ -103,18 +103,14 @@ export default function EmailList({
   selectedEmail,
   selectedStatus,
   setSelectedStatus,
-  selectedTag,
-  setSelectedTag,
 }) {
   const [page, setPage] = React.useState(1);
-  const pageSize = 10;
+  const pageSize = 5;
   const { data, isLoading, isError, error } = useGetEmailQuery({
     page: page,
     limit: pageSize,
     status: selectedStatus,
-    tags: selectedTag,
   });
-
   const emails = useMemo(() => data?.data || [], [data]);
   const pagination = data?.pagination || {
     page: 1,
@@ -122,25 +118,12 @@ export default function EmailList({
     total: 0,
     limit: pageSize,
   };
-  const prevStatusRef = useRef(selectedStatus);
-  const prevTagRef = useRef(selectedTag);
-  React.useEffect(() => {
-    if (
-      selectedEmail === null &&
-      emails.length > 0 &&
-      prevStatusRef.current === selectedStatus
-    ) {
+
+  useEffect(() => {
+    if (selectedEmail === null && emails.length > 0) {
       setSelectedEmail(emails[0]?._id || undefined);
-    } else if (prevStatusRef.current !== selectedStatus) {
-      setSelectedEmail(emails[0]?._id || undefined);
-      setSelectedTag(null);
-      prevStatusRef.current = selectedStatus;
-    } else if (prevTagRef !== selectedTag) {
-      setSelectedEmail(emails[0]?._id || undefined);
-      setSelectedStatus(null);
-      prevTagRef.current = selectedStatus;
     }
-  }, [selectedEmail, emails, setSelectedEmail, selectedStatus, selectedTag]);
+  }, [selectedEmail, emails, setSelectedEmail, selectedStatus]);
 
   const handlePrevPage = () => {
     if (pagination.page > 1) setPage((prev) => prev - 1);
@@ -242,7 +225,7 @@ export default function EmailList({
                 selected={isSelected}
                 color={isSelected ? "neutral" : undefined}
                 sx={{ p: 2, cursor: "pointer" }}
-                onClick={() => setSelectedEmail?.(id)} // ← pass _id to parent
+                onClick={() => setSelectedEmail?.(id)}
               >
                 <ListItemDecorator sx={{ alignSelf: "flex-start" }}>
                   <Avatar>{initials(nameTo)}</Avatar>

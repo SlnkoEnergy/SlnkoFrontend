@@ -18,8 +18,8 @@ export const emailApi = createApi({
   tagTypes: ["Email"],
   endpoints: (builder) => ({
     getEmail: builder.query({
-      query: ({ page = 1, search = "", limit = 10, status, tags }) =>
-        `?page=${page}&search=${search}&limit=${limit}&status=${status}&tags=${tags}`,
+      query: ({ page = 1, search = "", limit = 10, status }) =>
+        `?page=${page}&search=${search}&limit=${limit}&status=${status}`,
       transformResponse: (response) => ({
         data: response.data || [],
         pagination: response?.pagination || {},
