@@ -31,6 +31,7 @@ import { closeSidebar } from "../../utils/utils";
 import DatabaseIcon from "@mui/icons-material/Storage";
 import FactCheckIcon from "@mui/icons-material/FactCheck";
 import AppNotification from "./Notification";
+import MailIcon from '@mui/icons-material/Mail';
 
 function Toggler({ defaultExpanded = false, renderToggle, children }) {
   const [open, setOpen] = useState(defaultExpanded);
@@ -82,7 +83,10 @@ function Sidebar() {
   };
 
   const isSalesPage = location.pathname === "/sales";
-  const isProjecsPage = location.pathname === "/view_pm";
+  const isProjectsPage =
+    location.pathname === "/view_pm" ||
+    location.pathname === "/email" ||
+    location.pathname === "/email_template";
   return (
     <Sheet
       className="Sidebar"
@@ -104,7 +108,7 @@ function Sidebar() {
         transform: {
           xs: "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1)))",
           lg:
-            isSalesPage || isProjecsPage
+            isSalesPage || isProjectsPage
               ? "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1)))"
               : "none",
         },
@@ -124,7 +128,7 @@ function Sidebar() {
         className="Sidebar-overlay"
         sx={{
           position: "fixed",
-          zIndex: 200,
+          zIndex: 202,
           top: 0,
           left: 0,
           width: "100vw",
@@ -137,7 +141,7 @@ function Sidebar() {
             sm: "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1) + var(--SideNavigation-slideIn, 0) * var(--Sidebar-width, 0px)))",
             md: "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1) + var(--SideNavigation-slideIn, 0) * var(--Sidebar-width, 0px)))",
             lg:
-              isSalesPage || isProjecsPage
+              isSalesPage || isProjectsPage
                 ? "translateX(calc(100% * (var(--SideNavigation-slideIn, 0) - 1) + var(--SideNavigation-slideIn, 0) * var(--Sidebar-width, 0px)))"
                 : "translateX(-100%)",
           },
@@ -201,6 +205,20 @@ function Sidebar() {
                     onClick={() => navigate("/dashboard")}
                   >
                     Home
+                  </Typography>
+                </ListItemContent>
+              </ListItemButton>
+            </ListItem>
+            
+            <ListItem>
+              <ListItemButton>
+                <MailIcon  />
+                <ListItemContent>
+                  <Typography
+                    level="title-sm"
+                    onClick={() => navigate("/email")}
+                  >
+                    Emails
                   </Typography>
                 </ListItemContent>
               </ListItemButton>

@@ -28,13 +28,13 @@ export const purchasesApi = createApi({
       providesTags: ["Purchase"],
     }),
 
-
     getPaginatedPOs: builder.query({
-      query: (args = {}) => {
-        const params = clean({
+      query: (args = {}) => ({
+        url: "get-paginated-po",
+        params: clean({
           page: args.page ?? 1,
           search: args.search ?? "",
-          status: args.status === "All Status" ? "" : args.status,          // check this
+          status: args.status,
           pageSize: args.pageSize ?? 10,
           type: args.type,
           project_id: args.project_id,
@@ -46,19 +46,14 @@ export const purchasesApi = createApi({
           deliveryTo: args.deliveryTo,
           filter: args.filter,
           itemSearch: args.itemSearch,
-        });
-        return {
-          url: "get-paginated-po",
-          params,
-        };
-      },
-
+          vendor_id: args.vendor_id,
+        }),
+      }),
       transformResponse: (response) => ({
         data: response.data || [],
         total: response.meta?.total || 0,
         count: response.meta?.count || 0,
       }),
-
       providesTags: ["Purchase"],
 
       forceRefetch({ currentArg, previousArg }) {
@@ -68,7 +63,6 @@ export const purchasesApi = createApi({
         );
       },
     }),
-
 
     getItems: builder.query({
       query: () => "get-iteM-IT",

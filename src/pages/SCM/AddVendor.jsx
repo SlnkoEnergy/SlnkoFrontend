@@ -5,7 +5,6 @@ import CssBaseline from "@mui/joy/CssBaseline";
 import Link from "@mui/joy/Link";
 import { CssVarsProvider } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
-import React, { useEffect, useState } from "react";
 import ADDVENDOR from "../../component/Forms/Add_Vendor";
 import Header from "../../component/Partials/Header";
 import Sidebar from "../../component/Partials/Sidebar";
@@ -13,9 +12,9 @@ import SubHeader from "../../component/Partials/SubHeader";
 import MainHeader from "../../component/Partials/MainHeader";
 import { Button } from "@mui/joy";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 function Add_Vendor() {
-
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
@@ -38,32 +37,80 @@ function Add_Vendor() {
         <Sidebar />
         <MainHeader title="SCM" sticky>
           <Box display="flex" gap={1}>
-            {(user?.name === "IT Team" ||
-              user?.department === "admin" ||
-              (user?.department === "Accounts" &&
-                (user?.name === "Deepak Kumar Maurya" ||
-                  user?.name === "Gagan Tayal" ||
-                  user?.name === "Ajay Singh" ||
-                  user?.name === "Sachin Raghav" ||
-                  user?.name === "Anamika Poonia" ||
-                  user?.name === "Meena Verma" ||
-                  user?.name === "Kailash Chand" ||
-                  user?.name === "Chandan Singh")) ||
-              (user?.department === "Accounts" &&
-                user?.name === "Sujan Maharjan") ||
-              user?.name === "Guddu Rani Dubey" ||
-              user?.name === "Varun Mishra" ||
-              user?.name === "Prachi Singh" ||
-              user?.role === "purchase" ||
-              (user?.role === "manager" && (user?.name === "Naresh Kumar")) ||
-              (user?.role === "visitor" &&
-                (user?.name === "Sanjiv Kumar" ||
-                  user?.name === "Sushant Ranjan Dubey")) ||
-              (user?.department === "CAM" && user?.name === "Shantanu Sameer")
+            {user?.name === "IT Team" ||
+            user?.department === "admin" ||
+            (user?.department === "Accounts" &&
+              (user?.name === "Deepak Kumar Maurya" ||
+                user?.name === "Gagan Tayal" ||
+                user?.name === "Ajay Singh" ||
+                user?.name === "Sachin Raghav" ||
+                user?.name === "Anamika Poonia" ||
+                user?.name === "Meena Verma" ||
+                user?.name === "Kailash Chand" ||
+                user?.name === "Chandan Singh")) ||
+            (user?.department === "Accounts" &&
+              user?.name === "Sujan Maharjan") ||
+            user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Varun Mishra" ||
+            user?.name === "Prachi Singh" ||
+            user?.role === "purchase" ||
+            (user?.role === "manager" && user?.name === "Naresh Kumar") ||
+            (user?.role === "visitor" &&
+              (user?.name === "Sanjiv Kumar" ||
+                user?.name === "Sushant Ranjan Dubey")) ||
+            (user?.department === "CAM" && user?.name === "Shantanu Sameer") ? (
+              <Button
+                size="sm"
+                onClick={() => navigate("/purchase-order")}
+                sx={{
+                  color: "white",
+                  bgcolor: "transparent",
+                  fontWeight: 500,
+                  fontSize: "1rem",
+                  letterSpacing: 0.5,
+                  borderRadius: "6px",
+                  px: 1.5,
+                  py: 0.5,
+                  "&:hover": {
+                    bgcolor: "rgba(255,255,255,0.15)",
+                  },
+                }}
+              >
+                Purchase Order
+              </Button>
+            ) : null}
 
-            ) ? (<Button
+            {user?.name === "IT Team" ||
+            user?.department === "admin" ||
+            user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Varun Mishra" ||
+            user?.name === "Prachi Singh" ||
+            user?.role === "purchase" ||
+            (user?.role === "manager" && user?.name === "Naresh Kumar") ||
+            user?.department === "Logistic" ? (
+              <Button
+                size="sm"
+                onClick={() => navigate(`/logistics`)}
+                sx={{
+                  color: "white",
+                  bgcolor: "transparent",
+                  fontWeight: 500,
+                  fontSize: "1rem",
+                  letterSpacing: 0.5,
+                  borderRadius: "6px",
+                  px: 1.5,
+                  py: 0.5,
+                  "&:hover": {
+                    bgcolor: "rgba(255,255,255,0.15)",
+                  },
+                }}
+              >
+                Logistics
+              </Button>
+            ) : null}
+            <Button
               size="sm"
-              onClick={() => navigate("/purchase-order")}
+              onClick={() => navigate(`/vendors`)}
               sx={{
                 color: "white",
                 bgcolor: "transparent",
@@ -73,80 +120,49 @@ function Add_Vendor() {
                 borderRadius: "6px",
                 px: 1.5,
                 py: 0.5,
-                "&:hover": {
-                  bgcolor: "rgba(255,255,255,0.15)",
-                },
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
               }}
             >
-              Purchase Order
-            </Button>) : (null)}
-
-            {(user?.name === "IT Team" ||
-              user?.department === "admin" ||
-              user?.name === "Guddu Rani Dubey" ||
-              user?.name === "Varun Mishra" ||
-              user?.name === "Prachi Singh" ||
-              user?.role === "purchase" ||
-              (user?.role === "manager" && (user?.name === "Naresh Kumar")) ||
-              user?.department === "Logistic"
-            ) ? (<Button
-              size="sm"
-              onClick={() => navigate(`/logistics`)}
-              sx={{
-                color: "white",
-                bgcolor: "transparent",
-                fontWeight: 500,
-                fontSize: "1rem",
-                letterSpacing: 0.5,
-                borderRadius: "6px",
-                px: 1.5,
-                py: 0.5,
-                "&:hover": {
-                  bgcolor: "rgba(255,255,255,0.15)",
-                },
-              }}
-            >
-              Logistics
-            </Button>) : (null)}
-
-            {(user?.name === "IT Team" ||
-              user?.department === "admin" ||
-              (user?.department === "Accounts" &&
-                (user?.name === "Deepak Kumar Maurya" ||
-                  user?.name === "Gagan Tayal" ||
-                  user?.name === "Ajay Singh" ||
-                  user?.name === "Sachin Raghav" ||
-                  user?.name === "Anamika Poonia" ||
-                  user?.name === "Meena Verma" ||
-                  user?.name === "Kailash Chand" ||
-                  user?.name === "Chandan Singh")) ||
-              (user?.department === "Accounts" &&
-                user?.name === "Sujan Maharjan") ||
-              user?.name === "Guddu Rani Dubey" ||
-              user?.name === "Varun Mishra" ||
-              user?.name === "Prachi Singh" ||
-              user?.role === "purchase" ||
-              (user?.role === "manager" && (user?.name === "Naresh Kumar"))
-            ) ? (<Button
-              size="sm"
-              onClick={() => navigate(`/vendor_bill`)}
-              sx={{
-                color: "white",
-                bgcolor: "transparent",
-                fontWeight: 500,
-                fontSize: "1rem",
-                letterSpacing: 0.5,
-                borderRadius: "6px",
-                px: 1.5,
-                py: 0.5,
-                "&:hover": {
-                  bgcolor: "rgba(255,255,255,0.15)",
-                },
-              }}
-            >
-              Vendor Bill
-            </Button>) : (null)}
-
+              Vendors
+            </Button>
+            {user?.name === "IT Team" ||
+            user?.department === "admin" ||
+            (user?.department === "Accounts" &&
+              (user?.name === "Deepak Kumar Maurya" ||
+                user?.name === "Gagan Tayal" ||
+                user?.name === "Ajay Singh" ||
+                user?.name === "Sachin Raghav" ||
+                user?.name === "Anamika Poonia" ||
+                user?.name === "Meena Verma" ||
+                user?.name === "Kailash Chand" ||
+                user?.name === "Chandan Singh")) ||
+            (user?.department === "Accounts" &&
+              user?.name === "Sujan Maharjan") ||
+            user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Varun Mishra" ||
+            user?.name === "Prachi Singh" ||
+            user?.role === "purchase" ||
+            (user?.role === "manager" && user?.name === "Naresh Kumar") ? (
+              <Button
+                size="sm"
+                onClick={() => navigate(`/vendor_bill`)}
+                sx={{
+                  color: "white",
+                  bgcolor: "transparent",
+                  fontWeight: 500,
+                  fontSize: "1rem",
+                  letterSpacing: 0.5,
+                  borderRadius: "6px",
+                  px: 1.5,
+                  py: 0.5,
+                  "&:hover": {
+                    bgcolor: "rgba(255,255,255,0.15)",
+                  },
+                }}
+              >
+                Vendor Bill
+              </Button>
+            ) : null}
           </Box>
         </MainHeader>
         <SubHeader title="Add Vendor" isBackEnabled={true} sticky></SubHeader>
@@ -164,7 +180,49 @@ function Add_Vendor() {
             px: "24px",
           }}
         >
-          <ADDVENDOR />
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              marginLeft: { xl: "16%", lg: "20%" },
+            }}
+          >
+            <Breadcrumbs
+              size="sm"
+              aria-label="breadcrumbs"
+              separator={<ChevronRightRoundedIcon fontSize="sm" />}
+              sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
+            >
+              <Link
+                underline="hover"
+                color="neutral"
+                href=""
+                sx={{ fontSize: 12, fontWeight: 500 }}
+              >
+                SCM
+              </Link>
+              <Typography
+                color="primary"
+                sx={{ fontWeight: 500, fontSize: 12 }}
+              >
+                Add Vendor
+              </Typography>
+            </Breadcrumbs>
+          </Box>
+          <Box
+            sx={{
+              display: "flex",
+              mb: 1,
+              gap: 1,
+              flexDirection: { xs: "column", sm: "row" },
+              alignItems: { xs: "start", sm: "center" },
+              flexWrap: "wrap",
+              justifyContent: "space-between",
+              marginLeft: { xl: "16%", lg: "20%" },
+            }}
+          >
+            <ADDVENDOR />
+          </Box>
         </Box>
       </Box>
     </CssVarsProvider>
