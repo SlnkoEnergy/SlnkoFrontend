@@ -90,14 +90,8 @@ function Bill_History() {
 
   const handleExport = async (isExportAll) => {
     try {
-      // const exportFrom =  formatDateToDDMMYYYY(from) ;
-      // const exportTo = formatDateToDDMMYYYY(to) : null;
-      // const exportAll = !from || !to;
 
       const res = await exportBills({
-        // from: exportFrom,
-        // to: exportTo,
-        // exportAll: isExportAll,
       }).unwrap();
 
       const url = URL.createObjectURL(res);
@@ -110,28 +104,7 @@ function Bill_History() {
       console.error("Export failed", err);
       alert("Failed to export bills");
     }
-  }; //   try {
-  //     const exportFrom = from ? formatDateToDDMMYYYY(from) : null;
-  //     const exportTo = to ? formatDateToDDMMYYYY(to) : null;
-  //     // const exportAll = !from || !to;
-
-  //     const res = await exportBills({
-  //       from: exportFrom,
-  //       to: exportTo,
-  //       exportAll: isExportAll,
-  //     }).unwrap();
-
-  //     const url = URL.createObjectURL(res);
-  //     const link = document.createElement("a");
-  //     link.href = url;
-  //     link.download = "bills_export.csv";
-  //     link.click();
-  //     URL.revokeObjectURL(url);
-  //   } catch (err) {
-  //     console.error("Export failed", err);
-  //     alert("Failed to export bills");
-  //   }
-  // };
+  };
 
   return (
     <CssVarsProvider disableTransitionOnChange>

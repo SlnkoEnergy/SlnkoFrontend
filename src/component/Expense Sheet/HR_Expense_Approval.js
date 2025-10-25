@@ -305,7 +305,6 @@ const HrExpense = forwardRef((props, ref) => {
 
   const paginatedExpenses = expenses;
 
-  console.log("paginatedExpenses", paginatedExpenses);
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {

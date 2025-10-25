@@ -116,12 +116,6 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
     return pages;
   };
 
-  // const expenses = useMemo(
-  //   () => (Array.isArray(getExpense?.data) ? getExpense.data : []),
-  //   [getExpense]
-  // );
-
-
 
   const handleSelectAll = (event) => {
     const ids = paginatedExpenses?.map((row) => row._id);

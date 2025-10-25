@@ -22,7 +22,7 @@ import ModalDialog from "@mui/joy/ModalDialog";
 import Sheet from "@mui/joy/Sheet";
 import Table from "@mui/joy/Table";
 import Typography from "@mui/joy/Typography";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
@@ -35,13 +35,16 @@ import PieChartByCategory from "./Expense_Chart";
 import CircularProgress from "@mui/joy/CircularProgress";
 
 const UpdateExpenseAccounts = ({
-  onRowsUpdate, // ⬅️ NEW: send rows up
+  onRowsUpdate, // send rows up
+  onDisabledChange, // 👈 NEW: report {hr, accounts} disabled flags to parent
+
   rejectConfirmOpen,
   setRejectConfirmOpen,
   showHoldAllDialog,
   setShowHoldAllDialog,
   approveHRConfirmOpen,
   setHRApproveConfirmOpen,
+
   showAccountsRejectAllDialog,
   setAccountsShowRejectAllDialog,
   approveAccountsConfirmOpen,
@@ -183,6 +186,37 @@ const UpdateExpenseAccounts = ({
     return common;
   }
 
+  // ✅ Compute disabled flags & report to parent
+  const isDisabledHR = useMemo(
+    () =>
+      rows.every((row) =>
+        ["rejected", "hold", "hr approval", "final approval"].includes(
+          typeof row.current_status === "string"
+            ? row.current_status
+            : row.current_status?.status
+        )
+      ),
+    [rows]
+  );
+
+  const isDisabledAccounts = useMemo(
+    () =>
+      rows.every((row) =>
+        ["rejected", "hold", "final approval", "submitted", "manager approval"].includes(
+          typeof row.current_status === "string"
+            ? row.current_status
+            : row.current_status?.status
+        )
+      ),
+    [rows]
+  );
+
+  useEffect(() => {
+    if (typeof onDisabledChange === "function") {
+      onDisabledChange({ hr: isDisabledHR, accounts: isDisabledAccounts });
+    }
+  }, [isDisabledHR, isDisabledAccounts, onDisabledChange]);
+
   function getCategoryDescription(category) {
     return (
       categoryDescriptions[category] ||
@@ -193,9 +227,7 @@ const UpdateExpenseAccounts = ({
   }
 
   const ExpenseCode = localStorage.getItem("edit_expense");
-  const { data: response = {} } = useGetExpenseByIdQuery({
-    expense_code: ExpenseCode,
-  });
+  const { data: response = {} } = useGetExpenseByIdQuery({ expense_code: ExpenseCode });
   const expenses = response?.data || [];
 
   const [updateExpense, { isLoading: isUpdating }] =
@@ -203,7 +235,7 @@ const UpdateExpenseAccounts = ({
   const [updateStatus] = useUpdateExpenseStatusOverallMutation();
   const [updateDisbursement] = useUpdateDisbursementDateMutation();
 
-  // ⬇️ set rows from API and notify parent once
+  // set rows from API and notify parent once
   useEffect(() => {
     if (!ExpenseCode) {
       console.warn("No expense_code in localStorage");
@@ -219,7 +251,7 @@ const UpdateExpenseAccounts = ({
       const enrichedExpense = { ...expenses };
       const next = [enrichedExpense];
       setRows(next);
-      onRowsUpdate?.(next); // 🔔 send up
+      onRowsUpdate?.(next); // send up
     } else {
       console.warn("Expense code does not match");
     }
@@ -229,7 +261,7 @@ const UpdateExpenseAccounts = ({
   const setRowsAndNotify = (updater) => {
     setRows((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;
-      onRowsUpdate?.(next); // 🔔 keep parent in sync
+      onRowsUpdate?.(next);
       return next;
     });
   };
@@ -298,10 +330,7 @@ const UpdateExpenseAccounts = ({
         status_history: [...(rows[0]?.status_history || []), currentStatusObj],
       };
 
-      await updateExpense({
-        _id: expenseSheetId,
-        ...payload,
-      }).unwrap();
+      await updateExpense({ _id: expenseSheetId, ...payload }).unwrap();
 
       toast.success("Total approved amount and status updated successfully!");
       navigate("/expense_dashboard");
@@ -499,29 +528,33 @@ const UpdateExpenseAccounts = ({
       const timestamp = new Date().toISOString();
 
       const updated = rows.map((row) => {
-        const updatedItems = row.items.map((item) => ({
-          ...item,
-          remarks: reason,
-          item_current_status: {
+        const updatedItems = row.items.map((item) => {
+          const statusObj = {
             status: "hold",
             remarks: reason,
             user_id: userID,
             updatedAt: timestamp,
-          },
-          item_status_history: [
-            ...(item.item_status_history || []),
-            { status: "hold", remarks: reason, user_id: userID, updatedAt: timestamp },
-          ],
-        }));
+          };
+          return {
+            ...item,
+            remarks: reason,
+            item_current_status: statusObj,
+            item_status_history: [...(item.item_status_history || []), statusObj],
+          };
+        });
+
+        const rowStatusObj = {
+          status: "hold",
+          remarks: reason,
+          user_id: userID,
+          updatedAt: timestamp,
+        };
 
         return {
           ...row,
           items: updatedItems,
-          current_status: { status: "hold", remarks: reason, user_id: userID, updatedAt: timestamp },
-          status_history: [
-            ...(row.status_history || []),
-            { status: "hold", remarks: reason, user_id: userID, updatedAt: timestamp },
-          ],
+          current_status: rowStatusObj,
+          status_history: [...(row.status_history || []), rowStatusObj],
           remarks: reason,
         };
       });
@@ -615,12 +648,10 @@ const UpdateExpenseAccounts = ({
 
   const handleAccountsRejectAll = () => setAccountsShowRejectAllDialog(true);
 
-  const applyAccountsRejectAll = async () => {
+  const applyAccountsRejectAll = async (reason) => {
     try {
       const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
       if (!userID) return toast.error("User ID not found. Please login again.");
-
-      const reason = showAccountsRejectAllDialog;
       const timestamp = new Date().toISOString();
 
       const updated = rows.map((row) => {
@@ -797,58 +828,51 @@ const UpdateExpenseAccounts = ({
             display="flex"
             justifyContent="space-between"
             flexWrap="wrap"
-            alignItems="center"
+            alignItems="end"
             gap={2}
           >
-            {/* Expense Term */}
-            <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
-              <Typography level="body-md" fontWeight="lg">
-                Select Expense Term:
-              </Typography>
-              <Input
-                type="date"
-                size="sm"
-                value={rows[0].expense_term?.from?.slice(0, 10) || ""}
-                onChange={(e) =>
-                  handleRowChange(0, "expense_term", {
-                    ...rows[0].expense_term,
-                    from: e.target.value,
-                  })
-                }
-              />
-              <Typography level="body-sm">to</Typography>
-              <Input
-                type="date"
-                size="sm"
-                value={rows[0].expense_term?.to?.slice(0, 10) || ""}
-                onChange={(e) =>
-                  handleRowChange(0, "expense_term", {
-                    ...rows[0].expense_term,
-                    to: e.target.value,
-                  })
-                }
-              />
+            {/* Employee/Term box on right */}
+            <Box display="flex" alignItems="center" gap={3} flexWrap="wrap" sx={{ ml: "auto" }}>
+              <Sheet
+                variant="outlined"
+                sx={{
+                  borderRadius: "10px",
+                  p: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: 2,
+                  backgroundColor: "neutral.softBg",
+                }}
+              >
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Typography level="body-md" fontWeight="lg">Employee Name:</Typography>
+                  <Typography level="body-md">{rows[0]?.emp_name || "NA"}</Typography>
+                </Box>
 
-              <Typography level="body-md" fontWeight="lg">
-                Employee Name:
-              </Typography>
-              <Input
-                type="text"
-                size="sm"
-                value={rows[0].emp_name || "NA"}
-                onChange={(e) => handleRowChange(0, "emp_name", e.target.value)}
-                placeholder="Enter employee name"
-              />
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Typography level="body-md" fontWeight="lg">Expense Term:</Typography>
+                  <Typography level="body-md">
+                    {rows[0]?.expense_term?.from
+                      ? new Date(rows[0].expense_term.from).toLocaleDateString("en-GB", {
+                        day: "2-digit", month: "short", year: "numeric",
+                      })
+                      : "NA"}{" "}
+                    to{" "}
+                    {rows[0]?.expense_term?.to
+                      ? new Date(rows[0].expense_term.to).toLocaleDateString("en-GB", {
+                        day: "2-digit", month: "short", year: "numeric",
+                      })
+                      : "NA"}
+                  </Typography>
+                </Box>
+              </Sheet>
             </Box>
-
-            {/* NOTE: Export buttons removed from child; parent renders them */}
           </Box>
 
           {/* Table */}
-          <Sheet
-            variant="outlined"
-            sx={{ borderRadius: "md", overflow: "auto", boxShadow: "sm", maxHeight: "70vh" }}
-          >
+          <Sheet variant="outlined" sx={{ borderRadius: "md", overflow: "auto", boxShadow: "sm", maxHeight: "70vh" }}>
             {/* Desktop */}
             <Box sx={{ display: { xs: "none", sm: "block" } }}>
               <Table
@@ -857,18 +881,12 @@ const UpdateExpenseAccounts = ({
                 stickyHeader
                 hoverRow
                 sx={{
-                  "& thead th": {
-                    backgroundColor: "neutral.softBg",
-                    fontWeight: "md",
-                    fontSize: "sm",
-                  },
+                  "& thead th": { backgroundColor: "neutral.softBg", fontWeight: "md", fontSize: "sm" },
                 }}
               >
                 <thead>
                   <tr>
-                    {tableHeaders.map((header, idx) => (
-                      <th key={idx}>{header}</th>
-                    ))}
+                    {tableHeaders.map((header, idx) => (<th key={idx}>{header}</th>))}
                   </tr>
                 </thead>
                 <tbody>
@@ -881,35 +899,29 @@ const UpdateExpenseAccounts = ({
                         <td>{item.description}</td>
                         <td>
                           {item.expense_date
-                            ? new Date(item.expense_date)
-                              .toISOString()
-                              .split("T")[0]
+                            ? new Date(item.expense_date).toISOString().split("T")[0]
                             : ""}
                         </td>
                         <td>{item.invoice?.invoice_amount}</td>
                         <td>
                           {item.attachment_url ? (
                             <Stack direction="row" spacing={1}>
-                              {/* View */}
-                              {/\.(jpg|jpeg|png|webp|gif|pdf)$/i.test(
-                                item.attachment_url
-                              ) && (
-                                  <Button
-                                    variant="soft"
-                                    color="neutral"
-                                    size="sm"
-                                    onClick={() => {
-                                      setPreviewImage(item.attachment_url);
-                                      if (/\.pdf(\?|$)/i.test(item.attachment_url)) {
-                                        setIsPdfLoading(true);
-                                      }
-                                    }}
-                                    sx={{ textTransform: "none" }}
-                                  >
-                                    👁️ View
-                                  </Button>
-                                )}
-                              {/* Download */}
+                              {/\\.(jpg|jpeg|png|webp|gif|pdf)$/i.test(item.attachment_url) && (
+                                <Button
+                                  variant="soft"
+                                  color="neutral"
+                                  size="sm"
+                                  onClick={() => {
+                                    setPreviewImage(item.attachment_url);
+                                    if (/\\.pdf(\\?|$)/i.test(item.attachment_url)) {
+                                      setIsPdfLoading(true);
+                                    }
+                                  }}
+                                  sx={{ textTransform: "none" }}
+                                >
+                                  👁️ View
+                                </Button>
+                              )}
                               <Button
                                 component="a"
                                 href={item.attachment_url}
@@ -926,30 +938,22 @@ const UpdateExpenseAccounts = ({
                               </Button>
                             </Stack>
                           ) : (
-                            <span style={{ color: "#999", fontStyle: "italic" }}>
-                              No Attachment
-                            </span>
+                            <span style={{ color: "#999", fontStyle: "italic" }}>No Attachment</span>
                           )}
 
                           {/* Preview Modal */}
                           <Modal open={!!previewImage} onClose={() => setPreviewImage(null)}>
                             <ModalDialog>
                               <Box sx={{ textAlign: "center", minWidth: "60vw" }}>
-                                {/\.(jpg|jpeg|png|webp|gif)$/i.test(previewImage) ? (
+                                {/\\.(jpg|jpeg|png|webp|gif)$/i.test(previewImage || "") ? (
                                   <img
-                                    src={previewImage}
+                                    src={previewImage || ""}
                                     alt="Preview"
-                                    style={{
-                                      maxWidth: "100%",
-                                      maxHeight: "70vh",
-                                      borderRadius: 8,
-                                    }}
+                                    style={{ maxWidth: "100%", maxHeight: "70vh", borderRadius: 8 }}
                                   />
-                                ) : /\.pdf(\?|$)/i.test(previewImage) ? (
+                                ) : (/\\.pdf(\\?|$)/i.test(previewImage || "")) ? (
                                   <>
-                                    <Typography level="body-sm" sx={{ mb: 1 }}>
-                                      PDF Preview (via Google Docs)
-                                    </Typography>
+                                    <Typography level="body-sm" sx={{ mb: 1 }}>PDF Preview (via Google Docs)</Typography>
 
                                     {isPdfLoading && (
                                       <Box sx={{ py: 3 }}>
@@ -962,22 +966,19 @@ const UpdateExpenseAccounts = ({
 
                                     <iframe
                                       src={`https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(
-                                        previewImage
+                                        previewImage || ""
                                       )}`}
                                       title="PDF Preview"
                                       width="100%"
                                       height="500px"
-                                      style={{
-                                        border: "none",
-                                        display: isPdfLoading ? "none" : "block",
-                                      }}
+                                      style={{ border: "none", display: isPdfLoading ? "none" : "block" }}
                                       onLoad={() => setIsPdfLoading(false)}
                                       onError={() => setIsPdfLoading(false)}
                                     />
 
                                     <Button
                                       component="a"
-                                      href={previewImage}
+                                      href={previewImage || ""}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       variant="outlined"
@@ -1010,14 +1011,8 @@ const UpdateExpenseAccounts = ({
               </Table>
             </Box>
 
-            {/* Mobile */}
-            <Box
-              sx={{
-                display: { xs: "flex", sm: "none" },
-                flexDirection: "column",
-                gap: 2,
-              }}
-            >
+            {/* Mobile (unchanged except structure) */}
+            <Box sx={{ display: { xs: "flex", sm: "none" }, flexDirection: "column", gap: 2 }}>
               {rows.map((row, rowIndex) =>
                 row.items.map((item, itemIndex) => (
                   <Box
@@ -1033,27 +1028,15 @@ const UpdateExpenseAccounts = ({
                     }}
                   >
                     <strong>{item.project_name}</strong>
-                    <span>
-                      <b>Project Code:</b> {item.project_code}
-                    </span>
-                    <span>
-                      <b>Category:</b> {item.category}
-                    </span>
-                    <span>
-                      <b>Description:</b> {item.description}
-                    </span>
+                    <span><b>Project Code:</b> {item.project_code}</span>
+                    <span><b>Category:</b> {item.category}</span>
+                    <span><b>Description:</b> {item.description}</span>
                     <span>
                       <b>Expense Date:</b>{" "}
-                      {item.expense_date
-                        ? new Date(item.expense_date).toISOString().split("T")[0]
-                        : "N/A"}
+                      {item.expense_date ? new Date(item.expense_date).toISOString().split("T")[0] : "N/A"}
                     </span>
-                    <span>
-                      <b>Invoice Amount:</b> ₹{item.invoice?.invoice_amount}
-                    </span>
-                    <span>
-                      <b>Invoice Number:</b> {item.invoice?.invoice_number || "NA"}
-                    </span>
+                    <span><b>Invoice Amount:</b> ₹{item.invoice?.invoice_amount}</span>
+                    <span><b>Invoice Number:</b> {item.invoice?.invoice_number || "NA"}</span>
                     <Box>
                       <b>Attachment:</b>{" "}
                       {item.attachment_url ? (
@@ -1086,9 +1069,7 @@ const UpdateExpenseAccounts = ({
                           </Button>
                         </Stack>
                       ) : (
-                        <span style={{ color: "#999", fontStyle: "italic" }}>
-                          No Attachment
-                        </span>
+                        <span style={{ color: "#999", fontStyle: "italic" }}>No Attachment</span>
                       )}
                     </Box>
                     <Box></Box>
@@ -1099,9 +1080,7 @@ const UpdateExpenseAccounts = ({
                         variant="outlined"
                         type="number"
                         value={
-                          (
-                            item.approved_amount ?? item.invoice?.invoice_amount
-                          )?.toString() || ""
+                          (item.approved_amount ?? item.invoice?.invoice_amount)?.toString() || ""
                         }
                         placeholder="₹"
                         onChange={(e) =>
@@ -1157,7 +1136,7 @@ const UpdateExpenseAccounts = ({
         </Box>
       </Box>
 
-      {/* Modals (unchanged) */}
+      {/* Modals — unchanged logic */}
       <Modal open={approveHRConfirmOpen} onClose={() => setHRApproveConfirmOpen(false)}>
         <ModalDialog layout="center" sx={{ minWidth: 300, padding: 3, textAlign: "center" }}>
           <Typography level="h6" mb={1}>Confirm Approval</Typography>
@@ -1283,14 +1262,7 @@ const UpdateExpenseAccounts = ({
         <Box display="flex" gap={4} flexWrap="wrap">
           <Sheet
             variant="outlined"
-            sx={{
-              borderRadius: "md",
-              boxShadow: "sm",
-              flex: 1,
-              minWidth: 400,
-              maxHeight: 500,
-              overflowY: "auto",
-            }}
+            sx={{ borderRadius: "md", boxShadow: "sm", flex: 1, minWidth: 400, maxHeight: 500, overflowY: "auto" }}
           >
             <Table
               variant="soft"
@@ -1300,12 +1272,7 @@ const UpdateExpenseAccounts = ({
               hoverRow
               sx={{
                 minWidth: 500,
-                "& th": {
-                  backgroundColor: "background.level1",
-                  fontWeight: "md",
-                  fontSize: "sm",
-                  textAlign: "left",
-                },
+                "& th": { backgroundColor: "background.level1", fontWeight: "md", fontSize: "sm", textAlign: "left" },
                 "& td": { fontSize: "sm", textAlign: "left" },
               }}
             >
@@ -1366,13 +1333,7 @@ const UpdateExpenseAccounts = ({
                           title={
                             <Sheet
                               variant="soft"
-                              sx={{
-                                p: 1,
-                                maxWidth: 300,
-                                borderRadius: "md",
-                                boxShadow: "md",
-                                bgcolor: "background.surface",
-                              }}
+                              sx={{ p: 1, maxWidth: 300, borderRadius: "md", boxShadow: "md", bgcolor: "background.surface" }}
                             >
                               <Typography level="body-sm">
                                 {getCategoryDescription(category)}
@@ -1433,14 +1394,7 @@ const UpdateExpenseAccounts = ({
             </Table>
 
             <Box display="flex" justifyContent="center" p={2}>
-              <Box
-                display="flex"
-                flexDirection="column"
-                alignItems="center"
-                maxWidth="400px"
-                width="100%"
-                gap={2}
-              >
+              <Box display="flex" flexDirection="column" alignItems="center" maxWidth="400px" width="100%" gap={2}>
                 {(user?.role === "manager" ||
                   user?.department === "admin" ||
                   user?.name === "IT Team") &&
@@ -1465,9 +1419,7 @@ const UpdateExpenseAccounts = ({
                   (rows[0]?.current_status?.status || rows[0]?.current_status) === "final approval" && (
                     <Box display="flex" alignItems="center" gap={2} sx={{ mt: 2 }}>
                       <Box>
-                        <FormLabel sx={{ justifyContent: "center" }}>
-                          Disbursement Date
-                        </FormLabel>
+                        <FormLabel sx={{ justifyContent: "center" }}>Disbursement Date</FormLabel>
                         <Input
                           type="date"
                           value={

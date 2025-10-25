@@ -22,7 +22,7 @@ import {
 } from "@mui/joy";
 import { useEffect, useState } from "react";
 
-// ⬇️ bring in the export mutations here so parent owns export buttons
+// export mutations
 import {
   useExportExpenseToPDFMutation,
   useExportExpenseToCSVMutation,
@@ -44,8 +44,12 @@ function Update_Expense() {
 
   const [user, setUser] = useState(null);
 
-  // ⬇️ lifted state from child
+  // lifted state from child
   const [rows, setRows] = useState([]);
+  // 👇 NEW: disabled flags from child
+  const [isDisabledHR, setIsDisabledHR] = useState(true);
+  const [isDisabledAccounts, setIsDisabledAccounts] = useState(true);
+
   const [downloadStatus, setDownloadStatus] = useState("");
 
   const [triggerExportPdf] = useExportExpenseToPDFMutation();
@@ -68,12 +72,18 @@ function Update_Expense() {
   const handleHrHoldAll = () => setShowHoldAllDialog(true);
   const handleHrApproveAll = () => setHRApproveConfirmOpen(true);
 
-  // ⬇️ receive rows from child
+  // receive rows from child
   const handleRowsUpdate = (incomingRows) => {
     setRows(incomingRows || []);
   };
 
-  // ⬇️ parent-side export handlers used by the buttons here
+  // receive disabled flags from child
+  const handleDisabledChange = ({ hr, accounts }) => {
+    setIsDisabledHR(!!hr);
+    setIsDisabledAccounts(!!accounts);
+  };
+
+  // parent-side export handlers
   const handleExportPDFById = async (expenseIds, withAttachment = true) => {
     try {
       setDownloadStatus("Preparing download...");
@@ -267,31 +277,45 @@ function Update_Expense() {
 
         <SubHeader title="Update Expense" isBackEnabled={true} sticky>
           <Box display="flex" gap={2}>
-            {user?.name === "Shruti Tripathi" ||
+            {/* HR buttons */}
+            {(user?.name === "Shruti Tripathi" ||
               user?.department === "admin" ||
-              user?.name === "IT Team" ? (
+              user?.name === "IT Team") ? (
               <>
                 <Button
                   color="danger"
                   size="sm"
                   onClick={() => setRejectConfirmOpen(true)}
+                  disabled={isDisabledHR}              // 👈 use HR disabled
                 >
                   Reject All
                 </Button>
-                <Button color="warning" size="sm" onClick={handleHrHoldAll}>
+                <Button
+                  color="warning"
+                  size="sm"
+                  onClick={() => setShowHoldAllDialog(true)}
+                  disabled={isDisabledHR}              // 👈 use HR disabled
+                >
                   Hold All
                 </Button>
-                <Button color="success" size="sm" onClick={handleHrApproveAll}>
+                <Button
+                  color="success"
+                  size="sm"
+                  onClick={() => setHRApproveConfirmOpen(true)}
+                  disabled={isDisabledHR}              // 👈 use HR disabled
+                >
                   Approve All
                 </Button>
               </>
             ) : (
+              // Accounts buttons
               user?.department === "Accounts" && (
                 <>
                   <Button
                     color="danger"
                     size="sm"
                     onClick={() => setAccountsShowRejectAllDialog(true)}
+                    disabled={isDisabledAccounts}       // 👈 use Accounts disabled
                   >
                     Reject All
                   </Button>
@@ -299,6 +323,7 @@ function Update_Expense() {
                     color="warning"
                     size="sm"
                     onClick={() => setAccountsShowHoldAllDialog(true)}
+                    disabled={isDisabledAccounts}       // 👈 use Accounts disabled
                   >
                     Hold All
                   </Button>
@@ -306,23 +331,24 @@ function Update_Expense() {
                     color="success"
                     size="sm"
                     onClick={() => setAccountsApproveConfirmOpen(true)}
+                    disabled={isDisabledAccounts}       // 👈 use Accounts disabled
                   >
                     Approve All
                   </Button>
 
-                  {/* ⬇️ Export controls use rows from child */}
+                  {/* Export controls */}
                   <Stack direction="row" spacing={1}>
                     <Button
                       onClick={() => handleExportCSV([rows[0]?._id])}
                       size="sm"
                       variant="outlined"
-                      disabled={!rows?.[0]?._id}
+                      disabled={!rows?.[0]?._id || isDisabledAccounts}  // optional
                     >
                       Export CSV
                     </Button>
 
                     <Dropdown>
-                      <MenuButton variant="outlined" size="sm" color="danger">
+                      <MenuButton variant="outlined" size="sm" color="danger" disabled={!rows?.[0]?._id}>
                         PDF
                       </MenuButton>
 
@@ -341,17 +367,13 @@ function Update_Expense() {
                       <Menu>
                         <MenuItem
                           disabled={!rows?.[0]?._id}
-                          onClick={() =>
-                            handleExportPDFById([rows[0]?._id], true)
-                          }
+                          onClick={() => handleExportPDFById([rows[0]?._id], true)}
                         >
                           Download with Attachment
                         </MenuItem>
                         <MenuItem
                           disabled={!rows?.[0]?._id}
-                          onClick={() =>
-                            handleExportPDFById([rows[0]?._id], false)
-                          }
+                          onClick={() => handleExportPDFById([rows[0]?._id], false)}
                         >
                           Download without Attachment
                         </MenuItem>
@@ -378,8 +400,9 @@ function Update_Expense() {
           }}
         >
           <UpdateExpenseAccounts
-            // ⬇️ child → parent data pipe
             onRowsUpdate={handleRowsUpdate}
+            onDisabledChange={handleDisabledChange}  // 👈 capture disabled flags from child
+
             rejectConfirmOpen={rejectConfirmOpen}
             setRejectConfirmOpen={setRejectConfirmOpen}
             showHoldAllDialog={showHoldAllDialog}
