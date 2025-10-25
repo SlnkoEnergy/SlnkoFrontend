@@ -71,13 +71,13 @@ const ExpenseApproval = forwardRef(() => {
   } = useGetAllExpenseQuery(
     department
       ? {
-          page: currentPage,
-          department: department === "admin" ? "" : department,
-          search: searchQuery,
-          status: selectedstatus,
-          from,
-          to,
-        }
+        page: currentPage,
+        department: department === "admin" ? "" : department,
+        search: searchQuery,
+        status: selectedstatus,
+        from,
+        to,
+      }
       : skipToken
   );
 
@@ -165,10 +165,10 @@ const ExpenseApproval = forwardRef(() => {
   const ExpenseCode = ({ currentPage, expense_code, createdAt }) => {
     const formattedDate = createdAt
       ? new Date(createdAt).toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        })
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
       : "N/A";
     return (
       <>
@@ -286,14 +286,9 @@ const ExpenseApproval = forwardRef(() => {
               <Box
                 component="th"
                 sx={{
-                  position: "sticky",
-                  top: 0,
-                  background: "#e0e0e0",
-                  zIndex: 2,
                   borderBottom: "1px solid #ddd",
                   padding: "8px",
                   textAlign: "left",
-                  width: 44,
                 }}
               >
                 <Checkbox
@@ -472,8 +467,8 @@ const ExpenseApproval = forwardRef(() => {
                   >
                     {expense.disbursement_date
                       ? new Date(expense.disbursement_date).toLocaleDateString(
-                          "en-GB"
-                        )
+                        "en-GB"
+                      )
                       : "-"}
                   </Box>
 

@@ -316,7 +316,7 @@ function Accounts_Expense() {
           </Box>
         </MainHeader>
         <SubHeader
-          title="Accounts Expense Approval Dashboard"
+          title="Accounts Expense Approval"
           isBackEnabled={false}
           sticky
         >

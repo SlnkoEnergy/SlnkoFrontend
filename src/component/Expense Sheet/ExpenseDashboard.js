@@ -281,14 +281,9 @@ const AllExpense = forwardRef((props, ref) => {
               <Box
                 component="th"
                 sx={{
-                  position: "sticky",
-                  top: 0,
-                  background: "#e0e0e0",
-                  zIndex: 2,
                   borderBottom: "1px solid #ddd",
                   padding: "8px",
                   textAlign: "left",
-                  width: 44,
                 }}
               >
                 <Checkbox
