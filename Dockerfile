@@ -1,5 +1,5 @@
 # Stage 1: Build the frontend
-FROM node:16-alpine AS build
+FROM node:20-alpine AS build
 
 WORKDIR /protrac/frontend
 
