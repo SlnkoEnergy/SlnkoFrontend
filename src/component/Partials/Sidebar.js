@@ -31,6 +31,7 @@ import { closeSidebar } from "../../utils/utils";
 import DatabaseIcon from "@mui/icons-material/Storage";
 import FactCheckIcon from "@mui/icons-material/FactCheck";
 import AppNotification from "./Notification";
+import MailIcon from '@mui/icons-material/Mail';
 
 function Toggler({ defaultExpanded = false, renderToggle, children }) {
   const [open, setOpen] = useState(defaultExpanded);
@@ -204,6 +205,20 @@ function Sidebar() {
                     onClick={() => navigate("/dashboard")}
                   >
                     Home
+                  </Typography>
+                </ListItemContent>
+              </ListItemButton>
+            </ListItem>
+            
+            <ListItem>
+              <ListItemButton>
+                <MailIcon  />
+                <ListItemContent>
+                  <Typography
+                    level="title-sm"
+                    onClick={() => navigate("/email")}
+                  >
+                    Emails
                   </Typography>
                 </ListItemContent>
               </ListItemButton>
