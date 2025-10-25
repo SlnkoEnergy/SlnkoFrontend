@@ -19,6 +19,33 @@ import {
 } from "../redux/camsSlice";
 import { toast } from "react-toastify";
 
+// --- Capitalization helpers ---
+const titlePreserveAcronyms = (s) => {
+  if (!s && s !== 0) return "";
+  return String(s)
+    .split(/(\s+)/) // keep spaces
+    .map((tok) => {
+      if (!/[A-Za-z]/.test(tok)) return tok;     // numbers/symbols unchanged
+      if (tok === tok.toUpperCase()) return tok; // keep ALL-CAPS (PO, AC, LA)
+      return tok.charAt(0).toUpperCase() + tok.slice(1).toLowerCase();
+    })
+    .join("");
+};
+
+const prettyStatus = (s) => {
+  if (!s) return "";
+  const words = String(s).replace(/_/g, " ").trim().split(/\s+/);
+  return words
+    .map((w) =>
+      w.toLowerCase() === "po"
+        ? "PO"
+        : w === w.toUpperCase()
+        ? w
+        : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+    )
+    .join(" ");
+};
+
 const ScopeDetail = ({ project_id, project_code }) => {
   const {
     data: getScope,
@@ -35,8 +62,9 @@ const ScopeDetail = ({ project_id, project_code }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [downloading, setDownloading] = useState(false);
 
-  const status = getScope?.data?.current_status?.status?.toLowerCase();
-  const isOpen = status === "open";
+  const rawStatus = getScope?.data?.current_status?.status || "";
+  const statusPretty = prettyStatus(rawStatus);
+  const isOpen = rawStatus?.toLowerCase() === "open";
 
   useEffect(() => {
     if (getScope?.data?.items) setItemsState(getScope.data.items);
@@ -101,7 +129,7 @@ const ScopeDetail = ({ project_id, project_code }) => {
         status: newStatus,
         remarks: " ",
       }).unwrap();
-      toast.success(`Status changed to ${newStatus}`);
+      toast.success(`Status changed to ${prettyStatus(newStatus)}`);
       handleMenuClose();
       refetch();
     } catch {
@@ -155,12 +183,10 @@ const ScopeDetail = ({ project_id, project_code }) => {
       ? [item.po]
       : [];
 
-    // de-dup
     const seen = new Map();
     for (const p of raw) seen.set(posKey(p), p);
     const unique = Array.from(seen.values());
 
-    // sort: status priority then by PO date desc
     const enriched = unique.map((p) => ({
       p,
       w: statusOrder[p?.status] ?? 9,
@@ -191,7 +217,7 @@ const ScopeDetail = ({ project_id, project_code }) => {
           pb: 0.5,
         }}
       >
-        {title}
+        {titlePreserveAcronyms(title)}
       </Typography>
 
       <Sheet
@@ -223,7 +249,6 @@ const ScopeDetail = ({ project_id, project_code }) => {
             <tr>
               <th>Sr. No.</th>
               <th style={{ minWidth: 220 }}>Item Name</th>
-              <th>Type</th>
               <th style={{ textAlign: "left" }}>Scope</th>
               <th style={{ minWidth: 160 }}>PO Number(s)</th>
               <th>PO Status</th>
@@ -232,7 +257,6 @@ const ScopeDetail = ({ project_id, project_code }) => {
               <th>Delivered Date</th>
             </tr>
           </thead>
-          {/* inside renderTable (replace tbody mapping section only) */}
           <tbody>
             {items?.length > 0 ? (
               items.map((item, idx) => {
@@ -258,8 +282,7 @@ const ScopeDetail = ({ project_id, project_code }) => {
                     {/* First row — item info + first PO */}
                     <tr>
                       <td>{idx + 1}</td>
-                      <td>{item.name || "-"}</td>
-                      <td>{item.type || "-"}</td>
+                      <td>{titlePreserveAcronyms(item.name || "-")}</td>
                       <td style={{ textAlign: "left" }}>
                         <Checkbox
                           variant="soft"
@@ -268,6 +291,7 @@ const ScopeDetail = ({ project_id, project_code }) => {
                           onChange={(e) =>
                             handleCheckboxChange(indexInAll, e.target.checked)
                           }
+                          // Optionally show label visually hidden / tooltip if needed
                         />
                       </td>
 
@@ -278,9 +302,7 @@ const ScopeDetail = ({ project_id, project_code }) => {
                       </td>
                       <td>
                         <Typography level="body-sm">
-                          {childRows[0]?.status
-                            ? String(childRows[0].status).replace(/_/g, " ")
-                            : ""}
+                          {prettyStatus(childRows[0]?.status)}
                         </Typography>
                       </td>
                       <td>
@@ -306,7 +328,6 @@ const ScopeDetail = ({ project_id, project_code }) => {
                         <td></td>
                         <td></td>
                         <td></td>
-                        <td></td>
 
                         <td>
                           <Typography level="body-sm">
@@ -315,9 +336,7 @@ const ScopeDetail = ({ project_id, project_code }) => {
                         </td>
                         <td>
                           <Typography level="body-sm">
-                            {p?.status
-                              ? String(p.status).replace(/_/g, " ")
-                              : ""}
+                            {prettyStatus(p?.status)}
                           </Typography>
                         </td>
                         <td>
@@ -383,21 +402,21 @@ const ScopeDetail = ({ project_id, project_code }) => {
             onClick={handleChipClick}
             sx={{ cursor: isOpen ? "default" : "pointer", userSelect: "none" }}
           >
-            {status
-              ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
-              : "Closed"}
+            {statusPretty || "Closed"}
           </Chip>
           <Menu
             anchorEl={anchorEl}
             open={Boolean(anchorEl)}
             onClose={handleMenuClose}
           >
-            <MenuItem onClick={() => handleChangeStatus("open")}>Open</MenuItem>
+            <MenuItem onClick={() => handleChangeStatus("open")}>
+              {prettyStatus("open")}
+            </MenuItem>
           </Menu>
         </Box>
 
         <Box width={"full"} display="flex" justifyContent="flex-end">
-          {status === "closed" && (
+          {rawStatus?.toLowerCase() === "closed" && (
             <Button
               size="sm"
               variant="outlined"
