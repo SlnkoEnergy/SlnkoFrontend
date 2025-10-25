@@ -865,7 +865,7 @@ export default function ProjectBalancesJoy() {
               const payable = Number(row.balancePayable || 0);
               const need = Number(row.balanceRequired || 0);
 
-              const rowKey = row?.code ? String(row.code) : ""; // use code for selection/export
+              const rowKey = row?.code ? String(row.code) : "";
               const checked = rowKey && selected.has(rowKey);
 
               return (
@@ -887,7 +887,7 @@ export default function ProjectBalancesJoy() {
                     <Checkbox
                       size="sm"
                       checked={checked}
-                      disabled={!rowKey} // if no code, disable selection
+                      disabled={!rowKey}
                       onChange={(e) => rowKey && toggleRow(e, rowKey)}
                       onClick={(e) => e.stopPropagation()}
                       variant="soft"
