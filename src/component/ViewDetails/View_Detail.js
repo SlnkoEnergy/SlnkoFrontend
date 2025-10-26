@@ -1881,6 +1881,7 @@ const formatINRWithTooltip = (value) => {
                           "admin",
                           "Chandan Singh",
                           "Gagan Tayal",
+                          "Sachin Raghav"
                         ].includes(user?.name) && (
                           <>
                             <Button
@@ -1892,7 +1893,7 @@ const formatINRWithTooltip = (value) => {
                               Sales Conversion
                             </Button>
 
-                            {user?.name !== "Chandan Singh" && (
+                            {(user?.name !== "Chandan Singh") && (
                               <Divider orientation="vertical" flexItem />
                             )}
 
