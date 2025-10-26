@@ -164,6 +164,7 @@ export const AccountsApi = createApi({
           form.append("gst_on_sales", gst_on_sales);
         if (sales_invoice) form.append("sales_invoice", sales_invoice);
         if (po_number) form.append("po_number", po_number);
+         if (sales_invoice) form.append("sales_invoice", sales_invoice);
 
         if (Array.isArray(files)) {
           files.forEach((f) => {
