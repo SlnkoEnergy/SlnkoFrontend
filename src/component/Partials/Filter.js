@@ -157,18 +157,7 @@ const parseLocal = (s) => {
   return isNaN(d) ? undefined : d;
 };
 
-/* ------------------ Query → values sync ------------------ */
-/**
- * Maps URLSearchParams into initial filter values so the red badge
- * reflects filters like ?assigned_to=... immediately on page load.
- *
- * Supports:
- *  - select:     ?key=val
- *  - multiselect/tags: ?key=a,b  OR ?key=a&key=b  OR ?key[]=a&key[]=b
- *  - daterange:  ?key_from=YYYY-MM-DD&key_to=YYYY-MM-DD
- *                also falls back to generic ?from&to (single range)
- *  - matcher:    ?matchMode=all|any  (all -> AND, any -> OR)
- */
+
 function readValuesFromQuery(fields) {
   try {
     const search =
