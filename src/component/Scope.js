@@ -10,23 +10,36 @@ import {
   Menu,
   MenuItem,
   CircularProgress,
+  IconButton,
+  Tooltip,
+  Input,
+  Textarea,
+  Modal,
+  ModalDialog,
+  Stack,
+  Divider,
+  Avatar,
 } from "@mui/joy";
+import EditIcon from "@mui/icons-material/Edit";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import SaveIcon from "@mui/icons-material/Save";
 import {
   useGetScopeByProjectIdQuery,
   useUpdateScopeByProjectIdMutation,
   useUpdateScopeStatusMutation,
   useGenerateScopePdfMutation,
+  useUpdateCommitmentDateMutation,
 } from "../redux/camsSlice";
 import { toast } from "react-toastify";
 
-// --- Capitalization helpers ---
+// ---------------- helpers ----------------
 const titlePreserveAcronyms = (s) => {
   if (!s && s !== 0) return "";
   return String(s)
-    .split(/(\s+)/) // keep spaces
+    .split(/(\s+)/)
     .map((tok) => {
-      if (!/[A-Za-z]/.test(tok)) return tok;     // numbers/symbols unchanged
-      if (tok === tok.toUpperCase()) return tok; // keep ALL-CAPS (PO, AC, LA)
+      if (!/[A-Za-z]/.test(tok)) return tok;
+      if (tok === tok.toUpperCase()) return tok;
       return tok.charAt(0).toUpperCase() + tok.slice(1).toLowerCase();
     })
     .join("");
@@ -46,6 +59,15 @@ const prettyStatus = (s) => {
     .join(" ");
 };
 
+const pad2 = (n) => String(n).padStart(2, "0");
+const formatDate = (value) => {
+  if (!value) return "";
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return String(value);
+  return `${pad2(d.getDate())}-${pad2(d.getMonth() + 1)}-${d.getFullYear()}`;
+};
+
+// -------------- component ----------------
 const ScopeDetail = ({ project_id, project_code }) => {
   const {
     data: getScope,
@@ -57,28 +79,31 @@ const ScopeDetail = ({ project_id, project_code }) => {
   const [updateScope] = useUpdateScopeByProjectIdMutation();
   const [updateScopeStatus] = useUpdateScopeStatusMutation();
   const [generateScopePdf] = useGenerateScopePdfMutation();
+  const [doUpdateCommitmentDate, { isLoading: savingCommitment }] =
+    useUpdateCommitmentDateMutation();
 
   const [itemsState, setItemsState] = useState([]);
   const [anchorEl, setAnchorEl] = useState(null);
   const [downloading, setDownloading] = useState(false);
+
+  // History modal
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyItem, setHistoryItem] = useState(null);
+
+  // Edit (pencil) modal
+  const [editOpen, setEditOpen] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const [editDraft, setEditDraft] = useState({ date: "", remarks: "" });
 
   const rawStatus = getScope?.data?.current_status?.status || "";
   const statusPretty = prettyStatus(rawStatus);
   const isOpen = rawStatus?.toLowerCase() === "open";
 
   useEffect(() => {
-    if (getScope?.data?.items) setItemsState(getScope.data.items);
+    if (getScope?.data?.items) {
+      setItemsState(getScope.data.items);
+    }
   }, [getScope]);
-
-  const formatDate = (value) => {
-    if (!value) return "";
-    const d = new Date(value);
-    if (isNaN(d.getTime())) return String(value);
-    const dd = String(d.getDate()).padStart(2, "0");
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const yyyy = d.getFullYear();
-    return `${dd}-${mm}-${yyyy}`;
-  };
 
   const handleCheckboxChange = (index, checked) => {
     const item = itemsState[index];
@@ -157,6 +182,55 @@ const ScopeDetail = ({ project_id, project_code }) => {
     }
   };
 
+  const openHistory = (item) => {
+    setHistoryItem(item || null);
+    setHistoryOpen(true);
+  };
+  const closeHistory = () => {
+    setHistoryOpen(false);
+    setHistoryItem(null);
+  };
+
+  const openEdit = (item) => {
+    setEditItem(item || null);
+    setEditDraft({ date: "", remarks: "" }); // keep empty to add new
+    setEditOpen(true);
+  };
+  const closeEdit = () => {
+    setEditOpen(false);
+    setEditItem(null);
+    setEditDraft({ date: "", remarks: "" });
+  };
+  const onEditDraftChange = (field, value) => {
+    setEditDraft((p) => ({ ...p, [field]: value }));
+  };
+
+  const saveEdit = async () => {
+    const date = (editDraft.date || "").trim?.() || editDraft.date;
+    const remarks = (editDraft.remarks || "").trim();
+
+    if (!editItem) return;
+    if (!date || !remarks) {
+      toast.error("Please enter both date and remarks.");
+      return;
+    }
+
+    try {
+      await doUpdateCommitmentDate({
+        id: getScope?.data?._id, // scope _id from API payload
+        item_id: editItem.item_id,
+        date,
+        remarks,
+      }).unwrap();
+
+      toast.success("Commitment date saved.");
+      closeEdit();
+      await refetch();
+    } catch (e) {
+      toast.error("Failed to save commitment date.");
+    }
+  };
+
   if (isLoading) return <Typography>Loading...</Typography>;
   if (error) return <Typography color="danger">Error loading scope</Typography>;
 
@@ -169,20 +243,17 @@ const ScopeDetail = ({ project_id, project_code }) => {
     { supply: [], execution: [] }
   );
 
-  // ---- helpers for multi-PO rendering (sorted + deduped) ----
   const statusOrder = { po_created: 0, approval_done: 1, approval_pending: 2 };
   const posKey = (p) =>
     `${p.po_number ?? "null"}|${p.status ?? ""}|${p.po_date ?? ""}|${
       p.etd ?? ""
     }|${p.delivered_date ?? ""}`;
-
   const normalizePos = (item) => {
     const raw = Array.isArray(item?.pos)
       ? item.pos
       : item?.po?.exists
       ? [item.po]
       : [];
-
     const seen = new Map();
     for (const p of raw) seen.set(posKey(p), p);
     const unique = Array.from(seen.values());
@@ -195,15 +266,6 @@ const ScopeDetail = ({ project_id, project_code }) => {
     enriched.sort((a, b) => a.w - b.w || b.ts - a.ts);
     return enriched.map((x) => x.p);
   };
-
-  const MultiCell = ({ children }) => (
-    <Typography
-      level="body-sm"
-      sx={{ lineHeight: 1.3, wordBreak: "break-word" }}
-    >
-      {children}
-    </Typography>
-  );
 
   const renderTable = (title, items) => (
     <Box sx={{ mb: 4 }}>
@@ -225,7 +287,7 @@ const ScopeDetail = ({ project_id, project_code }) => {
         sx={{
           borderRadius: "md",
           overflow: "auto",
-          "& table": { minWidth: 1000 },
+          "& table": { minWidth: 1200 },
         }}
       >
         <Table
@@ -250,6 +312,7 @@ const ScopeDetail = ({ project_id, project_code }) => {
               <th>Sr. No.</th>
               <th style={{ minWidth: 220 }}>Item Name</th>
               <th style={{ textAlign: "left" }}>Scope</th>
+              <th style={{ minWidth: 260 }}>Commitment Date</th>
               <th style={{ minWidth: 160 }}>PO Number(s)</th>
               <th>PO Status</th>
               <th>PO Date</th>
@@ -276,6 +339,9 @@ const ScopeDetail = ({ project_id, project_code }) => {
                           delivered_date: null,
                         },
                       ];
+                const current = item?.current_commitment_date;
+                const currentRemarks =
+                  (current?.remarks || "").trim() || "No remarks";
 
                 return (
                   <Fragment key={item.item_id}>
@@ -283,6 +349,7 @@ const ScopeDetail = ({ project_id, project_code }) => {
                     <tr>
                       <td>{idx + 1}</td>
                       <td>{titlePreserveAcronyms(item.name || "-")}</td>
+
                       <td style={{ textAlign: "left" }}>
                         <Checkbox
                           variant="soft"
@@ -291,8 +358,74 @@ const ScopeDetail = ({ project_id, project_code }) => {
                           onChange={(e) =>
                             handleCheckboxChange(indexInAll, e.target.checked)
                           }
-                          // Optionally show label visually hidden / tooltip if needed
                         />
+                      </td>
+
+                      {/* Commitment Date (Waiting + pencil + eye with tooltip) */}
+                      <td>
+                        <Stack spacing={1}>
+                          <Tooltip
+                            placement="top-start"
+                            variant="soft"
+                            title={currentRemarks}
+                          >
+                            <Typography
+                              level="body-sm"
+                              sx={{
+                                fontWeight: 600,
+                                display: "inline-flex",
+                                alignItems: "center",
+                                cursor: "help",
+                              }}
+                            >
+                              Current:&nbsp;
+                              {current?.date ? (
+                                formatDate(current.date)
+                              ) : (
+                                <Chip size="sm" variant="soft" color="warning">
+                                  Waiting
+                                </Chip>
+                              )}
+                            </Typography>
+                          </Tooltip>
+
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            alignItems="center"
+                          >
+                            <Tooltip
+                              title={
+                                isOpen
+                                  ? "Add/Update Commitment Date"
+                                  : "Open to edit"
+                              }
+                            >
+                              <span>
+                                <IconButton
+                                  size="sm"
+                                  variant="soft"
+                                  onClick={() => openEdit(item)}
+                                  disabled={!isOpen}
+                                  sx={{ "--IconButton-size": "26px" }}
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+
+                            <Tooltip title="View History">
+                              <IconButton
+                                size="sm"
+                                variant="soft"
+                                onClick={() => openHistory(item)}
+                                sx={{ "--IconButton-size": "26px" }}
+                              >
+                                <VisibilityIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
+                        </Stack>
                       </td>
 
                       <td>
@@ -325,6 +458,7 @@ const ScopeDetail = ({ project_id, project_code }) => {
                     {/* Remaining POs — no item data */}
                     {childRows.slice(1).map((p, i) => (
                       <tr key={`${item.item_id}-po-${i}`}>
+                        <td></td>
                         <td></td>
                         <td></td>
                         <td></td>
@@ -438,6 +572,192 @@ const ScopeDetail = ({ project_id, project_code }) => {
         {renderTable("Execution Scope", groupedItems.execution)}
         <Box>{isOpen && <Button onClick={handleSubmit}>Submit</Button>}</Box>
       </Box>
+
+      {/* EDIT MODAL (Pencil) */}
+      <Modal open={editOpen} onClose={closeEdit}>
+        <ModalDialog sx={{ minWidth: 520 }}>
+          <Typography level="title-lg" mb={1.5}>
+            {editItem?.name
+              ? `Set Commitment Date — ${titlePreserveAcronyms(editItem.name)}`
+              : "Set Commitment Date"}
+          </Typography>
+          <Divider />
+
+          <Stack spacing={1.25} mt={1}>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Box sx={{ minWidth: 120 }}>
+                <Typography level="body-sm" sx={{ opacity: 0.8 }}>
+                  Current
+                </Typography>
+              </Box>
+              <Typography level="body-sm" sx={{ fontWeight: 600 }}>
+                {editItem?.current_commitment_date?.date
+                  ? formatDate(editItem.current_commitment_date.date)
+                  : "Waiting"}
+              </Typography>
+            </Stack>
+
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Box sx={{ minWidth: 120 }}>
+                <Typography level="body-sm">Date</Typography>
+              </Box>
+              <Input
+                type="date"
+                value={editDraft.date}
+                onChange={(e) => onEditDraftChange("date", e.target.value)}
+                placeholder="dd-mm-yyyy"
+                sx={{ maxWidth: 220 }}
+              />
+            </Stack>
+
+            <Stack direction="row" spacing={2} alignItems="flex-start">
+              <Box sx={{ minWidth: 120, mt: 0.6 }}>
+                <Typography level="body-sm">Remarks</Typography>
+              </Box>
+              <Textarea
+                minRows={3}
+                value={editDraft.remarks}
+                onChange={(e) => onEditDraftChange("remarks", e.target.value)}
+                placeholder="Enter remarks"
+              />
+            </Stack>
+          </Stack>
+
+          <Stack
+            direction="row"
+            justifyContent="flex-end"
+            spacing={1.25}
+            mt={2}
+          >
+            <Button variant="plain" onClick={closeEdit}>
+              Cancel
+            </Button>
+            <Button
+              variant="soft"
+              startDecorator={<SaveIcon />}
+              onClick={saveEdit}
+              disabled={savingCommitment}
+            >
+              {savingCommitment ? "Saving..." : "Save"}
+            </Button>
+          </Stack>
+        </ModalDialog>
+      </Modal>
+
+      {/* HISTORY MODAL (Eye) */}
+      <Modal open={historyOpen} onClose={closeHistory}>
+        <ModalDialog sx={{ minWidth: 560 }}>
+          <Typography level="title-lg">
+            Commitment Date History{" "}
+            <Typography component="span" level="title-sm" sx={{ opacity: 0.9 }}>
+              (
+              <Tooltip
+                title={titlePreserveAcronyms(historyItem?.name || "—")}
+                placement="top"
+              >
+                <Box
+                  component="span"
+                  sx={{
+                    maxWidth: 360,
+                    display: "inline-block",
+                    verticalAlign: "bottom",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {titlePreserveAcronyms(historyItem?.name || "—")}
+                </Box>
+              </Tooltip>
+              )
+            </Typography>
+          </Typography>
+          <Divider />
+          <Box mt={1}>
+            {Array.isArray(historyItem?.commitment_date_history) &&
+            historyItem.commitment_date_history.length ? (
+              <Stack spacing={1.25}>
+                {[...historyItem.commitment_date_history]
+                  .sort((a, b) => {
+                    const at = new Date(a.updatedAt || a.date || 0).getTime();
+                    const bt = new Date(b.updatedAt || b.date || 0).getTime();
+                    return bt - at; // latest first
+                  })
+                  .map((h, i) => {
+                    const u = h?.user_id || {};
+                    const avatarSrc = u?.attachment_url || "";
+                    const displayName = (u?.name || "").trim() || "—";
+                    const whenDate = formatDate(h.date);
+                    const whenExact = new Date(
+                      h.updatedAt || h.date
+                    ).toLocaleString();
+
+                    const initials = displayName
+                      .split(" ")
+                      .map((p) => p[0])
+                      .slice(0, 2)
+                      .join("")
+                      .toUpperCase();
+
+                    return (
+                      <Sheet
+                        key={i}
+                        variant="outlined"
+                        sx={{ p: 1.25, borderRadius: "sm" }}
+                      >
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Avatar
+                            src={avatarSrc}
+                            alt={displayName}
+                            sx={{ width: 28, height: 28, fontSize: 12 }}
+                          >
+                            {initials}
+                          </Avatar>
+
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography
+                              level="title-sm"
+                              sx={{ lineHeight: 1.2 }}
+                            >
+                              {whenDate}{" "}
+                              <Typography
+                                level="body-xs"
+                                component="span"
+                                sx={{ opacity: 0.7 }}
+                              >
+                                ({whenExact})
+                              </Typography>
+                            </Typography>
+                            <Typography level="body-xs" sx={{ opacity: 0.9 }}>
+                              Updated by <strong>{displayName}</strong>
+                            </Typography>
+                          </Box>
+                        </Stack>
+
+                        {h.remarks ? (
+                          <Typography
+                            level="body-sm"
+                            sx={{ whiteSpace: "pre-wrap", mt: 0.75 }}
+                          >
+                            {h.remarks}
+                          </Typography>
+                        ) : null}
+                      </Sheet>
+                    );
+                  })}
+              </Stack>
+            ) : (
+              <Typography level="body-sm" sx={{ opacity: 0.8 }}>
+                No history found.
+              </Typography>
+            )}
+          </Box>
+
+          <Stack direction="row" justifyContent="flex-end" mt={2}>
+            <Button onClick={closeHistory}>Close</Button>
+          </Stack>
+        </ModalDialog>
+      </Modal>
     </Box>
   );
 };

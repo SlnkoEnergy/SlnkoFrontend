@@ -161,6 +161,13 @@ export const camsApi = createApi({
         responseHandler: (response) => response.blob(),
       }),
     }),
+    updateCommitmentDate: builder.mutation({
+      query: ({id, item_id, date, remarks}) => ({
+          url: `scope/${id}/scope/${item_id}/commitment`,
+          method: "PUT",
+          body: {date, remarks}  
+      })
+    }),
     updateHandoverAssignee: builder.mutation({
       query: ({ selected, assignee }) => ({
         url: `handover/updateAssignedto`,
@@ -190,5 +197,6 @@ export const {
   useGetScopeByProjectIdQuery,
   useUpdateScopeByProjectIdMutation,
   useUpdateScopeStatusMutation,
+  useUpdateCommitmentDateMutation,
   useGenerateScopePdfMutation,
 } = camsApi;
