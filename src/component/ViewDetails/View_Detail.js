@@ -1151,6 +1151,17 @@ const Balance_Summary = ({ isLoading = false }) => {
       field
     );
   }
+const formatINRWithTooltip = (value) => {
+  const num = Number(value || 0);
+  const display = `₹ ${num.toLocaleString("en-IN")}`;
+  const precise = num % 1 !== 0 && num.toString().split(".")[1]?.length > 2;
+  return (
+    <Tooltip title={precise ? num.toFixed(3) : ""} placement="top" arrow>
+      <span>{display}</span>
+    </Tooltip>
+  );
+};
+
 
   return (
     <Box
@@ -1919,7 +1930,7 @@ const Balance_Summary = ({ isLoading = false }) => {
     borderAxis="both"
     stickyHeader
     sx={{
-      "--num-w": "12ch",
+       "--num-w": "16ch", 
       minWidth: 1100,
       tableLayout: "fixed",
       fontSize: { xs: 12, sm: 14 },
@@ -1937,12 +1948,14 @@ const Balance_Summary = ({ isLoading = false }) => {
       },
 
       "& tbody tr:hover": { backgroundColor: "background.level1" },
+
       "& th, & td": {
         px: { xs: 1, sm: 2 },
         py: { xs: 1, sm: 1.1 },
         verticalAlign: "middle",
         lineHeight: 1.5,
         borderColor: "neutral.outlinedBorder",
+        minWidth: "60px", // ✅ keeps all columns readable
         "@media print": {
           px: 1,
           py: 1,
@@ -1956,14 +1969,18 @@ const Balance_Summary = ({ isLoading = false }) => {
         wordBreak: "break-word",
         overflowWrap: "anywhere",
       },
-      "& th.num, & td.num": {
-        width: "var(--num-w)",
-        textAlign: "right",
-        fontVariantNumeric: "tabular-nums",
-        whiteSpace: "nowrap",
-      },
 
-      // 🔥 Emphasis on PO Value & Total Billed cells
+        "& th.num, & td.num, & tfoot td.num": {
+      width: "var(--num-w)",
+      minWidth: "var(--num-w)",
+      textAlign: "right",
+      fontVariantNumeric: "tabular-nums",
+      whiteSpace: "nowrap",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+    },
+
+      // Highlighted cells
       "& td.em": { fontWeight: 700, color: "text.primary" },
       "& th.em": { fontWeight: 800, color: "text.primary" },
 
@@ -1992,6 +2009,7 @@ const Balance_Summary = ({ isLoading = false }) => {
         backgroundColor: "background.body",
         fontWeight: 700,
         color: "text.primary",
+        minWidth: "var(--num-w)", // ✅ keeps totals aligned and readable
       },
     }}
   >
@@ -2117,29 +2135,31 @@ const Balance_Summary = ({ isLoading = false }) => {
       )}
     </tbody>
 
-    {ClientSummary.length > 0 && (
-      <tfoot>
-        <tr>
-          <td colSpan={3} style={{ textAlign: "right", fontWeight: 700 }}>
-            Total:
-          </td>
+  {ClientSummary.length > 0 && (
+  <tfoot>
+    <tr>
+      <td colSpan={3} style={{ textAlign: "right", fontWeight: 700 }}>
+        Total:
+      </td>
 
-          <td className="num em">₹ {ClientTotal.total_po_basic?.toLocaleString("en-IN")}</td>
-          <td className="num em">₹ {ClientTotal.total_gst?.toLocaleString("en-IN")}</td>
-          <td className="num em groupSplitRight">₹ {ClientTotal.total_po_value?.toLocaleString("en-IN")}</td>
+      <td className="num em">{formatINRWithTooltip(ClientTotal.total_po_basic)}</td>
+      <td className="num em">{formatINRWithTooltip(ClientTotal.total_gst)}</td>
+      <td className="num em groupSplitRight">{formatINRWithTooltip(ClientTotal.total_po_value)}</td>
 
-          <td className="num">₹ {ClientTotal.total_advance_paid?.toLocaleString("en-IN")}</td>
-          <td className="num groupSplitRight">₹ {ClientTotal.total_remaining_amount?.toLocaleString("en-IN")}</td>
+      <td className="num">{formatINRWithTooltip(ClientTotal.total_advance_paid)}</td>
+      <td className="num groupSplitRight">{formatINRWithTooltip(ClientTotal.total_remaining_amount)}</td>
 
-          <td className="num em">₹ {ClientTotal.total_bill_basic?.toLocaleString("en-IN")}</td>
-          <td className="num em">₹ {ClientTotal.total_bill_gst?.toLocaleString("en-IN")}</td>
-          <td className="num em">₹ {ClientTotal.total_billed_value?.toLocaleString("en-IN")}</td>
+      <td className="num em">{formatINRWithTooltip(ClientTotal.total_bill_basic)}</td>
+      <td className="num em">{formatINRWithTooltip(ClientTotal.total_bill_gst)}</td>
+      <td className="num em">{formatINRWithTooltip(ClientTotal.total_billed_value)}</td>
 
-          <td className="num">₹ {ClientTotal.total_unbilled_sales?.toLocaleString("en-IN")}</td>
-          <td />
-        </tr>
-      </tfoot>
-    )}
+      <td className="num">{formatINRWithTooltip(ClientTotal.total_unbilled_sales)}</td>
+      <td />
+    </tr>
+  </tfoot>
+)}
+
+
   </Table>
 </Sheet>
 
