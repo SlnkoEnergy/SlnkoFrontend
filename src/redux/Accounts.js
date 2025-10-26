@@ -155,7 +155,7 @@ export const AccountsApi = createApi({
     }),
 
     updateSalesPO: builder.mutation({
-      query: ({ id, po_number, remarks, basic_sales, gst_on_sales, files }) => {
+      query: ({ id, po_number, remarks, basic_sales, gst_on_sales,sales_invoice, files }) => {
         const form = new FormData();
 
         if (remarks) form.append("remarks", remarks);
@@ -163,6 +163,7 @@ export const AccountsApi = createApi({
         if (gst_on_sales !== undefined)
           form.append("gst_on_sales", gst_on_sales);
         if (po_number) form.append("po_number", po_number);
+         if (sales_invoice) form.append("sales_invoice", sales_invoice);
 
         if (Array.isArray(files)) {
           files.forEach((f) => {

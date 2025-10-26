@@ -131,9 +131,9 @@ const Customer_Payment_Summary = () => {
       .filter((a) => a.url);
 
   const getItemLabel = (row) => {
-    if (typeof row?.item === "string") return row.item;
-    if (Array.isArray(row?.item)) {
-      return row.item
+    if (typeof row?.item_name === "string") return row.item_name;
+    if (Array.isArray(row?.item_name)) {
+      return row.item_name
         .map(
           (it) => it?.product_name || it?.category?.name || it?.category || ""
         )
@@ -482,343 +482,358 @@ const Customer_Payment_Summary = () => {
 
   // ***Balance Summary***
 
-  const {
-    total_received,
-    total_return,
-    total_advance_paid,
-    total_adjustment,
-    balance_with_slnko,
-    billing_type,
-    gst_difference,
-    total_sales_value,
-    total_unbilled_sales,
-    advance_left_after_billed,
-    netBalance,
-    total_po_with_gst,
-    total_billed_value,
-    exact_remaining_pay_to_vendors,
-  } = balanceSummary || {};
+const {
+  total_received,
+  total_return,
+  total_advance_paid,
+  total_adjustment,
+  balance_with_slnko,
+  billing_type,
+  gst_difference,
+  total_sales_value,
+  total_unbilled_sales,
+  advance_left_after_billed,
+  netBalance,
+  total_po_with_gst,
+  total_billed_value,
+  exact_remaining_pay_to_vendors,
+} = balanceSummary || {};
 
-  const formatIndianNumber = (val) => {
-    const n = Number(val);
-    if (!isFinite(n)) return "—";
-    return n.toLocaleString("en-IN");
+const formatIndianNumber = (val) => {
+  const n = Number(val);
+  if (!isFinite(n)) return "—";
+  return n.toLocaleString("en-IN");
+};
+
+const RupeeValue = ({ value, showSymbol = true }) => {
+  const n = Number(value);
+  if (!isFinite(n)) return "—";
+  const formatted = n.toLocaleString("en-IN");
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "flex-end",
+        gap: 4,
+      }}
+    >
+      {showSymbol && (
+        <CurrencyRupee style={{ fontSize: 16, marginBottom: 1 }} />
+      )}
+      <span>{formatted}</span>
+    </span>
+  );
+};
+const num = (v) => Number(v) || 0;
+const calc_balance_with_slnko = () => {
+  return (
+    num(netBalance) -
+    num(total_sales_value) -
+    num(total_unbilled_sales) -
+    num(advance_left_after_billed) -
+    num(total_adjustment)
+  );
+};
+
+const balance_with_slnko_value = calc_balance_with_slnko();
+
+const Balance_Summary = ({ isLoading = false }) => {
+  const safeRound = (v) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? Math.round(n) : "• • •";
   };
 
-  const RupeeValue = ({ value, showSymbol = true }) => {
-    const n = Number(value);
-    if (!isFinite(n)) return "—";
-    const formatted = n.toLocaleString("en-IN");
-    return (
-      <span
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "flex-end",
-          gap: 4,
-        }}
-      >
-        {showSymbol && (
-          <CurrencyRupee style={{ fontSize: 16, marginBottom: 1 }} />
-        )}
-        <span>{formatted}</span>
-      </span>
-    );
+  const rows = [
+    ["1", "Total Received", safeRound(total_received), "#FFF59D"],
+    ["2", "Total Return", safeRound(total_return), "#FFF59D"],
+    ["3", "Net Balance [(1)-(2)]", safeRound(netBalance), "#FFE082", true],
+    [
+      "4",
+      "Total Advances Paid to Vendors",
+      safeRound(total_advance_paid),
+      "#FFF",
+    ],
+    ["", "Billing Details", "", "#F5F5F5"],
+    ["5", "Invoice issued to customer", safeRound(total_sales_value), "#FFF"],
+    [
+      "6",
+      "Bills received, yet to be invoiced to customer",
+      safeRound(total_unbilled_sales),
+      "#FFF",
+    ],
+    [
+      "7",
+      "Advances left after bills received",
+      safeRound(advance_left_after_billed),
+      "#FFF",
+    ],
+    ["8", "Adjustment (Debit-Credit)", safeRound(total_adjustment), "#FFF"],
+    [
+  "9",
+  "Balance With Slnko [3 - 5 - 6 - 7 - 8]",
+  safeRound(balance_with_slnko_value),
+  "#FFECB3",
+  true,
+],
+
+  ];
+
+  const formulaMap = {
+    1: "Amount Received from Customer",
+    2: "Amount Returned to Customer",
+    3: "Net Balance = (1) - (2)",
+    4: "Advance lying with vendors after reducing bill balances",
+    5: "Value of material delivered (PO Closed) & Sales Invoice issued (including Sales GST)",
+    6: "Value of material delivered (PO Closed) including Purchase GST",
+    7: "Advance left after bills received ",
+    8: "Adjustments (Debit / Credit)",
+    9: "",
   };
 
-  const Balance_Summary = ({ isLoading = false }) => {
-    const safeRound = (v) => {
-      const n = Number(v);
-      return Number.isFinite(n) ? Math.round(n) : "• • •";
-    };
+  return (
+    <Grid container spacing={2}>
+      {/* ---------- LEFT: Balance Summary ---------- */}
+      <Grid item xs={12} sm={8} md={8}>
+        <Sheet
+          variant="outlined"
+          sx={{
+            borderRadius: "8px",
+            p: 2,
+            backgroundColor: "#fff",
+            overflowX: "auto",
+            "@media print": { boxShadow: "none", border: "none" },
+          }}
+        >
+          <Typography
+            level="h5"
+            sx={{ fontWeight: "bold", mb: 1.5, fontSize: 16 }}
+          >
+            Balance Summary
+          </Typography>
 
-    const rows = [
-      ["1", "Total Received", safeRound(total_received), "#FFF59D"],
-      ["2", "Total Return", safeRound(total_return), "#FFF59D"],
-      ["3", "Net Balance [(1)-(2)]", safeRound(netBalance), "#FFE082", true],
-      [
-        "4",
-        "Total Advances Paid to Vendors",
-        safeRound(total_advance_paid),
-        "#FFF",
-      ],
-      [
-        "4A",
-        "Advances left after bills received",
-        safeRound(advance_left_after_billed),
-        "#FFF",
-      ],
-      ["5", "Adjustment (Debit-Credit)", safeRound(total_adjustment), "#FFF"],
-      [
-        "6",
-        "Balance With Slnko [(3)-(4)-(5)]",
-        safeRound(balance_with_slnko),
-        "#FFECB3",
-        true,
-      ],
-      ["", "Billing Details", "", "#F5F5F5"],
-      ["7", "Invoice issued to customer", safeRound(total_sales_value), "#FFF"],
-      [
-        "8",
-        "Bills received, yet to be invoiced to customer",
-        safeRound(total_unbilled_sales),
-        "#FFF",
-      ],
-    ];
-
-    const formulaMap = {
-      1: "Total Received = Σ(credited amounts)",
-      2: "Total Return = Σ(amount returned to customer)",
-      3: "Net Balance = (1) - (2)",
-      4: "Total Advances Paid = Σ(vendor advance payments)",
-      "4A": "Advance left = Total Advance - Bills received",
-      5: "Adjustment = Debit Adjustments - Credit Adjustments",
-      6: "Balance With Slnko = (3) - (4) - (5)",
-      7: "Invoice issued = Total PO Closed (Sales)",
-      8: "Yet to invoice = Total Billed - Sales Value",
-    };
-
-    return (
-      <Grid container spacing={2}>
-        {/* ---------- LEFT: Balance Summary ---------- */}
-        <Grid item xs={12} sm={8} md={8}>
-          <Sheet
-            variant="outlined"
+          <Table
+            aria-label="Balance summary"
+            borderAxis="both"
             sx={{
-              borderRadius: "8px",
-              p: 2,
-              backgroundColor: "#fff",
-              overflowX: "auto",
-              "@media print": { boxShadow: "none", border: "none" },
+              minWidth: 560,
+              tableLayout: "fixed",
+              "& th, & td": {
+                px: 1.5,
+                py: 1,
+                fontSize: 14,
+                "@media print": {
+                  px: 1,
+                  py: 0.75,
+                  fontSize: 12,
+                  border: "1px solid #ddd",
+                },
+              },
+              "& th.num, & td.num": {
+                textAlign: "right",
+                fontVariantNumeric: "tabular-nums",
+                whiteSpace: "nowrap",
+              },
             }}
           >
-            <Typography
-              level="h5"
-              sx={{ fontWeight: "bold", mb: 1.5, fontSize: 16 }}
-            >
-              Balance Summary
-            </Typography>
-
-            <Table
-              aria-label="Balance summary"
-              borderAxis="both"
-              sx={{
-                minWidth: 560,
-                tableLayout: "fixed",
-                "& th, & td": {
-                  px: 1.5,
-                  py: 1,
-                  fontSize: 14,
-                  "@media print": {
-                    px: 1,
-                    py: 0.75,
-                    fontSize: 12,
-                    border: "1px solid #ddd",
-                  },
-                },
-                "& th.num, & td.num": {
-                  textAlign: "right",
-                  fontVariantNumeric: "tabular-nums",
-                  whiteSpace: "nowrap",
-                },
-              }}
-            >
-              <thead>
-                <tr>
-                  <th style={{ width: 64 }}>S.No.</th>
-                  <th>Description</th>
-                  <th className="num" style={{ width: 180 }}>
-                    Value
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map(([sno, desc, value, bg, bold]) => {
-                  if (sno === "") {
-                    return (
-                      <tr key="billing-header">
-                        <td
-                          colSpan={3}
-                          style={{
-                            background: "#F5F5F5",
-                            textAlign: "center",
-                            fontWeight: 700,
-                            color: "#333",
-                          }}
-                        >
-                          {desc}
-                        </td>
-                      </tr>
-                    );
-                  }
-
+            <thead>
+              <tr>
+                <th style={{ width: 64 }}>S.No.</th>
+                <th>Description</th>
+                <th className="num" style={{ width: 180 }}>
+                  Value
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(([sno, desc, value, bg, bold]) => {
+                if (sno === "") {
                   return (
-                    <Tooltip
-                      key={sno + desc}
-                      title={formulaMap[sno] || ""}
-                      arrow
-                      placement="top-start"
-                    >
-                      <tr
+                    <tr key={desc}>
+                      <td
+                        colSpan={3}
                         style={{
-                          background: bg,
-                          fontWeight: bold ? 700 : 400,
+                          background: "#F5F5F5",
+                          textAlign: "center",
+                          fontWeight: 700,
+                          color: "#333",
                         }}
                       >
-                        <td>{sno}</td>
-                        <td>{desc}</td>
-                        <td className="num">
-                          {isLoading ? (
-                            "• • •"
-                          ) : (
-                            <RupeeValue
-                              value={value}
-                              showSymbol={!(sno === "7" || sno === "8")}
-                            />
-                          )}
-                        </td>
-                      </tr>
-                    </Tooltip>
+                        {desc}
+                      </td>
+                    </tr>
                   );
-                })}
-              </tbody>
-            </Table>
-          </Sheet>
-        </Grid>
+                }
 
-        {/* ---------- RIGHT: KPIs + PAYABLE ---------- */}
-        <Grid item xs={12} sm={4} md={4}>
-          {/* KPI chips */}
-          <Stack
-            direction="row"
-            flexWrap="wrap"
-            spacing={1}
-            useFlexGap
-            sx={{ mb: 2 }}
-          >
-            <Chip
-              size="md"
-              variant="soft"
-              color={(Number(gst_difference) ?? 0) >= 0 ? "success" : "danger"}
-              sx={{ fontWeight: "bold" }}
-            >
-              <span
-                style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-              >
-                GST (Diff):{" "}
-                {isLoading ? "• • •" : formatIndianNumber(gst_difference)}
-              </span>
-            </Chip>
-
-            {billing_type && (
-              <Chip
-                size="md"
-                variant="soft"
-                color="neutral"
-                sx={{ fontWeight: 600 }}
-              >
-                Billing:&nbsp;
-                {billing_type === "Composite"
-                  ? "Composite (13.8%)"
-                  : billing_type === "Individual"
-                  ? "Individual (18%)"
-                  : "N/A"}
-              </Chip>
-            )}
-          </Stack>
-
-          {/* Payable to Vendors */}
-          <Sheet
-            variant="outlined"
-            sx={{
-              borderRadius: "8px",
-              p: 2,
-              backgroundColor: "#fff",
-              overflowX: "auto",
-            }}
-          >
-            <Typography
-              level="h6"
-              sx={{
-                fontWeight: "bold",
-                mb: 1,
-                fontSize: 15,
-                backgroundColor: "#FBC02D",
-                px: 1.5,
-                py: 0.5,
-                borderRadius: "6px",
-                textAlign: "center",
-              }}
-            >
-              Payable to Vendors
-            </Typography>
-
-            <Table
-              aria-label="Payable to Vendors"
-              borderAxis="both"
-              sx={{
-                minWidth: 400,
-                "& th, & td": { px: 1.5, py: 1, fontSize: 14 },
-                "& th.num, & td.num": { textAlign: "right" },
-                "& tbody tr:hover": { backgroundColor: "#FFFDE7" },
-              }}
-            >
-              <thead>
-                <tr>
-                  <th>Description</th>
-                  <th className="num" style={{ width: 180 }}>
-                    Value
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  ["Total PO Value", safeRound(total_po_with_gst)],
-                  ["Billed Value", safeRound(total_billed_value)],
-                  ["Advance Paid", safeRound(total_advance_paid)],
-                  [
-                    "Remaining to Pay",
-                    safeRound(exact_remaining_pay_to_vendors),
-                    total_billed_value > total_advance_paid
-                      ? "success"
-                      : "warning",
-                  ],
-                ].map(([desc, value, tone]) => (
+                return (
                   <Tooltip
-                    key={desc}
-                    title={
-                      desc === "Remaining to Pay"
-                        ? "If Billed > Advance → (PO with GST − Billed), else = Total Advance Paid"
-                        : ""
-                    }
+                    key={sno + desc}
+                    title={formulaMap[sno] || ""}
                     arrow
                     placement="top-start"
                   >
                     <tr
                       style={{
-                        background:
-                          desc === "Remaining to Pay"
-                            ? tone === "success"
-                              ? "#E8F5E9"
-                              : "#FFF9C4"
-                            : "#FFFFFF",
-                        fontWeight: desc === "Remaining to Pay" ? 700 : 400,
+                        background: bg,
+                        fontWeight: bold ? 700 : 400,
                       }}
                     >
+                      <td>{sno}</td>
                       <td>{desc}</td>
                       <td className="num">
-                        {isLoading ? "• • •" : value?.toLocaleString("en-IN")}
+                        {isLoading ? (
+                          "• • •"
+                        ) : (
+                          <RupeeValue
+                            value={value}
+                            showSymbol={!(sno === "5" || sno === "6")}
+                          />
+                        )}
                       </td>
                     </tr>
                   </Tooltip>
-                ))}
-              </tbody>
-            </Table>
-          </Sheet>
-        </Grid>
+                );
+              })}
+            </tbody>
+          </Table>
+        </Sheet>
       </Grid>
-    );
-  };
+
+      {/* ---------- RIGHT: KPIs + PAYABLE ---------- */}
+      <Grid item xs={12} sm={4} md={4}>
+        {/* KPI chips */}
+        <Stack
+          direction="row"
+          flexWrap="wrap"
+          spacing={1}
+          useFlexGap
+          sx={{ mb: 2 }}
+        >
+          <Chip
+            size="md"
+            variant="soft"
+            color={(Number(gst_difference) ?? 0) >= 0 ? "success" : "danger"}
+            sx={{ fontWeight: "bold" }}
+          >
+            <span
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              GST (Diff):{" "}
+              {isLoading ? "• • •" : formatIndianNumber(gst_difference)}
+            </span>
+          </Chip>
+
+          {billing_type && (
+            <Chip
+              size="md"
+              variant="soft"
+              color="neutral"
+              sx={{ fontWeight: 600 }}
+            >
+              Billing:&nbsp;
+              {billing_type === "Composite"
+                ? "Composite (13.8%)"
+                : billing_type === "Individual"
+                ? "Individual (18%)"
+                : "N/A"}
+            </Chip>
+          )}
+        </Stack>
+
+        {/* Payable to Vendors */}
+        <Sheet
+          variant="outlined"
+          sx={{
+            borderRadius: "8px",
+            p: 2,
+            backgroundColor: "#fff",
+            overflowX: "auto",
+          }}
+        >
+          <Typography
+            level="h6"
+            sx={{
+              fontWeight: "bold",
+              mb: 1,
+              fontSize: 15,
+              backgroundColor: "#FBC02D",
+              px: 1.5,
+              py: 0.5,
+              borderRadius: "6px",
+              textAlign: "center",
+            }}
+          >
+            Payable to Vendors
+          </Typography>
+
+          <Table
+            aria-label="Payable to Vendors"
+            borderAxis="both"
+            sx={{
+              minWidth: 400,
+              "& th, & td": { px: 1.5, py: 1, fontSize: 14 },
+              "& th.num, & td.num": { textAlign: "right" },
+              "& tbody tr:hover": { backgroundColor: "#FFFDE7" },
+            }}
+          >
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th className="num" style={{ width: 180 }}>
+                  Value
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ["Total PO Value", safeRound(total_po_with_gst)],
+                ["Billed Value", safeRound(total_billed_value)],
+                ["Advance Paid", safeRound(total_advance_paid)],
+                [
+                  "Remaining to Pay",
+                  safeRound(exact_remaining_pay_to_vendors),
+                  total_billed_value > total_advance_paid
+                    ? "success"
+                    : "warning",
+                ],
+              ].map(([desc, value, tone]) => (
+                <Tooltip
+                  key={desc}
+                  title={
+                    desc === "Remaining to Pay"
+                      ? "If Billed > Advance → (PO with GST − Billed), else = Total Advance Paid"
+                      : ""
+                  }
+                  arrow
+                  placement="top-start"
+                >
+                  <tr
+                    style={{
+                      background:
+                        desc === "Remaining to Pay"
+                          ? tone === "success"
+                            ? "#E8F5E9"
+                            : "#FFF9C4"
+                          : "#FFFFFF",
+                      fontWeight: desc === "Remaining to Pay" ? 700 : 400,
+                    }}
+                  >
+                    <td>{desc}</td>
+                    <td className="num">
+                      {isLoading ? "• • •" : value?.toLocaleString("en-IN")}
+                    </td>
+                  </tr>
+                </Tooltip>
+              ))}
+            </tbody>
+          </Table>
+        </Sheet>
+      </Grid>
+    </Grid>
+  );
+};
+
+
 
   const [updateSalesPO, { isLoading: isConverting }] =
     useUpdateSalesPOMutation();
@@ -831,108 +846,119 @@ const Customer_Payment_Summary = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [selectedPO, setSelectedPO] = useState([]);
   const [salesAmounts, setSalesAmounts] = useState({});
+  const [salesInvoice, setSalesInvoice] = useState("");
 
-  const handleSalesConvert = async () => {
-    try {
-      if (!selectedPO.length) {
-        toast.error("No PO(s) selected.");
-        return;
-      }
-
-      if (!salesRemarks.trim()) {
-        toast.error("Remarks are required.");
-        return;
-      }
-
-      // ✅ Validate all selected POs for salesAmounts presence and values
-      const invalidPOs = selectedPO.filter((po) => {
-        const id = po._id;
-        const basic = salesAmounts[id]?.basic;
-        const gst = salesAmounts[id]?.gst;
-
-        // Ensure both fields are filled and numeric
-        return (
-          basic === undefined ||
-          gst === undefined ||
-          basic === "" ||
-          gst === "" ||
-          isNaN(Number(basic)) ||
-          isNaN(Number(gst))
-        );
-      });
-
-      if (invalidPOs.length > 0) {
-        const poList = invalidPOs.map((p) => p.po_number).join(", ");
-        toast.error(
-          `Please enter both Basic Sales and GST on Sales for: ${poList}`
-        );
-        return;
-      }
-
-      const results = await Promise.allSettled(
-        selectedPO.map(async (po) => {
-          const id = po._id;
-          const poNumber = po.po_number;
-          const basic = Number(salesAmounts[id]?.basic || 0);
-          const gst = Number(salesAmounts[id]?.gst || 0);
-
-          return await updateSalesPO({
-            id,
-            po_number: poNumber,
-            remarks: salesRemarks.trim(),
-            basic_sales: basic,
-            gst_on_sales: gst,
-            files: salesFiles,
-          }).unwrap();
-        })
-      );
-
-      let ok = 0;
-      let fail = 0;
-
-      for (const r of results) {
-        if (r.status === "fulfilled") {
-          ok++;
-        } else {
-          fail++;
-          const err = r.reason?.data || r.reason?.response?.data || {};
-          const msg =
-            err?.message || "Sales conversion failed due to server validation.";
-
-          const d = err?.details || err?.cap_context;
-          if (d) {
-            const details = Object.entries(d)
-              .map(([k, v]) => `${k}: ${v}`)
-              .join(", ");
-            toast.error(`${msg}\n(${details})`, { autoClose: 6000 });
-          } else {
-            toast.error(msg, { autoClose: 4000 });
-          }
-        }
-      }
-
-      if (ok) toast.success(`Converted ${ok} PO(s) successfully.`);
-      if (fail) toast.warning(`Failed ${fail} PO(s).`);
-
-      // ✅ Reset form only on success
-      if (ok) {
-        setSalesOpen(false);
-        setSelectedPO([]);
-        setSelectedClients([]);
-        setSalesFiles([]);
-        setSalesRemarks("");
-        setSalesAmounts({});
-        refetch();
-      }
-    } catch (err) {
-      const msg =
-        err?.data?.message ||
-        err?.response?.data?.message ||
-        err?.message ||
-        "Sales conversion failed.";
-      toast.error(msg);
+ const handleSalesConvert = async () => {
+  try {
+    // ✅ 1. Ensure PO(s) selected
+    if (!selectedPO.length) {
+      toast.error("No PO(s) selected.");
+      return;
     }
-  };
+
+    // ✅ 2. Ensure remarks
+    if (!salesRemarks.trim()) {
+      toast.error("Remarks are required.");
+      return;
+    }
+
+    // ✅ 3. Ensure Sales Invoice
+    const inv = (salesInvoice || "").trim();
+    if (!inv) {
+      toast.error("Sales Invoice No. is required.");
+      return;
+    }
+
+    // Optional: basic invoice format validation
+    const invoiceOk = /^[A-Za-z0-9\/\-.]+$/.test(inv);
+    if (!invoiceOk) {
+      toast.error(
+        "Sales Invoice No. can contain letters, numbers, '/', '-' or '.'."
+      );
+      return;
+    }
+
+    // ✅ 4. Validate POs for basic value presence
+    const invalidPOs = selectedPO.filter((po) => {
+      const id = po._id;
+      const basic = salesAmounts[id]?.basic;
+      // Must exist & be numeric
+      return basic === undefined || basic === "" || isNaN(Number(basic));
+    });
+
+    if (invalidPOs.length > 0) {
+      const poList = invalidPOs.map((p) => p.po_number).join(", ");
+      toast.error(`Please enter Basic Sales value for: ${poList}`);
+      return;
+    }
+
+    // ✅ 5. Client-side guard: basic <= bill_basic
+    const capErrors = selectedPO.filter((po) => {
+      const id = po._id;
+      const billBasic = Number(po.bill_basic || 0);
+      const basic = Number(salesAmounts[id]?.basic || 0);
+      return basic < 0 || basic > billBasic;
+    });
+
+    if (capErrors.length > 0) {
+      const poList = capErrors.map((p) => p.po_number).join(", ");
+      toast.error(`Basic Sales must not exceed Billed Basic Value for: ${poList}`);
+      return;
+    }
+
+    // ✅ 6. Perform conversion calls
+    const results = await Promise.allSettled(
+      selectedPO.map(async (po) => {
+        const id = po._id;
+        const poNumber = po.po_number;
+        const basic = Number(salesAmounts[id]?.basic || 0);
+        const gst = Number(salesAmounts[id]?.gst || 0); // optional, can be 0
+
+        return await updateSalesPO({
+          id,
+          po_number: poNumber,
+          remarks: salesRemarks.trim(),
+          basic_sales: basic,
+          gst_on_sales: gst,
+          sales_invoice: inv,
+          files: salesFiles,
+        }).unwrap();
+      })
+    );
+
+    // ✅ 7. Count results
+    let ok = 0,
+      fail = 0;
+    for (const r of results) {
+      if (r.status === "fulfilled") ok++;
+      else fail++;
+    }
+
+    if (ok) toast.success(`Converted ${ok} PO(s) successfully.`);
+    if (fail) toast.warning(`Failed ${fail} PO(s).`);
+
+    // ✅ 8. Reset form on success
+    if (ok) {
+      setSalesOpen(false);
+      setSelectedPO([]);
+      setSelectedClients?.([]);
+      setSalesFiles([]);
+      setSalesRemarks("");
+      setSalesInvoice?.("");
+      setSalesAmounts({});
+      refetch?.();
+    }
+  } catch (err) {
+    const msg =
+      err?.data?.message ||
+      err?.response?.data?.message ||
+      err?.message ||
+      "Sales conversion failed.";
+    toast.error(msg);
+  }
+};
+
+
 
   const addFiles = (files) => {
     const incoming = Array.from(files || []).map((f) => ({
@@ -1129,177 +1155,43 @@ const Customer_Payment_Summary = () => {
   return (
     <Box
       sx={{
-        ml: { lg: "var(--Sidebar-width)" },
         px: { xs: 1, md: 2 },
+         ml: {
+          lg: "var(--Sidebar-width)",
+        },
         width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+    
       }}
     >
-      <Box
-        sx={{
-          maxWidth: { xs: "100%", lg: 1400, xl: 1600 },
-          mx: "auto",
-          width: "100%",
-        }}
-      >
-        {/* Header Section */}
-
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: {
-              xs: "1fr",
-              md: "300px 1fr",
-            },
-            gap: { xs: 1.5, md: 2 },
-            alignItems: "start",
-          }}
-        >
-          {/* Project Details Section */}
-
-          <Card
-            variant="outlined"
-            sx={{
-              position: "sticky",
-              top: { xs: 8, md: headerOffset + 16 },
-              alignSelf: "start",
-              borderRadius: "lg",
-              width: "100%",
-              flexShrink: 0,
-              maxHeight: {
-                xs: "calc(100dvh - 16px)",
-                md: `calc(100dvh - ${headerOffset + 32}px)`,
-              },
-              display: "flex",
-              flexDirection: "column",
-              overflow: "hidden",
-              boxShadow: "sm",
-              borderColor: "neutral.outlinedBorder",
-              zIndex: 1,
-            }}
-          >
-            <Box
-              sx={{
-                position: "sticky",
-                top: 0,
-                zIndex: 2,
-                mb: 1,
-                p: 1.25,
-                borderBottom: "1px solid",
-                borderColor: "neutral.outlinedBorder",
-                background:
-                  "linear-gradient(135deg, var(--joy-palette-primary-softBg), #eef4ff)",
-                display: "flex",
-                alignItems: "center",
-                gap: 1.25,
-              }}
-            >
-              <Avatar
-                variant="soft"
-                size="lg"
-                src={projectDetails?.avatar_url || ""}
-                alt={
-                  projectDetails?.customer_name ||
-                  projectDetails?.name ||
-                  "Project"
-                }
-                sx={{ "--Avatar-size": "56px", fontWeight: 700 }}
-              >
-                {initials(
-                  projectDetails?.customer_name || projectDetails?.name || ""
-                )}
-              </Avatar>
-
-              <Box sx={{ minWidth: 0 }}>
-                <Typography
-                  level="title-md"
-                  sx={{ fontWeight: 700, lineHeight: 1 }}
-                >
-                  {isLoading ? "—" : projectDetails?.customer_name || "—"}
-                </Typography>
-                <Typography
-                  level="body-sm"
-                  sx={{
-                    opacity: 0.85,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
-                  title={projectDetails?.name}
-                >
-                  {projectDetails?.name || "—"}
-                </Typography>
-              </Box>
-            </Box>
-
-            {/* Label chip */}
-            <Chip
-              color="primary"
-              variant="soft"
-              sx={{ mb: 1, fontWeight: 700 }}
-            >
-              Project Details
-            </Chip>
-
-            {/* Fields */}
-            <Grid container spacing={1.5}>
-              <Grid xs={12}>
-                <EllipsisTooltipInput
-                  value={projectDetails.code}
-                  startDecorator={<FolderIcon />}
-                />
-              </Grid>
-
-              <Grid xs={12}>
-                <EllipsisTooltipInput
-                  value={projectDetails.name}
-                  startDecorator={<BusinessIcon />}
-                />
-              </Grid>
-
-              <Grid xs={12}>
-                <Input
-                  value={isLoading ? "" : projectDetails.customer_name || "-"}
-                  readOnly
-                  startDecorator={<AccountCircleIcon />}
-                  placeholder={isLoading ? "Loading..." : ""}
-                />
-              </Grid>
-
-              <Grid xs={12}>
-                <Input
-                  value={isLoading ? "" : projectDetails.p_group || "-"}
-                  readOnly
-                  startDecorator={<GroupsIcon />}
-                  placeholder={isLoading ? "Loading..." : ""}
-                />
-              </Grid>
-
-              <Grid xs={12}>
-                <EllipsisTooltipInput
-                  value={projectDetails.site_address}
-                  startDecorator={<LocationOnIcon />}
-                />
-              </Grid>
-
-              <Grid xs={12}>
-                <Input
-                  value={isLoading ? "" : projectDetails.project_kwp || "-"}
-                  readOnly
-                  startDecorator={<BoltIcon />}
-                  placeholder={isLoading ? "Loading..." : ""}
-                />
-              </Grid>
-            </Grid>
-          </Card>
+    <Box
+  sx={{
+    minHeight: "100dvh",
+    
+    px: { xs: 1.5, sm: 2, md: 3 },
+    py: { xs: 1.5, md: 2.5 },
+    bgcolor: "background.body",
+  }}
+>
+  <Box
+    sx={{
+      maxWidth: { xs: "100%", lg: 1400, xl: 1600 },
+      mx: "auto",
+      width: "100%",
+    }}
+  >
 
           {/* Credit History Section */}
           <Card
-            sx={{
-              borderRadius: "lg",
-              p: { xs: 1, md: 1.5 },
-              minWidth: 0,
-            }}
+            variant="outlined"
+      sx={{
+        borderRadius: "xl",
+        p: { xs: 2, md: 3 },
+        boxShadow: "lg",
+        borderColor: "neutral.outlinedBorder",
+      }}
           >
+
+            
             <Box
               display="flex"
               justifyContent="space-between"
@@ -1328,7 +1220,56 @@ const Customer_Payment_Summary = () => {
               </Box>
             </Box>
 
-            <Stack gap={2}>
+            <Stack spacing={4}>
+        {/* =================== 1️⃣ PROJECT DETAILS =================== */}
+        <Box>
+          <Typography level="h4" sx={{ mb: 2, fontWeight: 700 }}>
+            Project Details
+          </Typography>
+          <Divider sx={{ mb: 2 }} />
+          <Grid container spacing={1.5}>
+            <Grid xs={12} sm={6} md={4}>
+              <EllipsisTooltipInput
+                value={projectDetails.code}
+                startDecorator={<FolderIcon />}
+              />
+            </Grid>
+            <Grid xs={12} sm={6} md={4}>
+              <EllipsisTooltipInput
+                value={projectDetails.name}
+                startDecorator={<BusinessIcon />}
+              />
+            </Grid>
+            <Grid xs={12} sm={6} md={4}>
+              <Input
+                value={projectDetails.customer_name || "-"}
+                readOnly
+                startDecorator={<AccountCircleIcon />}
+              />
+            </Grid>
+            <Grid xs={12} sm={6} md={4}>
+              <Input
+                value={projectDetails.p_group || "-"}
+                readOnly
+                startDecorator={<GroupsIcon />}
+              />
+            </Grid>
+            <Grid xs={12} sm={6} md={4}>
+              <EllipsisTooltipInput
+                value={projectDetails.site_address}
+                startDecorator={<LocationOnIcon />}
+              />
+            </Grid>
+            <Grid xs={12} sm={6} md={4}>
+              <Input
+                value={projectDetails.project_kwp || "-"}
+                readOnly
+                startDecorator={<BoltIcon />}
+              />
+            </Grid>
+          </Grid>
+        </Box>
+
               <Box>
                 <Chip
                   color="success"
@@ -1957,286 +1898,255 @@ const Customer_Payment_Summary = () => {
                         )}
                       </Box>
                     </Box>
+<Sheet
+  variant="outlined"
+  sx={{
+    borderRadius: 12,
+    overflowX: "auto",
+    p: { xs: 1, sm: 2 },
+    boxShadow: "md",
+    bgcolor: "#fff",
+    "@media print": {
+      boxShadow: "none",
+      border: "none",
+      borderRadius: 0,
+      p: 0,
+      overflow: "visible",
+    },
+  }}
+>
+  <Table
+    borderAxis="both"
+    stickyHeader
+    sx={{
+      "--num-w": "12ch",
+      minWidth: 1100,
+      tableLayout: "fixed",
+      fontSize: { xs: 12, sm: 14 },
 
-                    <Sheet
-                      variant="outlined"
-                      sx={{
-                        borderRadius: "12px",
-                        overflowX: "auto",
-                        overflowY: "hidden",
-                        p: { xs: 1, sm: 2 },
-                        boxShadow: "md",
-                        width: "100%",
-                        maxWidth: "100%",
-                        bgcolor: "#fff",
-                        "@media print": {
-                          boxShadow: "none",
-                          border: "none",
-                          borderRadius: 0,
-                          overflow: "visible",
-                        },
-                      }}
-                    >
-                      <Table
-                        borderAxis="both"
-                        stickyHeader
-                        sx={{
-                          minWidth: 800,
-                          width: "100%",
-                          tableLayout: "fixed",
-                          fontSize: { xs: 12, sm: 14 },
-                          "& thead": {
-                            backgroundColor: "neutral.softBg",
-                            "@media print": { backgroundColor: "#eee" },
-                          },
-                          "& tbody tr:nth-of-type(even)": {
-                            backgroundColor: "rgba(0,0,0,0.02)",
-                          },
-                          "& th, & td": {
-                            px: { xs: 1, sm: 2 },
-                            py: { xs: 1, sm: 1.25 },
-                            verticalAlign: "middle",
-                            fontSize: { xs: 12, sm: 14 },
-                            "@media print": {
-                              px: 1,
-                              py: 1,
-                              fontSize: "11px",
-                              border: "1px solid #ccc",
-                            },
-                          },
-                          "& th.num, & td.num": {
-                            textAlign: "right",
-                            fontVariantNumeric: "tabular-nums",
-                            whiteSpace: "nowrap",
-                          },
-                          "& th.poCell, & td.poCell, & th.vendorCell, & td.vendorCell":
-                            {
-                              whiteSpace: "normal",
-                              overflowWrap: "anywhere",
-                              wordBreak: "break-word",
-                              maxWidth: { xs: 120, sm: 180, md: 240 },
-                            },
-                          "& th.itemCell, & td.itemCell": {
-                            maxWidth: { xs: 140, sm: 220, md: 320 },
-                            whiteSpace: { xs: "normal", md: "nowrap" },
-                            overflow: { md: "hidden" },
-                            textOverflow: { md: "ellipsis" },
-                          },
-                        }}
-                      >
-                        <thead>
-                          <tr>
-                            <th className="poCell">PO Number</th>
-                            <th className="vendorCell">Vendor</th>
-                            <th className="itemCell">Item Name</th>
+      "& thead": {
+        backgroundColor: "background.level1",
+        "& th": {
+          px: { xs: 1, sm: 2 },
+          py: { xs: 1, sm: 1.1 },
+          whiteSpace: "nowrap",
+          fontWeight: 600,
+          color: "text.secondary",
+          borderColor: "neutral.outlinedBorder",
+        },
+      },
 
-                            <th className="num">
-                              <Tooltip
-                                arrow
-                                variant="soft"
-                                title="PO Value (₹)"
-                              >
-                                <span>PO Value</span>
-                              </Tooltip>
-                            </th>
+      "& tbody tr:hover": { backgroundColor: "background.level1" },
+      "& th, & td": {
+        px: { xs: 1, sm: 2 },
+        py: { xs: 1, sm: 1.1 },
+        verticalAlign: "middle",
+        lineHeight: 1.5,
+        borderColor: "neutral.outlinedBorder",
+        "@media print": {
+          px: 1,
+          py: 1,
+          fontSize: 11,
+          border: "1px solid #ccc",
+        },
+      },
 
-                            <th className="num">
-                              <Tooltip
-                                arrow
-                                variant="soft"
-                                title={
-                                  <span>
-                                    Advance Paid (₹)
-                                    <br />
-                                    <em>
-                                      Sum of approved advances against this PO
-                                    </em>
-                                  </span>
-                                }
-                              >
-                                <span>Advance Paid</span>
-                              </Tooltip>
-                            </th>
+      "& th.text, & td.text": {
+        textAlign: "left",
+        wordBreak: "break-word",
+        overflowWrap: "anywhere",
+      },
+      "& th.num, & td.num": {
+        width: "var(--num-w)",
+        textAlign: "right",
+        fontVariantNumeric: "tabular-nums",
+        whiteSpace: "nowrap",
+      },
 
-                            <th className="num">
-                              <Tooltip
-                                arrow
-                                variant="soft"
-                                title="Advance Remaining (₹) = PO Value − Advance Paid"
-                              >
-                                <span>Advance Remaining</span>
-                              </Tooltip>
-                            </th>
+      // 🔥 Emphasis on PO Value & Total Billed cells
+      "& td.em": { fontWeight: 700, color: "text.primary" },
+      "& th.em": { fontWeight: 800, color: "text.primary" },
 
-                            <th className="num">
-                              <Tooltip
-                                arrow
-                                variant="soft"
-                                title="Unbilled PO (₹) = PO Value − Total Billed Value"
-                              >
-                                <span>Unbilled PO</span>
-                              </Tooltip>
-                            </th>
+      // colored header groups
+      "& thead th.poGroup": {
+        backgroundColor: "warning.softBg",
+        color: "warning.softColor",
+        fontWeight: 800,
+      },
+      "& thead th.billedGroup": {
+        backgroundColor: "primary.softBg",
+        color: "primary.softColor",
+        fontWeight: 800,
+      },
 
-                            <th className="num">
-                              <Tooltip
-                                arrow
-                                variant="soft"
-                                title="Total Billed Value (₹)"
-                              >
-                                <span>Total Billed</span>
-                              </Tooltip>
-                            </th>
+      "& thead th.groupSplitRight, & tbody td.groupSplitRight, & tfoot td.groupSplitRight": {
+        borderRight: "2px solid",
+        borderColor: "neutral.outlinedBorder",
+      },
 
-                            <th style={{ textAlign: "center" }}>
-                              <Checkbox
-                                onChange={handleSelectAllClient}
-                                checked={
-                                  ClientSummary.length > 0 &&
-                                  selectedClients.length ===
-                                    ClientSummary.length
-                                }
-                                disabled={ClientSummary.length === 0}
-                                aria-label="Select all rows"
-                              />
-                            </th>
-                          </tr>
-                        </thead>
+      "& tfoot tr": {
+        borderTop: "2px solid",
+        borderColor: "neutral.outlinedBorder",
+      },
+      "& tfoot td": {
+        backgroundColor: "background.body",
+        fontWeight: 700,
+        color: "text.primary",
+      },
+    }}
+  >
+    <colgroup>
+      <col style={{ width: 120 }} />
+      <col style={{ width: 140 }} />
+      <col style={{ width: 280 }} />
+      <col style={{ width: "var(--num-w)" }} />
+      <col style={{ width: "var(--num-w)" }} />
+      <col style={{ width: "var(--num-w)" }} />
+      <col style={{ width: "var(--num-w)" }} />
+      <col style={{ width: "var(--num-w)" }} />
+      <col style={{ width: "var(--num-w)" }} />
+      <col style={{ width: "var(--num-w)" }} />
+      <col style={{ width: "var(--num-w)" }} />
+      <col style={{ width: "var(--num-w)" }} />
+      <col style={{ width: 56 }} />
+    </colgroup>
 
-                        <tbody>
-                          {isLoading ? (
-                            <tr>
-                              <td
-                                colSpan={9}
-                                style={{ textAlign: "center", padding: 20 }}
-                              >
-                                <Typography
-                                  level="body-md"
-                                  sx={{ fontStyle: "italic" }}
-                                >
-                                  Loading purchase history...
-                                </Typography>
-                              </td>
-                            </tr>
-                          ) : ClientSummary.length > 0 ? (
-                            ClientSummary.map((client) => (
-                              <tr key={client._id}>
-                                <td className="poCell">
-                                  {client.po_number || "N/A"}
-                                </td>
-                                <td className="vendorCell">
-                                  {client.vendor || "N/A"}
-                                </td>
-                                <td className="itemCell">
-                                  <ItemNameCell text={client.item_name} />
-                                </td>
+    <thead>
+      <tr>
+        <th rowSpan={2} className="text">PO Number</th>
+        <th rowSpan={2} className="text">Vendor</th>
+        <th rowSpan={2} className="text item">Item</th>
 
-                                <td className="num">
-                                  ₹{" "}
-                                  {Number(client?.po_value || 0).toLocaleString(
-                                    "en-IN"
-                                  )}
-                                </td>
-                                <td className="num">
-                                  ₹{" "}
-                                  {Number(
-                                    client?.advance_paid || 0
-                                  ).toLocaleString("en-IN")}
-                                </td>
-                                <td className="num">
-                                  ₹{" "}
-                                  {Number(
-                                    client?.remaining_amount || 0
-                                  ).toLocaleString("en-IN")}
-                                </td>
-                                <td className="num">
-                                  ₹{" "}
-                                  {Number(
-                                    client?.po_remaining_amount || 0
-                                  ).toLocaleString("en-IN")}
-                                </td>
-                                <td className="num">
-                                  ₹{" "}
-                                  {Number(
-                                    client?.total_billed_value || 0
-                                  ).toLocaleString("en-IN")}
-                                </td>
-                                <td style={{ textAlign: "center" }}>
-                                  <Checkbox
-                                    checked={selectedClients.includes(
-                                      client._id
-                                    )}
-                                    onChange={() =>
-                                      handleClientCheckboxChange(client._id)
-                                    }
-                                    aria-label={`Select client ${
-                                      client.po_number || client._id
-                                    }`}
-                                  />
-                                </td>
-                              </tr>
-                            ))
-                          ) : (
-                            <tr>
-                              <td
-                                colSpan={9}
-                                style={{ textAlign: "center", padding: 20 }}
-                              >
-                                <Typography level="body-md">
-                                  No purchase history available
-                                </Typography>
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
+        {/* 🔶 PO VALUE GROUP */}
+        <th colSpan={3} className="poGroup" style={{ textAlign: "center" }}>
+          PO Value (₹)
+        </th>
 
-                        {ClientSummary.length > 0 && (
-                          <tfoot>
-                            <tr
-                              style={{
-                                fontWeight: "bold",
-                                backgroundColor: "#FFF9C4",
-                              }}
-                            >
-                              <td colSpan={3} style={{ textAlign: "right" }}>
-                                Total:
-                              </td>
-                              <td className="num">
-                                ₹{" "}
-                                {ClientTotal?.total_po_value?.toLocaleString(
-                                  "en-IN"
-                                )}
-                              </td>
-                              <td className="num">
-                                ₹{" "}
-                                {ClientTotal?.total_advance_paid?.toLocaleString(
-                                  "en-IN"
-                                )}
-                              </td>
-                              <td className="num">
-                                ₹{" "}
-                                {ClientTotal?.total_remaining_amount?.toLocaleString(
-                                  "en-IN"
-                                )}
-                              </td>
-                              <td className="num">
-                                ₹{" "}
-                                {ClientTotal?.total_po_remaining_amount?.toLocaleString(
-                                  "en-IN"
-                                )}
-                              </td>
-                              <td className="num">
-                                ₹{" "}
-                                {ClientTotal?.total_billed_value?.toLocaleString(
-                                  "en-IN"
-                                )}
-                              </td>
-                              <td />
-                            </tr>
-                          </tfoot>
-                        )}
-                      </Table>
-                    </Sheet>
+        <th rowSpan={2} className="num">Advance Paid (₹)</th>
+        <th rowSpan={2} className="num groupSplitRight">Advance Remaining (₹)</th>
+
+        {/* 🔷 TOTAL BILLED GROUP */}
+        <th colSpan={3} className="billedGroup" style={{ textAlign: "center" }}>
+          Total Billed (₹)
+        </th>
+
+        <th rowSpan={2} className="num">Unbilled PO (₹)</th>
+        <th rowSpan={2} style={{ textAlign: "center" }}>
+          <Checkbox
+            onChange={handleSelectAllClient}
+            checked={
+              ClientSummary.length > 0 &&
+              selectedClients.length === ClientSummary.length
+            }
+            disabled={ClientSummary.length === 0}
+          />
+        </th>
+      </tr>
+
+      <tr>
+        <th className="num em poGroup">Basic (₹)</th>
+        <th className="num em poGroup">GST (₹)</th>
+        <th className="num em poGroup groupSplitRight">Total (₹)</th>
+
+        <th className="num em billedGroup">Basic (₹)</th>
+        <th className="num em billedGroup">GST (₹)</th>
+        <th className="num em billedGroup">Total (₹)</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {isLoading ? (
+        <tr>
+          <td colSpan={13} style={{ textAlign: "center", padding: 20 }}>
+            <Typography level="body-md" sx={{ fontStyle: "italic" }}>
+              Loading purchase history...
+            </Typography>
+          </td>
+        </tr>
+      ) : ClientSummary.length > 0 ? (
+        ClientSummary.map((client) => (
+          <tr key={client._id}>
+            <td className="text">{client.po_number || "N/A"}</td>
+            <td className="text">{client.vendor || "N/A"}</td>
+
+            <td className="text item" title={client.item_name || "—"}>
+              <Typography
+                level="body-sm"
+                sx={{
+                  display: "block",
+                  maxWidth: { xs: "100%", md: 280 },
+                  overflow: "hidden",
+                  textOverflow: { xs: "clip", md: "ellipsis" },
+                  whiteSpace: { xs: "normal", md: "nowrap" },
+                }}
+              >
+                <ItemNameCell text={client.item_name} />
+              </Typography>
+            </td>
+
+            {/* PO Value */}
+            <td className="num em">₹ {Number(client.po_basic || 0).toLocaleString("en-IN")}</td>
+            <td className="num em">₹ {Number(client.gst || 0).toLocaleString("en-IN")}</td>
+            <td className="num em groupSplitRight">₹ {Number(client.po_value || 0).toLocaleString("en-IN")}</td>
+
+            {/* Advances */}
+            <td className="num">₹ {Number(client.advance_paid || 0).toLocaleString("en-IN")}</td>
+            <td className="num groupSplitRight">₹ {Number(client.remaining_amount || 0).toLocaleString("en-IN")}</td>
+
+            {/* Total Billed */}
+            <td className="num em">₹ {Number(client.bill_basic || 0).toLocaleString("en-IN")}</td>
+            <td className="num em">₹ {Number(client.bill_gst || 0).toLocaleString("en-IN")}</td>
+            <td className="num em">₹ {Number(client.total_billed_value || 0).toLocaleString("en-IN")}</td>
+
+            <td className="num">₹ {Number(client.total_unbilled_sales || 0).toLocaleString("en-IN")}</td>
+
+            <td style={{ textAlign: "center" }}>
+              <Checkbox
+                checked={selectedClients.includes(client._id)}
+                onChange={() => handleClientCheckboxChange(client._id)}
+              />
+            </td>
+          </tr>
+        ))
+      ) : (
+        <tr>
+          <td colSpan={13} style={{ textAlign: "center", padding: 20 }}>
+            <Typography level="body-md">No purchase history available</Typography>
+          </td>
+        </tr>
+      )}
+    </tbody>
+
+    {ClientSummary.length > 0 && (
+      <tfoot>
+        <tr>
+          <td colSpan={3} style={{ textAlign: "right", fontWeight: 700 }}>
+            Total:
+          </td>
+
+          <td className="num em">₹ {ClientTotal.total_po_basic?.toLocaleString("en-IN")}</td>
+          <td className="num em">₹ {ClientTotal.total_gst?.toLocaleString("en-IN")}</td>
+          <td className="num em groupSplitRight">₹ {ClientTotal.total_po_value?.toLocaleString("en-IN")}</td>
+
+          <td className="num">₹ {ClientTotal.total_advance_paid?.toLocaleString("en-IN")}</td>
+          <td className="num groupSplitRight">₹ {ClientTotal.total_remaining_amount?.toLocaleString("en-IN")}</td>
+
+          <td className="num em">₹ {ClientTotal.total_bill_basic?.toLocaleString("en-IN")}</td>
+          <td className="num em">₹ {ClientTotal.total_bill_gst?.toLocaleString("en-IN")}</td>
+          <td className="num em">₹ {ClientTotal.total_billed_value?.toLocaleString("en-IN")}</td>
+
+          <td className="num">₹ {ClientTotal.total_unbilled_sales?.toLocaleString("en-IN")}</td>
+          <td />
+        </tr>
+      </tfoot>
+    )}
+  </Table>
+</Sheet>
+
+
+
+
+
                   </TabPanel>
 
                   {/* -------------------- SALES HISTORY -------------------- */}
@@ -2261,256 +2171,363 @@ const Customer_Payment_Summary = () => {
                     </Box>
 
                     <Sheet
-  variant="outlined"
-  sx={{
-    borderRadius: "12px",
-    overflowX: "auto",
-    overflowY: "hidden",
-    p: { xs: 1, sm: 2 },
-    boxShadow: "md",
-    bgcolor: "#fff",
-    width: "100%",
-    maxWidth: "100%",
-    "@media print": {
-      boxShadow: "none",
-      border: "none",
-      borderRadius: 0,
-      overflow: "visible",
-      p: 0,
-    },
-  }}
->
-  <Table
-    borderAxis="both"
-    stickyHeader
-    sx={{
-      minWidth: 820,
-      width: "100%",
-      tableLayout: "fixed",
-      fontSize: { xs: 12, sm: 14 },
-      "& thead": {
-        backgroundColor: "neutral.softBg",
-        "@media print": { backgroundColor: "#eee" },
-      },
-      "& tbody tr:nth-of-type(even)": {
-        backgroundColor: "rgba(0,0,0,0.02)",
-      },
-      "& th, & td": {
-        px: { xs: 1, sm: 2 },
-        py: { xs: 1, sm: 1.25 },
-        verticalAlign: "top",
-        wordBreak: "break-word",
-        overflowWrap: "anywhere",
-        textAlign: "left",
-        lineHeight: 1.4,
-        "@media print": {
-          px: 1,
-          py: 1,
-          fontSize: "11px",
-          border: "1px solid #ccc",
-        },
-      },
-
-      // Responsive column widths
-      "& th:nth-of-type(1), & td:nth-of-type(1)": {
-        width: { xs: "30%", sm: "25%", md: "24%" }, // Converted PO
-      },
-      "& th:nth-of-type(2), & td:nth-of-type(2)": {
-        width: { xs: "18%", sm: "18%", md: "16%" }, // Date
-        whiteSpace: "nowrap",
-      },
-      "& th:nth-of-type(3), & td:nth-of-type(3)": {
-        width: { xs: "22%", sm: "20%", md: "18%" }, // Vendor
-      },
-      "& th:nth-of-type(4), & td:nth-of-type(4)": {
-        width: { xs: "25%", sm: "25%", md: "26%" }, // Item
-      },
-      "& th:nth-of-type(5), & td:nth-of-type(5)": {
-        width: { xs: "20%", sm: "12%", md: "12%" }, // Value
-        textAlign: "right",
-      },
-
-      "& th.num, & td.num": {
-        textAlign: "right",
-        fontVariantNumeric: "tabular-nums",
-        whiteSpace: "nowrap",
-      },
-    }}
-  >
-    <thead>
-      <tr>
-        <th>Converted PO's</th>
-        <th>Conversion Date</th>
-        <th>Vendor</th>
-        <th>Item</th>
-        <th className="num">Sales Value (₹)</th>
-      </tr>
-    </thead>
-
-    <tbody>
-      {isLoading ? (
-        <tr>
-          <td colSpan={5} style={{ textAlign: "center", padding: 20 }}>
-            <Typography level="body-md" sx={{ fontStyle: "italic" }}>
-              Loading sales history...
-            </Typography>
-          </td>
-        </tr>
-      ) : (SalesSummary?.length || 0) === 0 ? (
-        <tr>
-          <td colSpan={5} style={{ textAlign: "center", padding: 20 }}>
-            <Typography level="body-md">No sales history available</Typography>
-          </td>
-        </tr>
-      ) : filteredSales.length === 0 ? (
-        <tr>
-          <td colSpan={5} style={{ textAlign: "center", padding: 20 }}>
-            <Typography level="body-md">No matching results</Typography>
-          </td>
-        </tr>
-      ) : (
-        filteredSales.map((sale, idx) => {
-          const atts = normalizeAttachments(sale.attachments);
-          return (
-            <tr key={sale._id || `${sale.po_number}-${idx}`}>
-              {/* Converted PO Column */}
-              <td>
-                <Stack spacing={0.75}>
-                  <Stack
-                    direction="row"
-                    spacing={0.5}
-                    alignItems="center"
-                    flexWrap="wrap"
-                  >
-                    <Chip size="sm" variant="soft" color="primary">
-                      <Typography level="body-sm" sx={{ fontWeight: 700 }}>
-                        {sale.po_number || "N/A"}
-                      </Typography>
-                    </Chip>
-
-                    <Tooltip title="View conversion" placement="top">
-                      <IconButton
-                        size="sm"
-                        variant="plain"
-                        onClick={() => openSaleDetail(sale)}
-                        aria-label={`View conversion for PO ${
-                          sale.po_number || sale._id
-                        }`}
-                      >
-                        <VisibilityRounded fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </Stack>
-
-                  {/* Attachments */}
-                  <Stack
-                    direction="row"
-                    spacing={0.75}
-                    flexWrap="wrap"
-                    useFlexGap
-                    sx={{ mt: 0.5 }}
-                  >
-                    {atts.length > 0 ? (
-                      atts.map((att, i) => (
-                        <Link
-                          key={att.url || `${sale._id}-att-${i}`}
-                          href={att.url}
-                          target="_blank"
-                          rel="noopener"
-                          underline="hover"
-                          sx={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 0.5,
-                            fontSize: 12,
-                            px: 1,
-                            py: 0.25,
-                            borderRadius: "8px",
+                      variant="outlined"
+                      sx={{
+                        borderRadius: "12px",
+                        overflowX: "auto",
+                        overflowY: "hidden",
+                        p: { xs: 1, sm: 2 },
+                        boxShadow: "md",
+                        bgcolor: "#fff",
+                        width: "100%",
+                        maxWidth: "100%",
+                        "@media print": {
+                          boxShadow: "none",
+                          border: "none",
+                          borderRadius: 0,
+                          overflow: "visible",
+                          p: 0,
+                        },
+                      }}
+                    >
+                      <Table
+                        borderAxis="both"
+                        stickyHeader
+                        sx={{
+                          minWidth: 880,
+                          width: "100%",
+                          tableLayout: "fixed",
+                          fontSize: { xs: 12, sm: 14 },
+                          "& thead": {
                             backgroundColor: "neutral.softBg",
-                            maxWidth: 160,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
+                            "@media print": { backgroundColor: "#eee" },
+                          },
+                          "& tbody tr:nth-of-type(even)": {
+                            backgroundColor: "rgba(0,0,0,0.02)",
+                          },
+                          "& th, & td": {
+                            px: { xs: 1, sm: 2 },
+                            py: { xs: 1, sm: 1.25 },
+                            verticalAlign: "top",
+                            wordBreak: "break-word",
+                            overflowWrap: "anywhere",
+                            textAlign: "left",
+                            lineHeight: 1.4,
+                            "@media print": {
+                              px: 1,
+                              py: 1,
+                              fontSize: "11px",
+                              border: "1px solid #ccc",
+                            },
+                          },
+                          "& th.num, & td.num": {
+                            textAlign: "right",
+                            fontVariantNumeric: "tabular-nums",
                             whiteSpace: "nowrap",
-                          }}
-                          title={att.name}
-                        >
-                          <AttachFileIcon sx={{ fontSize: 15 }} />
-                          {att.name || `File ${i + 1}`}
-                        </Link>
-                      ))
-                    ) : (
-                      <Typography
-                        level="body-xs"
-                        sx={{ opacity: 0.6, fontStyle: "italic" }}
+                          },
+                        }}
                       >
-                        No attachments
-                      </Typography>
-                    )}
-                  </Stack>
-                </Stack>
-              </td>
+                        <thead>
+                          <tr>
+                            <th rowSpan={2}>Converted PO’s</th>
+                            <th rowSpan={2}>Conversion Date</th>
+                            <th rowSpan={2}>Item</th>
+                            <th rowSpan={2}>Invoice Number</th>
+                            <th rowSpan={2} className="num">
+                              Bill Basic (₹)
+                            </th>
+                            <th colSpan={2} style={{ textAlign: "center" }}>
+                              Sales
+                            </th>
+                          </tr>
+                          <tr>
+                            <th className="num">Value (₹)</th>
+                            <th className="num">GST (₹)</th>
+                          </tr>
+                        </thead>
 
-              {/* Conversion Date */}
-              <td style={{ whiteSpace: "nowrap" }}>
-                {formatDateTime(sale?.converted_at)}
-              </td>
+                        <tbody>
+                          {isLoading ? (
+                            <tr>
+                              <td
+                                colSpan={7}
+                                style={{ textAlign: "center", padding: 20 }}
+                              >
+                                <Typography
+                                  level="body-md"
+                                  sx={{ fontStyle: "italic" }}
+                                >
+                                  Loading sales history...
+                                </Typography>
+                              </td>
+                            </tr>
+                          ) : (SalesSummary?.length || 0) === 0 ? (
+                            <tr>
+                              <td
+                                colSpan={7}
+                                style={{ textAlign: "center", padding: 20 }}
+                              >
+                                <Typography level="body-md">
+                                  No sales history available
+                                </Typography>
+                              </td>
+                            </tr>
+                          ) : filteredSales.length === 0 ? (
+                            <tr>
+                              <td
+                                colSpan={7}
+                                style={{ textAlign: "center", padding: 20 }}
+                              >
+                                <Typography level="body-md">
+                                  No matching results
+                                </Typography>
+                              </td>
+                            </tr>
+                          ) : (
+                            filteredSales.map((sale, idx) => {
+                              const atts = normalizeAttachments(
+                                sale.attachments
+                              );
+                              const toNum = (v) =>
+                                Number.isFinite(Number(v)) ? Number(v) : 0;
 
-              {/* Vendor */}
-              <td
-                style={{
-                  whiteSpace: "normal",
-                  overflowWrap: "anywhere",
-                }}
-              >
-                {sale.vendor || "N/A"}
-              </td>
+                              const billBasic = toNum(
+                                sale.bill_basic ??
+                                  sale.bill_basic_value ??
+                                  sale.bill_basic_amount
+                              );
+                              const salesBasic = toNum(
+                                sale.sales_basic ??
+                                  sale.basic_sales ??
+                                  sale.basicSales ??
+                                  sale.total_sales_value
+                              );
+                              const salesGst = toNum(
+                                sale.sales_gst ??
+                                  sale.gst_on_sales ??
+                                  sale.gstSales
+                              );
 
-              {/* Item */}
-              <td
-                title={getItemLabel(sale) || "N/A"}
-                style={{
-                  whiteSpace: "nowrap",
-                  textOverflow: "ellipsis",
-                  overflow: "hidden",
-                  maxWidth: "100%",
-                }}
-              >
-                {getItemLabel(sale) || "N/A"}
-              </td>
+                              return (
+                                <tr
+                                  key={sale._id || `${sale.po_number}-${idx}`}
+                                >
+                                  {/* Converted PO */}
+                                  <td>
+                                    <Stack spacing={0.75}>
+                                      <Stack
+                                        direction="row"
+                                        spacing={0.5}
+                                        alignItems="center"
+                                        flexWrap="wrap"
+                                      >
+                                        <Chip
+                                          size="sm"
+                                          variant="soft"
+                                          color="primary"
+                                        >
+                                          <Typography
+                                            level="body-sm"
+                                            sx={{ fontWeight: 700 }}
+                                          >
+                                            {sale.po_number || "N/A"}
+                                          </Typography>
+                                        </Chip>
+                                        <Tooltip
+                                          title="View conversion"
+                                          placement="top"
+                                        >
+                                          <IconButton
+                                            size="sm"
+                                            variant="plain"
+                                            onClick={() => openSaleDetail(sale)}
+                                            aria-label={`View conversion for PO ${
+                                              sale.po_number || sale._id
+                                            }`}
+                                          >
+                                            <VisibilityRounded fontSize="small" />
+                                          </IconButton>
+                                        </Tooltip>
+                                      </Stack>
 
-              {/* Value */}
-              <td className="num">
-                ₹ {Math.round(sale?.total_sales_value || 0).toLocaleString("en-IN")}
-              </td>
-            </tr>
-          );
-        })
-      )}
-    </tbody>
+                                      {/* Attachments */}
+                                      <Stack
+                                        direction="row"
+                                        spacing={0.75}
+                                        flexWrap="wrap"
+                                        useFlexGap
+                                        sx={{ mt: 0.5 }}
+                                      >
+                                        {atts.length > 0 ? (
+                                          atts.map((att, i) => (
+                                            <Link
+                                              key={
+                                                att.url ||
+                                                `${sale._id}-att-${i}`
+                                              }
+                                              href={att.url}
+                                              target="_blank"
+                                              rel="noopener"
+                                              underline="hover"
+                                              sx={{
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                gap: 0.5,
+                                                fontSize: 12,
+                                                px: 1,
+                                                py: 0.25,
+                                                borderRadius: "8px",
+                                                backgroundColor:
+                                                  "neutral.softBg",
+                                                maxWidth: 160,
+                                                overflow: "hidden",
+                                                textOverflow: "ellipsis",
+                                                whiteSpace: "nowrap",
+                                              }}
+                                              title={att.name}
+                                            >
+                                              <AttachFileIcon
+                                                sx={{ fontSize: 15 }}
+                                              />
+                                              {att.name || `File ${i + 1}`}
+                                            </Link>
+                                          ))
+                                        ) : (
+                                          <Typography
+                                            level="body-xs"
+                                            sx={{
+                                              opacity: 0.6,
+                                              fontStyle: "italic",
+                                            }}
+                                          >
+                                            No attachments
+                                          </Typography>
+                                        )}
+                                      </Stack>
+                                    </Stack>
+                                  </td>
 
-    {filteredSales.length > 0 && (
-      <tfoot>
-        <tr
-          style={{
-            fontWeight: "bold",
-            backgroundColor: "#FFF9C4",
-          }}
-        >
-          <td colSpan={4} style={{ textAlign: "right" }}>
-            Total:
-          </td>
-          <td className="num">
-            ₹{" "}
-            {Math.round(SalesTotal?.total_sales_value || 0).toLocaleString(
-              "en-IN"
-            )}
-          </td>
-        </tr>
-      </tfoot>
-    )}
-  </Table>
-</Sheet>
+                                  {/* Conversion Date */}
+                                  <td style={{ whiteSpace: "nowrap" }}>
+                                    {formatDateTime(sale?.converted_at)}
+                                  </td>
 
+                                  {/* Item */}
+                                  <td
+                                    title={getItemLabel(sale) || "N/A"}
+                                    style={{
+                                      whiteSpace: "nowrap",
+                                      textOverflow: "ellipsis",
+                                      overflow: "hidden",
+                                      maxWidth: "100%",
+                                    }}
+                                  >
+                                    {getItemLabel(sale) || "N/A"}
+                                  </td>
+
+                                  {/* Invoice Number */}
+                                  <td>{sale.sales_invoice || "—"}</td>
+
+                                  {/* Bill Basic */}
+                                  <td className="num">
+                                    ₹{" "}
+                                    {Math.round(billBasic).toLocaleString(
+                                      "en-IN"
+                                    )}
+                                  </td>
+
+                                  {/* Sales Value */}
+                                  <td className="num">
+                                    ₹{" "}
+                                    {Math.round(salesBasic).toLocaleString(
+                                      "en-IN"
+                                    )}
+                                  </td>
+
+                                  {/* Sales GST */}
+                                  <td className="num">
+                                    ₹{" "}
+                                    {Math.round(salesGst).toLocaleString(
+                                      "en-IN"
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+
+                        {/* Totals */}
+                        {filteredSales.length > 0 && (
+                          <tfoot>
+                            {(() => {
+                              const toNum = (v) =>
+                                Number.isFinite(Number(v)) ? Number(v) : 0;
+                              const sum = (keyPick) =>
+                                filteredSales.reduce(
+                                  (acc, sale) => acc + keyPick(sale),
+                                  0
+                                );
+
+                              const totalBillBasic = sum((s) =>
+                                toNum(
+                                  s.bill_basic ??
+                                    s.bill_basic_value ??
+                                    s.bill_basic_amount
+                                )
+                              );
+                              const totalSalesBasic = sum((s) =>
+                                toNum(
+                                  s.sales_basic ??
+                                    s.basic_sales ??
+                                    s.basicSales ??
+                                    s.total_sales_value
+                                )
+                              );
+                              const totalSalesGst = sum((s) =>
+                                toNum(
+                                  s.sales_gst ?? s.gst_on_sales ?? s.gstSales
+                                )
+                              );
+
+                              return (
+                                <tr
+                                  style={{
+                                    fontWeight: "bold",
+                                    backgroundColor: "#FFF9C4",
+                                  }}
+                                >
+                                  <td
+                                    colSpan={4}
+                                    style={{ textAlign: "right" }}
+                                  >
+                                    Total:
+                                  </td>
+                                  <td className="num">
+                                    ₹{" "}
+                                    {Math.round(totalBillBasic).toLocaleString(
+                                      "en-IN"
+                                    )}
+                                  </td>
+                                  <td className="num">
+                                    ₹{" "}
+                                    {Math.round(totalSalesBasic).toLocaleString(
+                                      "en-IN"
+                                    )}
+                                  </td>
+                                  <td className="num">
+                                    ₹{" "}
+                                    {Math.round(totalSalesGst).toLocaleString(
+                                      "en-IN"
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })()}
+                          </tfoot>
+                        )}
+                      </Table>
+                    </Sheet>
 
                     <Modal open={saleDetailOpen} onClose={closeSaleDetail}>
                       <ModalDialog sx={{ width: 520 }}>
@@ -2540,6 +2557,28 @@ const Customer_Payment_Summary = () => {
                               <strong>Converted By:</strong>{" "}
                               {activeSale?.user_name ?? "—"}
                             </Typography>
+                            <Stack
+                              direction="row"
+                              spacing={1}
+                              alignItems="center"
+                            >
+                              <Typography level="body-sm">
+                                <strong>Sales Invoice No.:</strong>
+                              </Typography>
+                              <Chip
+                                size="sm"
+                                variant="soft"
+                                color={
+                                  activeSale?.sales_invoice
+                                    ? "primary"
+                                    : "neutral"
+                                }
+                              >
+                                {activeSale?.sales_invoice?.trim()
+                                  ? activeSale.sales_invoice
+                                  : "—"}
+                              </Chip>
+                            </Stack>
 
                             <Typography
                               level="body-sm"
@@ -3018,6 +3057,8 @@ const Customer_Payment_Summary = () => {
               </Box>
             </Stack>
           </Card>
+
+
         </Box>
         {/* Confirm first */}
         <Modal
@@ -3079,302 +3120,296 @@ const Customer_Payment_Summary = () => {
         </Modal>
 
         {/* ================= Sales Conversion Modal ================= */}
-        <Modal open={salesOpen} onClose={() => setSalesOpen(false)}>
-          <ModalDialog
-            aria-labelledby="sales-convert-title"
+    <Modal open={salesOpen} onClose={() => setSalesOpen(false)}>
+  <ModalDialog
+    aria-labelledby="sales-convert-title"
+    sx={{
+      width: 720,
+      borderRadius: "lg",
+      boxShadow: "xl",
+      p: 3,
+      background: "linear-gradient(180deg, #fff 0%, #f9f9f9 100%)",
+    }}
+  >
+    <DialogTitle id="sales-convert-title" sx={{ fontWeight: 700, mb: 1 }}>
+      Sales Conversion
+    </DialogTitle>
+
+    <DialogContent>
+      <Stack spacing={2.5}>
+        {/* ---- PO Table ---- */}
+        <Sheet
+          variant="outlined"
+          sx={{
+            borderRadius: "md",
+            overflow: "auto",
+            maxHeight: 280,
+            borderColor: "neutral.outlinedBorder",
+          }}
+        >
+          {/* Header Row */}
+          <Box
             sx={{
-              width: 720,
-              borderRadius: "lg",
-              boxShadow: "xl",
-              p: 3,
-              background: "linear-gradient(180deg, #fff 0%, #f9f9f9 100%)",
+              display: "grid",
+              gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr",
+              gap: 1,
+              px: 1.5,
+              py: 1,
+              backgroundColor: "neutral.softBg",
+              position: "sticky",
+              top: 0,
+              borderBottom: "1px solid",
+              borderColor: "neutral.outlinedBorder",
+              fontWeight: 600,
+              zIndex: 2,
             }}
           >
-            <DialogTitle
-              id="sales-convert-title"
-              sx={{ fontWeight: 700, mb: 1 }}
-            >
-              Sales Conversion
-            </DialogTitle>
+            {[
+              { label: "PO No.", align: "left" },
+              { label: "PO Value", align: "right" },
+              { label: "Bill Basic", align: "right" },
+              { label: "Advance Paid", align: "right" },
+              { label: "Basic Sales", align: "right" },
+              { label: "GST on Sales", align: "right" },
+            ].map((col) => (
+              <Typography
+                key={col.label}
+                level="body-sm"
+                textAlign={col.align}
+                sx={{ fontWeight: 700 }}
+              >
+                {col.label}
+              </Typography>
+            ))}
+          </Box>
 
-            <DialogContent>
-              <Stack spacing={2.5}>
-                {/* ---- PO Table ---- */}
-                <Sheet
-                  variant="outlined"
+          {/* Data Rows */}
+          {(selectedPO || [])
+            .filter((po) => Number(po.bill_basic) > 0)
+            .map((po, idx) => {
+              const id = po._id;
+              const poValue = Number(po.po_value || 0);
+              const billBasic = Number(po.bill_basic || 0);
+              const totalAdvance = Number(po.advance_paid || 0);
+              const basic = Number(salesAmounts[id]?.basic || 0);
+              const gst = Number(salesAmounts[id]?.gst || 0);
+
+              const basicExceeds = basic > billBasic;
+              const showInfo = billBasic > totalAdvance;
+              const infoText = `Bill Basic (${billBasic.toLocaleString()}) exceeds advance paid (${totalAdvance.toLocaleString()})`;
+
+              return (
+                <Box
+                  key={id}
                   sx={{
-                    borderRadius: "md",
-                    overflow: "auto",
-                    maxHeight: 280,
+                    display: "grid",
+                    gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr",
+                    gap: 1,
+                    px: 1.5,
+                    py: 0.9,
+                    alignItems: "center",
+                    borderBottom: "1px dashed",
                     borderColor: "neutral.outlinedBorder",
-                  }}
-                >
-                  {/* Header Row */}
-                  <Box
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr",
-                      gap: 1,
-                      px: 1.5,
-                      py: 1,
-                      backgroundColor: "neutral.softBg",
-                      position: "sticky",
-                      top: 0,
-                      borderBottom: "1px solid",
-                      borderColor: "neutral.outlinedBorder",
-                      fontWeight: 600,
-                      zIndex: 2,
-                    }}
-                  >
-                    {[
-                      { label: "PO No.", align: "left" },
-                      { label: "PO Value", align: "right" },
-                      { label: "Total Billed", align: "right" },
-                      { label: "Advance Paid", align: "right" },
-                      { label: "Basic Sales", align: "right" },
-                      { label: "GST on Sales", align: "right" },
-                    ].map((col) => (
-                      <Typography
-                        key={col.label}
-                        level="body-sm"
-                        textAlign={col.align}
-                        sx={{ fontWeight: 700 }}
-                      >
-                        {col.label}
-                      </Typography>
-                    ))}
-                  </Box>
-
-                  {/* Data Rows */}
-                  {(selectedPO || [])
-                    .filter((po) => Number(po.total_billed_value) > 0)
-                    .map((po, idx) => {
-                      const id = po._id;
-                      const poValue = Number(po.po_value || 0);
-                      const totalBilled = Number(po.total_billed_value || 0);
-                      const totalAdvance = Number(po.advance_paid || 0);
-                      const basic = Number(salesAmounts[id]?.basic || 0);
-                      const gst = Number(salesAmounts[id]?.gst || 0);
-                      const totalEntry = basic + gst;
-
-                      const basicExceeds = basic > totalBilled;
-                      const combinedExceeds = totalEntry > totalBilled;
-                      const disableGst = basic === totalBilled;
-
-                      const showInfo = totalBilled > totalAdvance;
-                      const infoText = `Billed (${totalBilled.toLocaleString()}) exceeds advance paid (${totalAdvance.toLocaleString()})`;
-
-                      return (
-                        <Box
-                          key={id}
-                          sx={{
-                            display: "grid",
-                            gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr",
-                            gap: 1,
-                            px: 1.5,
-                            py: 0.9,
-                            alignItems: "center",
-                            borderBottom: "1px dashed",
-                            borderColor: "neutral.outlinedBorder",
-                            backgroundColor:
-                              idx % 2 === 0
-                                ? "background.body"
-                                : "neutral.softBg",
-                            "&:hover": {
-                              backgroundColor: "neutral.plainHoverBg",
-                            },
-                          }}
-                        >
-                          {/* PO No + Info Icon */}
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 0.75,
-                              justifyContent: "flex-start",
-                            }}
-                          >
-                            {showInfo && (
-                              <Tooltip title={infoText} placement="top-start">
-                                <InfoOutlined
-                                  sx={{
-                                    color: "danger.solidBg",
-                                    fontSize: 18,
-                                    cursor: "pointer",
-                                    flexShrink: 0,
-                                  }}
-                                />
-                              </Tooltip>
-                            )}
-                            <Typography
-                              level="body-sm"
-                              sx={{ fontWeight: 600 }}
-                            >
-                              {po.po_number}
-                            </Typography>
-                          </Box>
-
-                          {/* PO Value */}
-                          <Typography level="body-sm" textAlign="right">
-                            {poValue.toLocaleString()}
-                          </Typography>
-
-                          {/* Total Billed */}
-                          <Typography level="body-sm" textAlign="right">
-                            {totalBilled.toLocaleString()}
-                          </Typography>
-
-                          {/* Advance Paid */}
-                          <Typography
-                            level="body-sm"
-                            textAlign="right"
-                            color={showInfo ? "danger.plainColor" : "neutral"}
-                          >
-                            {totalAdvance.toLocaleString()}
-                          </Typography>
-
-                          {/* Basic Sales */}
-                          <Input
-                            size="sm"
-                            type="number"
-                            value={salesAmounts[id]?.basic ?? ""}
-                            placeholder="Basic"
-                            onChange={(e) =>
-                              setSalesAmounts((prev) => ({
-                                ...prev,
-                                [id]: { ...prev[id], basic: e.target.value },
-                              }))
-                            }
-                            sx={{
-                              width: 100,
-                              ml: "auto",
-                              borderColor: basicExceeds
-                                ? "danger.solidBg"
-                                : combinedExceeds
-                                ? "warning.solidBg"
-                                : undefined,
-                            }}
-                          />
-
-                          {/* GST on Sales */}
-                          <Input
-                            size="sm"
-                            type="number"
-                            value={salesAmounts[id]?.gst ?? ""}
-                            placeholder="GST"
-                            disabled={disableGst}
-                            onChange={(e) =>
-                              setSalesAmounts((prev) => ({
-                                ...prev,
-                                [id]: { ...prev[id], gst: e.target.value },
-                              }))
-                            }
-                            sx={{
-                              width: 100,
-                              ml: "auto",
-                              opacity: disableGst ? 0.5 : 1,
-                              borderColor: combinedExceeds
-                                ? "warning.solidBg"
-                                : undefined,
-                            }}
-                          />
-                        </Box>
-                      );
-                    })}
-                </Sheet>
-
-                {/* ---- File Upload ---- */}
-                <Sheet
-                  variant="soft"
-                  onClick={() => fileInputRef.current?.click()}
-                  onDrop={onDrop}
-                  onDragOver={onDragOver}
-                  onDragLeave={onDragLeave}
-                  sx={{
-                    border: "2px dashed",
-                    borderColor: isDragging
-                      ? "primary.solidBg"
-                      : "neutral.outlinedBorder",
-                    borderRadius: "lg",
-                    p: 3,
-                    textAlign: "center",
-                    cursor: "pointer",
-                    transition: "all .2s ease-in-out",
+                    backgroundColor:
+                      idx % 2 === 0 ? "background.body" : "neutral.softBg",
                     "&:hover": {
-                      borderColor: "primary.solidBg",
-                      backgroundColor: "neutral.softBg",
+                      backgroundColor: "neutral.plainHoverBg",
                     },
                   }}
                 >
-                  <Typography level="title-sm">
-                    <strong>Drop files here</strong> or <u>browse</u>
-                  </Typography>
-                  <Typography level="body-xs" color="neutral">
-                    Supports multiple files (.PNG, .JPG, .PDF)
-                  </Typography>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept="image/*,application/pdf"
-                    onChange={onFileInputChange}
-                    style={{ display: "none" }}
-                  />
-                  <Typography level="body-sm" sx={{ mt: 1 }}>
-                    {salesFiles.length
-                      ? `${salesFiles.length} file(s) selected`
-                      : "No files selected"}
-                  </Typography>
-                </Sheet>
-
-                {/* ---- Remarks ---- */}
-                <Textarea
-                  minRows={3}
-                  placeholder="Enter remarks..."
-                  variant="soft"
-                  value={salesRemarks}
-                  onChange={(e) => setSalesRemarks(e.target.value)}
-                  sx={{
-                    fontSize: "sm",
-                    borderRadius: "md",
-                    backgroundColor: "background.body",
-                  }}
-                />
-
-                {/* ---- Actions ---- */}
-                <Stack direction="row" spacing={1.5} justifyContent="flex-end">
-                  <Button
-                    variant="plain"
-                    color="neutral"
-                    onClick={() => setSalesOpen(false)}
+                  {/* PO No + Info Icon */}
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.75,
+                      justifyContent: "flex-start",
+                    }}
                   >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="solid"
-                    color="primary"
-                    loading={isConverting}
-                    disabled={
-                      !salesRemarks.trim() ||
-                      selectedPO.some((po) => {
-                        const id = po._id;
-                        const totalBilled = Number(po.total_billed_value || 0);
-                        const basic = Number(salesAmounts[id]?.basic || 0);
-                        const gst = Number(salesAmounts[id]?.gst || 0);
-                        return (
-                          basic < 0 || gst < 0 || basic + gst > totalBilled
-                        );
-                      })
+                    {showInfo && (
+                      <Tooltip title={infoText} placement="top-start">
+                        <InfoOutlined
+                          sx={{
+                            color: "danger.solidBg",
+                            fontSize: 18,
+                            cursor: "pointer",
+                            flexShrink: 0,
+                          }}
+                        />
+                      </Tooltip>
+                    )}
+                    <Typography level="body-sm" sx={{ fontWeight: 600 }}>
+                      {po.po_number}
+                    </Typography>
+                  </Box>
+
+                  {/* PO Value */}
+                  <Typography level="body-sm" textAlign="right">
+                    {poValue.toLocaleString()}
+                  </Typography>
+
+                  {/* Bill Basic */}
+                  <Typography level="body-sm" textAlign="right">
+                    {billBasic.toLocaleString()}
+                  </Typography>
+
+                  {/* Advance Paid */}
+                  <Typography
+                    level="body-sm"
+                    textAlign="right"
+                    color={showInfo ? "danger.plainColor" : "neutral"}
+                  >
+                    {totalAdvance.toLocaleString()}
+                  </Typography>
+
+                  {/* Basic Sales */}
+                  <Input
+                    size="sm"
+                    type="number"
+                    value={salesAmounts[id]?.basic ?? ""}
+                    placeholder="Basic"
+                    onChange={(e) =>
+                      setSalesAmounts((prev) => ({
+                        ...prev,
+                        [id]: { ...prev[id], basic: e.target.value },
+                      }))
                     }
-                    onClick={handleSalesConvert}
-                  >
-                    Convert
-                  </Button>
-                </Stack>
-              </Stack>
-            </DialogContent>
-          </ModalDialog>
-        </Modal>
+                    sx={{
+                      width: 100,
+                      ml: "auto",
+                      borderColor: basicExceeds ? "danger.solidBg" : undefined,
+                    }}
+                  />
+
+                  {/* GST on Sales (always editable) */}
+                  <Input
+                    size="sm"
+                    type="number"
+                    value={salesAmounts[id]?.gst ?? ""}
+                    placeholder="GST"
+                    onChange={(e) =>
+                      setSalesAmounts((prev) => ({
+                        ...prev,
+                        [id]: { ...prev[id], gst: e.target.value },
+                      }))
+                    }
+                    sx={{
+                      width: 100,
+                      ml: "auto",
+                    }}
+                  />
+                </Box>
+              );
+            })}
+        </Sheet>
+
+        {/* ---- File Upload ---- */}
+        <Sheet
+          variant="soft"
+          onClick={() => fileInputRef.current?.click()}
+          onDrop={onDrop}
+          onDragOver={onDragOver}
+          onDragLeave={onDragLeave}
+          sx={{
+            border: "2px dashed",
+            borderColor: isDragging
+              ? "primary.solidBg"
+              : "neutral.outlinedBorder",
+            borderRadius: "lg",
+            p: 3,
+            textAlign: "center",
+            cursor: "pointer",
+            transition: "all .2s ease-in-out",
+            "&:hover": {
+              borderColor: "primary.solidBg",
+              backgroundColor: "neutral.softBg",
+            },
+          }}
+        >
+          <Typography level="title-sm">
+            <strong>Drop files here</strong> or <u>browse</u>
+          </Typography>
+          <Typography level="body-xs" color="neutral">
+            Supports multiple files (.PNG, .JPG, .PDF)
+          </Typography>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*,application/pdf"
+            onChange={onFileInputChange}
+            style={{ display: "none" }}
+          />
+          <Typography level="body-sm" sx={{ mt: 1 }}>
+            {salesFiles.length
+              ? `${salesFiles.length} file(s) selected`
+              : "No files selected"}
+          </Typography>
+        </Sheet>
+
+        {/* ---- Invoice ---- */}
+        <FormControl>
+          <FormLabel sx={{ fontWeight: 600 }}>Sales Invoice No.</FormLabel>
+          <Input
+            size="md"
+            variant="outlined"
+            placeholder="Enter Sales Invoice Number"
+            value={salesInvoice}
+            onChange={(e) => setSalesInvoice(e.target.value)}
+            sx={{
+              borderRadius: "md",
+              backgroundColor: "background.body",
+            }}
+          />
+        </FormControl>
+
+        {/* ---- Remarks ---- */}
+        <Textarea
+          minRows={3}
+          placeholder="Enter remarks..."
+          variant="soft"
+          value={salesRemarks}
+          onChange={(e) => setSalesRemarks(e.target.value)}
+          sx={{
+            fontSize: "sm",
+            borderRadius: "md",
+            backgroundColor: "background.body",
+          }}
+        />
+
+        {/* ---- Actions ---- */}
+        <Stack direction="row" spacing={1.5} justifyContent="flex-end">
+          <Button
+            variant="plain"
+            color="neutral"
+            onClick={() => setSalesOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="solid"
+            color="primary"
+            loading={isConverting}
+            disabled={
+              !salesRemarks.trim() ||
+              selectedPO.some((po) => {
+                const id = po._id;
+                const billBasic = Number(po.bill_basic || 0);
+                const basic = Number(salesAmounts[id]?.basic || 0);
+                return basic < 0 || basic > billBasic;
+              })
+            }
+            onClick={handleSalesConvert}
+          >
+            Convert
+          </Button>
+        </Stack>
+      </Stack>
+    </DialogContent>
+  </ModalDialog>
+</Modal>
+
+
       </Box>
     </Box>
   );
