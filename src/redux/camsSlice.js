@@ -18,7 +18,14 @@ export const camsApi = createApi({
   tagTypes: ["CAM"],
   endpoints: (builder) => ({
     getHandOver: builder.query({
-      query: ({ page = 1, search = "", status, limit, createdAtFrom, createdAtTo }) =>
+      query: ({
+        page = 1,
+        search = "",
+        status,
+        limit,
+        createdAtFrom,
+        createdAtTo,
+      }) =>
         `handover/get-all-handover-sheet?page=${page}&search=${search}&status=${status}&limit=${limit}&createdAtFrom=${createdAtFrom}&createdAtTo=${createdAtTo}`,
       transformResponse: (response) => ({
         data: response.data || [],
@@ -140,6 +147,71 @@ export const camsApi = createApi({
     getScopeByProjectId: builder.query({
       query: ({ project_id }) => `scope/scope?project_id=${project_id}`,
     }),
+    getAllScopes: builder.query({
+      query: (params = {}) => {
+        const {
+          page = 1,
+          limit = 20,
+          search = "",
+          project_id = "",
+          state = "",
+          cam_person = "",
+          po_status = "",
+          etd_from = "",
+          etd_to = "",
+          delivered_from = "",
+          delivered_to = "",
+          item_name = "",
+          scope = "",
+          po_date_from = "",
+          po_date_to = "",
+        } = params;
+
+        // Helper to build query string dynamically
+        const queryParams = new URLSearchParams();
+
+        if (page) queryParams.append("page", page);
+        if (limit) queryParams.append("limit", limit);
+        if (search) queryParams.append("search", search);
+        if (project_id) queryParams.append("project_id", project_id);
+        if (state) queryParams.append("state", state);
+        if (cam_person) queryParams.append("cam_person", cam_person);
+        if (po_status) queryParams.append("po_status", po_status);
+        if (etd_from) queryParams.append("etd_from", etd_from);
+        if (etd_to) queryParams.append("etd_to", etd_to);
+        if (delivered_from)
+          queryParams.append("delivered_from", delivered_from);
+        if (delivered_to) queryParams.append("delivered_to", delivered_to);
+        if (item_name) queryParams.append("item_name", item_name);
+        if (scope) queryParams.append("scope", scope);
+        if (po_date_from) queryParams.append("po_date_from", po_date_from);
+        if (po_date_to) queryParams.append("po_date_to", po_date_to);
+        return `scope/scopes?${queryParams.toString()}`;
+      },
+
+      transformResponse: (response) => ({
+        data: response?.data || [],
+        total: response?.total || 0,
+        page: response?.page || 1,
+        totalPages: response?.totalPages || 1,
+        count: response?.count || 0,
+      }),
+
+      providesTags: ["Scope"],
+
+      // Auto refetch when arguments differ
+      forceRefetch({ currentArg, previousArg }) {
+        return JSON.stringify(currentArg) !== JSON.stringify(previousArg);
+      },
+    }),
+    exportScopes: builder.mutation({
+      query: (selected) => ({
+        url: `scope/export-scopes`,
+        method: "POST",
+        body: { selected },
+        responseHandler: (response) => response.blob(),
+      }),
+    }),
     updateScopeByProjectId: builder.mutation({
       query: ({ project_id, payload }) => ({
         url: `scope/scope?project_id=${project_id}`,
@@ -162,11 +234,11 @@ export const camsApi = createApi({
       }),
     }),
     updateCommitmentDate: builder.mutation({
-      query: ({id, item_id, date, remarks}) => ({
-          url: `scope/${id}/scope/${item_id}/commitment`,
-          method: "PUT",
-          body: {date, remarks}  
-      })
+      query: ({ id, item_id, date, remarks }) => ({
+        url: `scope/${id}/scope/${item_id}/commitment`,
+        method: "PUT",
+        body: { date, remarks },
+      }),
     }),
     updateHandoverAssignee: builder.mutation({
       query: ({ selected, assignee }) => ({
@@ -195,8 +267,10 @@ export const {
   useEditPurchaseRequestMutation,
   useLazyFetchFromBOMQuery,
   useGetScopeByProjectIdQuery,
+  useGetAllScopesQuery,
   useUpdateScopeByProjectIdMutation,
   useUpdateScopeStatusMutation,
   useUpdateCommitmentDateMutation,
   useGenerateScopePdfMutation,
+  useExportScopesMutation,
 } = camsApi;
