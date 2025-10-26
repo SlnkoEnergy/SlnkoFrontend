@@ -85,6 +85,7 @@ import MyApproval from "../pages/Approvals/MyApproval";
 import ApprovalDashboard from "../pages/Approvals/ApprovalDashboard";
 import MyRequest from "../pages/Approvals/MyRequest";
 import ProjectDashBoard from "../pages/Projects/ProjectDashboard";
+import ProjectScope from "../pages/CAM/ProjectScope";
 
 function index() {
   return (
@@ -640,6 +641,15 @@ function index() {
         element={
           <PrivateRoute>
             <PurchaseRequestSheet />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/project_scope"
+        element={
+          <PrivateRoute>
+            <ProjectScope />
           </PrivateRoute>
         }
       />
