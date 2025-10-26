@@ -72,8 +72,6 @@ const Customer_Payment_Summary = () => {
   const [selectedAdjust, setSelectedAdjust] = useState([]);
   const [selectedCredits, setSelectedCredits] = useState([]);
   const [selectedDebits, setSelectedDebits] = useState([]);
-  const [salesBasic, setSalesBasic] = useState("");
-  const [salesGst, setSalesGst] = useState("");
 
   const [searchSales, setSearchSales] = useState("");
 
@@ -496,8 +494,13 @@ const {
   netBalance,
   total_po_with_gst,
   total_billed_value,
+  aggregate_billed_value,
   exact_remaining_pay_to_vendors,
+  remaining_advance_left_after_billed
 } = balanceSummary || {};
+
+// console.log(responseData); 
+
 
 const formatIndianNumber = (val) => {
   const n = Number(val);
@@ -528,11 +531,11 @@ const RupeeValue = ({ value, showSymbol = true }) => {
 const num = (v) => Number(v) || 0;
 const calc_balance_with_slnko = () => {
   return (
-    num(netBalance) -
-    num(total_sales_value) -
-    num(total_unbilled_sales) -
-    num(advance_left_after_billed) -
-    num(total_adjustment)
+    num(responseData?.netBalance) -
+    num(responseData?.total_sales_value) -
+    num(responseData?.aggregate_billed_value) -
+    num(responseData?.advance_left_after_billed) -
+    num(responseData?.total_adjustment)
   );
 };
 
@@ -545,30 +548,30 @@ const Balance_Summary = ({ isLoading = false }) => {
   };
 
   const rows = [
-    ["1", "Total Received", safeRound(total_received), "#FFF59D"],
-    ["2", "Total Return", safeRound(total_return), "#FFF59D"],
-    ["3", "Net Balance [(1)-(2)]", safeRound(netBalance), "#FFE082", true],
+    ["1", "Total Received", safeRound(responseData?.total_received), "#FFF59D"],
+    ["2", "Total Return", safeRound(responseData?.total_return), "#FFF59D"],
+    ["3", "Net Balance [(1)-(2)]", safeRound(responseData?.netBalance), "#FFE082", true],
     [
       "4",
       "Total Advances Paid to Vendors",
-      safeRound(total_advance_paid),
+      safeRound(responseData?.total_advance_paid),
       "#FFF",
     ],
     ["", "Billing Details", "", "#F5F5F5"],
-    ["5", "Invoice issued to customer", safeRound(total_sales_value), "#FFF"],
+    ["5", "Invoice issued to customer", safeRound(responseData?.total_sales_value), "#FFF"],
     [
       "6",
       "Bills received, yet to be invoiced to customer",
-      safeRound(total_unbilled_sales),
+      safeRound(responseData?.aggregate_billed_value),
       "#FFF",
     ],
     [
       "7",
       "Advances left after bills received",
-      safeRound(advance_left_after_billed),
+      safeRound(responseData?.remaining_advance_left_after_billed),
       "#FFF",
     ],
-    ["8", "Adjustment (Debit-Credit)", safeRound(total_adjustment), "#FFF"],
+    ["8", "Adjustment (Debit-Credit)", safeRound(responseData?.total_adjustment), "#FFF"],
     [
   "9",
   "Balance With Slnko [3 - 5 - 6 - 7 - 8]",
@@ -712,18 +715,18 @@ const Balance_Summary = ({ isLoading = false }) => {
           <Chip
             size="md"
             variant="soft"
-            color={(Number(gst_difference) ?? 0) >= 0 ? "success" : "danger"}
+            color={(Number(responseData?.gst_difference) ?? 0) >= 0 ? "success" : "danger"}
             sx={{ fontWeight: "bold" }}
           >
             <span
               style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
             >
               GST (Diff):{" "}
-              {isLoading ? "• • •" : formatIndianNumber(gst_difference)}
+              {isLoading ? "• • •" : formatIndianNumber(responseData?.gst_difference)}
             </span>
           </Chip>
 
-          {billing_type && (
+          {responseData?.billing_type && (
             <Chip
               size="md"
               variant="soft"
@@ -731,9 +734,9 @@ const Balance_Summary = ({ isLoading = false }) => {
               sx={{ fontWeight: 600 }}
             >
               Billing:&nbsp;
-              {billing_type === "Composite"
-                ? "Composite (13.8%)"
-                : billing_type === "Individual"
+              {responseData?.billing_type === "Composite"
+                ? "Composite (8.9%)"
+                : responseData?.billing_type === "Individual"
                 ? "Individual (18%)"
                 : "N/A"}
             </Chip>
@@ -786,13 +789,13 @@ const Balance_Summary = ({ isLoading = false }) => {
             </thead>
             <tbody>
               {[
-                ["Total PO Value", safeRound(total_po_with_gst)],
-                ["Billed Value", safeRound(total_billed_value)],
-                ["Advance Paid", safeRound(total_advance_paid)],
+                ["Total PO Value", safeRound(responseData?.total_po_with_gst)],
+                ["Billed Value", safeRound(responseData?.aggregate_billed_value)],
+                ["Advance Paid", safeRound(responseData?.total_advance_paid)],
                 [
                   "Remaining to Pay",
-                  safeRound(exact_remaining_pay_to_vendors),
-                  total_billed_value > total_advance_paid
+                  safeRound(responseData?.exact_remaining_pay_to_vendor),
+                  (responseData?.aggregate_billed_value) > (responseData?.total_advance_paid)
                     ? "success"
                     : "warning",
                 ],
@@ -1015,26 +1018,7 @@ const Balance_Summary = ({ isLoading = false }) => {
     setActiveSale(null);
   };
 
-  const toNum = (v) => {
-    const n = Number(v);
-    return Number.isFinite(n) ? n : NaN;
-  };
 
-  const getRemainingAllowed = (po) => {
-    const poValue = toNum(po?.po_value) || 0;
-    const totalBilledRaw = po?.total_billed;
-    const totalBilled = toNum(totalBilledRaw);
-
-    if (!Number.isFinite(totalBilled))
-      return { error: "Invalid total_billed (NaN)", remaining: NaN };
-    if (totalBilled < 0)
-      return { error: "total_billed cannot be < 0", remaining: NaN };
-
-    const alreadySales = toNum(po?.total_sales_value) || 0;
-    const cap = Math.max(0, poValue - totalBilled);
-    const remaining = Math.max(0, cap - alreadySales);
-    return { error: null, remaining };
-  };
 
   function ItemNameCell({ text }) {
     if (!text) return "N/A";
@@ -1902,7 +1886,7 @@ const Balance_Summary = ({ isLoading = false }) => {
   variant="outlined"
   sx={{
     borderRadius: 12,
-    overflowX: "auto",
+    overflowX: "auto", // Allow horizontal scrolling for small screens
     p: { xs: 1, sm: 2 },
     boxShadow: "md",
     bgcolor: "#fff",
@@ -1919,71 +1903,50 @@ const Balance_Summary = ({ isLoading = false }) => {
     borderAxis="both"
     stickyHeader
     sx={{
-      "--num-w": "12ch",
-      minWidth: 1100,
-      tableLayout: "fixed",
+      width: "100%", // Ensure table takes full available width
+      minWidth: 1000, // Minimum width for the table (adjust as necessary)
+      tableLayout: "auto", // Allow dynamic column resizing
       fontSize: { xs: 12, sm: 14 },
 
       "& thead": {
         backgroundColor: "background.level1",
         "& th": {
-          px: { xs: 1, sm: 2 },
-          py: { xs: 1, sm: 1.1 },
-          whiteSpace: "nowrap",
+          px: 2,
+          py: 1.1,
           fontWeight: 600,
           color: "text.secondary",
           borderColor: "neutral.outlinedBorder",
+          textAlign: "center",
         },
       },
 
       "& tbody tr:hover": { backgroundColor: "background.level1" },
+
       "& th, & td": {
         px: { xs: 1, sm: 2 },
-        py: { xs: 1, sm: 1.1 },
+        py: 1,
         verticalAlign: "middle",
         lineHeight: 1.5,
         borderColor: "neutral.outlinedBorder",
-        "@media print": {
-          px: 1,
-          py: 1,
-          fontSize: 11,
-          border: "1px solid #ccc",
-        },
       },
 
-      "& th.text, & td.text": {
-        textAlign: "left",
+      "& td": {
         wordBreak: "break-word",
         overflowWrap: "anywhere",
       },
-      "& th.num, & td.num": {
-        width: "var(--num-w)",
-        textAlign: "right",
-        fontVariantNumeric: "tabular-nums",
-        whiteSpace: "nowrap",
-      },
 
-      // 🔥 Emphasis on PO Value & Total Billed cells
       "& td.em": { fontWeight: 700, color: "text.primary" },
       "& th.em": { fontWeight: 800, color: "text.primary" },
 
-      // colored header groups
-      "& thead th.poGroup": {
-        backgroundColor: "warning.softBg",
-        color: "warning.softColor",
-        fontWeight: 800,
-      },
-      "& thead th.billedGroup": {
-        backgroundColor: "primary.softBg",
-        color: "primary.softColor",
-        fontWeight: 800,
+      // Ensure better spacing on mobile
+      "@media (max-width: 768px)": {
+        fontSize: "10px",
+        "& th, & td": {
+          padding: "4px", // Reduce padding for smaller devices
+        },
       },
 
-      "& thead th.groupSplitRight, & tbody td.groupSplitRight, & tfoot td.groupSplitRight": {
-        borderRight: "2px solid",
-        borderColor: "neutral.outlinedBorder",
-      },
-
+      // Footer styles
       "& tfoot tr": {
         borderTop: "2px solid",
         borderColor: "neutral.outlinedBorder",
@@ -1996,42 +1959,36 @@ const Balance_Summary = ({ isLoading = false }) => {
     }}
   >
     <colgroup>
-      <col style={{ width: 120 }} />
-      <col style={{ width: 140 }} />
-      <col style={{ width: 280 }} />
-      <col style={{ width: "var(--num-w)" }} />
-      <col style={{ width: "var(--num-w)" }} />
-      <col style={{ width: "var(--num-w)" }} />
-      <col style={{ width: "var(--num-w)" }} />
-      <col style={{ width: "var(--num-w)" }} />
-      <col style={{ width: "var(--num-w)" }} />
-      <col style={{ width: "var(--num-w)" }} />
-      <col style={{ width: "var(--num-w)" }} />
-      <col style={{ width: "var(--num-w)" }} />
-      <col style={{ width: 56 }} />
+      <col style={{ width: "150px" }} />
+      <col style={{ width: "200px" }} />
+      <col style={{ width: "300px" }} />
+      <col style={{ width: "120px" }} />
+      <col style={{ width: "120px" }} />
+      <col style={{ width: "120px" }} />
+      <col style={{ width: "120px" }} />
+      <col style={{ width: "120px" }} />
+      <col style={{ width: "120px" }} />
+      <col style={{ width: "120px" }} />
+      <col style={{ width: "120px" }} />
+      <col style={{ width: "60px" }} />
     </colgroup>
 
     <thead>
       <tr>
         <th rowSpan={2} className="text">PO Number</th>
         <th rowSpan={2} className="text">Vendor</th>
-        <th rowSpan={2} className="text item">Item</th>
+        <th rowSpan={2} className="text">Item</th>
 
-        {/* 🔶 PO VALUE GROUP */}
-        <th colSpan={3} className="poGroup" style={{ textAlign: "center" }}>
-          PO Value (₹)
-        </th>
+        {/* PO VALUE GROUP */}
+        <th colSpan={3} className="poGroup">PO Value (₹)</th>
 
         <th rowSpan={2} className="num">Advance Paid (₹)</th>
         <th rowSpan={2} className="num groupSplitRight">Advance Remaining (₹)</th>
 
-        {/* 🔷 TOTAL BILLED GROUP */}
-        <th colSpan={3} className="billedGroup" style={{ textAlign: "center" }}>
-          Total Billed (₹)
-        </th>
+        {/* TOTAL BILLED GROUP */}
+        <th colSpan={3} className="billedGroup">Total Billed (₹)</th>
 
-        <th rowSpan={2} className="num">Unbilled PO (₹)</th>
-        <th rowSpan={2} style={{ textAlign: "center" }}>
+        <th rowSpan={1} style={{ textAlign: "center" }}>
           <Checkbox
             onChange={handleSelectAllClient}
             checked={
@@ -2046,7 +2003,7 @@ const Balance_Summary = ({ isLoading = false }) => {
       <tr>
         <th className="num em poGroup">Basic (₹)</th>
         <th className="num em poGroup">GST (₹)</th>
-        <th className="num em poGroup groupSplitRight">Total (₹)</th>
+        <th className="num em poGroup">Total (₹)</th>
 
         <th className="num em billedGroup">Basic (₹)</th>
         <th className="num em billedGroup">GST (₹)</th>
@@ -2057,7 +2014,7 @@ const Balance_Summary = ({ isLoading = false }) => {
     <tbody>
       {isLoading ? (
         <tr>
-          <td colSpan={13} style={{ textAlign: "center", padding: 20 }}>
+          <td colSpan={12} style={{ textAlign: "center", padding: 20 }}>
             <Typography level="body-md" sx={{ fontStyle: "italic" }}>
               Loading purchase history...
             </Typography>
@@ -2087,18 +2044,16 @@ const Balance_Summary = ({ isLoading = false }) => {
             {/* PO Value */}
             <td className="num em">₹ {Number(client.po_basic || 0).toLocaleString("en-IN")}</td>
             <td className="num em">₹ {Number(client.gst || 0).toLocaleString("en-IN")}</td>
-            <td className="num em groupSplitRight">₹ {Number(client.po_value || 0).toLocaleString("en-IN")}</td>
+            <td className="num em">₹ {Number(client.po_value || 0).toLocaleString("en-IN")}</td>
 
             {/* Advances */}
             <td className="num">₹ {Number(client.advance_paid || 0).toLocaleString("en-IN")}</td>
-            <td className="num groupSplitRight">₹ {Number(client.remaining_amount || 0).toLocaleString("en-IN")}</td>
+            <td className="num">₹ {Number(client.remaining_amount || 0).toLocaleString("en-IN")}</td>
 
             {/* Total Billed */}
             <td className="num em">₹ {Number(client.bill_basic || 0).toLocaleString("en-IN")}</td>
             <td className="num em">₹ {Number(client.bill_gst || 0).toLocaleString("en-IN")}</td>
             <td className="num em">₹ {Number(client.total_billed_value || 0).toLocaleString("en-IN")}</td>
-
-            <td className="num">₹ {Number(client.total_unbilled_sales || 0).toLocaleString("en-IN")}</td>
 
             <td style={{ textAlign: "center" }}>
               <Checkbox
@@ -2110,7 +2065,7 @@ const Balance_Summary = ({ isLoading = false }) => {
         ))
       ) : (
         <tr>
-          <td colSpan={13} style={{ textAlign: "center", padding: 20 }}>
+          <td colSpan={12} style={{ textAlign: "center", padding: 20 }}>
             <Typography level="body-md">No purchase history available</Typography>
           </td>
         </tr>
@@ -2126,22 +2081,22 @@ const Balance_Summary = ({ isLoading = false }) => {
 
           <td className="num em">₹ {ClientTotal.total_po_basic?.toLocaleString("en-IN")}</td>
           <td className="num em">₹ {ClientTotal.total_gst?.toLocaleString("en-IN")}</td>
-          <td className="num em groupSplitRight">₹ {ClientTotal.total_po_value?.toLocaleString("en-IN")}</td>
+          <td className="num em">₹ {ClientTotal.total_po_value?.toLocaleString("en-IN")}</td>
 
           <td className="num">₹ {ClientTotal.total_advance_paid?.toLocaleString("en-IN")}</td>
-          <td className="num groupSplitRight">₹ {ClientTotal.total_remaining_amount?.toLocaleString("en-IN")}</td>
+          <td className="num">₹ {ClientTotal.total_remaining_amount?.toLocaleString("en-IN")}</td>
 
           <td className="num em">₹ {ClientTotal.total_bill_basic?.toLocaleString("en-IN")}</td>
           <td className="num em">₹ {ClientTotal.total_bill_gst?.toLocaleString("en-IN")}</td>
           <td className="num em">₹ {ClientTotal.total_billed_value?.toLocaleString("en-IN")}</td>
 
-          <td className="num">₹ {ClientTotal.total_unbilled_sales?.toLocaleString("en-IN")}</td>
           <td />
         </tr>
       </tfoot>
     )}
   </Table>
 </Sheet>
+
 
 
 
@@ -3226,7 +3181,7 @@ const Balance_Summary = ({ isLoading = false }) => {
                       justifyContent: "flex-start",
                     }}
                   >
-                    {showInfo && (
+                    {/* {showInfo && (
                       <Tooltip title={infoText} placement="top-start">
                         <InfoOutlined
                           sx={{
@@ -3237,7 +3192,7 @@ const Balance_Summary = ({ isLoading = false }) => {
                           }}
                         />
                       </Tooltip>
-                    )}
+                    )} */}
                     <Typography level="body-sm" sx={{ fontWeight: 600 }}>
                       {po.po_number}
                     </Typography>
