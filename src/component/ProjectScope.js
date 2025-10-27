@@ -273,7 +273,7 @@ function Project_Scope({ selected, setSelected }) {
             endDecorator={<KeyboardArrowDown />}
             sx={{
               bgcolor: "rgba(255,255,255,0.6)",
-              backdropFilter: "blur(12px)",
+              // backdropFilter: "blur(12px)",
               border: "1px solid rgba(255,255,255,0.4)",
             }}
           >
