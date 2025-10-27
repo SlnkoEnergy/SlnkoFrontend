@@ -1914,15 +1914,16 @@ const Customer_Payment_Summary = () => {
                               <Divider orientation="vertical" flexItem />
                             )}
 
-                            {user?.name !== "Chandan Singh" && (
-                              <IconButton
-                                color="danger"
-                                disabled={selectedClients.length === 0}
-                                onClick={handleDeleteClient}
-                              >
-                                <DeleteIcon />
-                              </IconButton>
-                            )}
+                            {user?.name !== "Chandan Singh" &&
+                              user?.name !== "Sachin Raghav" && (
+                                <IconButton
+                                  color="danger"
+                                  disabled={selectedClients.length === 0}
+                                  onClick={handleDeleteClient}
+                                >
+                                  <DeleteIcon />
+                                </IconButton>
+                              )}
                           </>
                         )}
                       </Box>
@@ -2314,7 +2315,7 @@ const Customer_Payment_Summary = () => {
                         borderAxis="both"
                         stickyHeader
                         sx={{
-                          minWidth: 880,
+                          minWidth: 950,
                           width: "100%",
                           tableLayout: "fixed",
                           fontSize: { xs: 12, sm: 14 },
@@ -2356,13 +2357,20 @@ const Customer_Payment_Summary = () => {
                             <th rowSpan={2} className="num">
                               Bill Basic (₹)
                             </th>
-                            <th colSpan={2} style={{ textAlign: "center" }}>
+                            <th colSpan={3} style={{ textAlign: "center" }}>
                               Sales
                             </th>
                           </tr>
                           <tr>
                             <th className="num">Value (₹)</th>
                             <th className="num">GST (₹)</th>
+                            {/* ✅ New column header */}
+                            <th
+                              className="num"
+                              style={{ backgroundColor: "#E3F2FD" }}
+                            >
+                              Total Sales (₹)
+                            </th>
                           </tr>
                         </thead>
 
@@ -2370,7 +2378,7 @@ const Customer_Payment_Summary = () => {
                           {isLoading ? (
                             <tr>
                               <td
-                                colSpan={7}
+                                colSpan={8}
                                 style={{ textAlign: "center", padding: 20 }}
                               >
                                 <Typography
@@ -2384,7 +2392,7 @@ const Customer_Payment_Summary = () => {
                           ) : (SalesSummary?.length || 0) === 0 ? (
                             <tr>
                               <td
-                                colSpan={7}
+                                colSpan={8}
                                 style={{ textAlign: "center", padding: 20 }}
                               >
                                 <Typography level="body-md">
@@ -2395,7 +2403,7 @@ const Customer_Payment_Summary = () => {
                           ) : filteredSales.length === 0 ? (
                             <tr>
                               <td
-                                colSpan={7}
+                                colSpan={8}
                                 style={{ textAlign: "center", padding: 20 }}
                               >
                                 <Typography level="body-md">
@@ -2427,6 +2435,9 @@ const Customer_Payment_Summary = () => {
                                   sale.gst_on_sales ??
                                   sale.gstSales
                               );
+
+                              // ✅ Calculate total sales (basic + GST)
+                              const totalSales = salesBasic + salesGst;
 
                               return (
                                 <tr
@@ -2571,13 +2582,24 @@ const Customer_Payment_Summary = () => {
                                       "en-IN"
                                     )}
                                   </td>
+
+                                  {/* ✅ Total Sales (Value + GST) */}
+                                  <td
+                                    className="num"
+                                    style={{ backgroundColor: "#E3F2FD" }}
+                                  >
+                                    ₹{" "}
+                                    {Math.round(totalSales).toLocaleString(
+                                      "en-IN"
+                                    )}
+                                  </td>
                                 </tr>
                               );
                             })
                           )}
                         </tbody>
 
-                        {/* Totals */}
+                        {/* ✅ Totals Row */}
                         {filteredSales.length > 0 && (
                           <tfoot>
                             {(() => {
@@ -2610,6 +2632,9 @@ const Customer_Payment_Summary = () => {
                                 )
                               );
 
+                              const totalSalesOverall =
+                                totalSalesBasic + totalSalesGst;
+
                               return (
                                 <tr
                                   style={{
@@ -2640,6 +2665,16 @@ const Customer_Payment_Summary = () => {
                                     {Math.round(totalSalesGst).toLocaleString(
                                       "en-IN"
                                     )}
+                                  </td>
+                                  {/* ✅ Total Sales (Value + GST) */}
+                                  <td
+                                    className="num"
+                                    style={{ backgroundColor: "#E3F2FD" }}
+                                  >
+                                    ₹{" "}
+                                    {Math.round(
+                                      totalSalesOverall
+                                    ).toLocaleString("en-IN")}
                                   </td>
                                 </tr>
                               );
@@ -2714,10 +2749,19 @@ const Customer_Payment_Summary = () => {
                             {(() => {
                               const basic = Number(activeSale?.basic_sales);
                               const gst = Number(activeSale?.gst_on_sales);
+                              const billBasic = Number(
+                                activeSale?.bill_basic_value ||
+                                  activeSale?.bill_basic ||
+                                  0
+                              );
+
                               const hasBasic = Number.isFinite(basic);
                               const hasGst = Number.isFinite(gst);
                               const total =
                                 (hasBasic ? basic : 0) + (hasGst ? gst : 0);
+
+                              const exceeds =
+                                basic > billBasic && billBasic > 0;
 
                               const fmt = (n) =>
                                 Number.isFinite(n)
@@ -2733,16 +2777,39 @@ const Customer_Payment_Summary = () => {
                                     display: "grid",
                                     gridTemplateColumns: "1fr 1fr 1fr",
                                     gap: 1,
-                                    backgroundColor: "neutral.softBg",
+                                    backgroundColor: exceeds
+                                      ? "#FFF3E0"
+                                      : "neutral.softBg",
+                                    border: exceeds
+                                      ? "1px solid #F57C00"
+                                      : "none",
                                   }}
                                 >
                                   <Box>
                                     <Typography level="body-xs" color="neutral">
                                       Basic Sales
                                     </Typography>
-                                    <Typography level="title-sm">
+                                    <Typography
+                                      level="title-sm"
+                                      sx={{
+                                        color: exceeds
+                                          ? "danger.solidBg"
+                                          : "text.primary",
+                                        fontWeight: exceeds ? 700 : 500,
+                                      }}
+                                    >
                                       {fmt(basic)}
                                     </Typography>
+                                    {exceeds && (
+                                      <Typography
+                                        level="body-xs"
+                                        color="danger"
+                                        sx={{ mt: 0.25, fontStyle: "italic" }}
+                                      >
+                                        Cannot exceed Bill Basic (
+                                        {fmt(billBasic)})
+                                      </Typography>
+                                    )}
                                   </Box>
 
                                   <Box>
