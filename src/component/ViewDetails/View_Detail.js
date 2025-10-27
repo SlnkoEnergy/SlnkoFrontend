@@ -1698,7 +1698,7 @@ const Customer_Payment_Summary = () => {
                               {Number(row.amount_paid).toLocaleString("en-IN")}
                             </td>
 
-                            {/* UTR with responsive wrap/ellipsis and hover tooltip (no icon) */}
+                        
                             <td className="utrCell" title={row.utr || "-"}>
                               {row.utr || "-"}
                             </td>
