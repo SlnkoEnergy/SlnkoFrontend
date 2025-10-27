@@ -92,7 +92,6 @@ const Customer_Payment_Summary = () => {
 
   const {
     projectDetails = {},
-    balanceSummary = {},
     credit = { history: [], total: 0 },
     debit = { history: [], total: 0 },
     clientHistory = { data: [], meta: {} },
@@ -478,28 +477,6 @@ const Customer_Payment_Summary = () => {
     }
   };
 
-  // ***Balance Summary***
-
-  const {
-    total_received,
-    total_return,
-    total_advance_paid,
-    total_adjustment,
-    balance_with_slnko,
-    billing_type,
-    gst_difference,
-    total_sales_value,
-    total_unbilled_sales,
-    advance_left_after_billed,
-    netBalance,
-    total_po_with_gst,
-    total_billed_value,
-    aggregate_billed_value,
-    exact_remaining_pay_to_vendors,
-    remaining_advance_left_after_billed,
-  } = balanceSummary || {};
-
-  // console.log(responseData);
 
   const formatIndianNumber = (val) => {
     const n = Number(val);
@@ -527,18 +504,7 @@ const Customer_Payment_Summary = () => {
       </span>
     );
   };
-  const num = (v) => Number(v) || 0;
-  const calc_balance_with_slnko = () => {
-    return (
-      num(responseData?.netBalance) -
-      num(responseData?.total_sales_value) -
-      num(responseData?.aggregate_billed_value) -
-      num(responseData?.advance_left_after_billed) -
-      num(responseData?.total_adjustment)
-    );
-  };
 
-  const balance_with_slnko_value = calc_balance_with_slnko();
 
   const Balance_Summary = ({ isLoading = false }) => {
     const safeRound = (v) => {
@@ -582,7 +548,7 @@ const Customer_Payment_Summary = () => {
       ],
       [
         "7",
-        "Advances left after bills received",
+        "Advances left after bills received [4-5-6]",
         safeRound(responseData?.remaining_advance_left_after_billed),
         "#FFF",
       ],
@@ -595,7 +561,7 @@ const Customer_Payment_Summary = () => {
       [
         "9",
         "Balance With Slnko [3 - 5 - 6 - 7 - 8]",
-        safeRound(balance_with_slnko_value),
+        safeRound(responseData?.balance_with_slnko),
         "#FFECB3",
         true,
       ],
@@ -608,7 +574,7 @@ const Customer_Payment_Summary = () => {
       4: "Advance lying with vendors after reducing bill balances",
       5: "Value of material delivered (PO Closed) & Sales Invoice issued (including Sales GST)",
       6: "Value of material delivered (PO Closed) including Purchase GST",
-      7: "Advance left after bills received ",
+      7: "Advance left after bills received [4-5-6] ",
       8: "Adjustments (Debit / Credit)",
       9: "",
     };
