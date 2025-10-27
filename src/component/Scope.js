@@ -77,13 +77,12 @@ const formatDate = (value) => {
 };
 
 /* ---------------- column options for PDF ---------------- */
-// Keys must match server COLUMN_REGISTRY keys.
+
 const COLUMN_OPTIONS = [
   { key: "type", label: "Type" },
   { key: "scope", label: "Scope" },
-  { key: "quantity", label: "Qty" },
-  { key: "uom", label: "UoM" },
   { key: "commitment_date", label: "Commitment Date" },
+  { key: "remarks", label: "Remarks" },
   { key: "po_number", label: "PO Number" },
   { key: "po_status", label: "PO Status" },
   { key: "po_date", label: "PO Date" },
@@ -93,7 +92,6 @@ const COLUMN_OPTIONS = [
 
 // Server-side default set (matches what we configured on backend)
 const DEFAULT_COL_KEYS = [
-  "type",
   "scope",
   "commitment_date",
   "po_number",
@@ -226,7 +224,11 @@ const ScopeDetail = ({ project_id, project_code }) => {
   };
 
   // NEW: reset columns to defaults
-  const resetColumns = () => setSelectedCols(new Set(DEFAULT_COL_KEYS));
+  const resetColumns = () => {
+    setSelectedCols(new Set(DEFAULT_COL_KEYS));
+    setView("portrait");
+    setFormat("A4");
+  };
 
   const handleDownloadPdf = async (v = view, f = format) => {
     try {
@@ -243,7 +245,7 @@ const ScopeDetail = ({ project_id, project_code }) => {
         project_id,
         view: v,
         format: f,
-        columns, 
+        columns,
       }).unwrap();
 
       const url = window.URL.createObjectURL(blob);
@@ -427,7 +429,6 @@ const ScopeDetail = ({ project_id, project_code }) => {
                                 cursor: "help",
                               }}
                             >
-                              Current:&nbsp;
                               {current?.date ? (
                                 formatDate(current.date)
                               ) : (
@@ -703,30 +704,29 @@ const ScopeDetail = ({ project_id, project_code }) => {
                       />
                     ))}
                   </Box>
-
-                  <Stack direction="row" spacing={1} mt={1}>
-                    <Button size="sm" variant="plain" onClick={resetColumns}>
-                      Reset to defaults
-                    </Button>
-                  </Stack>
                 </Box>
 
                 <ListDivider />
+                <Stack direction="row" spacing={1} mt={1}>
+                  <Button
+                    onClick={() => handleDownloadPdf(view, format)}
+                    disabled={downloading}
+                    sx={{ fontWeight: 600 }}
+                  >
+                    <ListItemDecorator>
+                      {downloading ? (
+                        <CircularProgress size="sm" />
+                      ) : (
+                        <DownloadIcon />
+                      )}
+                    </ListItemDecorator>
+                    Download
+                  </Button>
 
-                <MenuItem
-                  onClick={() => handleDownloadPdf(view, format)}
-                  disabled={downloading}
-                  sx={{ fontWeight: 600 }}
-                >
-                  <ListItemDecorator>
-                    {downloading ? (
-                      <CircularProgress size="sm" />
-                    ) : (
-                      <DownloadIcon />
-                    )}
-                  </ListItemDecorator>
-                  Download
-                </MenuItem>
+                  <Button size="sm" variant="plain" onClick={resetColumns}>
+                    Reset to defaults
+                  </Button>
+                </Stack>
               </Menu>
             </Dropdown>
           )}
