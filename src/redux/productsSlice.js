@@ -20,9 +20,9 @@ export const productsApi = createApi({
       providesTags: (result) =>
         result?.data
           ? [
-              { type: "Products", id: "LIST" },
-              ...result.data.map((p) => ({ type: "Products", id: p._id })),
-            ]
+            { type: "Products", id: "LIST" },
+            ...result.data.map((p) => ({ type: "Products", id: p._id })),
+          ]
           : [{ type: "Products", id: "LIST" }],
     }),
 
@@ -86,10 +86,14 @@ export const productsApi = createApi({
       providesTags: (result) =>
         result?.data
           ? [
-              { type: "Categories", id: "LIST" },
-              ...result.data.map((c) => ({ type: "Categories", id: c._id })),
-            ]
+            { type: "Categories", id: "LIST" },
+            ...result.data.map((c) => ({ type: "Categories", id: c._id })),
+          ]
           : [{ type: "Categories", id: "LIST" }],
+    }),
+
+    getAllCategoriesDropdown: builder.query({
+      query: () => `/products/categories-dropdown`
     }),
 
     getCategoriesNameSearch: builder.query({
@@ -161,6 +165,7 @@ export const {
 
   // categories
   useGetAllCategoriesQuery,
+  useGetAllCategoriesDropdownQuery,
   useGetCategoriesNameSearchQuery,
   useLazyGetCategoriesNameSearchQuery,
   useGetMaterialCategoryByIdQuery,

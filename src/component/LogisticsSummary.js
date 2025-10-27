@@ -33,6 +33,10 @@ import {
   useUpdateLogisticStatusMutation,
 } from "../redux/purchasesSlice";
 
+const HEADER_STACK = 108;      // MainHeader + SubHeader sticky stack
+const FILTERS_APPROX = 120;    // ~height of your filters row
+const PADDING_FIX = 24;
+
 /* ---------------- helpers ---------------- */
 const formatINR = (v) =>
   Number(v ?? 0).toLocaleString("en-IN", {
@@ -158,15 +162,15 @@ function StatusCard({ row, onUpdated }) {
     current === "delivered"
       ? "Delivered"
       : current === "out_for_delivery"
-      ? "Out for Delivery"
-      : "Ready to Dispatch";
+        ? "Out for Delivery"
+        : "Ready to Dispatch";
 
   const color =
     current === "delivered"
       ? "success"
       : current === "out_for_delivery"
-      ? "warning"
-      : "neutral";
+        ? "warning"
+        : "neutral";
 
   const ddmmyyyy = (d) => {
     if (!d) return "dd - mm - yyyy";
@@ -410,392 +414,366 @@ export default function LogisticsDashboard() {
     );
 
   return (
-    <>
-      {/* Search */}
+    <Box
+      sx={{
+        ml: { lg: "var(--Sidebar-width)" },
+        px: "0px",
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+      }}
+    >
       <Box
-        sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          borderRadius: "sm",
-          py: 1,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1.5,
-          "& > *": { minWidth: { xs: "120px", md: "160px" } },
-        }}
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        pb={0.5}
+        flexWrap="wrap"
+        gap={1}           // ⬅️ single, uniform gap before the table
       >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search here</FormLabel>
-          <Input
-            size="sm"
-            placeholder="Search by Logistics Code, PO, Vehicle No., Description"
-            startDecorator={<SearchIcon />}
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              const params = new URLSearchParams(searchParams);
-              params.set("page", "1");
-              setSearchParams(params);
-              setCurrentPage(1);
-            }}
-          />
-        </FormControl>
-      </Box>
-
-      {/* Tabs + Rows per page */}
-      <Box
-        display={"flex"}
-        sx={{ marginLeft: { xl: "15%", lg: "18%" } }}
-        justifyContent={"space-between"}
-        width={"full"}
-        alignItems={"center"}
-      >
-        <Box>
-          <Tabs
-            value={selectedTab}
-            onChange={(_, newValue) => {
-              setSelectedTab(newValue);
-
-              const params = new URLSearchParams(searchParams);
-              params.set("tab", newValue);
-              params.set("page", "1");
-
-              const statusValue = mapTabToStatus(newValue);
-              if (statusValue) {
-                // write status for Out for delivery / Delivered
-                params.set("status", statusValue);
-              } else {
-                // remove status for All
-                params.delete("status");
-              }
-
-              setSearchParams(params);
-              setCurrentPage(1);
-            }}
-            indicatorPlacement="none"
-            sx={{
-              bgcolor: "background.level1",
-              borderRadius: 9999,
-              boxShadow: "sm",
-              width: "fit-content",
-            }}
-          >
-            <TabList sx={{ gap: 1 }}>
-              {TAB_LABELS.map((label) => (
-                <Tab
-                  key={label}
-                  value={label}
-                  disableIndicator
-                  sx={{
-                    borderRadius: 9999,
-                    fontWeight: "md",
-                    "&.Mui-selected": {
-                      bgcolor: "background.surface",
-                      boxShadow: "sm",
-                    },
-                  }}
-                >
-                  {label}
-                </Tab>
-              ))}
-            </TabList>
-          </Tabs>
-        </Box>
+        <Tabs
+          value={selectedTab}
+          onChange={(_, newValue) => {
+            setSelectedTab(newValue);
+            const params = new URLSearchParams(searchParams);
+            params.set("tab", newValue);
+            params.set("page", "1");
+            const statusValue = mapTabToStatus(newValue);
+            statusValue ? params.set("status", statusValue) : params.delete("status");
+            setSearchParams(params);
+            setCurrentPage(1);
+          }}
+          indicatorPlacement="none"
+          sx={{
+            bgcolor: "background.level1",
+            borderRadius: "md",
+            boxShadow: "sm",
+            width: "fit-content",
+          }}
+        >
+          <TabList sx={{ gap: 1, p: 0, m: 0 }}>
+            {TAB_LABELS.map((label) => (
+              <Tab
+                key={label}
+                value={label}
+                disableIndicator
+                sx={{
+                  borderRadius: "xl",
+                  fontWeight: "md",
+                  "&.Mui-selected": {
+                    bgcolor: "background.surface",
+                    boxShadow: "sm",
+                  },
+                }}
+              >
+                {label}
+              </Tab>
+            ))}
+          </TabList>
+        </Tabs>
 
         <Box
-          display="flex"
-          alignItems="center"
-          gap={1}
-          sx={{ padding: "8px 16px" }}
+          sx={{
+            py: 1,
+            display: "flex",
+            alignItems: "flex-end",
+            gap: 1.5,
+            width: { xs: "100%", md: "50%" },
+          }}
         >
-          <Typography level="body-sm">Rows Per Page:</Typography>
-          <Select
-            value={rowsPerPage}
-            onChange={(_, newValue) => {
-              if (newValue == null) return;
-              setRowsPerPage(newValue);
-              const params = new URLSearchParams(searchParams);
-              params.set("pageSize", String(newValue));
-              params.set("page", "1");
-              setSearchParams(params);
-              setCurrentPage(1);
-            }}
-            size="sm"
-            variant="outlined"
-            sx={{ minWidth: 80, borderRadius: "md", boxShadow: "sm" }}
-          >
-            {[10, 25, 50, 100].map((v) => (
-              <Option key={v} value={v}>
-                {v}
-              </Option>
-            ))}
-          </Select>
+          <FormControl sx={{ flex: 1, minWidth: 0 }} size="sm">
+            <Input
+              size="sm"
+              placeholder="Search by Logistics Code, PO, Vehicle No., Description"
+              startDecorator={<SearchIcon />}
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                const params = new URLSearchParams(searchParams);
+                params.set("page", "1");
+                setSearchParams(params);
+                setCurrentPage(1);
+              }}
+              sx={{ width: "100%", minWidth: 0 }}
+            />
+          </FormControl>
         </Box>
       </Box>
+
+
+
+
 
       {/* Table */}
       <Sheet
         className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: { xs: "none", sm: "initial" },
+          display: { xs: "none", sm: "block" },
           width: "100%",
           borderRadius: "sm",
-          flexShrink: 1,
+          maxHeight: { xs: "66vh", xl: "75vh" },
           overflow: "auto",
-          minHeight: 0,
-          marginLeft: { lg: "18%", xl: "15%" },
-          maxWidth: { lg: "85%", sm: "100%" },
         }}
       >
         <Box
-          component="table"
+          className="PO-TableScroller"
           sx={{
-            width: "100%",
-            borderCollapse: "collapse",
-            fontSize: "14px",
-            "& thead th": {
-              position: "sticky",
-              top: 0,
-              background: "#e0e0e0",
-              zIndex: 2,
-              borderBottom: "1px solid #ddd",
-              padding: "8px",
-              textAlign: "left",
-              fontWeight: "bold",
-            },
-            "& tbody td": {
-              borderBottom: "1px solid #ddd",
-              padding: "8px",
-              textAlign: "left",
-            },
-            "& tbody tr:hover": {
-              backgroundColor: "var(--joy-palette-neutral-plainHoverBg)",
-            },
+            overflowX: "auto",
+            overflowY: "auto",
+            maxHeight: `calc(100dvh - ${HEADER_STACK + FILTERS_APPROX + PADDING_FIX}px)`,
+            WebkitOverflowScrolling: "touch",
           }}
         >
-          <thead>
-            <tr>
-              <th>
-                <Checkbox
-                  size="sm"
-                  checked={rows.length > 0 && selected.length === rows.length}
-                  indeterminate={
-                    selected.length > 0 && selected.length < rows.length
-                  }
-                  onChange={handleSelectAll}
-                />
-              </th>
-              {[
-                "Logistics Code",
-                "Transportation PO",
-                "PO Number with Item",
-                "Vehicle No.",
-                "Transport PO Value",
-                "Total Weight (Ton)",
-                "Status",
-              ].map((header) => (
-                <th key={header}>{header}</th>
-              ))}
-            </tr>
-          </thead>
-
-          <tbody>
-            {isLoading ? (
+          <Box
+            component="table"
+            sx={{
+              width: "100%",
+              borderCollapse: "collapse",
+              fontSize: "14px",
+              "& thead th": {
+                position: "sticky",
+                top: 0,
+                background: "#e0e0e0",
+                zIndex: 2,
+                borderBottom: "1px solid #ddd",
+                padding: "8px",
+                textAlign: "left",
+                fontWeight: "bold",
+              },
+              "& tbody td": {
+                borderBottom: "1px solid #ddd",
+                padding: "8px",
+                textAlign: "left",
+              },
+              "& tbody tr:hover": {
+                backgroundColor: "var(--joy-palette-neutral-plainHoverBg)",
+              },
+            }}
+          >
+            <thead>
               <tr>
-                <td colSpan={8} style={{ padding: "8px", textAlign: "center" }}>
-                  <Box
-                    sx={{
-                      fontStyle: "italic",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <CircularProgress size="sm" sx={{ mb: 1 }} />
-                    <Typography fontStyle="italic">Loading...</Typography>
-                  </Box>
-                </td>
+                <th>
+                  <Checkbox
+                    size="sm"
+                    checked={rows.length > 0 && selected.length === rows.length}
+                    indeterminate={
+                      selected.length > 0 && selected.length < rows.length
+                    }
+                    onChange={handleSelectAll}
+                  />
+                </th>
+                {[
+                  "Logistics Code",
+                  "Transportation PO",
+                  "PO Number with Item",
+                  "Vehicle No.",
+                  "Transport PO Value",
+                  "Total Weight (Ton)",
+                  "Status",
+                ].map((header) => (
+                  <th key={header}>{header}</th>
+                ))}
               </tr>
-            ) : rows.length ? (
-              rows.map((row) => {
-                const poNumbers = getPoNumbers(row);
-                const firstPO = poNumbers[0] || "-";
-                const extraPO = Math.max(0, poNumbers.length - 1);
+            </thead>
 
-                const { grouped, firstLabel, extraCount } =
-                  buildPoCategorySummary(row.items);
+            <tbody>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={8} style={{ padding: "8px", textAlign: "center" }}>
+                    <Box
+                      sx={{
+                        fontStyle: "italic",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <CircularProgress size="sm" sx={{ mb: 1 }} />
+                      <Typography fontStyle="italic">Loading...</Typography>
+                    </Box>
+                  </td>
+                </tr>
+              ) : rows.length ? (
+                rows.map((row) => {
+                  const poNumbers = getPoNumbers(row);
+                  const firstPO = poNumbers[0] || "-";
+                  const extraPO = Math.max(0, poNumbers.length - 1);
 
-                const totalWeight =
-                  row?.total_ton ??
-                  (Array.isArray(row.items)
-                    ? row.items.reduce(
+                  const { grouped, firstLabel, extraCount } =
+                    buildPoCategorySummary(row.items);
+
+                  const totalWeight =
+                    row?.total_ton ??
+                    (Array.isArray(row.items)
+                      ? row.items.reduce(
                         (sum, it) => sum + (Number(it.weight) || 0),
                         0
                       )
-                    : "-");
+                      : "-");
 
-                return (
-                  <tr key={row._id}>
-                    {/* checkbox */}
-                    <td>
-                      <Checkbox
-                        size="sm"
-                        checked={selected.includes(row._id)}
-                        onChange={() => handleRowSelect(row._id)}
-                      />
-                    </td>
+                  return (
+                    <tr key={row._id}>
+                      {/* checkbox */}
+                      <td>
+                        <Checkbox
+                          size="sm"
+                          checked={selected.includes(row._id)}
+                          onChange={() => handleRowSelect(row._id)}
+                        />
+                      </td>
 
-                    {/* Logistics Code */}
-                    <td>
-                      <Tooltip title="View Logistics Detail" arrow>
-                        <span>
-                          <Link
-                            underline="none"
-                            sx={{ fontWeight: 600, cursor: "pointer" }}
-                            onClick={() =>
-                              navigate(
-                                `/logistics-form?mode=edit&id=${row._id}`
-                              )
-                            }
-                          >
-                            {safe(row.logistic_code)}
-                          </Link>
-                        </span>
-                      </Tooltip>
-                    </td>
-
-                    {/* Transportation PO */}
-                    <td>
-                      <Tooltip
-                        variant="soft"
-                        placement="top-start"
-                        title={
-                          <Box sx={{ p: 0.5 }}>
-                            <Typography
-                              level="body-xs"
-                              sx={{ mb: 0.5, fontWeight: 700 }}
+                      {/* Logistics Code */}
+                      <td>
+                        <Tooltip title="View Logistics Detail" arrow>
+                          <span>
+                            <Link
+                              underline="none"
+                              sx={{ fontWeight: 600, cursor: "pointer" }}
+                              onClick={() =>
+                                navigate(
+                                  `/logistics-form?mode=edit&id=${row._id}`
+                                )
+                              }
                             >
-                              Transportation POs
-                            </Typography>
-                            {poNumbers.length ? (
-                              poNumbers.map((p, idx) => (
-                                <Typography key={idx} level="body-xs">
-                                  • {p}
-                                </Typography>
-                              ))
-                            ) : (
-                              <Typography level="body-xs">-</Typography>
-                            )}
-                          </Box>
-                        }
-                      >
-                        <Box
-                          sx={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 0.5,
-                          }}
-                        >
-                          <Typography level="body-sm" fontWeight="md">
-                            {firstPO}
-                          </Typography>
-                          <MorePill n={extraPO} />
-                        </Box>
-                      </Tooltip>
-                    </td>
+                              {safe(row.logistic_code)}
+                            </Link>
+                          </span>
+                        </Tooltip>
+                      </td>
 
-                    {/* PO Number with Item */}
-                    <td>
-                      <Tooltip
-                        variant="soft"
-                        placement="top-start"
-                        title={
-                          <Box sx={{ p: 0.5, maxWidth: 360 }}>
-                            <Typography
-                              level="body-xs"
-                              sx={{ mb: 0.5, fontWeight: 700 }}
-                            >
-                              POs & Categories
-                            </Typography>
-                            {grouped.size ? (
-                              Array.from(grouped.entries()).map(([po, arr]) => (
-                                <Box key={po} sx={{ mb: 0.5 }}>
-                                  <Typography
-                                    level="body-xs"
-                                    sx={{ fontWeight: 600 }}
-                                  >
-                                    {po}
+                      {/* Transportation PO */}
+                      <td>
+                        <Tooltip
+                          variant="soft"
+                          placement="top-start"
+                          title={
+                            <Box sx={{ p: 0.5 }}>
+                              <Typography
+                                level="body-xs"
+                                sx={{ mb: 0.5, fontWeight: 700 }}
+                              >
+                                Transportation POs
+                              </Typography>
+                              {poNumbers.length ? (
+                                poNumbers.map((p, idx) => (
+                                  <Typography key={idx} level="body-xs">
+                                    • {p}
                                   </Typography>
-                                  {arr.map(({ category, count }, idx) => (
-                                    <Typography
-                                      key={idx}
-                                      level="body-xs"
-                                      sx={{ pl: 1 }}
-                                    >
-                                      • {category}{" "}
-                                      {count > 1 ? `(${count})` : ""}
-                                    </Typography>
-                                  ))}
-                                </Box>
-                              ))
-                            ) : (
-                              <Typography level="body-xs">-</Typography>
-                            )}
-                          </Box>
-                        }
-                      >
-                        <Box
-                          sx={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 0.5,
-                          }}
+                                ))
+                              ) : (
+                                <Typography level="body-xs">-</Typography>
+                              )}
+                            </Box>
+                          }
                         >
-                          <Typography level="body-sm">
-                            {safe(firstLabel)}
-                          </Typography>
-                          <MorePill n={extraCount} />
-                        </Box>
-                      </Tooltip>
-                    </td>
+                          <Box
+                            sx={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 0.5,
+                            }}
+                          >
+                            <Typography level="body-sm" fontWeight="md">
+                              {firstPO}
+                            </Typography>
+                            <MorePill n={extraPO} />
+                          </Box>
+                        </Tooltip>
+                      </td>
 
-                    {/* Vehicle No. */}
-                    <td>{safe(row.vehicle_number)}</td>
+                      {/* PO Number with Item */}
+                      <td>
+                        <Tooltip
+                          variant="soft"
+                          placement="top-start"
+                          title={
+                            <Box sx={{ p: 0.5, maxWidth: 360 }}>
+                              <Typography
+                                level="body-xs"
+                                sx={{ mb: 0.5, fontWeight: 700 }}
+                              >
+                                POs & Categories
+                              </Typography>
+                              {grouped.size ? (
+                                Array.from(grouped.entries()).map(([po, arr]) => (
+                                  <Box key={po} sx={{ mb: 0.5 }}>
+                                    <Typography
+                                      level="body-xs"
+                                      sx={{ fontWeight: 600 }}
+                                    >
+                                      {po}
+                                    </Typography>
+                                    {arr.map(({ category, count }, idx) => (
+                                      <Typography
+                                        key={idx}
+                                        level="body-xs"
+                                        sx={{ pl: 1 }}
+                                      >
+                                        • {category}{" "}
+                                        {count > 1 ? `(${count})` : ""}
+                                      </Typography>
+                                    ))}
+                                  </Box>
+                                ))
+                              ) : (
+                                <Typography level="body-xs">-</Typography>
+                              )}
+                            </Box>
+                          }
+                        >
+                          <Box
+                            sx={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 0.5,
+                            }}
+                          >
+                            <Typography level="body-sm">
+                              {safe(firstLabel)}
+                            </Typography>
+                            <MorePill n={extraCount} />
+                          </Box>
+                        </Tooltip>
+                      </td>
 
-                    {/* Transport PO Value */}
-                    <td>{formatINR(row.total_transport_po_value)}</td>
+                      {/* Vehicle No. */}
+                      <td>{safe(row.vehicle_number)}</td>
 
-                    {/* Total Weight */}
-                    <td>{safe(totalWeight)}</td>
+                      {/* Transport PO Value */}
+                      <td>{formatINR(row.total_transport_po_value)}</td>
 
-                    {/* Status */}
-                    <td>
-                      <StatusCard row={row} onUpdated={refetch} />
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td colSpan={8} style={{ padding: "8px", textAlign: "center" }}>
-                  <Typography fontStyle="italic">No Logistics Found</Typography>
-                </td>
-              </tr>
-            )}
-          </tbody>
+                      {/* Total Weight */}
+                      <td>{safe(totalWeight)}</td>
+
+                      {/* Status */}
+                      <td>
+                        <StatusCard row={row} onUpdated={refetch} />
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={8} style={{ padding: "8px", textAlign: "center" }}>
+                    <Typography fontStyle="italic">No Logistics Found</Typography>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </Box>
         </Box>
+
       </Sheet>
 
       {/* Pagination */}
       <Box
         sx={{
-          pt: 2,
+          pt: 1,
           gap: 1,
           display: "flex",
           flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
-          marginLeft: { lg: "18%", xl: "15%" },
+
         }}
       >
         <Button
@@ -841,6 +819,36 @@ export default function LogisticsDashboard() {
           )}
         </Box>
 
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={1}
+          sx={{ padding: "8px 16px" }}
+        >
+          <Typography level="body-sm">Rows Per Page:</Typography>
+          <Select
+            value={rowsPerPage}
+            onChange={(_, newValue) => {
+              if (newValue == null) return;
+              setRowsPerPage(newValue);
+              const params = new URLSearchParams(searchParams);
+              params.set("pageSize", String(newValue));
+              params.set("page", "1");
+              setSearchParams(params);
+              setCurrentPage(1);
+            }}
+            size="sm"
+            variant="outlined"
+            sx={{ minWidth: 80, borderRadius: "md", boxShadow: "sm" }}
+          >
+            {[10, 25, 50, 100].map((v) => (
+              <Option key={v} value={v}>
+                {v}
+              </Option>
+            ))}
+          </Select>
+        </Box>
+
         <Button
           size="sm"
           variant="outlined"
@@ -852,6 +860,7 @@ export default function LogisticsDashboard() {
           Next
         </Button>
       </Box>
-    </>
+    </Box>
+
   );
 }

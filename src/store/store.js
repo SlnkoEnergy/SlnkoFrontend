@@ -29,6 +29,7 @@ import { inspectionApi } from "../redux/inspectionSlice";
 import { postsApi } from "../redux/postsSlice";
 import { approvalsApi } from "../redux/ApprovalsSlice";
 import {leadsApi} from "../redux/leadsSlice"
+import { emailApi } from "../redux/emailSlice";
 
 export const store = configureStore({
   reducer: {
@@ -61,7 +62,8 @@ export const store = configureStore({
     [poHistoryApi.reducerPath]: poHistoryApi.reducer,
     [inspectionApi.reducerPath]: inspectionApi.reducer,
     [postsApi.reducerPath] : postsApi.reducer,
-    [approvalsApi.reducerPath] : approvalsApi.reducer
+    [approvalsApi.reducerPath] : approvalsApi.reducer,
+    [emailApi.reducerPath]: emailApi.reducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -94,6 +96,7 @@ export const store = configureStore({
       poHistoryApi.middleware,
       inspectionApi.middleware,
       postsApi.middleware,
-      approvalsApi.middleware
+      approvalsApi.middleware,
+      emailApi.middleware
     ),
 });
