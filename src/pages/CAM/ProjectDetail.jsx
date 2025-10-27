@@ -7,7 +7,6 @@ import Project_Detail from "../../component/ProjectDetails";
 import MainHeader from "../../component/Partials/MainHeader";
 import SubHeader from "../../component/Partials/SubHeader";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@mui/joy";
 
 function ProjectDetail() {
   const [user, setUser] = useState(null);
@@ -30,8 +29,7 @@ function ProjectDetail() {
       <CssBaseline />
       <Box sx={{ display: "flex", minHeight: "100vh" }}>
         <Sidebar />
-        <MainHeader title="Projects" sticky>
-        </MainHeader>
+        <MainHeader title="Projects" sticky></MainHeader>
 
         <SubHeader
           title="Project Detail"
@@ -41,14 +39,13 @@ function ProjectDetail() {
         <Box
           component="main"
           className="MainContent"
-            sx={{
+          sx={{
             flex: 1,
             display: "flex",
             flexDirection: "column",
             gap: 1,
             mt: "108px",
             p: "16px",
-           
           }}
         >
           <Project_Detail />

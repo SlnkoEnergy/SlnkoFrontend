@@ -19,10 +19,19 @@ import {
   Stack,
   Divider,
   Avatar,
+  Dropdown,
+  MenuButton,
+  ListDivider,
+  FormControl,
+  FormLabel,
+  RadioGroup,
+  Radio,
+  ListItemDecorator,
 } from "@mui/joy";
 import EditIcon from "@mui/icons-material/Edit";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import SaveIcon from "@mui/icons-material/Save";
+import DownloadIcon from "@mui/icons-material/Download";
 import {
   useGetScopeByProjectIdQuery,
   useUpdateScopeByProjectIdMutation,
@@ -83,7 +92,7 @@ const ScopeDetail = ({ project_id, project_code }) => {
     useUpdateCommitmentDateMutation();
 
   const [itemsState, setItemsState] = useState([]);
-  const [anchorEl, setAnchorEl] = useState(null);
+  const [statusAnchorEl, setStatusAnchorEl] = useState(null);
   const [downloading, setDownloading] = useState(false);
 
   // History modal
@@ -95,14 +104,28 @@ const ScopeDetail = ({ project_id, project_code }) => {
   const [editItem, setEditItem] = useState(null);
   const [editDraft, setEditDraft] = useState({ date: "", remarks: "" });
 
+  // PDF menu state
+  const [view, setView] = useState("portrait");
+  const [format, setFormat] = useState("A4");
+
   const rawStatus = getScope?.data?.current_status?.status || "";
   const statusPretty = prettyStatus(rawStatus);
   const isOpen = rawStatus?.toLowerCase() === "open";
 
+  const formats = [
+    "Letter",
+    "Legal",
+    "Tabloid",
+    "A0",
+    "A1",
+    "A2",
+    "A3",
+    "A4",
+    "A5",
+  ];
+
   useEffect(() => {
-    if (getScope?.data?.items) {
-      setItemsState(getScope.data.items);
-    }
+    if (getScope?.data?.items) setItemsState(getScope.data.items);
   }, [getScope]);
 
   const handleCheckboxChange = (index, checked) => {
@@ -143,9 +166,9 @@ const ScopeDetail = ({ project_id, project_code }) => {
   };
 
   const handleChipClick = (event) => {
-    if (!isOpen) setAnchorEl(event.currentTarget);
+    if (!isOpen) setStatusAnchorEl(event.currentTarget);
   };
-  const handleMenuClose = () => setAnchorEl(null);
+  const handleMenuClose = () => setStatusAnchorEl(null);
 
   const handleChangeStatus = async (newStatus) => {
     try {
@@ -162,10 +185,14 @@ const ScopeDetail = ({ project_id, project_code }) => {
     }
   };
 
-  const handleDownloadPdf = async () => {
+  const handleDownloadPdf = async (v = view, f = format) => {
     try {
       setDownloading(true);
-      const blob = await generateScopePdf({ project_id }).unwrap();
+      const blob = await generateScopePdf({
+        project_id,
+        view: v,
+        format: f,
+      }).unwrap();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -193,7 +220,7 @@ const ScopeDetail = ({ project_id, project_code }) => {
 
   const openEdit = (item) => {
     setEditItem(item || null);
-    setEditDraft({ date: "", remarks: "" }); // keep empty to add new
+    setEditDraft({ date: "", remarks: "" });
     setEditOpen(true);
   };
   const closeEdit = () => {
@@ -208,25 +235,22 @@ const ScopeDetail = ({ project_id, project_code }) => {
   const saveEdit = async () => {
     const date = (editDraft.date || "").trim?.() || editDraft.date;
     const remarks = (editDraft.remarks || "").trim();
-
     if (!editItem) return;
     if (!date || !remarks) {
       toast.error("Please enter both date and remarks.");
       return;
     }
-
     try {
       await doUpdateCommitmentDate({
-        id: getScope?.data?._id, // scope _id from API payload
+        id: getScope?.data?._id,
         item_id: editItem.item_id,
         date,
         remarks,
       }).unwrap();
-
       toast.success("Commitment date saved.");
       closeEdit();
       await refetch();
-    } catch (e) {
+    } catch {
       toast.error("Failed to save commitment date.");
     }
   };
@@ -257,7 +281,6 @@ const ScopeDetail = ({ project_id, project_code }) => {
     const seen = new Map();
     for (const p of raw) seen.set(posKey(p), p);
     const unique = Array.from(seen.values());
-
     const enriched = unique.map((p) => ({
       p,
       w: statusOrder[p?.status] ?? 9,
@@ -310,7 +333,7 @@ const ScopeDetail = ({ project_id, project_code }) => {
           <thead>
             <tr>
               <th>Sr. No.</th>
-              <th style={{ minWidth: 220 }}>Item Name</th>
+              <th style={{ minWidth: 220 }}>Category Name</th>
               <th style={{ textAlign: "left" }}>Scope</th>
               <th style={{ minWidth: 260 }}>Commitment Date</th>
               <th style={{ minWidth: 160 }}>PO Number(s)</th>
@@ -345,11 +368,9 @@ const ScopeDetail = ({ project_id, project_code }) => {
 
                 return (
                   <Fragment key={item.item_id}>
-                    {/* First row — item info + first PO */}
                     <tr>
                       <td>{idx + 1}</td>
                       <td>{titlePreserveAcronyms(item.name || "-")}</td>
-
                       <td style={{ textAlign: "left" }}>
                         <Checkbox
                           variant="soft"
@@ -360,8 +381,6 @@ const ScopeDetail = ({ project_id, project_code }) => {
                           }
                         />
                       </td>
-
-                      {/* Commitment Date (Waiting + pencil + eye with tooltip) */}
                       <td>
                         <Stack spacing={1}>
                           <Tooltip
@@ -388,7 +407,6 @@ const ScopeDetail = ({ project_id, project_code }) => {
                               )}
                             </Typography>
                           </Tooltip>
-
                           <Stack
                             direction="row"
                             spacing={1}
@@ -455,14 +473,12 @@ const ScopeDetail = ({ project_id, project_code }) => {
                       </td>
                     </tr>
 
-                    {/* Remaining POs — no item data */}
                     {childRows.slice(1).map((p, i) => (
                       <tr key={`${item.item_id}-po-${i}`}>
                         <td></td>
                         <td></td>
                         <td></td>
                         <td></td>
-
                         <td>
                           <Typography level="body-sm">
                             {p.po_number || "Pending"}
@@ -539,8 +555,8 @@ const ScopeDetail = ({ project_id, project_code }) => {
             {statusPretty || "Closed"}
           </Chip>
           <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
+            anchorEl={statusAnchorEl}
+            open={Boolean(statusAnchorEl)}
             onClose={handleMenuClose}
           >
             <MenuItem onClick={() => handleChangeStatus("open")}>
@@ -549,19 +565,80 @@ const ScopeDetail = ({ project_id, project_code }) => {
           </Menu>
         </Box>
 
+        {/* Right actions: single PDF menu button */}
         <Box width={"full"} display="flex" justifyContent="flex-end">
           {rawStatus?.toLowerCase() === "closed" && (
-            <Button
-              size="sm"
-              variant="outlined"
-              onClick={handleDownloadPdf}
-              disabled={downloading}
-              startDecorator={
-                downloading ? <CircularProgress size="sm" /> : null
-              }
-            >
-              {downloading ? "Downloading..." : "Download Pdf"}
-            </Button>
+            <Dropdown>
+              <MenuButton
+                size="sm"
+                variant="outlined"
+                startDecorator={
+                  downloading ? (
+                    <CircularProgress size="sm" />
+                  ) : (
+                    <DownloadIcon />
+                  )
+                }
+                disabled={downloading}
+              >
+                {downloading ? "Downloading..." : "PDF"}
+              </MenuButton>
+
+              <Menu placement="bottom-end" sx={{ p: 1, width: 300 }}>
+                <FormControl size="sm" sx={{ px: 1, py: 0.5 }}>
+                  <FormLabel>View</FormLabel>
+                  <RadioGroup
+                    orientation="horizontal"
+                    value={view}
+                    onChange={(e) => setView(e.target.value)}
+                  >
+                    <Radio value="portrait" label="Portrait" />
+                    <Radio value="landscape" label="Landscape" />
+                  </RadioGroup>
+                </FormControl>
+
+                <ListDivider />
+
+                {/* Format as radios to avoid Select-in-Menu popper issues */}
+                <FormControl size="sm" sx={{ px: 1, py: 0.5 }}>
+                  <FormLabel>Format</FormLabel>
+                  <RadioGroup
+                    value={format}
+                    onChange={(e) => setFormat(e.target.value)}
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(1, minmax(0, 1fr))",
+                      rowGap: 0.5,
+                      columnGap: 1,
+                      maxHeight: 220,
+                      overflow: "auto",
+                      pr: 0.5,
+                    }}
+                  >
+                    {formats.map((f) => (
+                      <Radio key={f} value={f} label={f} />
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+
+                <ListDivider />
+
+                <MenuItem
+                  onClick={() => handleDownloadPdf(view, format)}
+                  disabled={downloading}
+                  sx={{ fontWeight: 600 }}
+                >
+                  <ListItemDecorator>
+                    {downloading ? (
+                      <CircularProgress size="sm" />
+                    ) : (
+                      <DownloadIcon />
+                    )}
+                  </ListItemDecorator>
+                  Download
+                </MenuItem>
+              </Menu>
+            </Dropdown>
           )}
         </Box>
       </Box>
@@ -582,7 +659,6 @@ const ScopeDetail = ({ project_id, project_code }) => {
               : "Set Commitment Date"}
           </Typography>
           <Divider />
-
           <Stack spacing={1.25} mt={1}>
             <Stack direction="row" spacing={2} alignItems="center">
               <Box sx={{ minWidth: 120 }}>
@@ -681,7 +757,7 @@ const ScopeDetail = ({ project_id, project_code }) => {
                   .sort((a, b) => {
                     const at = new Date(a.updatedAt || a.date || 0).getTime();
                     const bt = new Date(b.updatedAt || b.date || 0).getTime();
-                    return bt - at; // latest first
+                    return bt - at;
                   })
                   .map((h, i) => {
                     const u = h?.user_id || {};

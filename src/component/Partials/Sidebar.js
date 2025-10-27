@@ -909,7 +909,7 @@ function Sidebar() {
           </List>
         ) : user?.name === "Guddu Rani Dubey" ||
           user?.name === "Varun Mishra" ||
-          (user?.name === "Prachi Singh") ? (
+          user?.name === "Prachi Singh" ? (
           <List
             size="sm"
             sx={{
