@@ -579,6 +579,19 @@ const Customer_Payment_Summary = () => {
       9: "",
     };
 
+    const summaryData = [
+  ["Total PO Value", safeRound(responseData?.total_po_with_gst)],
+  ["Billed Value", safeRound(responseData?.aggregate_billed_value)],
+  ["Advance Paid", safeRound(responseData?.total_advance_paid)],
+  [
+    "Remaining to Pay",
+    safeRound(responseData?.exact_remaining_pay_to_vendor),
+    responseData?.aggregate_billed_value > responseData?.total_advance_paid
+      ? "success"
+      : "warning",
+  ],
+];
+
     return (
       <Grid container spacing={2}>
         {/* ---------- LEFT: Balance Summary ---------- */}
@@ -779,30 +792,12 @@ const Customer_Payment_Summary = () => {
                 </tr>
               </thead>
               <tbody>
-                {[
-                  [
-                    "Total PO Value",
-                    safeRound(responseData?.total_po_with_gst),
-                  ],
-                  [
-                    "Billed Value",
-                    safeRound(responseData?.aggregate_billed_value),
-                  ],
-                  ["Advance Paid", safeRound(responseData?.total_advance_paid)],
-                  [
-                    "Remaining to Pay",
-                    safeRound(responseData?.exact_remaining_pay_to_vendor),
-                    responseData?.aggregate_billed_value >
-                    responseData?.total_advance_paid
-                      ? "success"
-                      : "warning",
-                  ],
-                ].map(([desc, value, tone]) => (
+                {summaryData.map(([desc, value, tone]) => (
                   <Tooltip
                     key={desc}
                     title={
                       desc === "Remaining to Pay"
-                        ? "If Billed > Advance → (PO with GST − Billed), else = Total Advance Paid"
+                        ? "If Billed > Advance → (PO with GST − Billed), else = (PO with GST − Total Advance Paid)"
                         : ""
                     }
                     arrow
