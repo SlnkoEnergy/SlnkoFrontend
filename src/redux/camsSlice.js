@@ -165,6 +165,9 @@ export const camsApi = createApi({
           scope = "",
           po_date_from = "",
           po_date_to = "",
+          project_status = "",
+          current_commitment_date_from = "",
+          current_commitment_date_to = "",
         } = params;
 
         // Helper to build query string dynamically
@@ -186,6 +189,18 @@ export const camsApi = createApi({
         if (scope) queryParams.append("scope", scope);
         if (po_date_from) queryParams.append("po_date_from", po_date_from);
         if (po_date_to) queryParams.append("po_date_to", po_date_to);
+        if (project_status)
+          queryParams.append("project_status", project_status);
+        if (current_commitment_date_from)
+          queryParams.append(
+            "current_commitment_date_from",
+            current_commitment_date_from
+          );
+        if (current_commitment_date_to)
+          queryParams.append(
+            "current_commitment_date_from",
+            current_commitment_date_to
+          );
         return `scope/scopes?${queryParams.toString()}`;
       },
 
@@ -205,8 +220,26 @@ export const camsApi = createApi({
       },
     }),
     exportScopes: builder.mutation({
-      query: (selected) => ({
-        url: `scope/export-scopes`,
+      query: ({
+        selected,
+        type,
+        project_id,
+        state,
+        cam_person,
+        po_status,
+        item_name,
+        scope,
+        etd_from,
+        etd_to,
+        delivered_from,
+        delivered_to,
+        po_date_from,
+        po_date_to,
+        project_status,
+        current_commitment_date_from,
+        current_commitment_date_to,
+      }) => ({
+        url: `scope/export-scopes?type=${type}&project_id=${project_id}&state=${state}&cam_person=${cam_person}&po_status=${po_status}&item_name=${item_name}&scope=${scope}&etd_from=${etd_from}&etd_to=${etd_to}&delivered_from=${delivered_from}&delivered_to=${delivered_to}&po_date_from=${po_date_from}&po_date_to=${po_date_to}&project_status=${project_status}&current_commitment_date_from=${current_commitment_date_from}&current_commitment_date_to=${current_commitment_date_to}`,
         method: "POST",
         body: { selected },
         responseHandler: (response) => response.blob(),
@@ -227,8 +260,8 @@ export const camsApi = createApi({
       }),
     }),
     generateScopePdf: builder.mutation({
-      query: ({ project_id }) => ({
-        url: `scope/scope-pdf?project_id=${project_id}`,
+      query: ({ project_id, view, format }) => ({
+        url: `scope/scope-pdf?project_id=${project_id}&view=${view}&format=${format}`,
         method: "GET",
         responseHandler: (response) => response.blob(),
       }),
