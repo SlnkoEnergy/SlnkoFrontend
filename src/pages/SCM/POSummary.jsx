@@ -8,13 +8,10 @@ import { toast } from "react-toastify";
 import PurchaseOrderSummary from "../../component/PurchaseOrderSummary";
 import Filter from "../../component/Partials/Filter";
 import { useExportPosMutation } from "../../redux/purchasesSlice";
-<<<<<<< HEAD
 import { Dropdown, Menu, MenuButton, MenuItem, CircularProgress } from "@mui/joy";
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
-=======
 import DownloadIcon from "@mui/icons-material/Download";
 import { useGetAllCategoriesDropdownQuery } from "../../redux/productsSlice";
->>>>>>> development
 
 function DashboardSCM() {
   const navigate = useNavigate();
@@ -42,12 +39,8 @@ function DashboardSCM() {
   const [exportPos, { isLoading: isExporting }] = useExportPosMutation();
   const [exportingScope, setExportingScope] = useState(null); // "selected" | "all" | null
 
-<<<<<<< HEAD
   const handleExportToCSV = async ({ scope }) => {
     setExportingScope(scope);
-=======
-  const handleExportToCSV = async () => {
->>>>>>> development
     try {
       if (scope === "selected") {
         const ids = (selectedPOIds || []).filter(Boolean);
@@ -69,16 +62,10 @@ function DashboardSCM() {
         return;
       }
 
-<<<<<<< HEAD
       // scope === "all"
       const filters = poSummaryRef.current?.getCurrentFilters?.() || {};
       const blob = await exportPos({ filters }).unwrap();
       const fileName = `po_filtered_${new Date().toISOString().slice(0, 10)}.csv`;
-=======
-      const blob = await exportPos({ purchaseorders: ids }).unwrap();
-      const fileName = `po_${new Date().toISOString().slice(0, 10)}.csv`;
-
->>>>>>> development
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -304,45 +291,7 @@ function DashboardSCM() {
             ) : null}
             <Button
               size="sm"
-<<<<<<< HEAD
-              aria-label="breadcrumbs"
-              separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
-            >
-              <Link
-                underline="hover"
-                color="neutral"
-                href=""
-                sx={{ fontSize: 12, fontWeight: 500 }}
-              >
-                SCM
-              </Link>
-              <Typography color="primary" sx={{ fontWeight: 500, fontSize: 12 }}>
-                Purchase Order Summary
-              </Typography>
-            </Breadcrumbs>
-          </Box>
-
-          <Box
-            sx={{
-              display: "flex",
-              mb: 1,
-              gap: 1,
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: { xs: "start", sm: "center" },
-              flexWrap: "wrap",
-              justifyContent: "space-between",
-              marginLeft: { xl: "15%", lg: "18%" },
-            }}
-          >
-            <Typography level="h2" component="h1">
-              Purchase Order Summary
-            </Typography>
-
-            <Box
-=======
               onClick={() => navigate(`/vendors`)}
->>>>>>> development
               sx={{
                 color: "white",
                 bgcolor: "transparent",
@@ -471,20 +420,6 @@ function DashboardSCM() {
                   </Dropdown>
                 </>
               )}
-<<<<<<< HEAD
-
-              <Button
-                color="primary"
-                variant="solid"
-                size="sm"
-                onClick={() => navigate("/add_vendor")}
-              >
-                Add Vendor
-              </Button>
-            </Box>
-          </Box>
-=======
->>>>>>> development
 
               <Filter
                 open={open}

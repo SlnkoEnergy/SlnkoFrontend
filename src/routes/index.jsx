@@ -85,14 +85,11 @@ import MyApproval from "../pages/Approvals/MyApproval";
 import ApprovalDashboard from "../pages/Approvals/ApprovalDashboard";
 import MyRequest from "../pages/Approvals/MyRequest";
 import ProjectDashBoard from "../pages/Projects/ProjectDashboard";
-<<<<<<< HEAD
 import ProjectScope from "../pages/CAM/ProjectScope";
-=======
 import Vendors from "../pages/SCM/Vendors";
 import ViewVendors from "../pages/SCM/ViewVendor";
 import Email from "../pages/Emails/Email";
 import Template from "../pages/Emails/Template";
->>>>>>> development
 
 function index() {
   return (
