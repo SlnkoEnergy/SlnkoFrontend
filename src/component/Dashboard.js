@@ -35,6 +35,7 @@ function Dashboard() {
         },
       }}
     >
+      {/* ===== Top string lights (Blinkit-style) ===== */}
       <Box
         aria-hidden
         sx={{

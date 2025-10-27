@@ -85,7 +85,14 @@ import MyApproval from "../pages/Approvals/MyApproval";
 import ApprovalDashboard from "../pages/Approvals/ApprovalDashboard";
 import MyRequest from "../pages/Approvals/MyRequest";
 import ProjectDashBoard from "../pages/Projects/ProjectDashboard";
+<<<<<<< HEAD
 import ProjectScope from "../pages/CAM/ProjectScope";
+=======
+import Vendors from "../pages/SCM/Vendors";
+import ViewVendors from "../pages/SCM/ViewVendor";
+import Email from "../pages/Emails/Email";
+import Template from "../pages/Emails/Template";
+>>>>>>> development
 
 function index() {
   return (
@@ -269,10 +276,50 @@ function index() {
         }
       />
       <Route
+        path="/add_vendor"
+        element={
+          <PrivateRoute>
+            <Add_Vendor />
+          </PrivateRoute>
+        }
+      />
+      <Route
         path="/vendor_bill"
         element={
           <PrivateRoute>
             <VendorBill />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/vendors"
+        element={
+          <PrivateRoute>
+            <Vendors />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/view_vendor"
+        element={
+          <PrivateRoute>
+            <ViewVendors />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/email"
+        element={
+          <PrivateRoute>
+            <Email />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/email_template"
+        element={
+          <PrivateRoute>
+            <Template />
           </PrivateRoute>
         }
       />
@@ -568,14 +615,6 @@ function index() {
         element={
           <PrivateRoute>
             <Add_Purchase />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/add_vendor"
-        element={
-          <PrivateRoute>
-            <Add_Vendor />
           </PrivateRoute>
         }
       />

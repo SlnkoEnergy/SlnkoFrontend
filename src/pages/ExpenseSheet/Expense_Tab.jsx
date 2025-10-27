@@ -1,156 +1,258 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { CssVarsProvider } from '@mui/joy/styles';
-import CssBaseline from '@mui/joy/CssBaseline';
-import Box from '@mui/joy/Box';
-import Button from '@mui/joy/Button';
-import Breadcrumbs from '@mui/joy/Breadcrumbs';
-import Link from '@mui/joy/Link';
-import Typography from '@mui/joy/Typography';
+import { useState, useEffect } from "react";
+import { CssVarsProvider } from "@mui/joy/styles";
+import CssBaseline from "@mui/joy/CssBaseline";
+import Box from "@mui/joy/Box";
+import Button from "@mui/joy/Button";
 
-import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
-import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
-import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
+import Typography from "@mui/joy/Typography";
 
-import Sidebar from '../../component/Partials/Sidebar';
-// import OrderTable from '../../component/OrderTable';
-// import OrderList from '../../component/OrderList';
-import Header from '../../component/Partials/Header';
-import { useNavigate } from 'react-router-dom';
-import AllExpense from '../../component/Expense Sheet/ExpenseDashboard';
+import Sidebar from "../../component/Partials/Sidebar";
+
+import { useNavigate, useSearchParams } from "react-router-dom";
+import AllExpense from "../../component/Expense Sheet/ExpenseDashboard";
+import MainHeader from "../../component/Partials/MainHeader";
+import SubHeader from "../../component/Partials/SubHeader";
+import Filter from "../../component/Partials/Filter";
 
 function Expense_Table() {
-    const navigate = useNavigate();
-      const allProjectRef = useRef();
-    
-  
-      
-    //   const [user, setUser] = useState(null);
-            
-              
-    //           useEffect(() => {
-    //            const userData = getUserData();
-    //            setUser(userData);
-    //          }, []);
-             
-    //          const getUserData = () => {
-    //            const userData = localStorage.getItem("userDetails");
-    //            if (userData) {
-    //              return JSON.parse(userData);
-    //            }
-    //            return null;
-    //          };
-      
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
+
+  const [open, setOpen] = useState(false);
+
+  const [department, setDepartment] = useState(
+    searchParams.get("department") || ""
+  );
+
+  useEffect(() => {
+    const sp = new URLSearchParams(searchParams);
+    if (department) sp.set("department", department);
+    else sp.delete("department");
+    setSearchParams(sp);
+  }, [department]);
+
+  const departments = [
+    "Accounts",
+    "HR",
+    "Engineering",
+    "Projects",
+    "Infra",
+    "CAM",
+    "Internal",
+    "SCM",
+    "IT Team",
+    "Loan",
+    "BD",
+  ];
+  const fields = [
+    {
+      key: "department",
+      label: "Filter By Department",
+      type: "select",
+      options: departments.map((d) => ({ label: d, value: d })),
+    },
+  ];
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
       <Box sx={{ display: "flex", minHeight: "100dvh" }}>
-        <Header />
         <Sidebar />
-        <Box
-          component="main"
-          className="MainContent"
-          sx={{
-            px: { xs: 2, md: 6 },
-            pt: {
-              xs: "calc(12px + var(--Header-height))",
-              sm: "calc(12px + var(--Header-height))",
-              md: 3,
-            },
-            pb: { xs: 2, sm: 2, md: 3 },
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            minWidth: 0,
-            height: "100dvh",
-            gap: 1,
-          }}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              marginLeft: { xl: "15%", lg: "18%" },
-            }}
-          >
-            <Breadcrumbs
+        <MainHeader title="Expense Sheet" sticky>
+          <Box display="flex" gap={1}>
+            {(user?.name === "Chandan Singh" ||
+              user?.name === "IT Team" ||
+              user?.department === "admin" ||
+              user?.department === "BD" ||
+              user?.department === "HR" ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" &&
+                (user?.name === "Naresh Kumar" || user?.name === "Ranvijay Singh" || user?.name === "Shruti Tripathi")) ||
+              user?.name === "Shantanu Sameer" ||
+              user?.department === "Projects" ||
+              user?.department === "Infra" ||
+              user?.department === "Marketing" ||
+              user?.department === "Internal" ||
+              user?.department === "Loan" ||
+              user?.department === "Logistic" ||
+              (user?.department === "Tender" &&
+                user?.name === "Satyadeep Mohanty")
+            ) ? (<Button
               size="sm"
-              aria-label="breadcrumbs"
-              separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0, marginTop: {md:"4%", lg:"0%"} }}
-            >
-              {/* <Link
-                underline="none"
-                color="neutral"
-                href="#some-link"
-                aria-label="Home"
-              >
-                <HomeRoundedIcon />
-              </Link> */}
-              <Link
-                underline="hover"
-                color="neutral"
-                href=""
-                sx={{ fontSize: 12, fontWeight: 500 }}
-              >
-                Expense Sheet
-              </Link>
-              <Typography
-                color="primary"
-                sx={{ fontWeight: 500, fontSize: 12 }}
-              >
-                User Expense
-              </Typography>
-            </Breadcrumbs>
-          </Box>
-          <Box
-            sx={{
-              display: "flex",
-              mb: 1,
-              gap: 1,
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: { xs: "start", sm: "center" },
-              flexWrap: "wrap",
-              justifyContent: "space-between",
-              marginLeft: { xl: "15%", lg: "18%" },
-            }}
-          >
-            <Typography level="h2" component="h1">
-              User Expense
-            </Typography>
-           
-            <Box
+              onClick={() => navigate(`/expense_dashboard`)}
               sx={{
-                display: "flex",
-                mb: 1,
-                gap: 1,
-                flexDirection: { xs: "column", sm: "row" },
-                alignItems: { xs: "start", sm: "center" },
-                flexWrap: "wrap",
-                justifyContent: "center",
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
               }}
             >
-              <Button
+              DashBoard
+            </Button>
+            ) : (null)}
+
+            {(user?.name === "IT Team" ||
+              user?.department === "BD" ||
+              (user?.department === "BD" &&
+                (user?.emp_id === "SE-277" ||
+                  user?.emp_id === "SE-046")) ||
+              user?.department === "admin" ||
+              (user?.department === "Accounts" &&
+                user?.name === "Sujan Maharjan") ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              (user?.role === "manager" &&
+                (user?.name === "Naresh Kumar" || user?.name === "Ranvijay Singh" || user?.name === "Shruti Tripathi")) ||
+              (user?.role === "visitor" &&
+                (user?.name === "Sanjiv Kumar" ||
+                  user?.name === "Sushant Ranjan Dubey")) ||
+              (((user?.department === "Projects" &&
+                (user?.emp_id === "SE-203" ||
+                  user?.emp_id === "SE-212" ||
+                  user?.emp_id === "SE-205" ||
+                  user?.emp_id === "SE-010")) ||
+                user?.name === "Disha Sharma")) ||
+              user?.department === "Engineering"
+            ) ? (<Button
+              size="sm"
+              onClick={() => navigate(`/expense_approval`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              Expense Approval
+            </Button>) : (null)}
+
+
+            {(user?.name === "IT Team" ||
+              user?.department === "admin" ||
+              (user?.role === "manager" && user?.name === "Shruti Tripathi")) ? (<Button
+                size="sm"
+                onClick={() => navigate(`/expense_hr`)}
+                sx={{
+                  color: "white",
+                  bgcolor: "transparent",
+                  fontWeight: 500,
+                  fontSize: "1rem",
+                  letterSpacing: 0.5,
+                  borderRadius: "6px",
+                  px: 1.5,
+                  py: 0.5,
+                  "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+                }}
+              >
+                HR Expense Approval
+              </Button>) : (null)}
+
+
+            {((user?.department === "Accounts" &&
+              (user?.name === "Deepak Kumar Maurya" ||
+                user?.name === "Gagan Tayal" ||
+                user?.name === "Ajay Singh" ||
+                user?.name === "Sachin Raghav" ||
+                user?.name === "Anamika Poonia" ||
+                user?.name === "Meena Verma" ||
+                user?.name === "Kailash Chand" ||
+                user?.name === "Chandan Singh")) ||
+              user?.name === "IT Team" ||
+              (user?.department === "Accounts" &&
+                user?.name === "Sujan Maharjan" ||
+                user?.name === "Guddu Rani Dubey" ||
+                user?.name === "Varun Mishra" ||
+                user?.name === "Prachi Singh") ||
+              user?.department === "admin"
+            ) ? (<Button
+              size="sm"
+              onClick={() => navigate(`/expense_accounts`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              Account Expense Approval
+            </Button>) : (null)}
+
+          </Box>
+        </MainHeader>
+
+        <SubHeader title="Dashboard" isBackEnabled={false} sticky>
+          <Box display="flex" gap={1} alignItems="center">
+            <Button
               color="primary"
-              
               size="sm"
               onClick={() => navigate("/add_expense")}
             >
               Add Expense +
-            </Button> 
-              {/* <Button
-                color="primary"
-                startDecorator={<DownloadRoundedIcon />}
-                size="sm"
-                onClick={handleExportToCSV} 
-              >
-                Export to CSV
-              </Button> */}
-            </Box>
-             
+            </Button>
           </Box>
+
+          <Filter
+            open={open}
+            onOpenChange={setOpen}
+            title="Filters"
+            fields={fields}
+            onApply={(values) => {
+              setDepartment(values?.department || "");
+
+              setOpen(false);
+            }}
+            onReset={() => {
+              setDepartment("");
+              setOpen(false);
+            }}
+          />
+        </SubHeader>
+        <Box
+          component="main"
+          className="MainContent"
+          sx={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            gap: 1,
+            mt: "108px",
+            p: "16px",
+            px: "24px",
+          }}
+        >
           <AllExpense />
-          {/* <OrderTable /> */}
-          {/* <OrderList /> */}
         </Box>
       </Box>
     </CssVarsProvider>

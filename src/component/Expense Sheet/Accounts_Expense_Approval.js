@@ -33,10 +33,7 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedExpenses, setSelectedExpenses] = useState([]);
-  const [selectedDepartment, setSelectedDepartment] = useState("");
-  const [selectedstatus, setSelectedstatus] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+
 
   // ---- helper: merge update to URL params (preserve others) ----
   const updateParams = (patch) => {
@@ -48,26 +45,20 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
     setSearchParams(next);
   };
 
-  // ---- read values from URL and sync local state (on back/forward or manual edits) ----
+  const selectedDepartment = searchParams.get("department") || "";
+  const selectedStatus = searchParams.get("status") || "";
+  const from = searchParams.get("from") || "";
+  const to = searchParams.get("to") || "";
+
   useEffect(() => {
-    const pageParam = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const pageParam = Math.max(
+      1,
+      parseInt(searchParams.get("page") || "1", 10)
+    );
     if (pageParam !== currentPage) setCurrentPage(pageParam);
 
     const qParam = searchParams.get("q") || "";
     if (qParam !== searchQuery) setSearchQuery(qParam);
-
-    const deptParam = searchParams.get("department") || "";
-    if (deptParam !== selectedDepartment) setSelectedDepartment(deptParam);
-
-    const statusParam = searchParams.get("status") || "";
-    if (statusParam !== selectedstatus) setSelectedstatus(statusParam);
-
-    const fromParam = searchParams.get("from") || "";
-    if (fromParam !== from) setFrom(fromParam);
-
-    const toParam = searchParams.get("to") || "";
-    if (toParam !== to) setTo(toParam);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   // ---- push search to URL (debounced) ----
@@ -84,119 +75,20 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
 
   const searchParam = searchQuery;
 
-  const { data: getExpense = [], isLoading } = useGetAllExpenseQuery({
-    page: currentPage,
-    department: selectedDepartment,
-    search: searchParam,
-    status: selectedstatus,
-    from,
-    to,
-  });
+  const queryArgs = useMemo(
+    () => ({
+      page: currentPage,
+      department: selectedDepartment,
+      search: searchParam,
+      status: selectedStatus,
+      from,
+      to,
+    }),
+    [currentPage, selectedDepartment, searchParam, selectedStatus, from, to]
+  );
 
-  const renderFilters = () => {
-    const departments = [
-      "Accounts",
-      "HR",
-      "Engineering",
-      "Projects",
-      "Infra",
-      "CAM",
-      "Internal",
-      "SCM",
-      "IT Team",
-      "BD",
-    ];
+  const { data: getExpense = [], isLoading } = useGetAllExpenseQuery(queryArgs);
 
-    const statuses = [
-      // { value: "draft", label: "Draft" },
-      { value: "submitted", label: "Pending" },
-      { value: "manager approval", label: "Manager Approved" },
-      { value: "hr approval", label: "HR Approved" },
-      { value: "final approval", label: "Approved" },
-      { value: "hold", label: "On Hold" },
-      { value: "rejected", label: "Rejected" },
-    ];
-
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 2,
-          alignItems: "center",
-          mb: 2,
-        }}
-      >
-        <FormControl sx={{ minWidth: 180 }} size="sm">
-          <FormLabel>Department</FormLabel>
-          <Select
-            value={selectedDepartment}
-            onChange={(e, newValue) => {
-              setSelectedDepartment(newValue);
-              setCurrentPage(1);
-              updateParams({ department: newValue ?? "", page: 1 });
-            }}
-            size="sm"
-            placeholder="Select Department"
-          >
-            <Option value="">All Departments</Option>
-            {departments.map((dept) => (
-              <Option key={dept} value={dept}>
-                {dept}
-              </Option>
-            ))}
-          </Select>
-        </FormControl>
-
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Status</FormLabel>
-          <Select
-            value={selectedstatus}
-            onChange={(e, newValue) => {
-              setSelectedstatus(newValue);
-              setCurrentPage(1);
-              updateParams({ status: newValue ?? "", page: 1 });
-            }}
-            size="sm"
-            placeholder="Select Status"
-          >
-            <Option value="">All Status</Option>
-            {statuses.map((status) => (
-              <Option key={status.value} value={status.value}>
-                {status.label}
-              </Option>
-            ))}
-          </Select>
-        </FormControl>
-
-        <FormControl size="sm" sx={{ minWidth: 140 }}>
-          <FormLabel>From Date</FormLabel>
-          <Input
-            type="date"
-            value={from}
-            onChange={(e) => {
-              setFrom(e.target.value);
-              setCurrentPage(1);
-              updateParams({ from: e.target.value, page: 1 });
-            }}
-          />
-        </FormControl>
-
-        <FormControl size="sm" sx={{ minWidth: 140 }}>
-          <FormLabel>To Date</FormLabel>
-          <Input
-            type="date"
-            value={to}
-            onChange={(e) => {
-              setTo(e.target.value);
-              setCurrentPage(1);
-              updateParams({ to: e.target.value, page: 1 });
-            }}
-          />
-        </FormControl>
-      </Box>
-    );
-  };
 
   const total = getExpense?.total || 0;
   const limit = getExpense?.limit || 10;
@@ -224,21 +116,15 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
     return pages;
   };
 
-  const expenses = useMemo(
-    () => (Array.isArray(getExpense?.data) ? getExpense.data : []),
-    [getExpense]
-  );
 
   const handleSelectAll = (event) => {
-    const ids = paginatedExpenses.map((row) => row._id);
+    const ids = paginatedExpenses?.map((row) => row._id);
 
     if (event.target.checked) {
       setSelectedExpenses((prevSelected) => [
         ...new Set([...prevSelected, ...ids]),
       ]);
-      setSheetIds((prevSheetIds) => [
-        ...new Set([...prevSheetIds, ...ids]),
-      ]);
+      setSheetIds((prevSheetIds) => [...new Set([...prevSheetIds, ...ids])]);
     } else {
       setSelectedExpenses((prevSelected) =>
         prevSelected.filter((id) => !ids.includes(id))
@@ -263,50 +149,26 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
     setSearchQuery(query.toLowerCase());
   };
 
-  const ExpenseCode = ({ currentPage, expense_code, createdAt }) => {
-    const formattedDate = createdAt
-      ? new Date(createdAt).toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        })
-      : "N/A";
-    return (
-      <>
-        <Box>
-          <span
-            style={{ cursor: "pointer", fontWeight: 500 }}
-            onClick={() => {
-              localStorage.setItem("edit_expense", expense_code);
-              navigate(
-                `/update_expense?page=${currentPage}&code=${expense_code}`
-              );
-            }}
-          >
-            {expense_code || "-"}
-          </span>
-        </Box>
-        <Box display="flex" alignItems="center" mt={0.5}>
-          <Calendar size={12} />
-          <span style={{ fontSize: 12, fontWeight: 600 }}>
-            Created At:{" "}
-          </span>{" "}
-          &nbsp;
-          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-            {formattedDate}
-          </Typography>
-        </Box>
-      </>
-    );
-  };
-
+  const dateFormate = (createdAt) => {
+    return createdAt ? new Date(createdAt).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }) : "N/A"
+  }
   // keep this effect: state already synced above, but harmless
   useEffect(() => {
     const page = parseInt(searchParams.get("page")) || 1;
     setCurrentPage(page);
   }, [searchParams]);
 
-  const paginatedExpenses = expenses;
+  // const paginatedExpenses = expenses;
+  const [paginatedExpenses, setPaginatedExpense] = useState([]);
+
+
+  useEffect(() => {
+    setPaginatedExpense(getExpense?.data)
+  }, [getExpense])
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
@@ -316,33 +178,41 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
   };
 
   return (
-    <>
+    <Box
+      sx={{
+        ml: { lg: "var(--Sidebar-width)" },
+        px: "0px",
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+      }}
+    >
       {/* Tablet and Up Filters */}
       <Box
-        className="SearchAndFilters-tabletUp"
-        sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          borderRadius: "sm",
-          py: 2,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1.5,
-          "& > *": {
-            minWidth: { xs: "120px", md: "160px" },
-          },
-        }}
+        display="flex"
+        justifyContent="flex-end"
+        alignItems="center"
+        pb={0.5}
+        flexWrap="wrap"
+        gap={1}
       >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search</FormLabel>
-          <Input
-            size="sm"
-            placeholder="Search by Exp. Code, Emp. Code, Emp. Name, or Status"
-            startDecorator={<SearchIcon />}
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-        </FormControl>
-        {renderFilters()}
+        <Box
+          sx={{
+            py: 1,
+            display: "flex",
+            alignItems: "flex-end",
+            gap: 1.5,
+            width: { xs: "100%", md: "50%" },
+          }}
+        >
+          <FormControl sx={{ flex: 1 }} size="sm">
+            <Input
+              size="sm"
+              placeholder="Search by Exp. Code, Emp. Code, Emp. Name, or Status"
+              startDecorator={<SearchIcon />}
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+          </FormControl>
+        </Box>
       </Box>
 
       {/* Table */}
@@ -350,14 +220,11 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
         className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: "flex",
+          display: { xs: "none", sm: "block" },
           width: "100%",
           borderRadius: "sm",
-          flexShrink: 1,
+          maxHeight: { xs: "66vh", xl: "75vh" },
           overflow: "auto",
-          minHeight: 0,
-          marginLeft: { xl: "15%", lg: "18%" },
-          maxWidth: { lg: "85%", sm: "100%" },
         }}
       >
         <Box
@@ -377,16 +244,16 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
                 <Checkbox
                   size="sm"
                   checked={
-                    paginatedExpenses.length > 0 &&
-                    paginatedExpenses.every((expense) =>
+                    paginatedExpenses?.length > 0 &&
+                    paginatedExpenses?.every((expense) =>
                       selectedExpenses.includes(expense._id)
                     )
                   }
                   indeterminate={
-                    paginatedExpenses.some((expense) =>
+                    paginatedExpenses?.some((expense) =>
                       selectedExpenses.includes(expense._id)
                     ) &&
-                    !paginatedExpenses.every((expense) =>
+                    !paginatedExpenses?.every((expense) =>
                       selectedExpenses.includes(expense._id)
                     )
                   }
@@ -445,8 +312,8 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
                   </Box>
                 </Box>
               </Box>
-            ) : paginatedExpenses.length > 0 ? (
-              paginatedExpenses.map((expense, index) => (
+            ) : paginatedExpenses?.length > 0 ? (
+              paginatedExpenses?.map((expense, index) => (
                 <Box
                   component="tr"
                   key={index}
@@ -478,11 +345,29 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
                     }}
                   >
                     <Box sx={{ fontSize: 15 }}>
-                      <ExpenseCode
-                        currentPage={currentPage}
-                        expense_code={expense.expense_code}
-                        createdAt={expense.createdAt}
-                      />
+                      <Box>
+                        <span
+                          style={{ cursor: "pointer", fontWeight: 500 }}
+                          onClick={() => {
+                            localStorage.setItem("edit_expense", expense?.expense_code);
+                            navigate(
+                              `/update_expense?page=${currentPage}&code=${expense?.expense_code}`
+                            );
+                          }}
+                        >
+                          {expense.expense_code || "-"}
+                        </span>
+                      </Box>
+                      <Box display="flex" alignItems="center" mt={0.5}>
+                        <Calendar size={12} />
+                        <span style={{ fontSize: 12, fontWeight: 600 }}>
+                          Created At:{" "}
+                        </span>{" "}
+                        &nbsp;
+                        <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+                          {dateFormate(expense.createdAt)}
+                        </Typography>
+                      </Box>
                     </Box>
                   </Box>
                   <Box
@@ -553,8 +438,8 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
                   >
                     {expense.disbursement_date
                       ? new Date(expense.disbursement_date).toLocaleDateString(
-                          "en-GB"
-                        )
+                        "en-GB"
+                      )
                       : "-"}
                   </Box>
 
@@ -619,11 +504,7 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
                               title={remarks || "Remarks not found"}
                               arrow
                             >
-                              <IconButton
-                                size="sm"
-                               
-                                color="danger"
-                              >
+                              <IconButton size="sm" color="danger">
                                 <InfoIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
@@ -676,13 +557,12 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
       <Box
         className="Pagination-laptopUp"
         sx={{
-          pt: 2,
+          pt: 1,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
-          flexDirection: { xs: "column", md: "row" },
-          marginLeft: { xl: "15%", lg: "18%" },
         }}
       >
         <Button
@@ -733,7 +613,7 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
           Next
         </Button>
       </Box>
-    </>
+    </Box>
   );
 });
 export default AccountsExpense;

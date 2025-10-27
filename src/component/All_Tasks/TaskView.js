@@ -342,8 +342,8 @@ export default function Dash_task({
     } catch (e) {
       setStatusError(
         e?.data?.message ||
-          e?.error ||
-          "Failed to update status. Please try again."
+        e?.error ||
+        "Failed to update status. Please try again."
       );
     }
   };
@@ -352,12 +352,12 @@ export default function Dash_task({
     st === "draft"
       ? "primary"
       : st === "pending"
-      ? "danger"
-      : st === "in progress"
-      ? "warning"
-      : st === "completed"
-      ? "success"
-      : "neutral";
+        ? "danger"
+        : st === "in progress"
+          ? "warning"
+          : st === "completed"
+            ? "success"
+            : "neutral";
 
   return (
     <Box
@@ -396,26 +396,26 @@ export default function Dash_task({
           }}
         >
           <TabList sx={{ gap: 1 }}>
-  {["Auto Tasks", "Pending", "In Progress", "Completed", "Cancelled", "All"].map(
-    (label) => (
-      <Tab
-        key={label}
-        value={label}
-        disableIndicator
-        sx={{
-          borderRadius: "xl",
-          fontWeight: "md",
-          "&.Mui-selected": {
-            bgcolor: "background.surface",
-            boxShadow: "sm",
-          },
-        }}
-      >
-        {label}
-      </Tab>
-    )
-  )}
-</TabList>
+            {["Auto Tasks", "Pending", "In Progress", "Completed", "Cancelled", "All"].map(
+              (label) => (
+                <Tab
+                  key={label}
+                  value={label}
+                  disableIndicator
+                  sx={{
+                    borderRadius: "xl",
+                    fontWeight: "md",
+                    "&.Mui-selected": {
+                      bgcolor: "background.surface",
+                      boxShadow: "sm",
+                    },
+                  }}
+                >
+                  {label}
+                </Tab>
+              )
+            )}
+          </TabList>
         </Tabs>
 
         <Box
@@ -495,8 +495,8 @@ export default function Dash_task({
                           prev === "asc"
                             ? "desc"
                             : prev === "desc"
-                            ? null
-                            : "asc"
+                              ? null
+                              : "asc"
                         )
                       }
                     >
@@ -578,9 +578,9 @@ export default function Dash_task({
 
                 const completedFromHistory = Array.isArray(task?.status_history)
                   ? task.status_history
-                      .slice()
-                      .reverse()
-                      .find((s) => s?.status === "completed")
+                    .slice()
+                    .reverse()
+                    .find((s) => s?.status === "completed")
                   : null;
 
                 const currentIsCompleted =
@@ -594,9 +594,9 @@ export default function Dash_task({
                 // 🔸 NEW: locate cancellation timestamp
                 const cancelledFromHistory = Array.isArray(task?.status_history)
                   ? task.status_history
-                      .slice()
-                      .reverse()
-                      .find((s) => s?.status === "cancelled")
+                    .slice()
+                    .reverse()
+                    .find((s) => s?.status === "cancelled")
                   : null;
 
                 const currentIsCancelled =
@@ -730,12 +730,12 @@ export default function Dash_task({
                         Created At:{" "}
                         {task.createdAt
                           ? new Date(task.createdAt).toLocaleString("en-IN", {
-                              year: "numeric",
-                              month: "2-digit",
-                              day: "2-digit",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
                           : "-"}
                       </Typography>
                     </td>
@@ -792,13 +792,13 @@ export default function Dash_task({
                         Deadline:{" "}
                         {task.deadline
                           ? new Date(task.deadline).toLocaleString("en-GB", {
-                              day: "2-digit",
-                              month: "2-digit",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                              hour12: true,
-                            })
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true,
+                          })
                           : "-"}
                       </Typography>
 
@@ -1215,7 +1215,7 @@ export default function Dash_task({
                       >
                         {task.current_status?.status
                           ? task.current_status.status.charAt(0).toUpperCase() +
-                            task.current_status.status.slice(1)
+                          task.current_status.status.slice(1)
                           : "-"}
                       </Chip>
                     </td>
