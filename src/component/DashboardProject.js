@@ -152,10 +152,10 @@ function Dash_project({ projectIds }) {
   } = useGetProjectStatusFilterQuery();
   const stats = statusData?.data || {
     completed: 0,
-    cancelled: 0,
+    delayed: 0,
     "to be started": 0,
     delayed: 0,
-    pending: 0,
+    "on hold": 0,
   };
 
   /* ---------- Multi selection ---------- */
@@ -586,7 +586,7 @@ function Dash_project({ projectIds }) {
         <Grid xs={12} md={3}>
           <CloudStatCard
             loading={isLoading || isFetching}
-            value={stats.cancelled ?? 0}
+            value={stats["on hold"] ?? 0}
             title="On Hold Projects"
             subtitle="Tasks cancelled"
             accent="#fca5a5"
