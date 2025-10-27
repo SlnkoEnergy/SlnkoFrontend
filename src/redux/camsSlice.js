@@ -260,9 +260,10 @@ export const camsApi = createApi({
       }),
     }),
     generateScopePdf: builder.mutation({
-      query: ({ project_id, view, format }) => ({
+      query: ({ project_id, view, format, columns}) => ({
         url: `scope/scope-pdf?project_id=${project_id}&view=${view}&format=${format}`,
-        method: "GET",
+        method: "POST",
+        body: {columns},
         responseHandler: (response) => response.blob(),
       }),
     }),

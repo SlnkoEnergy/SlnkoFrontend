@@ -41,7 +41,7 @@ import {
 } from "../redux/camsSlice";
 import { toast } from "react-toastify";
 
-// ---------------- helpers ----------------
+/* ---------------- helpers ---------------- */
 const titlePreserveAcronyms = (s) => {
   if (!s && s !== 0) return "";
   return String(s)
@@ -76,7 +76,34 @@ const formatDate = (value) => {
   return `${pad2(d.getDate())}-${pad2(d.getMonth() + 1)}-${d.getFullYear()}`;
 };
 
-// -------------- component ----------------
+/* ---------------- column options for PDF ---------------- */
+// Keys must match server COLUMN_REGISTRY keys.
+const COLUMN_OPTIONS = [
+  { key: "type", label: "Type" },
+  { key: "scope", label: "Scope" },
+  { key: "quantity", label: "Qty" },
+  { key: "uom", label: "UoM" },
+  { key: "commitment_date", label: "Commitment Date" },
+  { key: "po_number", label: "PO Number" },
+  { key: "po_status", label: "PO Status" },
+  { key: "po_date", label: "PO Date" },
+  { key: "etd", label: "ETD" },
+  { key: "delivered_date", label: "Delivered Date" },
+];
+
+// Server-side default set (matches what we configured on backend)
+const DEFAULT_COL_KEYS = [
+  "type",
+  "scope",
+  "commitment_date",
+  "po_number",
+  "po_status",
+  "po_date",
+  "etd",
+  "delivered_date",
+];
+
+/* ---------------- component ---------------- */
 const ScopeDetail = ({ project_id, project_code }) => {
   const {
     data: getScope,
@@ -107,6 +134,9 @@ const ScopeDetail = ({ project_id, project_code }) => {
   // PDF menu state
   const [view, setView] = useState("portrait");
   const [format, setFormat] = useState("A4");
+
+  // NEW: PDF column selection state
+  const [selectedCols, setSelectedCols] = useState(new Set(DEFAULT_COL_KEYS));
 
   const rawStatus = getScope?.data?.current_status?.status || "";
   const statusPretty = prettyStatus(rawStatus);
@@ -185,14 +215,37 @@ const ScopeDetail = ({ project_id, project_code }) => {
     }
   };
 
+  // NEW: toggle column checkbox
+  const toggleColumn = (key) => {
+    setSelectedCols((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  // NEW: reset columns to defaults
+  const resetColumns = () => setSelectedCols(new Set(DEFAULT_COL_KEYS));
+
   const handleDownloadPdf = async (v = view, f = format) => {
     try {
       setDownloading(true);
+
+      // Build columns payload the server expects: [{key, label}]
+      const selected = Array.from(selectedCols);
+      const columns = selected.map((key) => {
+        const opt = COLUMN_OPTIONS.find((c) => c.key === key);
+        return { key, label: opt?.label || key };
+      });
+
       const blob = await generateScopePdf({
         project_id,
         view: v,
         format: f,
+        columns, 
       }).unwrap();
+
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -230,29 +283,6 @@ const ScopeDetail = ({ project_id, project_code }) => {
   };
   const onEditDraftChange = (field, value) => {
     setEditDraft((p) => ({ ...p, [field]: value }));
-  };
-
-  const saveEdit = async () => {
-    const date = (editDraft.date || "").trim?.() || editDraft.date;
-    const remarks = (editDraft.remarks || "").trim();
-    if (!editItem) return;
-    if (!date || !remarks) {
-      toast.error("Please enter both date and remarks.");
-      return;
-    }
-    try {
-      await doUpdateCommitmentDate({
-        id: getScope?.data?._id,
-        item_id: editItem.item_id,
-        date,
-        remarks,
-      }).unwrap();
-      toast.success("Commitment date saved.");
-      closeEdit();
-      await refetch();
-    } catch {
-      toast.error("Failed to save commitment date.");
-    }
   };
 
   if (isLoading) return <Typography>Loading...</Typography>;
@@ -525,6 +555,29 @@ const ScopeDetail = ({ project_id, project_code }) => {
     </Box>
   );
 
+  const saveEdit = async () => {
+    const date = (editDraft.date || "").trim?.() || editDraft.date;
+    const remarks = (editDraft.remarks || "").trim();
+    if (!editItem) return;
+    if (!date || !remarks) {
+      toast.error("Please enter both date and remarks.");
+      return;
+    }
+    try {
+      await doUpdateCommitmentDate({
+        id: getScope?.data?._id,
+        item_id: editItem.item_id,
+        date,
+        remarks,
+      }).unwrap();
+      toast.success("Commitment date saved.");
+      closeEdit();
+      await refetch();
+    } catch {
+      toast.error("Failed to save commitment date.");
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -565,7 +618,7 @@ const ScopeDetail = ({ project_id, project_code }) => {
           </Menu>
         </Box>
 
-        {/* Right actions: single PDF menu button */}
+        {/* Right actions: PDF menu button */}
         <Box width={"full"} display="flex" justifyContent="flex-end">
           {rawStatus?.toLowerCase() === "closed" && (
             <Dropdown>
@@ -584,7 +637,8 @@ const ScopeDetail = ({ project_id, project_code }) => {
                 {downloading ? "Downloading..." : "PDF"}
               </MenuButton>
 
-              <Menu placement="bottom-end" sx={{ p: 1, width: 300 }}>
+              <Menu placement="bottom-end" sx={{ p: 1, width: 360 }}>
+                {/* View */}
                 <FormControl size="sm" sx={{ px: 1, py: 0.5 }}>
                   <FormLabel>View</FormLabel>
                   <RadioGroup
@@ -599,7 +653,7 @@ const ScopeDetail = ({ project_id, project_code }) => {
 
                 <ListDivider />
 
-                {/* Format as radios to avoid Select-in-Menu popper issues */}
+                {/* Format */}
                 <FormControl size="sm" sx={{ px: 1, py: 0.5 }}>
                   <FormLabel>Format</FormLabel>
                   <RadioGroup
@@ -620,6 +674,42 @@ const ScopeDetail = ({ project_id, project_code }) => {
                     ))}
                   </RadioGroup>
                 </FormControl>
+
+                <ListDivider />
+
+                {/* NEW: Columns */}
+                <Box sx={{ px: 1, py: 0.5 }}>
+                  <FormLabel sx={{ mb: 0.5 }}>
+                    Columns ({selectedCols.size})
+                  </FormLabel>
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                      gap: 0.5,
+                      maxHeight: 220,
+                      overflow: "auto",
+                      pr: 0.5,
+                    }}
+                  >
+                    {COLUMN_OPTIONS.map((c) => (
+                      <Checkbox
+                        key={c.key}
+                        label={c.label}
+                        checked={selectedCols.has(c.key)}
+                        onChange={() => toggleColumn(c.key)}
+                        size="sm"
+                        variant="outlined"
+                      />
+                    ))}
+                  </Box>
+
+                  <Stack direction="row" spacing={1} mt={1}>
+                    <Button size="sm" variant="plain" onClick={resetColumns}>
+                      Reset to defaults
+                    </Button>
+                  </Stack>
+                </Box>
 
                 <ListDivider />
 
@@ -650,7 +740,7 @@ const ScopeDetail = ({ project_id, project_code }) => {
         <Box>{isOpen && <Button onClick={handleSubmit}>Submit</Button>}</Box>
       </Box>
 
-      {/* EDIT MODAL (Pencil) */}
+      {/* EDIT MODAL */}
       <Modal open={editOpen} onClose={closeEdit}>
         <ModalDialog sx={{ minWidth: 520 }}>
           <Typography level="title-lg" mb={1.5}>
@@ -720,7 +810,7 @@ const ScopeDetail = ({ project_id, project_code }) => {
         </ModalDialog>
       </Modal>
 
-      {/* HISTORY MODAL (Eye) */}
+      {/* HISTORY MODAL */}
       <Modal open={historyOpen} onClose={closeHistory}>
         <ModalDialog sx={{ minWidth: 560 }}>
           <Typography level="title-lg">
