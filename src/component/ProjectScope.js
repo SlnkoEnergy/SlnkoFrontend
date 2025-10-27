@@ -43,6 +43,10 @@ function Project_Scope({ selected, setSelected }) {
   const etd_date_to = searchParams.get("etdTo") || "";
   const po_date_from = searchParams.get("poDateFrom") || "";
   const po_date_to = searchParams.get("poDateTo") || "";
+  const project_status = searchParams.get("project_status") || "";
+  const commitment_date_from = searchParams.get("commitment_date_from") || "";
+  const commitment_date_to = searchParams.get("commitment_date_to") || "";
+  
 
   const {
     data: scopeData = {},
@@ -64,6 +68,9 @@ function Project_Scope({ selected, setSelected }) {
     etd_to: etd_date_to,
     po_date_from: po_date_from,
     po_date_to: po_date_to,
+    project_status: project_status,
+    current_commitment_date_from: commitment_date_from,
+    current_commitment_date_to: commitment_date_to
   });
 
   const rows = scopeData?.data || [];
@@ -99,18 +106,15 @@ function Project_Scope({ selected, setSelected }) {
   // --- checkbox logic ---
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelected(rows.map((row) => row._id)); // Store the _id of all rows
+      setSelected(rows.map((row) => row._id));
     } else {
-      setSelected([]); // Deselect all
+      setSelected([]);
     }
   };
 
   const handleRowSelect = (id) => {
-    setSelected(
-      (prev) =>
-        prev.includes(id)
-          ? prev.filter((itemId) => itemId !== id) // Remove _id if already selected
-          : [...prev, id] // Add _id to selected
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id]
     );
   };
 
@@ -157,7 +161,7 @@ function Project_Scope({ selected, setSelected }) {
         ml: { lg: "var(--Sidebar-width)" },
         width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
         px: 0,
-        overflowX: "hidden", // prevent entire UI from scrolling horizontally
+        overflowX: "hidden",
       }}
     >
       {/* Header + Search */}
@@ -186,8 +190,8 @@ function Project_Scope({ selected, setSelected }) {
           width: "100%",
           borderRadius: "sm",
           maxHeight: "68vh",
-          overflowY: "auto", // vertical scroll
-          overflowX: "auto", // 👈 horizontal scroll only INSIDE the table container
+          overflowY: "auto",
+          overflowX: "auto",
         }}
       >
         <Box
@@ -196,7 +200,7 @@ function Project_Scope({ selected, setSelected }) {
             width: "100%",
             borderCollapse: "collapse",
             fontSize: "14px",
-            minWidth: 1400, // 👈 force a min width so horizontal scroll appears here
+            minWidth: 1400,
           }}
         >
           <thead>
@@ -229,10 +233,11 @@ function Project_Scope({ selected, setSelected }) {
                 "Project Name",
                 "Project Group",
                 "State",
-                "kWp / DC",
+                "Capacity(AC/DC KWp)",
                 "CAM Person",
-                "Item Name",
+                "Category Name",
                 "Scope",
+                "Commitment Date",
                 "PO Number(s)",
                 "PO Status",
                 "PO Date",
@@ -250,7 +255,6 @@ function Project_Scope({ selected, setSelected }) {
                     padding: "8px",
                     textAlign: "left",
                     fontWeight: "bold",
-                    whiteSpace: "nowrap",
                   }}
                 >
                   {header}
@@ -330,6 +334,9 @@ function Project_Scope({ selected, setSelected }) {
                       >
                         {scopeObj.label}
                       </Chip>
+                    </td>
+                    <td style={{ padding: "8px" }}>
+                      {formatDate(row.commitment_date)}
                     </td>
                     <td style={{ padding: "8px" }}>{row.po_number}</td>
                     <td style={{ padding: "8px" }}>

@@ -74,7 +74,6 @@ const canUserSeePO = (user) => {
   return privileged || dept !== "Engineering";
 };
 
-
 const canUserSeeHandover = (user) => {
   if (!user) return false;
   const role = String(user.role || "").toLowerCase();
@@ -552,7 +551,7 @@ export default function Project_Detail() {
               <TabList>
                 <Tab value="notes">Notes</Tab>
                 {allowedHandover && <Tab value="handover">Handover Sheet</Tab>}
-                <Tab value="scope">Scope</Tab>
+                <Tab value="scope">Material Status</Tab>
                 {allowedPO && <Tab value="po">Purchase Order</Tab>}
                 <Tab value="eng">Engineering</Tab>
               </TabList>

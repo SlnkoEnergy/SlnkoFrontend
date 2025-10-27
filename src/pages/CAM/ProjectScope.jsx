@@ -4,7 +4,14 @@ import { CssVarsProvider } from "@mui/joy/styles";
 import { useEffect, useMemo, useState } from "react";
 import Sidebar from "../../component/Partials/Sidebar";
 import MainHeader from "../../component/Partials/MainHeader";
-import { Button, CircularProgress } from "@mui/joy";
+import {
+  Button,
+  Dropdown,
+  ListDivider,
+  Menu,
+  MenuButton,
+  MenuItem,
+} from "@mui/joy";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import SubHeader from "../../component/Partials/SubHeader";
 import Project_Scope from "../../component/ProjectScope";
@@ -13,6 +20,9 @@ import { useGetAllUserQuery } from "../../redux/globalTaskSlice";
 import { useGetProjectDropdownQuery } from "../../redux/projectsSlice";
 import { useGetAllMaterialsPOQuery } from "../../redux/productsSlice";
 import { useExportScopesMutation } from "../../redux/camsSlice";
+import DownloadIcon from "@mui/icons-material/Download";
+import DoneAllIcon from "@mui/icons-material/DoneAll";
+import SelectAllIcon from "@mui/icons-material/SelectAll";
 
 function ProjectScope() {
   const [user, setUser] = useState(null);
@@ -25,7 +35,6 @@ function ProjectScope() {
   const safeMsg = String(snack?.msg ?? "");
   const isError = /^(failed|invalid|error|server)/i.test(safeMsg);
   const [exportScopes] = useExportScopesMutation();
- 
 
   const getUserData = () => {
     const userData = localStorage.getItem("userDetails");
@@ -137,6 +146,19 @@ function ProjectScope() {
         : [{ label: "No projects found", value: "" }],
     },
     {
+      key: "project_status",
+      label: "Filter by Project Status",
+      type: "select",
+      options: [
+        { label: "To Be Started", value: "to be started" },
+        { label: "Ongoing", value: "ongoing" },
+        { label: "Completed", value: "completed" },
+        { label: "On Hold", value: "on_hold" },
+        { label: "Delayed", value: "delayed" },
+        { label: "Dead", value: "dead" },
+      ],
+    },
+    {
       key: "state",
       label: "Filter by State",
       type: "select",
@@ -198,6 +220,11 @@ function ProjectScope() {
         { label: "Partially Delivered", value: "partially_delivered" },
       ],
     },
+    {
+      key: "commitment_date",
+      label: "Filter by Commitment Date",
+      type: "daterange",
+    },
     { key: "po_date", label: "Filter by PO Date", type: "daterange" },
     { key: "etd", label: "Filter by ETD Date", type: "daterange" },
     {
@@ -207,28 +234,84 @@ function ProjectScope() {
     },
   ];
 
-  const handleExport = async () => {
+  // Map UI searchParams -> API query keys
+  const buildAllExportParams = () => {
+    const params = Object.fromEntries(searchParams.entries());
+    return {
+      type: "all",
+      selected: [],
+      project_id: params.project_id || "",
+      state: params.state || "",
+      cam_person: params.cam || "",
+      po_status: params.po_status || "",
+      item_name: params.category || "",
+      scope: params.scope || "",
+      delivered_from: params.from || "",
+      delivered_to: params.to || "",
+      etd_from: params.etdFrom || "",
+      etd_to: params.etdTo || "",
+      po_date_from: params.poDateFrom || "",
+      po_date_to: params.poDateTo || "",
+      project_status: params.project_status || "",
+      current_commitment_date_from: params.commitment_date_from || "",
+      current_commitment_date_to: params.commitment_date_to || "",
+    };
+  };
+
+  const downloadBlob = (blob, filename = "scopes_export.csv") => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const handleExportSelected = async () => {
     try {
       if (!selected?.length) {
-        alert("No tasks selected for export.");
+        alert("No rows selected to export.");
         return;
       }
-      
-      const response = await exportScopes(selected).unwrap();
-      const blob = new Blob([response], { type: "text/csv" });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "scopes_export.csv";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
 
-    } catch (error) {
-      console.error("Export failed:", error);
-      alert("Failed to export Scopes to CSV.");
-      
+      const payload = {
+        type: "selected",
+        selected,
+        project_id: "",
+        state: "",
+        cam_person: "",
+        po_status: "",
+        item_name: "",
+        scope: "",
+        etd_from: "",
+        etd_to: "",
+        delivered_from: "",
+        delivered_to: "",
+        po_date_from: "",
+        po_date_to: "",
+        project_status: "",
+        current_commitment_date_from: "",
+        current_commitment_date_to: "",
+      };
+
+      const blob = await exportScopes(payload).unwrap();
+      downloadBlob(blob, "scopes_selected_export.csv");
+    } catch (err) {
+      console.error("Export (selected) failed:", err);
+      alert("Failed to export selected scopes.");
+    }
+  };
+
+  const handleExportAll = async () => {
+    try {
+      const payload = buildAllExportParams();
+      const blob = await exportScopes(payload).unwrap();
+      downloadBlob(blob, "scopes_all_export.csv");
+    } catch (err) {
+      console.error("Export (all) failed:", err);
+      alert("Failed to export all scopes.");
     }
   };
 
@@ -300,27 +383,44 @@ function ProjectScope() {
           rightSlot={
             <>
               {selected?.length > 0 && (
-                <Button
-                  variant="outlined"
-                  size="sm"
-                  onClick={handleExport}
-                  sx={{
-                    color: "#3366a3",
-                    borderColor: "#3366a3",
-                    backgroundColor: "transparent",
-                    "--Button-hoverBg": "#e0e0e0",
-                    "--Button-hoverBorderColor": "#3366a3",
-                    "&:hover": { color: "#3366a3" },
-                    height: "8px",
-                    display: "flex",
-                    alignItems: "center",
-                  }}
-                  
-                >
-                
+                <Dropdown>
+                  <MenuButton
+                    variant="outlined"
+                    size="sm"
+                    startDecorator={<DownloadIcon />}
+                    sx={{
+                      color: "#3366a3",
+                      borderColor: "#3366a3",
+                      backgroundColor: "transparent",
+                      "--Button-hoverBg": "#e0e0e0",
+                      "--Button-hoverBorderColor": "#3366a3",
+                      "&:hover": { color: "#3366a3" },
+                      height: "28px",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
                     Export
-                  
-                </Button>
+                  </MenuButton>
+                  <Menu placement="bottom-end" sx={{ minWidth: 220 }}>
+                    <MenuItem
+                      onClick={handleExportSelected}
+                      disabled={!selected?.length}
+                      sx={{ display: "flex", gap: 1, alignItems: "center" }}
+                    >
+                      <DoneAllIcon fontSize="small" />
+                      Selected ({selected?.length || 0})
+                    </MenuItem>
+                    <ListDivider />
+                    <MenuItem
+                      onClick={handleExportAll}
+                      sx={{ display: "flex", gap: 1, alignItems: "center" }}
+                    >
+                      <SelectAllIcon fontSize="small" />
+                      All (use current filters)
+                    </MenuItem>
+                  </Menu>
+                </Dropdown>
               )}
               <Filter
                 open={open}
@@ -344,6 +444,9 @@ function ProjectScope() {
                     delete merged.po_status;
                     delete merged.poDateFrom;
                     delete merged.poDateTo;
+                    delete merged.project_status;
+                    delete merged.commitment_date_from;
+                    delete merged.commitment_date_to;
 
                     const next = {
                       ...merged,
@@ -359,6 +462,9 @@ function ProjectScope() {
                       ...(values.scope && { scope: String(values.scope) }),
                       ...(values.po_status && {
                         po_status: String(values.po_status),
+                      }),
+                      ...(values.project_status && {
+                        project_status: String(values.project_status),
                       }),
                     };
 
@@ -380,6 +486,14 @@ function ProjectScope() {
                     if (values.po_date?.to)
                       next.poDateTo = String(values.po_date.to);
 
+                    if (values.commitment_date?.from)
+                      next.commitment_date_from = String(
+                        values.commitment_date.from
+                      );
+                    if (values.commitment_date?.to)
+                      next.commitment_date_to = String(
+                        values.commitment_date.to
+                      );
                     return next;
                   });
                   setOpen(false);
@@ -405,6 +519,8 @@ function ProjectScope() {
                     delete merged.po_status;
                     delete merged.poDateFrom;
                     delete merged.poDateTo;
+                    delete merged.commitment_date_from;
+                    delete merged.commitment_date_to;
 
                     return { ...merged, page: "1" };
                   });
