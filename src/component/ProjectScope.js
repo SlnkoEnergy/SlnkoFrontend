@@ -255,14 +255,7 @@ function Project_Scope({ selected, setSelected }) {
         gap={1}
         flexWrap="wrap"
       >
-        <Input
-          size="sm"
-          placeholder="Search by Project, Item..."
-          startDecorator={<SearchIcon />}
-          value={searchQuery}
-          onChange={(e) => handleSearch(e.target.value)}
-          sx={{ width: { xs: "100%", md: "50%" } }}
-        />
+       
 
         {/* Column Visibility Dropdown */}
         <Dropdown>
@@ -300,6 +293,15 @@ function Project_Scope({ selected, setSelected }) {
             ))}
           </Menu>
         </Dropdown>
+
+         <Input
+          size="sm"
+          placeholder="Search by Project, Item..."
+          startDecorator={<SearchIcon />}
+          value={searchQuery}
+          onChange={(e) => handleSearch(e.target.value)}
+          sx={{ width: { xs: "100%", md: "50%" } }}
+        />
       </Box>
 
       {/* Table */}
