@@ -6,7 +6,7 @@ import MainHeader from "../../component/Partials/MainHeader";
 import SubHeader from "../../component/Partials/SubHeader";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button, Modal, ModalDialog } from "@mui/joy";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Vendor_Detail from "../../component/ViewVendor";
 import AddVendor from "../../component/Forms/Add_Vendor";
 
@@ -17,7 +17,20 @@ function ViewVendors() {
 
   const [openAddVendorModal, setOpenAddVendorModal] = useState(false);
   const [editVendorId, setEditVendorId] = useState(null);
+  const [user, setUser] = useState(null);
 
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
   const openEditModal = () => {
     setEditVendorId(id);
     setOpenAddVendorModal(true);
@@ -113,22 +126,28 @@ function ViewVendors() {
           sticky
           rightSlot={
             <>
-              <Button
-                variant="outlined"
-                size="sm"
-                onClick={openEditModal}
-                sx={{
-                  color: "#3366a3",
-                  borderColor: "#3366a3",
-                  backgroundColor: "transparent",
-                  "--Button-hoverBg": "#e0e0e0",
-                  "--Button-hoverBorderColor": "#3366a3",
-                  "&:hover": { color: "#3366a3" },
-                  height: "8px",
-                }}
-              >
-                Edit Detail
-              </Button>
+              {(user?.name === "Guddu Rani Dubey" ||
+                user?.name === "Varun Mishra" ||
+                user?.name === "Chandan Singh" ||
+                user?.department === "superadmin" ||
+                user?.department === "admin") && (
+                <Button
+                  variant="outlined"
+                  size="sm"
+                  onClick={openEditModal}
+                  sx={{
+                    color: "#3366a3",
+                    borderColor: "#3366a3",
+                    backgroundColor: "transparent",
+                    "--Button-hoverBg": "#e0e0e0",
+                    "--Button-hoverBorderColor": "#3366a3",
+                    "&:hover": { color: "#3366a3" },
+                    height: "8px",
+                  }}
+                >
+                  Edit Detail
+                </Button>
+              )}
             </>
           }
         />
@@ -149,7 +168,6 @@ function ViewVendors() {
           <Vendor_Detail />
         </Box>
 
-        {/* Modal: opens AddVendor; if editVendorId is set, AddVendor runs in edit mode */}
         <Modal open={openAddVendorModal} onClose={closeModal}>
           <ModalDialog
             aria-labelledby="edit-vendor-modal"

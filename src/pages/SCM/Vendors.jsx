@@ -15,7 +15,7 @@ import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 function Vendors() {
   const navigate = useNavigate();
   const [openAddVendorModal, setOpenAddVendorModal] = useState(false);
-  console.log({ openAddVendorModal });
+
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />

@@ -10,9 +10,7 @@ import { Button } from "@mui/joy";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Filter from "../../component/Partials/Filter";
 
-import {
-  useGetCategoriesNameSearchQuery,
-} from "../../redux/productsSlice";
+import { useGetCategoriesNameSearchQuery } from "../../redux/productsSlice";
 
 function PurchaseRequestSheet() {
   const [user, setUser] = useState(null);
@@ -65,8 +63,8 @@ function PurchaseRequestSheet() {
 
   const { data: catInitialData } = useGetCategoriesNameSearchQuery({
     page: 1,
-    search: "",  
-    pr: false,          
+    search: "",
+    pr: false,
     projectId: projectId || "",
   });
 
@@ -129,7 +127,25 @@ function PurchaseRequestSheet() {
             >
               Handover
             </Button>
-
+            <Button
+              size="sm"
+              onClick={() => navigate(`/project_scope`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": {
+                  bgcolor: "rgba(255,255,255,0.15)",
+                },
+              }}
+            >
+              Project Scope
+            </Button>
             <Button
               size="sm"
               onClick={() => navigate(`/purchase_request`)}
