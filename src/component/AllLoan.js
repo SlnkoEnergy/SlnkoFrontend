@@ -1,10 +1,7 @@
-import EditNoteIcon from "@mui/icons-material/EditNote";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
-import LockIcon from "@mui/icons-material/Lock";
-import LockOpenIcon from "@mui/icons-material/LockOpen";
 import SearchIcon from "@mui/icons-material/Search";
-import { Chip, CircularProgress, Option, Select } from "@mui/joy";
+import { CircularProgress, Option, Select } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
@@ -14,16 +11,11 @@ import { useTheme } from "@emotion/react";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Tooltip from "@mui/joy/Tooltip";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
-import AddCircleIcon from "@mui/icons-material/AddCircle";
-import {
-  useGetHandOverQuery,
-  useUpdateHandOverMutation,
-} from "../redux/camsSlice";
-import { toast } from "react-toastify";
+import { useGetHandOverQuery } from "../redux/camsSlice";
 
 function AllLoan({ selected, setSelected }) {
   const navigate = useNavigate();
@@ -40,6 +32,7 @@ function AllLoan({ selected, setSelected }) {
   const [rowsPerPage, setRowsPerPage] = useState(
     () => Number(searchParams.get("pageSize")) || 10
   );
+
   const getStatusFilter = (tab) => {
     switch (tab) {
       case "Handover Pending":
@@ -89,6 +82,7 @@ function AllLoan({ selected, setSelected }) {
       </>
     );
   };
+
   const HandOverSheet = Array.isArray(getHandOverSheet?.data)
     ? getHandOverSheet.data.map((entry) => {
         return {
@@ -112,121 +106,8 @@ function AllLoan({ selected, setSelected }) {
     }
   }, []);
 
-  const StatusChip = ({ status, is_locked, _id, user, refetch }) => {
-    console.log("StatusChip props:", { status, is_locked, _id, user, refetch });
-
-    const [lockedState, setLockedState] = useState(
-      is_locked === "locked" || is_locked === true
-    );
-    const [updateUnlockHandoversheet, { isLoading: isUpdating }] =
-      useUpdateHandOverMutation();
-
-    const isAdmin =
-      user?.department === "admin" ||
-      user?.name === "IT Team" ||
-      ["Prachi Singh", "Sanjiv Kumar", "Sushant Ranjan Dubey"].includes(
-        user?.name
-      );
-
-    useEffect(() => {
-      setLockedState(is_locked === "locked" || is_locked === true);
-    }, [is_locked]);
-
-    const handleSubmit = useCallback(async () => {
-      console.log("Unlock button clicked");
-
-      if (!isAdmin) {
-        toast.error(
-          "Permission denied. You do not have access to perform this action.",
-          {
-            icon: "⛔",
-          }
-        );
-        return;
-      }
-
-      if (!lockedState || status !== "Approved" || isUpdating) return;
-
-      try {
-        await updateUnlockHandoversheet({ _id, is_locked: "unlock" }).unwrap();
-        toast.success("Handover sheet unlocked 🔓");
-        setLockedState(false);
-        refetch?.();
-      } catch (err) {
-        console.error("Error:", err?.data?.message || err.error);
-        toast.error("Failed to update status.");
-      }
-    }, [
-      isAdmin,
-      lockedState,
-      status,
-      isUpdating,
-      updateUnlockHandoversheet,
-      _id,
-      refetch,
-    ]);
-
-    const canUnlock =
-      isAdmin && lockedState && status === "Approved" && !isUpdating;
-    const showUnlockIcon = !lockedState && status === "Approved";
-    const showSuccessLockIcon = lockedState && status === "submitted";
-    const color = showUnlockIcon || showSuccessLockIcon ? "success" : "danger";
-    const IconComponent = showUnlockIcon ? LockOpenIcon : LockIcon;
-
-    return (
-      <Button
-        size="sm"
-        variant="soft"
-        color={color}
-        onClick={canUnlock ? handleSubmit : undefined}
-        sx={{
-          minWidth: 36,
-          height: 36,
-          padding: 0,
-          fontWeight: 500,
-          cursor: canUnlock ? "pointer" : "default",
-        }}
-      >
-        {isUpdating ? (
-          <CircularProgress size="sm" />
-        ) : (
-          <IconComponent sx={{ fontSize: "1rem" }} />
-        )}
-      </Button>
-    );
-  };
-
-  const RowMenu = ({ currentPage, p_id, _id, id }) => {
-    return (
-      <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
-        <Chip
-          variant="solid"
-          color="success"
-          label="Approved"
-          onClick={() => {
-            const page = currentPage;
-            const id = _id;
-            sessionStorage.setItem("submitInfo", id);
-            navigate(`/edit_cam_handover?page=${page}&id=${id}`);
-          }}
-          sx={{
-            textTransform: "none",
-            fontSize: "14px",
-            fontWeight: 500,
-            borderRadius: "sm",
-          }}
-          startDecorator={<EditNoteIcon />}
-        />
-      </Box>
-    );
-  };
-
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
-  };
-  const handleCreatePR = (project) => {
-    navigate(`/pr_form?mode=create&projectId=${project.project_id}`);
-    console.log({ project });
   };
 
   const filteredAndSortedData = useMemo(() => {
@@ -264,7 +145,6 @@ function AllLoan({ selected, setSelected }) {
   }, [searchParams]);
 
   const paginatedPayments = filteredAndSortedData;
-
   const draftPayments = paginatedPayments;
 
   const total = Number(getHandOverSheet?.total || 0);
@@ -286,6 +166,7 @@ function AllLoan({ selected, setSelected }) {
     "Type",
     "Capacity(AC/DC)",
     "Slnko Service Charges (with GST)",
+    "Loan Status",
   ];
 
   const totalCols = 1 + baseHeaders.length;
@@ -330,6 +211,7 @@ function AllLoan({ selected, setSelected }) {
           </FormControl>
         </Box>
       </Box>
+
       {/* Table */}
       <Sheet
         className="OrderTableContainer"
@@ -567,6 +449,7 @@ function AllLoan({ selected, setSelected }) {
           </tbody>
         </Box>
       </Sheet>
+
       {/* Pagination */}
       <Box
         className="Pagination-laptopUp"
@@ -672,4 +555,5 @@ function AllLoan({ selected, setSelected }) {
     </Box>
   );
 }
+
 export default AllLoan;

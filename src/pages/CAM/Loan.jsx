@@ -3,37 +3,24 @@ import CssBaseline from "@mui/joy/CssBaseline";
 import { CssVarsProvider } from "@mui/joy/styles";
 import { useEffect, useState } from "react";
 import Sidebar from "../../component/Partials/Sidebar";
-import Dash_cam from "../../component/CamDashboard";
 import MainHeader from "../../component/Partials/MainHeader";
-import {
-  Button,
-  DialogContent,
-  DialogTitle,
-  Modal,
-  ModalDialog,
-} from "@mui/joy";
+import { Button, ModalClose, Modal, ModalDialog, Typography } from "@mui/joy";
 import { useNavigate } from "react-router-dom";
 import SubHeader from "../../component/Partials/SubHeader";
-import { useUpdateHandoverAssigneeMutation } from "../../redux/camsSlice";
-import { useLazyGetAllUserWithPaginationQuery } from "../../redux/globalTaskSlice";
-import SearchPickerModal from "../../component/SearchPickerModal";
-import { AssignmentIndTwoTone } from "@mui/icons-material";
-import AppSnackbar from "../../component/AppSnackbar";
+import { Add, AssignmentIndTwoTone } from "@mui/icons-material";
 import AllLoan from "../../component/AllLoan";
+import AddLoan from "../../component/Forms/AddLoan";
 
 function Loan() {
   const [user, setUser] = useState(null);
   const [userModel, setUserModel] = useState(false);
-  const [confirmAssigneeOpen, setConfirmAssigneeOpen] = useState(false);
-  const [confirmSubmitting, setConfirmSubmitting] = useState(false);
-  const [pendingAssignee, setPendingAssignee] = useState(null);
-  const [pendingAssigneLabel, setPendingAssigneLabel] = useState("");
   const [selected, setSelected] = useState([]);
   const [snack, setSnack] = useState({ open: false, msg: "" });
   const navigate = useNavigate();
 
   const safeMsg = String(snack?.msg ?? "");
   const isError = /^(failed|invalid|error|server)/i.test(safeMsg);
+  const [loanModalOpen, setLoanModalOpen] = useState(false);
 
   const getUserData = () => {
     const userData = localStorage.getItem("userDetails");
@@ -157,6 +144,21 @@ function Loan() {
                   Assign Project
                 </Button>
               )}
+
+              <Button
+                variant="solid"
+                size="sm"
+                startDecorator={<Add />}
+                onClick={() => setLoanModalOpen(true)}
+                sx={{
+                  backgroundColor: "#3366a3",
+                  color: "#fff",
+                  "&:hover": { backgroundColor: "#285680" },
+                  height: "8px",
+                }}
+              >
+                Add Loan
+              </Button>
             </>
           }
         ></SubHeader>
@@ -176,6 +178,48 @@ function Loan() {
           <AllLoan selected={selected} setSelected={setSelected} />
         </Box>
       </Box>
+      <Modal
+        open={loanModalOpen}
+        onClose={() => setLoanModalOpen(false)}
+        sx={{ backdropFilter: "blur(2px)" }}
+      >
+        <ModalDialog
+          layout="center"
+          size="lg"
+          sx={{
+            p: 0,
+            borderRadius: "md",
+            overflow: "hidden",
+            bgcolor: "#fff",
+            border: "1px solid var(--joy-palette-neutral-200)",
+            width: { xs: "95vw", sm: "95vw", md: "60vw" },
+            maxHeight: "90vh",
+          }}
+        >
+          <Box
+            sx={{
+              px: 2,
+              py: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              borderBottom: "1px solid var(--joy-palette-neutral-200)",
+              bgcolor: "background.body",
+            }}
+          >
+            <Typography level="title-lg" fontWeight={700}>
+              Create Loan
+            </Typography>
+            <ModalClose variant="plain" />
+          </Box>
+
+          {/* Content: render your AddLoan form */}
+          <Box sx={{ p: 2, overflow: "auto" }}>
+            {/* Pass prefill info & onClose so the child can close modal after submit */}
+            <AddLoan />
+          </Box>
+        </ModalDialog>
+      </Modal>
     </CssVarsProvider>
   );
 }
