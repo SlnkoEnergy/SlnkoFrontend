@@ -1,15 +1,12 @@
 import { CssVarsProvider } from "@mui/joy/styles";
 import CssBaseline from "@mui/joy/CssBaseline";
 import Box from "@mui/joy/Box";
-import Breadcrumbs from "@mui/joy/Breadcrumbs";
-import Link from "@mui/joy/Link";
-import Typography from "@mui/joy/Typography";
-import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import Sidebar from "../../component/Partials/Sidebar";
-import Header from "../../component/Partials/Header";
 import { useNavigate } from "react-router-dom";
-import ProductForm from "../../component/Forms/Product_Form";
 import Purchase_Request_Form from "../../component/Forms/Purchase_Request_Form";
+import SubHeader from "../../component/Partials/SubHeader";
+import MainHeader from "../../component/Partials/MainHeader";
+import { Button } from "@mui/joy";
 
 const PurchaseRequestForm = () => {
   const navigate = useNavigate();
@@ -17,8 +14,87 @@ const PurchaseRequestForm = () => {
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
       <Box sx={{ display: "flex", minHeight: "100%" }}>
-        <Header />
         <Sidebar />
+        <MainHeader title="CAM" sticky>
+          <Box display="flex" gap={1}>
+            <Button
+              size="sm"
+              onClick={() => navigate(`/cam_dash`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              Handover
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => navigate(`/project_scope`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              Project Scope
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => navigate(`/loan`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": {
+                  bgcolor: "rgba(255,255,255,0.15)",
+                },
+              }}
+            >
+              Loan
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => navigate(`/purchase_request`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              Purchase Request
+            </Button>
+          </Box>
+        </MainHeader>
+
+        <SubHeader
+          title="Purchase Request Form"
+          isBackEnabled={false}
+          sticky
+        ></SubHeader>
         <Box
           component="main"
           className="MainContent"
@@ -26,56 +102,12 @@ const PurchaseRequestForm = () => {
             flex: 1,
             display: "flex",
             flexDirection: "column",
-            minWidth: 0,
-            height: "100dvh",
             gap: 1,
+            mt: "108px",
+            p: "16px",
+            px: "24px",
           }}
         >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              marginLeft: {
-                xs: "3vw",
-                sm: "3vw",
-                md: "3vw",
-                lg: "22vw",
-                xl: "16vw",
-              },
-              marginTop: {
-                xs: "10vh",
-                sm: "8vh",
-                md: "4vh",
-                lg: "2vh",
-                xl: "0vh",
-              },
-            }}
-          >
-            <Breadcrumbs
-              size="sm"
-              aria-label="breadcrumbs"
-              separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
-            >
-              <Link
-                underline="hover"
-                color="neutral"
-                href=""
-                sx={{ fontSize: 12, fontWeight: 500 }}
-                onClick={() => navigate("/cam_dash")}
-              >
-                CAM
-              </Link>
-              <Typography
-                color="primary"
-                sx={{ fontWeight: 500, fontSize: 12 }}
-                onClick={() => navigate("/pr_form")}
-              >
-                Purchase Request Form
-              </Typography>
-            </Breadcrumbs>
-          </Box>
-
           <Box
             sx={{
               display: "flex",

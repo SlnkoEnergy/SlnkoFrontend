@@ -19,8 +19,9 @@ import { useLazyGetAllUserWithPaginationQuery } from "../../redux/globalTaskSlic
 import SearchPickerModal from "../../component/SearchPickerModal";
 import { AssignmentIndTwoTone } from "@mui/icons-material";
 import AppSnackbar from "../../component/AppSnackbar";
+import AllLoan from "../../component/AllLoan";
 
-function Dashboard() {
+function Loan() {
   const [user, setUser] = useState(null);
   const [userModel, setUserModel] = useState(false);
   const [confirmAssigneeOpen, setConfirmAssigneeOpen] = useState(false);
@@ -45,81 +46,6 @@ function Dashboard() {
     const userData = getUserData();
     setUser(userData);
   }, []);
-
-  const onPickUser = (row) => {
-    if (!row) return;
-    setUserModel(false);
-    const userId = row._id;
-
-    setPendingAssignee(userId);
-    setPendingAssigneLabel(`${row.name}  ${row.emp_id}`);
-    setConfirmAssigneeOpen(true);
-  };
-
-  const handleConfirmAssign = async () => {
-    try {
-      setConfirmSubmitting(true);
-      await handleAssingTo({ assignee: pendingAssignee, selected });
-      setConfirmAssigneeOpen(false);
-    } catch (e) {
-    } finally {
-      setConfirmSubmitting(false);
-    }
-  };
-
-  const handleCancelAssign = () => {
-    if (confirmSubmitting) return;
-    setConfirmAssigneeOpen(false);
-  };
-
-  const userColumns = [
-    { key: "name", label: "Name", width: 240 },
-    { key: "emp_id", label: "Employee Code", width: 420 },
-  ];
-
-  const [triggerUserSearch] = useLazyGetAllUserWithPaginationQuery();
-
-  const fetchUserPage = async ({ search = "", page = 1, pageSize = 7 }) => {
-    const res = await triggerUserSearch(
-      {
-        search,
-        page,
-        limit: pageSize,
-        pr: "true",
-      },
-      true
-    );
-
-    const d = res?.data;
-    return {
-      rows: d?.data || [],
-      total: d?.pagination?.total || 0,
-      page: d?.pagination?.page || page,
-      pageSize: d?.pagination?.pageSize || pageSize,
-    };
-  };
-
-  const [updateHandoverAssignee, { isLoading: assigning }] =
-    useUpdateHandoverAssigneeMutation();
-
-  const handleAssingTo = async ({ assignee, selected }) => {
-    try {
-      if (!assignee) throw new Error("No assignee selected.");
-      if (!selected || selected.length === 0)
-        throw new Error("No rows selected to assign.");
-      const ids = selected.map((r) =>
-        typeof r === "string" ? r : r.id || r._id
-      );
-
-      const res = await updateHandoverAssignee({
-        selected: ids,
-        assignee,
-      }).unwrap();
-      setSnack({ open: true, msg: "Project Assigned Successfully" });
-    } catch (error) {
-      setSnack({ open: true, msg: "Failed to Assign Project" });
-    }
-  };
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -207,7 +133,7 @@ function Dashboard() {
           </Box>
         </MainHeader>
         <SubHeader
-          title="Handover"
+          title="Loan"
           isBackEnabled={false}
           sticky
           rightSlot={
@@ -247,76 +173,10 @@ function Dashboard() {
             px: "24px",
           }}
         >
-          <Dash_cam selected={selected} setSelected={setSelected} />
+          <AllLoan selected={selected} setSelected={setSelected} />
         </Box>
       </Box>
-
-      <SearchPickerModal
-        open={userModel}
-        onClose={() => setUserModel(false)}
-        onPick={onPickUser}
-        title="Select User"
-        columns={userColumns}
-        fetchPage={fetchUserPage}
-        searchKey="name emp_id"
-        pageSize={7}
-        backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
-      />
-
-      <Modal
-        open={confirmAssigneeOpen}
-        onClose={handleCancelAssign}
-        keepMounted
-        slotProps={{
-          backdrop: {
-            sx: {
-              backdropFilter: "blur(1px)",
-              bgcolor: "rgba(0, 0, 0, 0.08)",
-            },
-          },
-        }}
-      >
-        <ModalDialog variant="outlined" sx={{ minWidth: 600 }}>
-          <DialogTitle>Confirm Assignment</DialogTitle>
-          <DialogContent>
-            Are you sure you want to assign to{" "}
-            <b>{pendingAssigneLabel || "Selected User"}</b>
-          </DialogContent>
-
-          <Box
-            sx={{
-              display: "flex",
-              gap: 1,
-              justifyContent: "flex-end",
-              mt: 1.5,
-            }}
-          >
-            <Button
-              variant="plain"
-              onClick={handleCancelAssign}
-              disabled={confirmSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="solid"
-              color="primary"
-              onClick={handleConfirmAssign}
-              loading={confirmSubmitting}
-            >
-              Submit
-            </Button>
-          </Box>
-        </ModalDialog>
-      </Modal>
-
-      <AppSnackbar
-        color={isError ? "danger" : "success"}
-        open={!!snack.open}
-        message={safeMsg}
-        onClose={() => setSnack((s) => ({ ...s, open: false }))}
-      />
     </CssVarsProvider>
   );
 }
-export default Dashboard;
+export default Loan;
