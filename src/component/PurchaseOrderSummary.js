@@ -63,7 +63,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     project_code,
     vendor_id,
     onSelectionChange,
-    selectItem = () => {},
+    selectItem = () => { },
   } = props;
   const [po, setPO] = useState("");
   const [selectedpo, setSelectedpo] = useState("");
@@ -97,7 +97,11 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const [perPage, setPerPage] = useState(initialPageSize);
 
   const [selectedStatusFilter, setSelectedStatusFilter] = useState(""); // status filter
-  const [selecteditem, setSelecteditem] = useState(""); // category
+  // const [selecteditem, setSelecteditem] = useState(
+  //   searchParams.get("itemSearch") || ""
+  // ); // category
+  const selecteditem = searchParams.get("itemSearch") || ""
+  console.log(selecteditem);
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
 
   const projectId = project_code || "";
@@ -205,9 +209,11 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     const selectPoParam = searchParams.get("poStatus") || "";
     if (selectPoParam !== selectedpo) setSelectedpo(selectPoParam);
 
-    const selectItemParam = searchParams.get("itemSearch") || "";
-    if (selectItemParam !== selectItem) setSelecteditem(selectItemParam);
+    // const selectItemParam = searchParams.get("itemSearch") || "";
+    // if (selectItemParam !== selectItem) setSelecteditem(selectItemParam);
   }, [searchParams]);
+
+
 
   const handleCloseBulkModal = () => {
     setBulkModalOpen(false);
@@ -404,8 +410,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     const label = isFullyBilled
       ? "Fully Billed"
       : isPending
-      ? "Pending"
-      : status;
+        ? "Pending"
+        : status;
 
     const icon = isFullyBilled ? (
       <CheckRoundedIcon />
@@ -712,8 +718,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     const categories = Array.isArray(item)
       ? item.filter(Boolean).map(String)
       : item
-      ? [String(item)]
-      : [];
+        ? [String(item)]
+        : [];
 
     const onlyOther =
       categories.length === 1 && categories[0].trim().toLowerCase() === "other";
@@ -848,9 +854,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     const formattedAmount =
       billed > 0
         ? new Intl.NumberFormat("en-IN", {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-          }).format(billed)
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 2,
+        }).format(billed)
         : null;
 
     return (
@@ -1293,7 +1299,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                               0,
                               Math.floor(
                                 (new Date(po.dispatch_date) - etd) /
-                                  (1000 * 60 * 60 * 24)
+                                (1000 * 60 * 60 * 24)
                               )
                             );
                           } else if (now > etd) {
