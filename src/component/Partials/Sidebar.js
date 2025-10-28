@@ -724,7 +724,8 @@ function Sidebar() {
               "--ListItem-radius": (theme) => theme.vars.radius.sm,
             }}
           >
-            {/*BD*/}
+            {(user?.name === "Guddu Rani Dubey" || user?.name === "Prachi Singh") && (
+            
             <ListItem nested>
               <Toggler
                 renderToggle={({ open, setOpen }) => (
@@ -761,6 +762,20 @@ function Sidebar() {
                   </ListItem>
                 </List>
               </Toggler>
+            </ListItem>
+            )}
+            <ListItem>
+              <ListItemButton>
+                <MailIcon  />
+                <ListItemContent>
+                  <Typography
+                    level="title-sm"
+                    onClick={() => navigate("/email")}
+                  >
+                    Emails
+                  </Typography>
+                </ListItemContent>
+              </ListItemButton>
             </ListItem>
             <ListItem nested>
               <Toggler
@@ -816,6 +831,7 @@ function Sidebar() {
                 </List>
               </Toggler>
             </ListItem>
+
             {/* CAM */}
             <ListItem sx={{ mt: 0.5 }}>
               <ListItemButton onClick={() => navigate("/cam_dash")}>
