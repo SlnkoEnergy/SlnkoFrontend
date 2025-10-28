@@ -9,13 +9,26 @@ import { useNavigate } from "react-router-dom";
 import { Button, IconButton, Modal, ModalDialog } from "@mui/joy";
 import { Add } from "@mui/icons-material";
 import AddVendor from "../../component/Forms/Add_Vendor";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 
 function Vendors() {
   const navigate = useNavigate();
   const [openAddVendorModal, setOpenAddVendorModal] = useState(false);
+  const [user, setUser] = useState(null);
 
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -58,23 +71,28 @@ function Vendors() {
             >
               Logistics
             </Button>
-            <Button
-              size="sm"
-              onClick={() => navigate(`/vendors`)}
-              sx={{
-                color: "white",
-                bgcolor: "transparent",
-                fontWeight: 500,
-                fontSize: "1rem",
-                letterSpacing: 0.5,
-                borderRadius: "6px",
-                px: 1.5,
-                py: 0.5,
-                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
-              }}
-            >
-              Vendors
-            </Button>
+            {(user?.department === "SCM" ||
+              user?.department === "Accounts" ||
+              user?.department === "superadmin" ||
+              user?.department === "admin") && (
+              <Button
+                size="sm"
+                onClick={() => navigate(`/vendors`)}
+                sx={{
+                  color: "white",
+                  bgcolor: "transparent",
+                  fontWeight: 500,
+                  fontSize: "1rem",
+                  letterSpacing: 0.5,
+                  borderRadius: "6px",
+                  px: 1.5,
+                  py: 0.5,
+                  "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+                }}
+              >
+                Vendors
+              </Button>
+            )}
             <Button
               size="sm"
               onClick={() => navigate(`/vendor_bill`)}
