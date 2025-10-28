@@ -127,6 +127,13 @@ function DashboardSCM() {
     "Delivered",
   ];
 
+  const status = [
+    { label: "All Status", value: "" },
+    { label: "Fully Billed", value: "Fully Billed" },
+    { label: "Bill Pending", value: "Bill Pending" },
+  ];
+
+
   const fields = [
     {
       key: "Status",
@@ -138,9 +145,9 @@ function DashboardSCM() {
       key: "poStatus",
       label: "Filter By Bill Status",
       type: "select",
-      options: ["All Status", "Fully Billed", "Bill Pending"].map((d) => ({
-        label: d,
-        value: d,
+      options: status.map((d) => ({
+        label: d.label,
+        value: d.value,
       })),
     },
     {
@@ -227,27 +234,27 @@ function DashboardSCM() {
         <MainHeader title="SCM" sticky>
           <Box display="flex" gap={1}>
             {user?.name === "IT Team" ||
-            user?.department === "admin" ||
-            (user?.department === "Accounts" &&
-              (user?.name === "Deepak Kumar Maurya" ||
-                user?.name === "Gagan Tayal" ||
-                user?.name === "Ajay Singh" ||
-                user?.name === "Sachin Raghav" ||
-                user?.name === "Anamika Poonia" ||
-                user?.name === "Meena Verma" ||
-                user?.name === "Kailash Chand" ||
-                user?.name === "Chandan Singh")) ||
-            (user?.department === "Accounts" &&
-              user?.name === "Sujan Maharjan") ||
-            user?.name === "Guddu Rani Dubey" ||
-            user?.name === "Varun Mishra" ||
-            user?.name === "Prachi Singh" ||
-            user?.role === "purchase" ||
-            (user?.role === "manager" && user?.name === "Naresh Kumar") ||
-            (user?.role === "visitor" &&
-              (user?.name === "Sanjiv Kumar" ||
-                user?.name === "Sushant Ranjan Dubey")) ||
-            (user?.department === "CAM" && user?.name === "Shantanu Sameer") ? (
+              user?.department === "admin" ||
+              (user?.department === "Accounts" &&
+                (user?.name === "Deepak Kumar Maurya" ||
+                  user?.name === "Gagan Tayal" ||
+                  user?.name === "Ajay Singh" ||
+                  user?.name === "Sachin Raghav" ||
+                  user?.name === "Anamika Poonia" ||
+                  user?.name === "Meena Verma" ||
+                  user?.name === "Kailash Chand" ||
+                  user?.name === "Chandan Singh")) ||
+              (user?.department === "Accounts" &&
+                user?.name === "Sujan Maharjan") ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" && user?.name === "Naresh Kumar") ||
+              (user?.role === "visitor" &&
+                (user?.name === "Sanjiv Kumar" ||
+                  user?.name === "Sushant Ranjan Dubey")) ||
+              (user?.department === "CAM" && user?.name === "Shantanu Sameer") ? (
               <Button
                 size="sm"
                 onClick={() => navigate("/purchase-order")}
@@ -270,13 +277,13 @@ function DashboardSCM() {
             ) : null}
 
             {user?.name === "IT Team" ||
-            user?.department === "admin" ||
-            user?.name === "Guddu Rani Dubey" ||
-            user?.name === "Varun Mishra" ||
-            user?.name === "Prachi Singh" ||
-            user?.role === "purchase" ||
-            (user?.role === "manager" && user?.name === "Naresh Kumar") ||
-            user?.department === "Logistic" ? (
+              user?.department === "admin" ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" && user?.name === "Naresh Kumar") ||
+              user?.department === "Logistic" ? (
               <Button
                 size="sm"
                 onClick={() => navigate(`/logistics`)}
@@ -320,23 +327,23 @@ function DashboardSCM() {
                 </Button>
               )}
             {user?.name === "IT Team" ||
-            user?.department === "admin" ||
-            (user?.department === "Accounts" &&
-              (user?.name === "Deepak Kumar Maurya" ||
-                user?.name === "Gagan Tayal" ||
-                user?.name === "Ajay Singh" ||
-                user?.name === "Sachin Raghav" ||
-                user?.name === "Anamika Poonia" ||
-                user?.name === "Meena Verma" ||
-                user?.name === "Kailash Chand" ||
-                user?.name === "Chandan Singh")) ||
-            (user?.department === "Accounts" &&
-              user?.name === "Sujan Maharjan") ||
-            user?.name === "Guddu Rani Dubey" ||
-            user?.name === "Varun Mishra" ||
-            user?.name === "Prachi Singh" ||
-            user?.role === "purchase" ||
-            (user?.role === "manager" && user?.name === "Naresh Kumar") ? (
+              user?.department === "admin" ||
+              (user?.department === "Accounts" &&
+                (user?.name === "Deepak Kumar Maurya" ||
+                  user?.name === "Gagan Tayal" ||
+                  user?.name === "Ajay Singh" ||
+                  user?.name === "Sachin Raghav" ||
+                  user?.name === "Anamika Poonia" ||
+                  user?.name === "Meena Verma" ||
+                  user?.name === "Kailash Chand" ||
+                  user?.name === "Chandan Singh")) ||
+              (user?.department === "Accounts" &&
+                user?.name === "Sujan Maharjan") ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" && user?.name === "Naresh Kumar") ? (
               <Button
                 size="sm"
                 onClick={() => navigate(`/vendor_bill`)}
