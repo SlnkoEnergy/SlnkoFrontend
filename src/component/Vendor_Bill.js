@@ -21,14 +21,10 @@ import { useGetAllBillsQuery } from "../redux/billsSlice";
 import Axios from "../utils/Axios";
 import dayjs from "dayjs";
 
-const HEADER_STACK = 108;
-const FILTERS_APPROX = 120;
-const PADDING_FIX = 24;
 
 function VendorBillSummary() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-
 
   // search text & pagination
   const [searchQuery, setSearchQuery] = useState("");
@@ -134,8 +130,8 @@ function VendorBillSummary() {
     const rawLabel = isFullyBilled
       ? "Fully Billed"
       : isPending
-        ? `${balance} - Waiting Bills`
-        : status;
+      ? `${balance} - Waiting Bills`
+      : status;
     return (
       <Chip
         variant="soft"
@@ -430,46 +426,46 @@ function VendorBillSummary() {
                     >
                       {Array.isArray(bill.item) && bill.item.length
                         ? (() => {
-                          const unique = [
-                            ...new Set(
-                              bill.item
-                                .map((it) => it?.category_name)
-                                .filter(Boolean)
-                            ),
-                          ];
-                          const first = unique[0];
-                          const remaining = unique.slice(1);
-                          return (
-                            <>
-                              {first}
-                              {remaining.length > 0 && (
-                                <Tooltip title={remaining.join(", ")} arrow>
-                                  <Box
-                                    component="span"
-                                    sx={{
-                                      ml: 1,
-                                      px: 1,
-                                      borderRadius: "50%",
-                                      backgroundColor: "primary.solidBg",
-                                      color: "white",
-                                      fontSize: "12px",
-                                      fontWeight: 500,
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      minWidth: "22px",
-                                      height: "22px",
-                                      lineHeight: 1,
-                                      cursor: "pointer",
-                                    }}
-                                  >
-                                    +{remaining.length}
-                                  </Box>
-                                </Tooltip>
-                              )}
-                            </>
-                          );
-                        })()
+                            const unique = [
+                              ...new Set(
+                                bill.item
+                                  .map((it) => it?.category_name)
+                                  .filter(Boolean)
+                              ),
+                            ];
+                            const first = unique[0];
+                            const remaining = unique.slice(1);
+                            return (
+                              <>
+                                {first}
+                                {remaining.length > 0 && (
+                                  <Tooltip title={remaining.join(", ")} arrow>
+                                    <Box
+                                      component="span"
+                                      sx={{
+                                        ml: 1,
+                                        px: 1,
+                                        borderRadius: "50%",
+                                        backgroundColor: "primary.solidBg",
+                                        color: "white",
+                                        fontSize: "12px",
+                                        fontWeight: 500,
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        minWidth: "22px",
+                                        height: "22px",
+                                        lineHeight: 1,
+                                        cursor: "pointer",
+                                      }}
+                                    >
+                                      +{remaining.length}
+                                    </Box>
+                                  </Tooltip>
+                                )}
+                              </>
+                            );
+                          })()
                         : bill.item?.category_name || "-"}
                     </Box>
 
