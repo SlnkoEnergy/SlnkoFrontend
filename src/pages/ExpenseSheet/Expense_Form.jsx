@@ -16,17 +16,13 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import Expense_form from "../../component/Expense Sheet/Expense Form/Expense_form";
 import MainHeader from '../../component/Partials/MainHeader';
 import SubHeader from '../../component/Partials/SubHeader';
-import Filter from "../../component/Partials/Filter";
 
 function Add_Expense() {
   const navigate = useNavigate();
 
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [open, setOpen] = useState(false);
+
   const [user, setUser] = useState(null);
 
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateEnd, setDateEnd] = useState("");
 
   useEffect(() => {
     const userData = getUserData();
@@ -41,13 +37,7 @@ function Add_Expense() {
     return null;
   };
 
-  const fields = [
-    {
-      key: "dates",
-      label: "Select Expense Term",
-      type: "daterange"
-    },
-  ]
+  
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -194,23 +184,6 @@ function Add_Expense() {
           </Box>
         </MainHeader>
         <SubHeader title="Add Expense" isBackEnabled={true} sticky>
-          <Filter
-            open={open}
-            onOpenChange={setOpen}
-            title="Filters"
-            fields={fields}
-            onApply={(values) => {
-              setDateFrom(values?.dates?.from || "")
-              setDateEnd(values?.dates?.to || "");
-              setOpen(false);
-            }}
-
-            onReset={() => {
-              setDateEnd("");
-              setDateFrom("");
-              setOpen(false);
-            }}
-          />
 
         </SubHeader>
         <Box
@@ -227,8 +200,7 @@ function Add_Expense() {
           }}
         >
           <Expense_form
-            dateFrom={dateFrom}
-            dateTo={dateEnd}
+
           />
         </Box>
       </Box>
