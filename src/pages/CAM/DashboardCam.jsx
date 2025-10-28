@@ -147,7 +147,25 @@ function Dashboard() {
             >
               Handover
             </Button>
-
+            <Button
+              size="sm"
+              onClick={() => navigate(`/project_scope`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": {
+                  bgcolor: "rgba(255,255,255,0.15)",
+                },
+              }}
+            >
+              Project Scope
+            </Button>
             <Button
               size="sm"
               onClick={() => navigate(`/purchase_request`)}

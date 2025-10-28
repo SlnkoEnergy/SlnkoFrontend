@@ -31,6 +31,7 @@ import {
   useGetAllProjectsQuery,
   useUpdateProjectStatusMutation,
 } from "../redux/projectsSlice";
+import { toast } from "react-toastify";
 
 function AllProjects() {
   const navigate = useNavigate();
@@ -80,6 +81,7 @@ function AllProjects() {
     if (t === "delayed") return "delayed";
     if (t === "completed") return "completed";
     if (t === "on hold") return "on hold";
+    if(t === "dead") return "dead";
     return t;
   }, [selectedTab]);
 
@@ -169,7 +171,7 @@ function AllProjects() {
     if (s === "completed") return "success";
     if (s === "to be started") return "warning";
     if (s === "ongoing") return "primary";
-    if (s === "delayed") return "danger";
+    if (s === "dead") return "danger";
     return "neutral";
   };
 
@@ -192,6 +194,10 @@ function AllProjects() {
   const submitStatusUpdate = async () => {
     if (!statusProjectId) return;
     try {
+      if(!statusForm.remarks){
+        toast.error("Remarks is required!!");
+        return;
+      }
       await updateProjectStatus({
         projectId: statusProjectId,
         status: statusForm.status,
@@ -236,7 +242,7 @@ function AllProjects() {
             }}
             sx={{ bgcolor: "background.level1", borderRadius: "xl" }}
           >
-            <TabList sx={{ gap: 1 }}>
+            <TabList sx={{ gap: 0.5 }}>
               {[
                 "All",
                 "To Be Started",
@@ -244,6 +250,7 @@ function AllProjects() {
                 "Completed",
                 "Delayed",
                 "On Hold",
+                "Dead"
               ].map((label) => (
                 <Tab
                   key={label}
@@ -251,7 +258,7 @@ function AllProjects() {
                   disableIndicator
                   sx={{
                     borderRadius: "xl",
-                    fontWeight: "md",
+                    fontWeight: "sm",
                     "&.Mui-selected": {
                       bgcolor: "background.surface",
                       boxShadow: "sm",
@@ -639,6 +646,7 @@ function AllProjects() {
                   <Option value="completed">Completed</Option>
                   <Option value="delayed">Delayed</Option>
                   <Option value="on hold">On hold</Option>
+                  <Option value="dead">Dead</Option>
                 </Select>
               </FormControl>
 
@@ -652,7 +660,7 @@ function AllProjects() {
                   onChange={(e) =>
                     setStatusForm((f) => ({ ...f, remarks: e.target.value }))
                   }
-                  placeholder="Add remarks (optional)"
+                  placeholder="Add remarks (mandatory)"
                 />
               </FormControl>
             </Box>

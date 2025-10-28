@@ -135,8 +135,8 @@ export const productsApi = createApi({
     }),
 
     getAllMaterialsPO: builder.query({
-      query: ({ page = 1, pageSize = 10, search = "" }) =>
-        `/engineering/all-materials-po?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(
+      query: ({ page = 1, limit = 10, search = "" }) =>
+        `/engineering/all-materials-po?page=${page}&limit=${limit}&search=${encodeURIComponent(
           search
         )}`,
       providesTags: [{ type: "Categories", id: "LIST" }],

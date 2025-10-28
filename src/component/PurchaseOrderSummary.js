@@ -1443,7 +1443,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
               });
             }}
           >
-            {[10, 30, 60, 100].map((num) => (
+            {[10, 30, 60, 100, 500, 1000].map((num) => (
               <Option key={num} value={num}>
                 {num}
               </Option>

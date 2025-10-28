@@ -89,6 +89,7 @@ import Vendors from "../pages/SCM/Vendors";
 import ViewVendors from "../pages/SCM/ViewVendor";
 import Email from "../pages/Emails/Email";
 import Template from "../pages/Emails/Template";
+import ProjectScope from "../pages/CAM/ProjectScope";
 
 function index() {
   return (
@@ -676,6 +677,15 @@ function index() {
         element={
           <PrivateRoute>
             <PurchaseRequestSheet />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/project_scope"
+        element={
+          <PrivateRoute>
+            <ProjectScope />
           </PrivateRoute>
         }
       />
