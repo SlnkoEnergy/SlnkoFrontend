@@ -8,7 +8,13 @@ import { toast } from "react-toastify";
 import PurchaseOrderSummary from "../../component/PurchaseOrderSummary";
 import Filter from "../../component/Partials/Filter";
 import { useExportPosMutation } from "../../redux/purchasesSlice";
-import { Dropdown, Menu, MenuButton, MenuItem, CircularProgress } from "@mui/joy";
+import {
+  Dropdown,
+  Menu,
+  MenuButton,
+  MenuItem,
+  CircularProgress,
+} from "@mui/joy";
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
 import DownloadIcon from "@mui/icons-material/Download";
 import { useGetAllCategoriesDropdownQuery } from "../../redux/productsSlice";
@@ -65,7 +71,9 @@ function DashboardSCM() {
       // scope === "all"
       const filters = poSummaryRef.current?.getCurrentFilters?.() || {};
       const blob = await exportPos({ filters }).unwrap();
-      const fileName = `po_filtered_${new Date().toISOString().slice(0, 10)}.csv`;
+      const fileName = `po_filtered_${new Date()
+        .toISOString()
+        .slice(0, 10)}.csv`;
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -289,23 +297,28 @@ function DashboardSCM() {
                 Logistics
               </Button>
             ) : null}
-            <Button
-              size="sm"
-              onClick={() => navigate(`/vendors`)}
-              sx={{
-                color: "white",
-                bgcolor: "transparent",
-                fontWeight: 500,
-                fontSize: "1rem",
-                letterSpacing: 0.5,
-                borderRadius: "6px",
-                px: 1.5,
-                py: 0.5,
-                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
-              }}
-            >
-              Vendors
-            </Button>
+            {(user?.department === "SCM" ||
+              user?.department === "Accounts" ||
+              user?.department === "superadmin" ||
+              user?.department === "admin") && (
+                <Button
+                  size="sm"
+                  onClick={() => navigate(`/vendors`)}
+                  sx={{
+                    color: "white",
+                    bgcolor: "transparent",
+                    fontWeight: 500,
+                    fontSize: "1rem",
+                    letterSpacing: 0.5,
+                    borderRadius: "6px",
+                    px: 1.5,
+                    py: 0.5,
+                    "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+                  }}
+                >
+                  Vendors
+                </Button>
+              )}
             {user?.name === "IT Team" ||
             user?.department === "admin" ||
             (user?.department === "Accounts" &&
@@ -359,7 +372,9 @@ function DashboardSCM() {
                     color="primary"
                     variant="outlined"
                     size="sm"
-                    onClick={() => poSummaryRef.current?.openBulkDeliverModal?.()}
+                    onClick={() =>
+                      poSummaryRef.current?.openBulkDeliverModal?.()
+                    }
                   >
                     Change Status to Delivered
                   </Button>

@@ -27,7 +27,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useAddExpenseMutation } from "../../../redux/expenseSlice";
 
-const Expense_Form = ({ dateFrom, dateTo}) => {
+const Expense_Form = () => {
   const navigate = useNavigate();
 
   const [rows, setRows] = useState([
@@ -282,8 +282,8 @@ const Expense_Form = ({ dateFrom, dateTo}) => {
       return;
     }
 
-   
-    if (!dateFrom || !dateTo) {
+    const { from, to } = rows[0]?.expense_term || {};
+    if (!from || !to) {
       toast.error("Expense Term is required.");
       setIsSubmitting(false);
       return;
@@ -327,10 +327,7 @@ const Expense_Form = ({ dateFrom, dateTo}) => {
       );
 
       const cleanedData = {
-        expense_term: {
-          from: dateFrom || "",
-          to: dateTo || "",
-        },
+        expense_term: rows[0]?.expense_term || {},
         disbursement_date: rows[0]?.disbursement_date ?? null,
         items,
         user_id: userID,
@@ -577,7 +574,51 @@ const Expense_Form = ({ dateFrom, dateTo}) => {
             mb: 2,
           }}
         >
+          {/* Select Expense Term – always first on mobile */}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 1.5,
+            }}
+          >
+            <Typography level="body-sm" fontWeight="md">
+              📅 Select Expense Term:
+            </Typography>
 
+            <Input
+              type="date"
+              size="sm"
+              value={rows[0].expense_term.from}
+              required
+              onChange={(e) =>
+                handleRowChange(0, "expense_term", {
+                  ...rows[0].expense_term,
+                  from: e.target.value,
+                })
+              }
+              sx={{ minWidth: 130 }}
+            />
+
+            <Typography level="body-sm">to</Typography>
+
+            <Input
+              type="date"
+              size="sm"
+              value={rows[0].expense_term.to}
+              required
+              onChange={(e) =>
+                handleRowChange(0, "expense_term", {
+                  ...rows[0].expense_term,
+                  to: e.target.value,
+                })
+              }
+              sx={{ minWidth: 130 }}
+            />
+          </Box>
+
+          {/* Action Buttons – below on mobile */}
         </Box>
 
         <Box sx={{ display: { xs: "none", md: "block" } }}>
@@ -675,7 +716,7 @@ const Expense_Form = ({ dateFrom, dateTo}) => {
                           inputRef={(el) => (inputRefs.current[rowIndex] = el)}
                           autoComplete="off"
                           sx={{ width: "100%" }}
-                          // disabled={rows[rowIndex]?.items?.[0]?.projectSelected}
+                        // disabled={rows[rowIndex]?.items?.[0]?.projectSelected}
                         />
                       </Box>
                       {dropdownOpenIndex === rowIndex &&
@@ -763,7 +804,7 @@ const Expense_Form = ({ dateFrom, dateTo}) => {
                             sx: { maxHeight: 160, overflowY: "auto" },
                           },
                         }}
-                        // sx={{ width: "100%" }}
+                      // sx={{ width: "100%" }}
                       >
                         {getCategoryOptionsByDepartment(user?.department).map(
                           (cat, idx) => (

@@ -43,7 +43,7 @@ function Accounts_Expense() {
   const [status, setStatus] = useState(searchParams.get("status" || ""));
   const [dateFrom, setDateFrom] = useState(searchParams.get("from" || ""));
   const [dateTo, setDateTo] = useState(searchParams.get("to" || ""));
-
+  
   useEffect(() => {
     const userData = getUserData();
     setUser(userData);
@@ -116,7 +116,7 @@ function Accounts_Expense() {
     else sp.delete("to");
 
     setSearchParams(sp);
-  }, [searchParams])
+  }, [searchParams, status, department, dateFrom, dateTo])
 
   const handleExportCSV = async (sheetIds, view = "detailed") => {
     try {

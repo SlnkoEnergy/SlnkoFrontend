@@ -90,23 +90,28 @@ function Update_Bill() {
                 Logistics
               </Button>
             ) : null}
-            <Button
-              size="sm"
-              onClick={() => navigate(`/vendors`)}
-              sx={{
-                color: "white",
-                bgcolor: "transparent",
-                fontWeight: 500,
-                fontSize: "1rem",
-                letterSpacing: 0.5,
-                borderRadius: "6px",
-                px: 1.5,
-                py: 0.5,
-                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
-              }}
-            >
-              Vendors
-            </Button>
+            {(user?.department === "SCM" ||
+              user?.department === "Accounts" ||
+              user?.department === "superadmin" ||
+              user?.department === "admin") && (
+              <Button
+                size="sm"
+                onClick={() => navigate(`/vendors`)}
+                sx={{
+                  color: "white",
+                  bgcolor: "transparent",
+                  fontWeight: 500,
+                  fontSize: "1rem",
+                  letterSpacing: 0.5,
+                  borderRadius: "6px",
+                  px: 1.5,
+                  py: 0.5,
+                  "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+                }}
+              >
+                Vendors
+              </Button>
+            )}
             {user?.name === "IT Team" ||
             user?.department === "admin" ||
             (user?.department === "Accounts" &&
