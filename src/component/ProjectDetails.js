@@ -68,7 +68,7 @@ const canUserSeePO = (user) => {
   const role = String(user.role || "").toLowerCase();
   const dept = user.department || "";
   const name = String(user.name || "").trim();
-  if (name === "Ranvijay Singh") return true;
+  if (name === "Ranvijay Singh" || name === "Rishav Mahato") return true;
   const special = user.emp_id === "SE-013";
   const privileged = special || role === "admin" || role === "superadmin";
   return privileged || dept !== "Engineering";
