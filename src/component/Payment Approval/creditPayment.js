@@ -43,6 +43,7 @@ import { PaymentProvider } from "../../store/Context/Payment_History";
 import PaymentHistory from "../PaymentHistory";
 import dayjs from "dayjs";
 import Axios from "../../utils/Axios";
+import { useNavigate } from "react-router-dom";
 
 const CreditPayment = forwardRef(
   ({ searchQuery, currentPage, perPage }, ref) => {
@@ -63,6 +64,7 @@ const CreditPayment = forwardRef(
     // console.log("paginatedData Credit are in Account :", paginatedData);
 
     const [user, setUser] = useState(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
       const userData = getUserData();
@@ -367,6 +369,7 @@ const CreditPayment = forwardRef(
                   color: "#fff",
                   "&:hover": { boxShadow: "md", opacity: 0.9 },
                 }}
+                 
               >
                 {cr_id || pay_id}
               </Chip>
