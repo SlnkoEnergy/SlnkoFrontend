@@ -82,6 +82,10 @@ function VendorBillSummary() {
     setSelectedIds([]);
   }, [bills, currentPage, perPage]);
 
+  useEffect(() => {
+    setCurrentPage(initialPage)
+  }, [initialPage])
+
   // Pagination
   const startIndex = (page - 1) * pageSize + 1;
   const endIndex = Math.min(page * pageSize, total);
@@ -104,6 +108,28 @@ function VendorBillSummary() {
       next.set("pageSize", String(newValue));
       return next;
     });
+  };
+
+
+  const getPaginationRange = () => {
+    const siblings = 1;
+    const pages = [];
+    if (totalPages <= 5 + siblings * 2) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      const left = Math.max(currentPage - siblings, 2);
+
+
+      const right = Math.min(currentPage + siblings, totalPages - 1);
+
+      pages.push(1);
+      if (left > 2) pages.push("...");
+      for (let i = left; i <= right; i++) pages.push(i);
+      if (right < totalPages - 1) pages.push("...");
+      pages.push(totalPages);
+    }
+
+    return pages;
   };
 
   // Selection handlers
@@ -135,8 +161,8 @@ function VendorBillSummary() {
     const rawLabel = isFullyBilled
       ? "Fully Billed"
       : isPending
-      ? `${balance} - Waiting Bills`
-      : status;
+        ? `${balance} - Waiting Bills`
+        : status;
     return (
       <Chip
         variant="soft"
@@ -234,8 +260,7 @@ function VendorBillSummary() {
           enqueueSnackbar(
             pickSuccessMessage(
               res,
-              `Bill accepted successfully${
-                currentUser?.name ? ` by ${currentUser.name}` : ""
+              `Bill accepted successfully${currentUser?.name ? ` by ${currentUser.name}` : ""
               }.`
             ),
             { variant: "success" }
@@ -259,9 +284,8 @@ function VendorBillSummary() {
       <Box>
         {isAccepted ? (
           <Tooltip
-            title={`Approved by: ${
-              approvedBy || currentUser?.name || "Unknown"
-            }`}
+            title={`Approved by: ${approvedBy || currentUser?.name || "Unknown"
+              }`}
             variant="soft"
           >
             <Typography
@@ -507,46 +531,46 @@ function VendorBillSummary() {
                     >
                       {Array.isArray(bill.item) && bill.item.length
                         ? (() => {
-                            const unique = [
-                              ...new Set(
-                                bill.item
-                                  .map((it) => it?.category_name)
-                                  .filter(Boolean)
-                              ),
-                            ];
-                            const first = unique[0];
-                            const remaining = unique.slice(1);
-                            return (
-                              <>
-                                {first}
-                                {remaining.length > 0 && (
-                                  <Tooltip title={remaining.join(", ")} arrow>
-                                    <Box
-                                      component="span"
-                                      sx={{
-                                        ml: 1,
-                                        px: 1,
-                                        borderRadius: "50%",
-                                        backgroundColor: "primary.solidBg",
-                                        color: "white",
-                                        fontSize: "12px",
-                                        fontWeight: 500,
-                                        display: "inline-flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        minWidth: "22px",
-                                        height: "22px",
-                                        lineHeight: 1,
-                                        cursor: "pointer",
-                                      }}
-                                    >
-                                      +{remaining.length}
-                                    </Box>
-                                  </Tooltip>
-                                )}
-                              </>
-                            );
-                          })()
+                          const unique = [
+                            ...new Set(
+                              bill.item
+                                .map((it) => it?.category_name)
+                                .filter(Boolean)
+                            ),
+                          ];
+                          const first = unique[0];
+                          const remaining = unique.slice(1);
+                          return (
+                            <>
+                              {first}
+                              {remaining.length > 0 && (
+                                <Tooltip title={remaining.join(", ")} arrow>
+                                  <Box
+                                    component="span"
+                                    sx={{
+                                      ml: 1,
+                                      px: 1,
+                                      borderRadius: "50%",
+                                      backgroundColor: "primary.solidBg",
+                                      color: "white",
+                                      fontSize: "12px",
+                                      fontWeight: 500,
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      minWidth: "22px",
+                                      height: "22px",
+                                      lineHeight: 1,
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    +{remaining.length}
+                                  </Box>
+                                </Tooltip>
+                              )}
+                            </>
+                          );
+                        })()
                         : bill.item?.category_name || "-"}
                     </Box>
 
@@ -648,47 +672,32 @@ function VendorBillSummary() {
         </Button>
 
         <Box>
+          {/* Showing page {currentPage} of {totalPages} ({total} results) */}
           <Typography level="body-sm">
-            Showing {(page - 1) * pageSize + 1}–
-            {Math.min(page * pageSize, total)} of {total} results
+            Showing {startIndex}–{endIndex} of {total} results
           </Typography>
         </Box>
 
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
-          {(() => {
-            const siblings = 1;
-            const pages = [];
-            if (totalPages <= 5 + siblings * 2) {
-              for (let i = 1; i <= totalPages; i++) pages.push(i);
-            } else {
-              const left = Math.max(currentPage - siblings, 2);
-              const right = Math.min(currentPage + siblings, totalPages - 1);
-              pages.push(1);
-              if (left > 2) pages.push("...");
-              for (let i = left; i <= right; i++) pages.push(i);
-              if (right < totalPages - 1) pages.push("...");
-              pages.push(totalPages);
-            }
-            return pages.map((p, idx) =>
-              p === "..." ? (
-                <Box key={`ellipsis-${idx}`} sx={{ px: 1 }}>
-                  ...
-                </Box>
-              ) : (
-                <IconButton
-                  key={p}
-                  size="sm"
-                  variant={p === currentPage ? "contained" : "outlined"}
-                  color="neutral"
-                  onClick={() => handlePageChange(p)}
-                >
-                  {p}
-                </IconButton>
-              )
-            );
-          })()}
+          {getPaginationRange()?.map((page, idx) =>
+            page === "..." ? (
+              <Box key={`ellipsis-${idx}`} sx={{ px: 1 }}>
+                ...
+              </Box>
+            ) : (
+              <IconButton
+                key={page}
+                size="sm"
+                variant={page === currentPage ? "contained" : "outlined"}
+                color="neutral"
+                onClick={() => handlePageChange(page)}
+              >
+                {page}
+              </IconButton>
+            )
+          )}
         </Box>
 
         <FormControl size="sm" sx={{ minWidth: 120 }}>
