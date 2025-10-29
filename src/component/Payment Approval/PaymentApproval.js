@@ -17,7 +17,7 @@ import Option from "@mui/joy/Option";
 import Select from "@mui/joy/Select";
 import Typography from "@mui/joy/Typography";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import NoData from "../../assets/alert-bell.svg";
 import Axios from "../../utils/Axios";
@@ -102,6 +102,7 @@ function PaymentRequest() {
   // console.log(count);
 
   // const Approved = responseData?.toBeApprovedCount || 0;
+  const navigate = useNavigate();
 
   const startIndex = (currentPage - 1) * perPage + 1;
 
@@ -645,6 +646,7 @@ function PaymentRequest() {
                   opacity: 0.9,
                 },
               }}
+                 
             >
               {idToShow}
             </Chip>
