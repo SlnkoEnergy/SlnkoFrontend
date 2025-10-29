@@ -1,4 +1,3 @@
-// src/components/ViewDeatils/CustomerPaymentSummary.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
@@ -65,7 +64,7 @@ const DEFAULT_PAGE_SIZE = 20;
 export default function CustomerPaymentSummary() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-
+  
   // URL params -> local state
   const p_id = searchParams.get("p_id");
   const _id = searchParams.get("_id");
@@ -1657,8 +1656,8 @@ export default function CustomerPaymentSummary() {
                 </Table>
 
                 {/* pagination for CREDIT */}
-                <Divider sx={{ my: 1 }} />
-                <PaginationFooter />
+                {/* <Divider sx={{ my: 1 }} />
+                <PaginationFooter /> */}
               </Sheet>
             </Box>
           </TabPanel>
@@ -1849,8 +1848,8 @@ export default function CustomerPaymentSummary() {
                 </Table>
 
                 {/* pagination for DEBIT */}
-                <Divider sx={{ my: 1 }} />
-                <PaginationFooter />
+                {/* <Divider sx={{ my: 1 }} />
+                <PaginationFooter /> */}
               </Sheet>
             </Box>
           </TabPanel>
@@ -2182,14 +2181,14 @@ export default function CustomerPaymentSummary() {
                 </Table>
 
                 {/* pagination for PURCHASE uses meta when present */}
-                <Divider sx={{ my: 1 }} />
+                {/* <Divider sx={{ my: 1 }} />
                 <PaginationFooter
                   totalHint={
                     clientHistory?.meta?.totalPages
                       ? `of ${clientHistory.meta.totalPages} page(s)`
                       : undefined
                   }
-                />
+                /> */}
               </Sheet>
             </Box>
           </TabPanel>
@@ -2541,14 +2540,14 @@ export default function CustomerPaymentSummary() {
                 </Table>
 
                 {/* pagination for SALES uses meta when present */}
-                <Divider sx={{ my: 1 }} />
+                {/* <Divider sx={{ my: 1 }} />
                 <PaginationFooter
                   totalHint={
                     SalesMeta?.totalPages
                       ? `of ${SalesMeta.totalPages} page(s)`
                       : undefined
                   }
-                />
+                /> */}
               </Sheet>
 
               {/* Sales detail modal (kept minimal) */}
@@ -2986,8 +2985,8 @@ export default function CustomerPaymentSummary() {
                 </Table>
 
                 {/* pagination for ADJUSTMENT */}
-                <Divider sx={{ my: 1 }} />
-                <PaginationFooter />
+                {/* <Divider sx={{ my: 1 }} />
+                <PaginationFooter /> */}
               </Sheet>
             </Box>
           </TabPanel>

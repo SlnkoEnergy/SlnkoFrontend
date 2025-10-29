@@ -69,8 +69,16 @@ function DashboardSCM() {
       }
 
       // scope === "all"
-      const filters = poSummaryRef.current?.getCurrentFilters?.() || {};
-      const blob = await exportPos({ filters }).unwrap();
+      const filters = {
+        filter: selectStatus,
+        status: selectBillStatus,
+        itemSearch: selectItem,
+        etdFrom: etdDateFrom,
+        etdTo: etdDateTo,
+        deliveryFrom: deliveryFrom,
+        deliveryTo: deliveryTo,
+      }
+      const blob = await exportPos(filters).unwrap();
       const fileName = `po_filtered_${new Date()
         .toISOString()
         .slice(0, 10)}.csv`;
