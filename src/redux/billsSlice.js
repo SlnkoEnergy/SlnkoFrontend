@@ -32,7 +32,7 @@ export const billsApi = createApi({
           status,
           dateFrom,
           dateEnd,
-          po_number,
+          po_no,
           date,
         } = args;
 
@@ -41,12 +41,12 @@ export const billsApi = createApi({
         params.set("pageSize", String(pageSize));
 
         if (search && search.trim()) params.set("search", search);
-        if (status && status.trim()) params.set("status", status);        // URLSearchParams will encode it
+        if (status && status.trim()) params.set("status", status); 
         if (dateFrom && dateFrom.trim()) params.set("dateFrom", dateFrom);
         if (dateEnd && dateEnd.trim()) params.set("dateEnd", dateEnd);
-        if (po_number && String(po_number).trim()) params.set("po_number", po_number);
+        if (po_no && String(po_no).trim()) params.set("po_no", po_no);
 
-        console.log(params.toString());
+        // console.log(params.toString());
 
         return `bill?${params.toString()}`;
       },
