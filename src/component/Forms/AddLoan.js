@@ -21,7 +21,7 @@ import Delete from "@mui/icons-material/Delete";
 import Add from "@mui/icons-material/Add";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 
-import SearchPickerModal from "../../component/SearchPickerModal"; // your modal
+import SearchPickerModal from "../../component/SearchPickerModal";
 import { useLazyGetProjectSearchDropdownQuery } from "../../redux/projectsSlice";
 
 // --- light/white theme ---
@@ -38,9 +38,9 @@ const theme = extendTheme({
   },
 });
 
-const FIRST_LIMIT = 7;     // first chunk shown in dropdown
-const MODAL_LIMIT = 20;    // page size used by the modal
-const ACCENT = "#2ad1c9";  // teal line color like screenshot
+const FIRST_LIMIT = 7;
+const MODAL_LIMIT = 7;
+const ACCENT = "#3363a3";
 
 /* ---------------------- Small helpers ---------------------- */
 function useDebounce(val, delay = 300) {
@@ -52,19 +52,18 @@ function useDebounce(val, delay = 300) {
   return v;
 }
 const labelFromRow = (r) => {
-  const name = r?.name || r?.project_name || r?.project || "";
-  const code = r?.p_id || r?.code || "";
-  return [name, code].filter(Boolean).join(", ");
+  const code = r?.code || "";
+  return [code].filter(Boolean).join(", ");
 };
 
 /* ---------------- Styled, typeable dropdown ---------------- */
 function SearchableSelect({
   placeholder = "Type to find a project...",
   valueLabel,
-  onChangeLabel,     // (label) => void
-  options = [],      // array of rows
-  onPickRow,         // (row) => void
-  onSearchMore,      // () => void
+  onChangeLabel,
+  options = [],
+  onPickRow,
+  onSearchMore,
 }) {
   const rootRef = React.useRef(null);
   const listRef = React.useRef(null);
@@ -77,18 +76,15 @@ function SearchableSelect({
     setInput(valueLabel || "");
   }, [valueLabel]);
 
-  // filter locally within first options
   const filtered = React.useMemo(() => {
     const q = (debounced || "").toLowerCase();
     if (!q) return options;
     return options.filter((r) => labelFromRow(r).toLowerCase().includes(q));
   }, [debounced, options]);
 
-  // keyboard navigation
   const [highlight, setHighlight] = React.useState(-1);
   React.useEffect(() => setHighlight(-1), [filtered.length, open]);
 
-  // click-away close
   React.useEffect(() => {
     function onDocClick(e) {
       if (!rootRef.current) return;
@@ -169,8 +165,8 @@ function SearchableSelect({
             borderRadius: "sm",
             overflow: "hidden",
             // dark popup styling like screenshot
-            bgcolor: "#2e3240",
-            borderColor: "#3e4352",
+            bgcolor: "#fff",
+            borderColor: "#fff",
             color: "#fff",
             boxShadow:
               "0px 8px 24px rgba(0,0,0,0.25), 0 1px 0 0 rgba(255,255,255,0.06) inset",
@@ -198,9 +194,9 @@ function SearchableSelect({
                     px: 1.25,
                     py: 1,
                     cursor: "pointer",
-                    borderBottom: "1px solid rgba(255,255,255,0.06)",
-                    backgroundColor: active ? "rgba(255,255,255,0.08)" : "transparent",
-                    "&:hover": { backgroundColor: "rgba(255,255,255,0.06)" },
+                    borderBottom: "1px solid black",
+                    backgroundColor: active ? "#fff" : "#fff",
+                    "&:hover": { backgroundColor: "#fff" },
                     "&:last-of-type": { borderBottom: "none" },
                   }}
                 >
@@ -223,9 +219,6 @@ function SearchableSelect({
                 py: 1,
                 cursor: "pointer",
                 color: ACCENT,
-                backgroundColor:
-                  highlight === filtered.length ? "rgba(42, 209, 201, 0.08)" : "transparent",
-                "&:hover": { backgroundColor: "rgba(42, 209, 201, 0.06)" },
               }}
             >
               <Typography level="body-md" sx={{ fontStyle: "italic" }}>
@@ -258,7 +251,9 @@ export default function AddLoan() {
     expectedDisbursementDate: "",
   });
 
-  const [docs, setDocs] = React.useState([{ title: "Booking Fees Receipt", file: null }]);
+  const [docs, setDocs] = React.useState([
+    { title: "Booking Fees Receipt", file: null },
+  ]);
   const onHeader = (key) => (e, v) => {
     const value = e?.target ? e.target.value : v;
     setHeader((h) => ({ ...h, [key]: value }));
@@ -266,7 +261,9 @@ export default function AddLoan() {
   const addDoc = () => setDocs((d) => [...d, { title: "", file: null }]);
   const removeDoc = (idx) => setDocs((d) => d.filter((_, i) => i !== idx));
   const updateDoc = (idx, key, value) =>
-    setDocs((d) => d.map((row, i) => (i === idx ? { ...row, [key]: value } : row)));
+    setDocs((d) =>
+      d.map((row, i) => (i === idx ? { ...row, [key]: value } : row))
+    );
 
   const submit = (e) => {
     e.preventDefault();
@@ -287,9 +284,46 @@ export default function AddLoan() {
   const [projectTotal, setProjectTotal] = React.useState(0);
   const [projectModalOpen, setProjectModalOpen] = React.useState(false);
 
+  const debouncedProjectQuery = useDebounce(header.project, 300);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await triggerSearch(
+          { search: debouncedProjectQuery || "", page: 1, limit: FIRST_LIMIT },
+          true
+        );
+        const payload = res?.data || {};
+        const rows = payload?.data || payload?.rows || [];
+        const total =
+          payload?.total ??
+          Number(res?.meta?.total) ??
+          Number(res?.data?.total) ??
+          rows.length;
+
+        if (!cancelled) {
+          setProjectOptions(rows);
+          setProjectTotal(Number(total) || rows.length);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setProjectOptions([]);
+          setProjectTotal(0);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedProjectQuery, triggerSearch]);
+
   const loadInitialProjects = React.useCallback(async () => {
     try {
-      const res = await triggerSearch({ search: "", page: 1, limit: FIRST_LIMIT }, true);
+      const res = await triggerSearch(
+        { search: "", page: 1, limit: FIRST_LIMIT },
+        true
+      );
       const payload = res?.data || {};
       const rows = payload?.data || payload?.rows || [];
       const total = payload?.total ?? rows.length;
@@ -307,10 +341,21 @@ export default function AddLoan() {
   }, [loadInitialProjects]);
 
   const fetchProjectsPage = async ({ page, search, pageSize }) => {
-    const res = await triggerSearch({ search: search || "", page, limit: pageSize }, true);
-    const payload = res?.data || {};
-    const rows = payload?.data || payload?.rows || [];
-    const total = payload?.total ?? rows.length;
+    const res = await triggerSearch(
+      { search: search || "", page, limit: pageSize },
+      true
+    );
+
+    // RTK Query lazy trigger returns { data, ... }
+    const rows = res?.data?.data ?? [];
+    const pg = res?.data?.pagination;
+    let total = pg?.total;
+
+    // Fallback: if backend omitted total (shouldn’t in your case), synthesize it
+    if (!Number.isFinite(total)) {
+      total = page * pageSize + (rows.length === pageSize ? 1 : 0);
+    }
+
     return { rows, total };
   };
 
@@ -333,7 +378,7 @@ export default function AddLoan() {
     "--Input-focusedThickness": "0px",
     px: 0,
     backgroundColor: "transparent",
-    "&:hover": { borderBottomColor: "#1aa79f" },
+    "&:hover": { borderBottomColor: "#3363a3" },
     "& input": { paddingBottom: "0px" },
   };
 
@@ -365,12 +410,6 @@ export default function AddLoan() {
             onPickRow={(row) => onPickProject(row)}
             onSearchMore={() => setProjectModalOpen(true)}
           />
-
-          {!!header.project && (
-            <Typography level="body-sm" sx={{ mt: 0.5, color: "neutral.600" }}>
-              Selected: {header.project}
-            </Typography>
-          )}
         </Box>
 
         {/* Grid of details */}
@@ -445,7 +484,9 @@ export default function AddLoan() {
                       <Input
                         placeholder="e.g., Booking Fees Receipt"
                         value={row.title}
-                        onChange={(e) => updateDoc(idx, "title", e.target.value)}
+                        onChange={(e) =>
+                          updateDoc(idx, "title", e.target.value)
+                        }
                         variant="plain"
                         sx={lineInputSx}
                       />
@@ -454,13 +495,19 @@ export default function AddLoan() {
                       <Input
                         placeholder="Attach / mark as received"
                         value={row.received || ""}
-                        onChange={(e) => updateDoc(idx, "received", e.target.value)}
+                        onChange={(e) =>
+                          updateDoc(idx, "received", e.target.value)
+                        }
                         variant="plain"
                         sx={lineInputSx}
                       />
                     </td>
                     <td>
-                      <IconButton variant="plain" color="danger" onClick={() => removeDoc(idx)}>
+                      <IconButton
+                        variant="plain"
+                        color="danger"
+                        onClick={() => removeDoc(idx)}
+                      >
                         <Delete />
                       </IconButton>
                     </td>
@@ -469,7 +516,12 @@ export default function AddLoan() {
               </tbody>
             </Table>
 
-            <Button startDecorator={<Add />} variant="plain" onClick={addDoc} sx={{ px: 0, borderRadius: 0 }}>
+            <Button
+              startDecorator={<Add />}
+              variant="plain"
+              onClick={addDoc}
+              sx={{ px: 0, borderRadius: 0 }}
+            >
               Add documents
             </Button>
           </TabPanel>
@@ -493,7 +545,9 @@ export default function AddLoan() {
                       <Input
                         placeholder="Bank Name"
                         value={row.bank_name || ""}
-                        onChange={(e) => updateDoc(idx, "bank_name", e.target.value)}
+                        onChange={(e) =>
+                          updateDoc(idx, "bank_name", e.target.value)
+                        }
                         variant="plain"
                         sx={lineInputSx}
                       />
@@ -502,7 +556,9 @@ export default function AddLoan() {
                       <Input
                         placeholder="Branch"
                         value={row.branch || ""}
-                        onChange={(e) => updateDoc(idx, "branch", e.target.value)}
+                        onChange={(e) =>
+                          updateDoc(idx, "branch", e.target.value)
+                        }
                         variant="plain"
                         sx={lineInputSx}
                       />
@@ -511,7 +567,9 @@ export default function AddLoan() {
                       <Input
                         placeholder="State"
                         value={row.state || ""}
-                        onChange={(e) => updateDoc(idx, "state", e.target.value)}
+                        onChange={(e) =>
+                          updateDoc(idx, "state", e.target.value)
+                        }
                         variant="plain"
                         sx={lineInputSx}
                       />
@@ -526,7 +584,11 @@ export default function AddLoan() {
                       />
                     </td>
                     <td>
-                      <IconButton variant="plain" color="danger" onClick={() => removeDoc(idx)}>
+                      <IconButton
+                        variant="plain"
+                        color="danger"
+                        onClick={() => removeDoc(idx)}
+                      >
                         <Delete />
                       </IconButton>
                     </td>
@@ -551,7 +613,7 @@ export default function AddLoan() {
                 borderRadius: 0,
               }}
             >
-              Add documents
+              Add Banks
             </Button>
           </TabPanel>
         </Tabs>
@@ -598,15 +660,18 @@ export default function AddLoan() {
         }}
         title="Pick Projects"
         columns={[
-          { key: "name", label: "Project", render: (r) => labelFromRow(r) },
-          { key: "district", label: "District", width: 180 },
-          { key: "state", label: "State", width: 140 },
+          { key: "code", label: "Project Code" },
+          { key: "name", label: "Project Name" },
         ]}
         fetchPage={async ({ page, search, pageSize }) => {
-          const res = await triggerSearch({ search: search || "", page, limit: pageSize }, true);
+          const res = await triggerSearch(
+            { search: search || "", page, limit: pageSize },
+            true
+          );
           const payload = res?.data || {};
-          const rows = payload?.data || payload?.rows || [];
-          const total = payload?.total ?? rows.length;
+          console.log({ payload });
+          const rows = payload?.data ?? [];
+          const total = payload?.pagination?.total ?? rows.length;
           return { rows, total };
         }}
         searchKey="name"
