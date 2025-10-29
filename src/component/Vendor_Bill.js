@@ -33,7 +33,7 @@ function VendorBillSummary() {
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [perPage, setPerPage] = useState(initialPageSize);
 
-  const po_number = searchParams.get("po_number") || "";
+  const po_no = searchParams.get("po_no") || "";
   const dateFilterEnd = searchParams.get("to") || "";
   const dateFilterFrom = searchParams.get("from") || "";
   const selectStatus = searchParams.get("status") || "";
@@ -51,7 +51,7 @@ function VendorBillSummary() {
   const { data: getBill = {}, isLoading } = useGetAllBillsQuery({
     page: currentPage,
     pageSize: perPage,
-    po_number: po_number,
+    po_no: po_no,
     search: searchQuery,
     dateFrom: dateFilterFrom,
     dateEnd: dateFilterEnd,
@@ -72,7 +72,12 @@ function VendorBillSummary() {
     [getBill]
   );
 
-  // Clear selection when list changes (page/filter)
+  // const po_number = bills.map(b=>b?.po_no);
+
+  // console.log("All Bills are",bills);
+
+  // console.log("PO Numbers:", po_number);
+
   useEffect(() => {
     setSelectedIds([]);
   }, [bills, currentPage, perPage]);
@@ -150,41 +155,113 @@ function VendorBillSummary() {
     );
   };
 
-  const { enqueueSnackbar } = useSnackbar();
-
-  const BillAcceptance = ({ billNumber, approvedBy }) => {
+  const BillAcceptance = ({
+    billNumber,
+    poNumber,
+    approvedBy,
+    currentUser,
+  }) => {
+    const { enqueueSnackbar } = useSnackbar();
     const [isAccepted, setIsAccepted] = useState(Boolean(approvedBy));
+    const [loading, setLoading] = useState(false);
+
+    const pickSuccessMessage = (res, fallback) => {
+      const d = res?.data;
+      return d?.msg || d?.message || fallback;
+    };
+
+    const pickErrorMessage = (err) => {
+      const d = err?.response?.data;
+      return (
+        d?.message ||
+        d?.msg ||
+        (Array.isArray(d?.errors) && d.errors[0]?.msg) ||
+        d?.error ||
+        err?.response?.statusText ||
+        err?.message ||
+        "Something went wrong."
+      );
+    };
+
+    const statusToVariant = (status) => {
+      if (status === 409) return "warning";
+      if (status === 400 || status === 422) return "warning";
+      if (status === 401 || status === 403 || status === 404) return "error";
+      if (status >= 500) return "error";
+      return "error";
+    };
+
+    // --- normalize array or string -> string
+    const firstNonEmpty = (val) => {
+      if (Array.isArray(val)) {
+        const first = val.find((x) => x && String(x).trim().length > 0);
+        return first ? String(first).trim() : "";
+      }
+      return val ? String(val).trim() : "";
+    };
+
     const handleAcceptance = async () => {
+      if (loading || isAccepted) return;
+      setLoading(true);
       try {
         const token = localStorage.getItem("authToken");
-        const localUser = user;
         if (!token) throw new Error("No auth token found");
+
+        const po_number = firstNonEmpty(poNumber);
+        const bill_number = firstNonEmpty(billNumber);
+
+        if (!po_number) {
+          enqueueSnackbar("PO number is missing/empty.", {
+            variant: "warning",
+          });
+          return;
+        }
+        if (!bill_number) {
+          enqueueSnackbar("Bill number is missing/empty.", {
+            variant: "warning",
+          });
+          return;
+        }
+
         const res = await Axios.put(
           "/accepted-by",
-          { bill_number: billNumber },
+          { po_number, bill_number },
           { headers: { "x-auth-token": token } }
         );
+
         if (res.status === 200) {
           setIsAccepted(true);
-          enqueueSnackbar(`Bill accepted successfully by ${localUser?.name}`, {
-            variant: "success",
-          });
+          enqueueSnackbar(
+            pickSuccessMessage(
+              res,
+              `Bill accepted successfully${
+                currentUser?.name ? ` by ${currentUser.name}` : ""
+              }.`
+            ),
+            { variant: "success" }
+          );
         } else {
           enqueueSnackbar("Failed to accept the bill. Please try again.", {
             variant: "error",
           });
         }
       } catch (err) {
-        enqueueSnackbar("This bill has already been accepted.", {
-          variant: "error",
+        const status = err?.response?.status;
+        enqueueSnackbar(pickErrorMessage(err), {
+          variant: statusToVariant(status),
         });
+      } finally {
+        setLoading(false);
       }
     };
+
     return (
       <Box>
         {isAccepted ? (
           <Tooltip
-            title={`Approved by: ${approvedBy || user?.name || "Unknown"}`}
+            title={`Approved by: ${
+              approvedBy || currentUser?.name || "Unknown"
+            }`}
             variant="soft"
           >
             <Typography
@@ -206,6 +283,7 @@ function VendorBillSummary() {
               color="success"
               onClick={handleAcceptance}
               size="sm"
+              disabled={loading}
               sx={{
                 boxShadow: "0 2px 6px rgba(0, 128, 0, 0.2)",
                 transition: "all .2s",
@@ -213,6 +291,8 @@ function VendorBillSummary() {
                   transform: "scale(1.1)",
                   boxShadow: "0 4px 10px rgba(0, 128, 0, 0.3)",
                 },
+                opacity: loading ? 0.7 : 1,
+                pointerEvents: loading ? "none" : "auto",
               }}
             >
               <CheckRoundedIcon />
@@ -361,6 +441,7 @@ function VendorBillSummary() {
               bills.map((bill, idx) => {
                 const id = bill._id || `${bill.bill_no}-${idx}`;
                 const isChecked = selectedIds.includes(id);
+
                 return (
                   <Box
                     component="tr"
@@ -512,8 +593,10 @@ function VendorBillSummary() {
                       sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}
                     >
                       <BillAcceptance
-                        billNumber={bill.bill_no}
+                        billNumber={bill.bill_no || []}
+                        poNumber={bill.po_no || []}
                         approvedBy={bill.approved_by_name}
+                        currentUser={user}
                       />
                     </Box>
 
