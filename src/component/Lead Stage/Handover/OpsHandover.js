@@ -373,7 +373,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
         padding: 4,
         borderRadius: "md",
         boxShadow: "lg",
-        backgroundColor: "#fff",
+        backgroundColor: "#F8F5F5",
       }}
     >
       {/* Icon */}
@@ -1269,7 +1269,7 @@ const OpsHandoverSheetForm = ({ onBack }) => {
                 level="body3"
                 sx={{ color: "text.tertiary", mt: 0.5 }}
               >
-                Max 15MB per file. 
+                Max 15MB per file.
               </Typography>
             </Grid>
           </Grid>
@@ -1277,9 +1277,14 @@ const OpsHandoverSheetForm = ({ onBack }) => {
       </Accordion>
 
       {/* Buttons */}
-      <Grid container spacing={2} sx={{ mt: 2 }}>
-        <Grid item xs={6}></Grid>
-        <Grid item xs={6}>
+      <Grid
+        container
+        justifyContent={"flex-end"}
+        display={"flex"}
+        spacing={2}
+        sx={{ marginTop: 2 }}
+      >
+        <Grid item xs={3} display={"flex"} justifyContent={"flex-end"}>
           <Button
             onClick={handleSubmit}
             variant="solid"
@@ -1303,7 +1308,6 @@ const OpsHandoverSheetForm = ({ onBack }) => {
   );
 };
 
-// shared styles for accordion summary headers
 const summarySx = {
   color: "white",
   fontWeight: "bold",

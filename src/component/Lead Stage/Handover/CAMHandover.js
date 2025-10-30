@@ -1295,7 +1295,7 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={6} mb={1}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 LOA Number
               </Typography>
@@ -1410,7 +1410,7 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
               </Select>
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={6} mb={1}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 {formData?.other_details?.billing_type === "Composite"
                   ? "Total Slnko Service Charge(with GST)"
@@ -2080,7 +2080,7 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
             </Grid>
 
             <Grid xs={12}>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} mb={1}>
                 <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                   Remarks for Slnko Service Charge{" "}
                   <span style={{ color: "red" }}>*</span>
@@ -2101,7 +2101,7 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
                   required
                 />
               </Grid>
-              <Grid item xs={12} sm={6} mt={1}>
+              <Grid item xs={12} sm={6} mb={1}>
                 <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                   Remarks (Any Other Commitments to Client){" "}
                   <span style={{ color: "red" }}>*</span>
@@ -2286,25 +2286,22 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
         </AccordionDetails>
       </Accordion>
       {!isCAMDash && (
-        <Grid container spacing={2} sx={{ marginTop: 2 }}>
-          <Grid item xs={6}>
-            <Button
-              onClick={() => navigate("/cam_dash")}
-              variant="solid"
-              color="neutral"
-              fullWidth
-              sx={{ padding: 1.5, fontSize: "1rem", fontWeight: "bold" }}
-            >
-              Back
-            </Button>
-          </Grid>
-          <Grid item xs={6}>
+        <Grid container justifyContent={'flex-end'} display={'flex'} spacing={2} sx={{ marginTop: 2 }}>
+          <Grid item xs={3} display={'flex'} justifyContent={'flex-end'}>
             <Button
               onClick={handleSubmit}
-              variant="solid"
-              color="primary"
-              fullWidth
-              sx={{ padding: 1.5, fontSize: "1rem", fontWeight: "bold" }}
+            variant="solid"
+            sx={{
+              backgroundColor: "#3366a3",
+              color: "#fff",
+              "&:hover": { backgroundColor: "#285680" },
+              height: "8px",
+              p: 1.5,
+              fontSize: "1rem",
+              fontWeight: "bold",
+            }}
+            disabled={isLoading}
+            fullWidth
             >
               Submit
             </Button>
