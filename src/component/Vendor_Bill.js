@@ -33,11 +33,10 @@ function VendorBillSummary() {
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [perPage, setPerPage] = useState(initialPageSize);
 
-  const po_no = searchParams.get("po_no") || "";
+  const po_number = searchParams.get("po_number") || "";
   const dateFilterEnd = searchParams.get("to") || "";
   const dateFilterFrom = searchParams.get("from") || "";
   const selectStatus = searchParams.get("status") || "";
-
   // selection
   const [selectedIds, setSelectedIds] = useState([]);
 
@@ -51,7 +50,7 @@ function VendorBillSummary() {
   const { data: getBill = {}, isLoading } = useGetAllBillsQuery({
     page: currentPage,
     pageSize: perPage,
-    po_no: po_no,
+    po_number: po_number,
     search: searchQuery,
     dateFrom: dateFilterFrom,
     dateEnd: dateFilterEnd,
@@ -118,8 +117,6 @@ function VendorBillSummary() {
       for (let i = 1; i <= totalPages; i++) pages.push(i);
     } else {
       const left = Math.max(currentPage - siblings, 2);
-
-
       const right = Math.min(currentPage + siblings, totalPages - 1);
 
       pages.push(1);
