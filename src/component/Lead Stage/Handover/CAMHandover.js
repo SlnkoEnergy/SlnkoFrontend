@@ -15,7 +15,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/joy";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import * as Yup from "yup";
@@ -31,6 +31,9 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(null);
   const [showVillage, setShowVillage] = useState(false);
+  const [existingDocs, setExistingDocs] = useState([]);
+  const [attachments, setAttachments] = useState([]);
+  const strictOnce = useRef(false);
   const states = [
     "Andhra Pradesh",
     "Arunachal Pradesh",
@@ -246,7 +249,41 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
   const [searchParams] = useSearchParams();
   const LeadId = sessionStorage.getItem("submitInfo");
   const id = searchParams.get("id");
+  const onPickFiles = (e) => {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    if (!files.length) return;
 
+    const MAX = 15 * 1024 * 1024;
+    const accepted = files.filter((f) => f.size <= MAX);
+    const rejected = files.filter((f) => f.size > MAX);
+    if (rejected.length) {
+      toast.warn(`Skipped (>15MB): ${rejected.map((f) => f.name).join(", ")}`);
+    }
+
+    setAttachments((prev) => {
+      const seen = new Set(prev.map((o) => `${o.file.name}|${o.file.size}`));
+      const add = [];
+      for (const f of accepted) {
+        const key = `${f.name}|${f.size}`;
+        if (!seen.has(key)) {
+          // default filename (editable): without extension by default
+          const base = f.name.replace(/\.[^.]+$/, "");
+          add.push({ file: f, filename: base });
+        }
+      }
+      return add.length ? [...prev, ...add] : prev;
+    });
+
+    e.currentTarget.value = "";
+  };
+  const updatePickedFilename = (idx, name) => {
+    setAttachments((prev) =>
+      prev.map((o, i) => (i === idx ? { ...o, filename: name } : o))
+    );
+  };
+  const removePicked = (idx) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== idx));
+  };
   const {
     data: getHandOverSheet,
     isLoading,
@@ -292,7 +329,19 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
         },
       }));
     }
+   
+      const docs = Array.isArray(handoverData?.documents)
+        ? handoverData?.documents.map((d) => ({
+            filename: d?.filename || "document",
+            fileurl: d?.fileurl || d?.url || "",
+          }))
+        : [];
+   
+      setExistingDocs(docs.filter((d) => d.fileurl));
+   
   }, [getHandOverSheet]);
+
+  console.log(handoverData?.documents)
 
   const handoverSchema = Yup.object().shape({
     customer_details: Yup.object().shape({
@@ -590,7 +639,15 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
         status_of_handoversheet: "Approved",
       };
 
-      await updateHandOver(updatedFormData).unwrap();
+      const fd = new FormData();
+      fd.append("data", JSON.stringify(updatedFormData));
+
+      attachments.forEach(({ file, filename }) => {
+        fd.append("files", file);
+        fd.append("names", (filename || "").trim());
+      });
+
+      await updateHandOver({ _id: formData._id, formData: fd }).unwrap();
       toast.success("Project updated successfully.");
 
       await updateStatusHandOver(statusPayload).unwrap();
@@ -640,11 +697,7 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
       <Accordion>
         <AccordionSummary
           expandIcon={<ExpandMoreIcon />}
-          sx={{
-            backgroundColor: "#e0e0e0",
-            padding: 1.5,
-            marginBottom: "1.5rem",
-          }}
+         sx={summarySx}
         >
           <Typography level="h4">CAM</Typography>
         </AccordionSummary>
@@ -1274,12 +1327,7 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
       <Accordion>
         <AccordionSummary
           expandIcon={<ExpandMoreIcon />}
-          sx={{
-            backgroundColor: "#e0e0e0",
-            padding: 1.5,
-            marginBottom: "1.5rem",
-            marginTop: "1.0rem",
-          }}
+          sx={summarySx}
         >
           <Typography level="h4">Internal Ops</Typography>
         </AccordionSummary>
@@ -1386,12 +1434,7 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
       <Accordion>
         <AccordionSummary
           expandIcon={<ExpandMoreIcon />}
-          sx={{
-            backgroundColor: "#e0e0e0",
-            padding: 1.5,
-            marginTop: "1.0rem",
-            marginBottom: "1.5rem",
-          }}
+          sx={summarySx}
         >
           <Typography level="h4">BD</Typography>
         </AccordionSummary>
@@ -2079,7 +2122,169 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
           </Grid>
         </AccordionDetails>
       </Accordion>
+      <Accordion
+        expanded={expanded === "attachments"}
+        onChange={() => handleExpand("attachments")}
+      >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={summarySx}>
+          <Typography>Attachments</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <Typography level="body1" sx={{ fontWeight: "bold", mb: 0.5 }}>
+                Existing Documents
+              </Typography>
 
+              {existingDocs.length === 0 ? (
+                <Typography level="body2" sx={{ color: "text.secondary" }}>
+                  No attachments found.
+                </Typography>
+              ) : (
+                <div
+                  style={{
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 8,
+                    padding: 12,
+                  }}
+                >
+                  {existingDocs.map((doc, idx) => (
+                    <div
+                      key={`${doc.fileurl}-${idx}`}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        fontSize: 14,
+                        padding: "6px 0",
+                        borderBottom:
+                          idx === existingDocs.length - 1
+                            ? "none"
+                            : "1px dashed #eee",
+                      }}
+                    >
+                      <span
+                        style={{
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {doc.filename}
+                      </span>
+                      <a
+                        href={doc.fileurl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          color: "#1f487c",
+                          textDecoration: "underline",
+                          marginLeft: 12,
+                        }}
+                      >
+                        Download
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Grid>
+
+            <Grid item xs={12} mt={1}>
+              <Typography level="body1" sx={{ fontWeight: "bold", mb: 0.5 }}>
+                Add More Files (optional)
+              </Typography>
+              <Input
+                type="file"
+                multiple
+                onChange={onPickFiles}
+                slotProps={{
+                  input: {
+                    accept:
+                      ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.csv,.txt",
+                  },
+                }}
+              />
+
+              {attachments.length > 0 && (
+                <div
+                  style={{
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 8,
+                    padding: 12,
+                    marginTop: 10,
+                  }}
+                >
+                  <Typography level="body2" sx={{ mb: 1, fontWeight: "bold" }}>
+                    Selected Files ({attachments.length})
+                  </Typography>
+
+                  {attachments.map((o, idx) => (
+                    <div
+                      key={`${o.file.name}-${o.file.size}-${idx}`}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr auto",
+                        gap: 12,
+                        padding: "10px 0",
+                        borderBottom:
+                          idx === attachments.length - 1
+                            ? "none"
+                            : "1px dashed #eee",
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: 14, marginBottom: 6 }}>
+                          <strong>Original:</strong>{" "}
+                          <span style={{ wordBreak: "break-all" }}>
+                            {o.file.name}
+                          </span>{" "}
+                          <span style={{ color: "#6b7280" }}>
+                            ({(o.file.size / (1024 * 1024)).toFixed(2)} MB)
+                          </span>
+                        </div>
+
+                        {/* Editable filename to save in DB */}
+                        <Typography level="body2" sx={{ mb: 0.5 }}>
+                          File name to save in DB
+                        </Typography>
+                        <Input
+                          placeholder="e.g. PPA_Agreement_V1"
+                          value={o.filename}
+                          onChange={(e) =>
+                            updatePickedFilename(idx, e.target.value)
+                          }
+                          sx={{ maxWidth: 480 }}
+                        />
+                      </div>
+
+                      <div
+                        style={{ display: "flex", alignItems: "flex-start" }}
+                      >
+                        <Button
+                          size="sm"
+                          variant="outlined"
+                          color="neutral"
+                          onClick={() => removePicked(idx)}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <Typography
+                level="body3"
+                sx={{ color: "text.tertiary", mt: 0.5 }}
+              >
+                Max 15MB per file.
+              </Typography>
+            </Grid>
+          </Grid>
+        </AccordionDetails>
+      </Accordion>
       {!isCAMDash && (
         <Grid container spacing={2} sx={{ marginTop: 2 }}>
           <Grid item xs={6}>
@@ -2109,5 +2314,20 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
     </Sheet>
   );
 };
+
+const summarySx = {
+  color: "white",
+  fontWeight: "bold",
+  borderTopLeftRadius: 8,
+  borderTopRightRadius: 8,
+  py: 1.5,
+  px: 2,
+  "& .MuiTypography-root": { fontWeight: "bold", fontSize: "1.3rem" },
+  "& .MuiAccordionSummary-expandIconWrapper": { color: "white" },
+  backgroundColor: "#e0e0e0",
+  padding: 1.5,
+  marginBottom: "1.5rem",
+};
+
 
 export default CamHandoverSheetForm;
