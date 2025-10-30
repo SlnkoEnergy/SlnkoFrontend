@@ -21,9 +21,6 @@ import { useGetAllBillsQuery } from "../redux/billsSlice";
 import Axios from "../utils/Axios";
 import dayjs from "dayjs";
 
-const HEADER_STACK = 108;
-const FILTERS_APPROX = 120;
-const PADDING_FIX = 24;
 
 function VendorBillSummary() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -519,7 +516,6 @@ function VendorBillSummary() {
                             ];
                             const first = unique[0];
                             const remaining = unique.slice(1);
-
                             return (
                               <>
                                 {first}
