@@ -24,31 +24,18 @@ export const billsApi = createApi({
     }),
 
     getAllBills: builder.query({
-      query: (args = {}) => {
-        const {
-          page = 1,
-          pageSize = 10,
-          search,
-          status,
-          dateFrom,
-          dateEnd,
-          po_no,
-          date,
-        } = args;
+      query: ({
+        page = 1,
+        search = "",
+        status = "",
+        pageSize = 10,
+        date = "",
+        po_number,
+      }) => {
+        // decode status so %20 becomes space
+        const cleanStatus = status ? decodeURIComponent(status) : "";
 
-        const params = new URLSearchParams();
-        params.set("page", String(page));
-        params.set("pageSize", String(pageSize));
-
-        if (search && search.trim()) params.set("search", search);
-        if (status && status.trim()) params.set("status", status); 
-        if (dateFrom && dateFrom.trim()) params.set("dateFrom", dateFrom);
-        if (dateEnd && dateEnd.trim()) params.set("dateEnd", dateEnd);
-        if (po_no && String(po_no).trim()) params.set("po_no", po_no);
-
-        // console.log(params.toString());
-
-        return `bill?${params.toString()}`;
+        return `bill?page=${page}&search=${search}&status=${cleanStatus}&pageSize=${pageSize}&date=${date}&po_number=${po_number}`;
       },
       transformResponse: (response) => ({
         data: response.data || [],

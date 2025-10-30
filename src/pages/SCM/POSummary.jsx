@@ -78,7 +78,7 @@ function DashboardSCM() {
         deliveryFrom: deliveryFrom,
         deliveryTo: deliveryTo,
       }
-      const blob = await exportPos(filters).unwrap();
+      const blob = await exportPos({filters}).unwrap();
       const fileName = `po_filtered_${new Date()
         .toISOString()
         .slice(0, 10)}.csv`;
