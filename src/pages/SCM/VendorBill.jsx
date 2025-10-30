@@ -44,7 +44,7 @@ function Bill_History() {
 
   const fields = [
     {
-      key: "billStatus",
+      key: "status",
       label: "Filter By Bill Status",
       type: "select",
       options: status.map((d) => ({
@@ -264,7 +264,7 @@ function Bill_History() {
               title="Filters"
               fields={fields}
               onApply={(values) => {
-                setSelectStatus(values?.billStatus || "");
+                setSelectStatus(values?.status || "");
                 setDateFilterFrom(values?.dateFilter?.from || "");
                 setDateFilterEnd(values?.dateFilter?.to || "");
 
