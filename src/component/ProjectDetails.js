@@ -36,6 +36,8 @@ import PurchaseRequestCard from "./PurchaseRequestCard";
 import ScopeDetail from "./Scope";
 import Posts from "./Posts";
 import Documents from "./Document";
+import ReportProblemRoundedIcon from "@mui/icons-material/ReportProblemRounded";
+import { Alert } from "@mui/joy";
 
 /* ---------------- helpers ---------------- */
 const getUserData = () => {
@@ -149,17 +151,12 @@ function pickCountdownTargetFromProject(project) {
   if (futures.length) {
     const soonest = futures.reduce((a, b) => (a.date < b.date ? a : b));
     return { target: soonest.date, usedKey: soonest.key };
-  }
 
-  // else latest past (already expired)
-  const latestPast = candidates.reduce((a, b) => (a.date > b.date ? a : b));
-  return { target: latestPast.date, usedKey: latestPast.key };
+    const latestPast = candidates.reduce((a, b) => (a.date > b.date ? a : b));
+    return { target: latestPast.date, usedKey: latestPast.key };
+  }
 }
 
-/** Remaining days chip:
- * - If `days` (number) is provided from API: use it (no ticking).
- * - Else fallback to live countdown using `target` & `usedKey`.
- */
 function RemainingDaysChip({ days, target, usedKey }) {
   const [text, setText] = useState("—");
   const [color, setColor] = useState("neutral");
@@ -374,6 +371,14 @@ export default function Project_Detail() {
     [projectDetails]
   );
 
+  const isLoanDocPending = (loanVal) =>
+    /document[_\s]?pending/i.test(String(loanVal || ""));
+
+  const pendingDocNames = (arr) =>
+    (Array.isArray(arr) ? arr : [])
+      .map((d) => String(d?.filename || "").trim())
+      .filter(Boolean);
+
   return (
     <Box
       sx={{
@@ -495,6 +500,47 @@ export default function Project_Detail() {
             </Box>
 
             <Divider sx={{ my: 1 }} />
+
+            {/* 🔴 Document Pending Alert */}
+            {isLoanDocPending(projectDetails?.loan) && (
+              <Box sx={{ mb: 1 }}>
+                <Tooltip
+                  arrow
+                  title={
+                    <Box sx={{ maxWidth: 320 }}>
+                      <Typography level="title-sm" sx={{ mb: 0.5 }}>
+                        Missing Documents
+                      </Typography>
+                      {pendingDocNames(projectDetails?.documents_pending).length
+                        ? pendingDocNames(
+                            projectDetails?.documents_pending
+                          ).map((n, i) => (
+                            <Typography
+                              key={`${n}-${i}`}
+                              level="body-xs"
+                              sx={{ display: "block" }}
+                            >
+                              • {n}
+                            </Typography>
+                          ))
+                        : "No list available."}
+                    </Box>
+                  }
+                >
+                  <Chip
+                    size="sm"
+                    variant="solid"
+                    color="danger"
+                    startDecorator={
+                      <ReportProblemRoundedIcon fontSize="small" />
+                    }
+                    sx={{ fontWeight: 700 }}
+                  >
+                    Loan Document Pending
+                  </Chip>
+                </Tooltip>
+              </Box>
+            )}
 
             <Stack spacing={1}>
               <Stack direction="row" spacing={1} alignItems="center">
