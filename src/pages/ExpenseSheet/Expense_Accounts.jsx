@@ -115,7 +115,10 @@ function Accounts_Expense() {
     if (dateTo) sp.set("to", dateTo);
     else sp.delete("to");
 
-    sp.set("page", 1);
+    if (department || status || dateFrom || dateTo)
+      sp.set("page", 1);
+
+    
     setSearchParams(sp);
   }, [status, department, dateFrom, dateTo])
 
