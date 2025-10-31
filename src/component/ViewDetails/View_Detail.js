@@ -198,13 +198,28 @@ export default function CustomerPaymentSummary() {
     return isNaN(x) ? "—" : `${x.toLocaleDateString()}`;
   };
 
-  const normalizeAttachments = (atts) =>
-    (Array.isArray(atts) ? atts : [])
-      .map((a) => ({
-        url: a?.url || a?.attachment_url || "",
-        name: a?.name || a?.attachment_name || "File",
-      }))
-      .filter((a) => a.url);
+const normalizeAttachments = (atts) => {
+
+  const arr = Array.isArray(atts) ? atts : atts ? [atts] : [];
+
+  return arr
+    .map((a) => {
+      const url =
+        a?.url ||
+        a?.attachment_url ||
+        a?.fileurl ||
+        "";
+      const name =
+        a?.name ||
+        a?.attachment_name ||
+        a?.filename ||
+        (url ? url.split("/").pop() : "File");
+
+      return { url, name };
+    })
+    .filter((a) => a.url);
+};
+
 
   const getItemLabel = (row) => {
     if (typeof row?.item_name === "string") return row.item_name;
@@ -746,33 +761,33 @@ export default function CustomerPaymentSummary() {
   };
 
   const addFiles = (files) => {
-    const incoming = Array.from(files || []).map((f) => ({
-      file: f,
-      attachment_name: f.name,
-    }));
-
+    const newFiles = Array.from(files).map((file) => ({ file }));
     setSalesFiles((prev) => {
-      const map = new Map(
-        prev.map((x) => [x.file.name + x.file.size + x.file.lastModified, x])
-      );
-      incoming.forEach((x) => {
-        const k = x.file.name + x.file.size + x.file.lastModified;
-        if (!map.has(k)) map.set(k, x);
+      const all = [...prev, ...newFiles];
+      // Remove duplicates by name + size + lastModified
+      const seen = new Set();
+      return all.filter((f) => {
+        const key = `${f.file.name}-${f.file.size}-${f.file.lastModified}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
       });
-      return Array.from(map.values());
     });
   };
 
   const onFileInputChange = (e) => addFiles(e.target.files);
+
   const onDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
     addFiles(e.dataTransfer.files);
   };
+
   const onDragOver = (e) => {
     e.preventDefault();
     setIsDragging(true);
   };
+
   const onDragLeave = () => setIsDragging(false);
 
   const removeFile = (file) => {
@@ -787,6 +802,7 @@ export default function CustomerPaymentSummary() {
       )
     );
   };
+
   const clearAllFiles = () => setSalesFiles([]);
   const [saleDetailOpen, setSaleDetailOpen] = useState(false);
   const [activeSale, setActiveSale] = useState(null);
@@ -1005,12 +1021,6 @@ export default function CustomerPaymentSummary() {
         </Box>
       </Box>
     );
-  };
-
-  const formatIndianNumber = (val) => {
-    const n = Number(val);
-    if (!isFinite(n)) return "—";
-    return n.toLocaleString("en-IN");
   };
 
   const RupeeValue = ({ value, showSymbol = true }) => {
@@ -2351,7 +2361,10 @@ export default function CustomerPaymentSummary() {
                         return (
                           <tr key={sale._id || `${sale.po_number}-${idx}`}>
                             {/* Converted PO */}
-                            <td>
+                            <td style={{          
+    minWidth: "160px",
+
+  }}>
                               <Stack spacing={0.75}>
                                 <Stack
                                   direction="row"
@@ -2573,7 +2586,7 @@ export default function CustomerPaymentSummary() {
 
                       <Typography level="body-sm">
                         <strong>Converted By:</strong>{" "}
-                        {activeSale?.user_name ?? "—"}
+                        {activeSale?.converted_by ?? "—"}
                       </Typography>
                       <Stack direction="row" spacing={1} alignItems="center">
                         <Typography level="body-sm">
@@ -2685,68 +2698,59 @@ export default function CustomerPaymentSummary() {
                         );
                       })()}
 
-                      {/* --- Attachments --- */}
-                      <Box>
-                        <Typography level="body-sm" sx={{ mb: 0.5 }}>
-                          <strong>Attachments</strong>
-                        </Typography>
-                        <Sheet
-                          variant="soft"
-                          sx={{
-                            p: 1,
-                            borderRadius: "md",
-                            maxHeight: 220,
-                            overflow: "auto",
-                          }}
-                        >
-                          <Stack spacing={0.75}>
-                            {normalizeAttachments(activeSale?.attachments)
-                              .length ? (
-                              normalizeAttachments(activeSale?.attachments).map(
-                                (a, i) => (
-                                  <Box
-                                    key={a.url || `file-${i}`}
-                                    sx={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "space-between",
-                                      gap: 1,
-                                      px: 1,
-                                      py: 0.75,
-                                      borderRadius: "sm",
-                                      "&:hover": {
-                                        backgroundColor: "neutral.plainHoverBg",
-                                      },
-                                    }}
-                                  >
-                                    <Stack
-                                      direction="row"
-                                      spacing={1}
-                                      alignItems="center"
-                                    >
-                                      <InsertDriveFileRounded fontSize="small" />
-                                      <Link
-                                        href={a.url}
-                                        target="_blank"
-                                        rel="noopener"
-                                        underline="hover"
-                                      >
-                                        {a.name}
-                                      </Link>
-                                    </Stack>
-                                  </Box>
-                                )
-                              )
-                            ) : (
-                              <Typography level="body-xs" sx={{ opacity: 0.7 }}>
-                                No attachments
-                              </Typography>
-                            )}
-                          </Stack>
-                        </Sheet>
-                      </Box>
+                  
+<Box>
+  <Typography level="body-sm" sx={{ mb: 0.5 }}>
+    <strong>Attachments</strong>
+  </Typography>
+  <Sheet
+    variant="soft"
+    sx={{ p: 1, borderRadius: "md", maxHeight: 220, overflow: "auto" }}
+  >
+    <Stack spacing={0.75}>
+      {(() => {
+      
+        const files = normalizeAttachments(activeSale?.attachments);
 
-                      {/* --- Footer --- */}
+        return files.length ? (
+          files.map((a, i) => (
+            <Box
+              key={a.url || `file-${i}`}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 1,
+                px: 1,
+                py: 0.75,
+                borderRadius: "sm",
+                "&:hover": { backgroundColor: "neutral.plainHoverBg" },
+              }}
+            >
+              <Stack direction="row" spacing={1} alignItems="center">
+                <InsertDriveFileRounded fontSize="small" />
+                <Link
+                  href={a.url}
+                  target="_blank"
+                  rel="noopener"
+                  underline="hover"
+                >
+                  {a.name || a.url?.split("/").pop() || "File"}
+                </Link>
+              </Stack>
+            </Box>
+          ))
+        ) : (
+          <Typography level="body-xs" sx={{ opacity: 0.7 }}>
+            No attachments
+          </Typography>
+        );
+      })()}
+    </Stack>
+  </Sheet>
+</Box>
+
+
                       <Stack
                         direction="row"
                         spacing={1}
@@ -3199,7 +3203,6 @@ export default function CustomerPaymentSummary() {
 
                     const basicExceeds = basic > billBasic;
                     const showInfo = billBasic > totalAdvance;
-                    const infoText = `Bill Basic (${billBasic.toLocaleString()}) exceeds advance paid (${totalAdvance.toLocaleString()})`;
 
                     return (
                       <Box
@@ -3222,43 +3225,17 @@ export default function CustomerPaymentSummary() {
                           },
                         }}
                       >
-                        {/* PO No + Info Icon */}
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 0.75,
-                            justifyContent: "flex-start",
-                          }}
-                        >
-                          {/* {showInfo && (
-                      <Tooltip title={infoText} placement="top-start">
-                        <InfoOutlined
-                          sx={{
-                            color: "danger.solidBg",
-                            fontSize: 18,
-                            cursor: "pointer",
-                            flexShrink: 0,
-                          }}
-                        />
-                      </Tooltip>
-                    )} */}
-                          <Typography level="body-sm" sx={{ fontWeight: 600 }}>
-                            {po.po_number}
-                          </Typography>
-                        </Box>
+                        {/* PO No. */}
+                        <Typography level="body-sm" sx={{ fontWeight: 600 }}>
+                          {po.po_number}
+                        </Typography>
 
-                        {/* PO Value */}
                         <Typography level="body-sm" textAlign="right">
                           {poValue.toLocaleString()}
                         </Typography>
-
-                        {/* Bill Basic */}
                         <Typography level="body-sm" textAlign="right">
                           {billBasic.toLocaleString()}
                         </Typography>
-
-                        {/* Advance Paid */}
                         <Typography
                           level="body-sm"
                           textAlign="right"
@@ -3288,7 +3265,7 @@ export default function CustomerPaymentSummary() {
                           }}
                         />
 
-                        {/* GST on Sales (always editable) */}
+                        {/* GST on Sales */}
                         <Input
                           size="sm"
                           type="number"
@@ -3353,6 +3330,87 @@ export default function CustomerPaymentSummary() {
                     : "No files selected"}
                 </Typography>
               </Sheet>
+        
+              {salesFiles.length > 0 && (
+                <Box
+                  sx={{
+                    mt: 1.5,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 0.75,
+                    maxHeight: 140,
+                    overflowY: "auto",
+                  }}
+                >
+                  {salesFiles.map(({ file }) => (
+                    <Box
+                      key={`${file.name}-${file.size}-${file.lastModified}`}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        backgroundColor: "background.level1",
+                        borderRadius: "sm",
+                        px: 1.2,
+                        py: 0.5,
+                        border: "1px solid",
+                        borderColor: "neutral.outlinedBorder",
+                        "&:hover": {
+                          backgroundColor: "neutral.plainHoverBg",
+                        },
+                      }}
+                    >
+                      <Typography
+                        level="body-sm"
+                        sx={{
+                          wordBreak: "break-all",
+                          flex: 1,
+                          pr: 1,
+                          fontSize: "sm",
+                        }}
+                      >
+                        {file.name}
+                      </Typography>
+
+                    
+                      <Box
+                        onClick={() => removeFile(file)}
+                        sx={{
+                          cursor: "pointer",
+                          color: "danger.solidBg",
+                          "&:hover": { color: "danger.plainColor" },
+                          display: "flex",
+                          alignItems: "center",
+                        }}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          width="18"
+                          fill="currentColor"
+                        >
+                          <path d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7A1 1 0 0 0 5.7 7.11L10.59 12l-4.9 4.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.9a1 1 0 0 0 1.41-1.41L13.41 12l4.9-4.89a1 1 0 0 0-.01-1.4z" />
+                        </svg>
+                      </Box>
+                    </Box>
+                  ))}
+
+                  <Button
+                    variant="outlined"
+                    color="neutral"
+                    size="sm"
+                    onClick={clearAllFiles}
+                    sx={{
+                      alignSelf: "flex-end",
+                      mt: 0.5,
+                      fontSize: "xs",
+                    }}
+                  >
+                    Clear All
+                  </Button>
+                </Box>
+              )}
 
               {/* ---- Invoice ---- */}
               <FormControl>
