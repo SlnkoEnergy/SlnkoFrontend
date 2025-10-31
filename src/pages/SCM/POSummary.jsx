@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import Header from "../../component/Partials/Header";
 import PurchaseOrder from "../../component/PurchaseOrderSummary";
 import { toast } from "react-toastify";
+import { useExportPosMutation } from "../../redux/purchasesSlice";
 
 function POSummary() {
   const navigate = useNavigate();
@@ -35,15 +36,45 @@ function POSummary() {
 
   const poSummaryRef = useRef();
 
-  const handleExportToCSV = () => {
-    if (poSummaryRef.current) {
-      poSummaryRef.current.exportToCSV();
+  const [exportPos, { isLoading: isExporting }] = useExportPosMutation();
+
+const handleExportToCSV = async () => {
+    try {
+      const ids = (selectedPOIds || []).filter(Boolean);
+
+      if (!ids.length) {
+        toast.info("Please select at least one PO from the table.");
+        return;
+      }
+
+      const blob = await exportPos({ purchaseorders: ids }).unwrap();
+
+      const fileName = `po_${new Date().toISOString().slice(0, 10)}.csv`;
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+
+      toast.success(`Exported ${ids.length} PO${ids.length > 1 ? "s" : ""}`);
+    } catch (error) {
+      console.error("Export POs failed:", error);
+      const msg =
+        error?.data?.message ||
+        error?.error ||
+        "Failed to export POs. Please try again.";
+      toast.error(msg);
     }
   };
 
+ 
+
   // NEW: open logistics with selected PO(s)
   const handleOpenLogisticsWithSeed = () => {
-    // expects PurchaseOrderSummary to expose getSelectedPOSeed() via useImperativeHandle
     const seed = poSummaryRef.current?.getSelectedPOSeed?.();
     const list = seed?.pos || [];
 
@@ -51,25 +82,10 @@ function POSummary() {
       toast.info("Please select at least one PO from the table.");
       return;
     }
-
-    // Navigate with seed so AddLogisticForm can auto-fill the Products table
     navigate("/logistics-form?mode=add", {
-      state: { logisticSeed: seed }, // shape: { pos: [{ _id, po_number }, ...] }
+      state: { logisticSeed: seed },
     });
   };
-
-  const allowedUsers = [
-    "IT Team",
-    "Guddu Rani Dubey",
-    "Varun Mishra",
-    "Prachi Singh",
-    "Ajay Singh",
-    "Aryan Maheshwari",
-    "Sarthak Sharma",
-    "Naresh Kumar",
-    "Shubham Gupta",
-    "Gagan Tayal",
-  ];
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -173,6 +189,14 @@ function POSummary() {
                   >
                     Logistics Form
                   </Button>
+                  <Button
+                    color="primary"
+                    variant="outlined"
+                    size="sm"
+                    onClick={handleExportToCSV}
+                  >
+                    Export to CSV
+                  </Button>
                 </>
               )}
               <Button
@@ -189,7 +213,7 @@ function POSummary() {
           <PurchaseOrder
             ref={poSummaryRef}
             onSelectionChange={setSelectedPOIds}
-            hideInlineBulkBar 
+            hideInlineBulkBar
           />
         </Box>
       </Box>
