@@ -78,7 +78,7 @@ function DashboardSCM() {
         deliveryFrom: deliveryFrom,
         deliveryTo: deliveryTo,
       }
-      const blob = await exportPos({filters}).unwrap();
+      const blob = await exportPos({ filters }).unwrap();
       const fileName = `po_filtered_${new Date()
         .toISOString()
         .slice(0, 10)}.csv`;
@@ -144,7 +144,7 @@ function DashboardSCM() {
 
   const fields = [
     {
-      key: "Status",
+      key: "status",
       label: "Filter By Delivery Status",
       type: "select",
       options: statusOptions.map((d) => ({ label: d, value: d })),
@@ -165,12 +165,12 @@ function DashboardSCM() {
       options: allMaterials.map((d) => ({ label: d.name, value: d.name })),
     },
     {
-      key: "etd_date",
+      key: "etd",
       label: "Filter By ETD Date",
       type: "daterange",
     },
     {
-      key: "delivery_date",
+      key: "delivery",
       label: "Filter By Delivery Date",
       type: "daterange",
     },
@@ -178,7 +178,7 @@ function DashboardSCM() {
 
   // IMPORTANT: read the SAME KEYS the child writes/reads
   const [selectStatus, setSelectStatus] = useState(
-    searchParams.get("status") || ""
+    searchParams.get("status" || "")
   );
   const [selectBillStatus, setSelectBillStatus] = useState(
     searchParams.get("poStatus") || ""
@@ -187,14 +187,14 @@ function DashboardSCM() {
     searchParams.get("itemSearch") || ""
   );
   const [etdDateFrom, setEtdDateFrom] = useState(
-    searchParams.get("etdFrom") || ""
+    searchParams.get("etd_from") || ""
   );
-  const [etdDateTo, setEtdDateTo] = useState(searchParams.get("etdTo") || "");
+  const [etdDateTo, setEtdDateTo] = useState(searchParams.get("etd_to") || "");
   const [deliveryFrom, setDeliveryFrom] = useState(
-    searchParams.get("deliveryFrom") || ""
+    searchParams.get("delivery_from") || ""
   );
   const [deliveryTo, setDeliveryTo] = useState(
-    searchParams.get("deliveryTo") || ""
+    searchParams.get("delivery_to") || ""
   );
 
   useEffect(() => {
@@ -209,17 +209,20 @@ function DashboardSCM() {
     if (selectItem) sp.set("itemSearch", selectItem);
     else sp.delete("itemSearch");
 
-    if (etdDateTo) sp.set("etdTo", etdDateTo);
-    else sp.delete("etdTo");
+    if (etdDateTo) sp.set("etd_to", etdDateTo);
+    else sp.delete("etd_to");
 
-    if (etdDateFrom) sp.set("etdFrom", etdDateFrom);
-    else sp.delete("etdFrom");
+    if (etdDateFrom) sp.set("etd_from", etdDateFrom);
+    else sp.delete("etd_from");
 
-    if (deliveryFrom) sp.set("deliveryFrom", deliveryFrom);
-    else sp.delete("deliveryFrom");
+    if (deliveryFrom) sp.set("delivery_from", deliveryFrom);
+    else sp.delete("delivery_from");
 
-    if (deliveryTo) sp.set("deliveryTo", deliveryTo);
-    else sp.delete("deliveryTo");
+    if (deliveryTo) sp.set("delivery_to", deliveryTo);
+    else sp.delete("delivery_to");
+
+    if (selectBillStatus || selectStatus || selectItem || etdDateFrom || etdDateTo || deliveryFrom || deliveryTo)
+      sp.set("page", 1);
 
     setSearchParams(sp);
   }, [
@@ -232,7 +235,6 @@ function DashboardSCM() {
     deliveryTo,
   ]);
 
-  // Version flag to let child know Apply/Reset happened
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -457,13 +459,13 @@ function DashboardSCM() {
                 title="Filters"
                 fields={fields}
                 onApply={(values) => {
-                  setSelectStatus(values?.Status || "");
-                  setSelectBillStatus(values?.poStatus || "");
-                  setSelectItem(values?.itemSearch || "");
-                  setEtdDateFrom(values?.etd_date?.from || "");
-                  setEtdDateTo(values?.etd_date?.to || "");
-                  setDeliveryFrom(values?.delivery_date?.from || "");
-                  setDeliveryTo(values?.delivery_date?.to || "");
+                  setSelectStatus(values?.status);
+                  setSelectBillStatus(values?.poStatus);
+                  setSelectItem(values?.itemSearch);
+                  setEtdDateFrom(values?.etd?.from);
+                  setEtdDateTo(values?.etd?.to);
+                  setDeliveryFrom(values?.delivery?.from);
+                  setDeliveryTo(values?.delivery?.to);
 
                   setOpen(false);
                 }}
@@ -501,7 +503,7 @@ function DashboardSCM() {
             ref={poSummaryRef}
             onSelectionChange={setSelectedPOIds}
             hideInlineBulkBar
-            selectStatus={selectStatus}
+            // selectStatus={selectStatus}
             selectBillStatus={selectBillStatus}
             selectItem={selectItem}
             delivery_From={deliveryFrom}
