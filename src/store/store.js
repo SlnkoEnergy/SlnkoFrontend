@@ -30,6 +30,7 @@ import { postsApi } from "../redux/postsSlice";
 import { approvalsApi } from "../redux/ApprovalsSlice";
 import {leadsApi} from "../redux/leadsSlice"
 import { emailApi } from "../redux/emailSlice";
+import { documentApi } from "../redux/documentSlice";
 
 export const store = configureStore({
   reducer: {
@@ -63,7 +64,8 @@ export const store = configureStore({
     [inspectionApi.reducerPath]: inspectionApi.reducer,
     [postsApi.reducerPath] : postsApi.reducer,
     [approvalsApi.reducerPath] : approvalsApi.reducer,
-    [emailApi.reducerPath]: emailApi.reducer
+    [emailApi.reducerPath]: emailApi.reducer,
+    [documentApi.reducerPath]: documentApi.reducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -97,6 +99,7 @@ export const store = configureStore({
       inspectionApi.middleware,
       postsApi.middleware,
       approvalsApi.middleware,
-      emailApi.middleware
+      emailApi.middleware,
+      documentApi.middleware
     ),
 });

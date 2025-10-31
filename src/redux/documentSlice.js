@@ -1,24 +1,19 @@
-// src/redux/documentApi.js
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-/** Build FormData from:
- *  items: [{ file: File, name: string }]
- *  links: string[]  (optional direct URLs to save as entries)
- */
 function buildUploadFormData({ items = [], links = [] }) {
   const fd = new FormData();
   items.forEach(({ file, name }) => {
-    fd.append("files", file);        // <-- multer field name
-    fd.append("names[]", name);      // <-- server reads names[] (required)
+    fd.append("files", file);
+    fd.append("names[]", name);
   });
   links.forEach((url) => {
-    fd.append("documents[]", url);   // <-- optional URL rows
+    fd.append("documents[]", url);
   });
   return fd;
 }
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: `${process.env.REACT_APP_API_URL}/documents`,
+  baseUrl: `${process.env.REACT_APP_API_URL}/document`,
   credentials: "include",
   prepareHeaders: (headers) => {
     const token = localStorage.getItem("authToken");
@@ -32,10 +27,9 @@ export const documentApi = createApi({
   baseQuery,
   tagTypes: ["ProjectDocs"],
   endpoints: (builder) => ({
-    /** List docs for a project */
     getProjectDocuments: builder.query({
       query: (projectId) => ({
-        url: `/projects/${projectId}/documents`,
+        url: `/documents?project_id=${projectId}`,
         method: "GET",
       }),
       providesTags: (result, _err, projectId) =>
@@ -47,19 +41,11 @@ export const documentApi = createApi({
           : [{ type: "ProjectDocs", id: `PROJECT-${projectId}` }],
     }),
 
-    /** Upload multiple files (and/or URL links) for a project */
     uploadProjectDocuments: builder.mutation({
-      /**
-       * arg = {
-       *   projectId: string,
-       *   items: [{ file: File, name: string }],
-       *   links?: string[]
-       * }
-       */
       query: ({ projectId, items, links = [] }) => {
         const body = buildUploadFormData({ items, links });
         return {
-          url: `/projects/${projectId}/documents`,
+          url: `?project_id=${projectId}`,
           method: "POST",
           body,
         };
@@ -75,7 +61,6 @@ export const documentApi = createApi({
         url: `/${docId}`,
         method: "DELETE",
       }),
-      // If your API also needs projectId to refetch list, pass it in arg
       invalidatesTags: (_res, _err, arg) =>
         arg.projectId
           ? [{ type: "ProjectDocs", id: `PROJECT-${arg.projectId}` }]

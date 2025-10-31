@@ -1,5 +1,5 @@
 // Documents.jsx
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
   Card,
@@ -18,6 +18,7 @@ import {
   Modal,
   ModalDialog,
   Input,
+  Avatar,
 } from "@mui/joy";
 import CloudUploadRounded from "@mui/icons-material/CloudUploadRounded";
 import DownloadRounded from "@mui/icons-material/DownloadRounded";
@@ -28,20 +29,23 @@ import PictureAsPdfRounded from "@mui/icons-material/PictureAsPdfRounded";
 import DescriptionRounded from "@mui/icons-material/DescriptionRounded";
 import InsertLinkRounded from "@mui/icons-material/InsertLinkRounded";
 import CloseRounded from "@mui/icons-material/CloseRounded";
+import {
+  useGetProjectDocumentsQuery,
+  useUploadProjectDocumentsMutation,
+} from "../redux/documentSlice";
 
 // ---------- helpers ----------
 const prettyBytes = (num = 0) => {
   if (!Number.isFinite(num)) return "-";
   const units = ["B", "KB", "MB", "GB", "TB"];
-  let i = 0;
-  let n = num;
+  let i = 0,
+    n = num;
   while (n >= 1024 && i < units.length - 1) {
     n /= 1024;
     i++;
   }
   return `${n.toFixed(n >= 10 || i === 0 ? 0 : 1)} ${units[i]}`;
 };
-
 const fmtWhen = (date) => {
   if (!date) return "—";
   const d = new Date(date);
@@ -54,12 +58,10 @@ const fmtWhen = (date) => {
     minute: "2-digit",
   });
 };
-
 const extFromName = (name = "") => {
   const dot = name.lastIndexOf(".");
   return dot > -1 ? name.slice(dot + 1).toLowerCase() : "";
 };
-
 const iconForExt = (ext) => {
   if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext))
     return <ImageRounded fontSize="small" />;
@@ -72,10 +74,8 @@ const iconForExt = (ext) => {
 };
 
 const Documents = ({
-  existingDocs = [],
-  onDownload,
-  onUpload,
-  isUploading = false,
+  projectId,
+  onDownload = (doc) => window.open(doc.url || doc.fileurl, "_blank"),
 }) => {
   const [stagedFiles, setStagedFiles] = useState([]);
   const totalSize = useMemo(
@@ -83,12 +83,14 @@ const Documents = ({
     [stagedFiles]
   );
 
-  // Modal state
+  const [uploadDocs, { isLoading: isUploading }] =
+    useUploadProjectDocumentsMutation();
+
   const [open, setOpen] = useState(false);
   const fileInputRef = useRef(null);
   const [dragActive, setDragActive] = useState(false);
   const [modalFiles, setModalFiles] = useState([]);
-
+  const [existingDocs, setExistingDocs] = useState([]);
   const handleOpen = () => {
     setOpen(true);
     setModalFiles([]);
@@ -98,23 +100,19 @@ const Documents = ({
     setDragActive(false);
     setModalFiles([]);
   };
-
   const handlePick = () => fileInputRef.current?.click();
 
   const addToModal = (filesLike) => {
     const list = Array.from(filesLike || []);
     if (!list.length) return;
-
     setModalFiles((prev) => {
       const existingKey = new Set(
         prev.map((p) => p.file.name + "::" + p.file.size)
       );
       const next = [...prev];
-
       for (const f of list) {
         const key = f.name + "::" + f.size;
         if (existingKey.has(key)) continue;
-        // default name without extension (user can edit)
         const dot = f.name.lastIndexOf(".");
         const base = dot > 0 ? f.name.slice(0, dot) : f.name;
         next.push({ file: f, name: base, error: "" });
@@ -123,12 +121,34 @@ const Documents = ({
     });
   };
 
+  const { data: documentsResp, isFetching } = useGetProjectDocumentsQuery(
+    projectId,
+    { skip: !projectId }
+  );
+
+  useEffect(() => {
+    const rows = documentsResp?.data ?? documentsResp ?? [];
+
+    const normalized = Array.isArray(rows)
+      ? rows.map((d) => ({
+          _id: d._id,
+          name: d.filename || d.name || "Attachment",
+          url: d.fileurl || d.url,
+          mime: d.fileType || d.mime || "ATTACHMENT",
+          size: d.size,
+          uploadedBy: d.createdBy?.name || "-",
+          uploadedByUrl: d.createdBy?.attachment_url || "",
+          uploadedAt: d.createdAt || d.uploadedAt,
+        }))
+      : [];
+
+    setExistingDocs(normalized);
+  }, [documentsResp]);
+
   const onInputChange = (e) => {
     addToModal(e.target.files);
     e.target.value = "";
   };
-
-  // Drag & drop ONLY inside modal
   const onDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -153,10 +173,8 @@ const Documents = ({
       return copy;
     });
   };
-
-  const removeModalRow = (idx) => {
+  const removeModalRow = (idx) =>
     setModalFiles((prev) => prev.filter((_, i) => i !== idx));
-  };
 
   const allNamesValid =
     modalFiles.length > 0 &&
@@ -166,12 +184,8 @@ const Documents = ({
 
   const confirmAddToQueue = () => {
     if (!allNamesValid) {
-      // mark errors
       setModalFiles((prev) =>
-        prev.map((m) => ({
-          ...m,
-          error: m.name?.trim() ? "" : "Required",
-        }))
+        prev.map((m) => ({ ...m, error: m.name?.trim() ? "" : "Required" }))
       );
       return;
     }
@@ -183,9 +197,8 @@ const Documents = ({
       const map = new Map(
         prev.map((p) => [p.file.name + "::" + p.file.size, p])
       );
-      for (const item of toStage) {
+      for (const item of toStage)
         map.set(item.file.name + "::" + item.file.size, item);
-      }
       return Array.from(map.values());
     });
     handleClose();
@@ -198,8 +211,8 @@ const Documents = ({
   };
 
   const handleUpload = async () => {
-    if (!stagedFiles.length || !onUpload) return;
-    await onUpload(stagedFiles); // pass [{file, name}]
+    if (!stagedFiles.length || !projectId) return;
+    await uploadDocs({ projectId, items: stagedFiles }).unwrap();
     setStagedFiles([]);
   };
 
@@ -238,7 +251,7 @@ const Documents = ({
           </Box>
         </Box>
 
-        {/* Existing docs table (read-only) */}
+        {/* Existing docs (read-only) */}
         <Sheet
           variant="soft"
           sx={{
@@ -263,7 +276,6 @@ const Documents = ({
               {existingDocs.length} item{existingDocs.length === 1 ? "" : "s"}
             </Typography>
           </Box>
-
           <Table
             borderAxis="none"
             size="sm"
@@ -277,11 +289,11 @@ const Documents = ({
           >
             <thead>
               <tr>
-                <th style={{ width: 44 }} />
+                <th style={{ width: 80 }} />
                 <th>Name</th>
                 <th style={{ width: 160 }}>Type/Size</th>
                 <th style={{ width: 260 }}>Uploaded By / When</th>
-                <th style={{ width: 72, textAlign: "right" }}>Actions</th>
+                <th style={{ width: 72, textAlign: "center" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -303,9 +315,12 @@ const Documents = ({
                 </tr>
               )}
               {existingDocs.map((doc) => {
-                const ext = extFromName(doc.name);
+                const name = doc.name || doc.filename || "Attachment";
+                const url = doc.url || doc.fileurl;
+                const mime = doc.mime || doc.fileType || "ATTACHMENT";
+                const ext = extFromName(name);
                 return (
-                  <tr key={doc.id || doc.url || doc.name}>
+                  <tr key={doc._id || url || name}>
                     <td>
                       <Chip
                         size="sm"
@@ -318,7 +333,7 @@ const Documents = ({
                     </td>
                     <td>
                       <Typography level="body-sm" sx={{ fontWeight: 600 }}>
-                        {doc.name || "Attachment"}
+                        {name}
                       </Typography>
                     </td>
                     <td>
@@ -326,25 +341,54 @@ const Documents = ({
                         level="body-sm"
                         sx={{ color: "text.secondary" }}
                       >
-                        {(doc.mime || "ATTACHMENT").toUpperCase()}
+                        {String(mime).toUpperCase()}
                         {doc.size ? ` • ${prettyBytes(doc.size)}` : ""}
                       </Typography>
                     </td>
                     <td>
-                      <Typography
-                        level="body-sm"
-                        sx={{ color: "text.secondary" }}
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
                       >
-                        {doc.uploadedBy || "—"} • {fmtWhen(doc.uploadedAt)}
-                      </Typography>
+                        {doc?.uploadedByUrl ? (
+                          <Tooltip
+                            title={doc.uploadedBy || "Unknown"}
+                            arrow
+                            placement="top"
+                          >
+                            <Avatar
+                              size="sm"
+                              src={doc?.uploadedByUrl}
+                              alt={doc?.uploadedBy || "User"}
+                            />
+                          </Tooltip>
+                        ) : (
+                          <Tooltip
+                            title={doc.uploadedBy || "Unknown"}
+                            arrow
+                            placement="top"
+                          >
+                            <Avatar size="sm">
+                              {(doc?.uploadedBy || "?").charAt(0).toUpperCase()}
+                            </Avatar>
+                          </Tooltip>
+                        )}
+
+                        <Typography
+                          level="body-sm"
+                          sx={{ color: "text.secondary" }}
+                        >
+                          {fmtWhen(doc?.uploadedAt)}
+                        </Typography>
+                      </Box>
                     </td>
+
                     <td style={{ textAlign: "right" }}>
                       <Tooltip title="Download" arrow>
                         <span>
                           <IconButton
                             size="sm"
                             variant="soft"
-                            onClick={() => onDownload?.(doc)}
+                            onClick={() => onDownload({ ...doc, url })}
                           >
                             <DownloadRounded />
                           </IconButton>
@@ -358,7 +402,7 @@ const Documents = ({
           </Table>
         </Sheet>
 
-        {/* Staged files table */}
+        {/* Ready to upload */}
         {stagedFiles.length > 0 && (
           <Sheet
             variant="soft"
@@ -388,7 +432,6 @@ const Documents = ({
                 {prettyBytes(totalSize)}
               </Typography>
             </Box>
-
             <Table
               borderAxis="none"
               size="sm"
@@ -399,11 +442,11 @@ const Documents = ({
             >
               <thead>
                 <tr>
-                  <th style={{ width: 44 }} />
+                  <th style={{ width: 80 }} />
                   <th>File Name (required)</th>
                   <th style={{ width: 160 }}>Type/Size</th>
                   <th style={{ width: 220 }}>When</th>
-                  <th style={{ width: 92, textAlign: "right" }}>Actions</th>
+                  <th style={{ width: 92, textAlign: "center" }} />
                 </tr>
               </thead>
               <tbody>
@@ -497,7 +540,7 @@ const Documents = ({
         )}
       </Card>
 
-      {/* Modal: add files with drag & drop + required names */}
+      {/* Modal: add files + required names */}
       <Modal open={open} onClose={handleClose}>
         <ModalDialog
           variant="outlined"
@@ -528,7 +571,6 @@ const Documents = ({
               gap: 1,
             }}
           >
-            {/* Drop zone */}
             <Sheet
               variant={dragActive ? "soft" : "outlined"}
               onDrop={onDrop}
@@ -561,7 +603,6 @@ const Documents = ({
               />
             </Sheet>
 
-            {/* Modal files table with required name input */}
             <Sheet
               variant="soft"
               sx={{
@@ -587,7 +628,6 @@ const Documents = ({
                   {modalFiles.length} item{modalFiles.length === 1 ? "" : "s"}
                 </Typography>
               </Box>
-
               <Table
                 borderAxis="none"
                 size="sm"
@@ -602,7 +642,7 @@ const Documents = ({
                     <th>Original</th>
                     <th style={{ width: 280 }}>File Name (required)</th>
                     <th style={{ width: 160 }}>Type/Size</th>
-                    <th style={{ width: 64, textAlign: "right" }}>Remove</th>
+                    <th style={{ width: 64 }} />
                   </tr>
                 </thead>
                 <tbody>
