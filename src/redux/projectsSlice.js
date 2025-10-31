@@ -64,6 +64,11 @@ export const projectsApi = createApi({
         `projects?page=${page}&limit=${limit}&search=${search}&status=${status}&sort=${sort}`,
       providesTags: ["Project"],
     }),
+    getAllProjectsForLoan: builder.query({
+      query: ({ page, limit, search, status, sort }) =>
+        `project-loan?page=${page}&limit=${limit}&search=${search}&status=${status}&sort=${sort}`,
+      providesTags: ["Project"],
+    }),
     updateProjectStatus: builder.mutation({
       query: ({ projectId, status, remarks }) => ({
         url: `${projectId}/updateProjectStatus`,
@@ -441,6 +446,7 @@ export const {
   useAddProjectMutation,
   useUpdateProjectMutation,
   useGetAllProjectsQuery,
+  useGetAllProjectsForLoanQuery,
   useGetProjectDropdownForDashboardQuery,
   useUpdateProjectStatusMutation,
   useGetProjectByPIdQuery,

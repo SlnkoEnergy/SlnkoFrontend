@@ -66,6 +66,20 @@ export const documentApi = createApi({
           ? [{ type: "ProjectDocs", id: `PROJECT-${arg.projectId}` }]
           : [],
     }),
+
+    getDocumentByName: builder.query({
+      query: ({ projectId, name }) => ({
+        url: `/document-by-name?project_id=${projectId}&name=${name}`,
+        method: "GET",
+      }),
+      providesTags: (result, _err, projectId) =>
+        result?.data?.length
+          ? [
+              ...result.data.map((d) => ({ type: "ProjectDocs", id: d._id })),
+              { type: "ProjectDocs", id: `PROJECT-${projectId}` },
+            ]
+          : [{ type: "ProjectDocs", id: `PROJECT-${projectId}` }],
+    }),
   }),
 });
 
@@ -73,4 +87,5 @@ export const {
   useGetProjectDocumentsQuery,
   useUploadProjectDocumentsMutation,
   useDeleteDocumentMutation,
+  useGetDocumentByNameQuery,
 } = documentApi;

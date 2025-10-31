@@ -7,98 +7,40 @@ import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
 import FormControl from "@mui/joy/FormControl";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
-import { useTheme } from "@emotion/react";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { useEffect, useMemo, useState } from "react";
-import Tooltip from "@mui/joy/Tooltip";
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
-import { useGetHandOverQuery } from "../redux/camsSlice";
+import { useGetAllProjectsForLoanQuery } from "../redux/projectsSlice";
 
 function AllLoan({ selected, setSelected }) {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(null);
-  const theme = useTheme();
   const [currentPage, setCurrentPage] = useState(1);
 
-  const [selectedTab, setSelectedTab] = useState(
-    () => searchParams.get("tab") || "All"
-  );
   const options = [1, 5, 10, 20, 50, 100];
   const [rowsPerPage, setRowsPerPage] = useState(
     () => Number(searchParams.get("pageSize")) || 10
   );
 
-  const getStatusFilter = (tab) => {
-    switch (tab) {
-      case "Handover Pending":
-        return "handoverpending";
-      case "Scope Pending":
-        return "scopepending";
-      case "Scope Open":
-        return "scopeopen";
-      default:
-        return "submitted,Approved";
-    }
-  };
-  const statusFilter = useMemo(
-    () => getStatusFilter(selectedTab),
-    [selectedTab]
-  );
   const {
-    data: getHandOverSheet = {},
+    data: getLoan = {},
     isLoading,
     refetch,
-  } = useGetHandOverQuery({
+  } = useGetAllProjectsForLoanQuery({
     page: currentPage,
     search: searchQuery,
-    status: statusFilter,
+    status: "",
     limit: rowsPerPage,
+    sort: "-createdAt",
   });
 
-  const ProjectOverView = ({ currentPage, project_id, code, id }) => {
-    return (
-      <>
-        <span
-          style={{
-            cursor: "pointer",
-            color: theme.vars.palette.text.primary,
-            textDecoration: "underline",
-            textDecorationStyle: "dotted",
-            fontSize: "14px",
-          }}
-          onClick={() => {
-            const page = currentPage;
-            sessionStorage.setItem("submitInfo", id);
-            navigate(`/project_detail?page=${page}&project_id=${project_id}`);
-          }}
-        >
-          {code || "-"}
-        </span>
-      </>
-    );
-  };
-
-  const HandOverSheet = Array.isArray(getHandOverSheet?.data)
-    ? getHandOverSheet.data.map((entry) => {
-        return {
-          ...entry,
-          _id: entry._id,
-          ...entry.customer_details,
-          ...entry.order_details,
-          ...entry.project_detail,
-          ...entry.commercial_details,
-          ...entry.other_details,
-          ...entry?.scheme,
-          is_locked: entry.is_locked,
-        };
-      })
-    : [];
-
+  const loanData = getLoan?.data;
+  const loanPagination = getLoan?.pagination;
   useEffect(() => {
     const storedUser = localStorage.getItem("userDetails");
     if (storedUser) {
@@ -110,24 +52,9 @@ function AllLoan({ selected, setSelected }) {
     setSearchQuery(query.toLowerCase());
   };
 
-  const filteredAndSortedData = useMemo(() => {
-    return HandOverSheet.filter((project) =>
-      ["code", "customer", "state"].some((key) =>
-        project[key]
-          ?.toString()
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase())
-      )
-    ).sort((a, b) => {
-      const dateA = new Date(a?.updatedAt || a?.createdAt || 0);
-      const dateB = new Date(b?.updatedAt || b?.createdAt || 0);
-      return dateB - dateA;
-    });
-  }, [HandOverSheet, searchQuery]);
-
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelected(paginatedPayments.map((row) => row._id));
+      setSelected(loanData.map((row) => row._id));
     } else {
       setSelected([]);
     }
@@ -144,10 +71,7 @@ function AllLoan({ selected, setSelected }) {
     setCurrentPage(page);
   }, [searchParams]);
 
-  const paginatedPayments = filteredAndSortedData;
-  const draftPayments = paginatedPayments;
-
-  const total = Number(getHandOverSheet?.total || 0);
+  const total = Number(loanPagination?.totalDocs || 0);
   const pageSize = Number(rowsPerPage || 1);
   const totalPages = Math.ceil(total / pageSize);
 
@@ -163,13 +87,11 @@ function AllLoan({ selected, setSelected }) {
     "Customer",
     "Mobile",
     "State",
-    "Type",
-    "Capacity(AC/DC)",
-    "Slnko Service Charges (with GST)",
+    "Capacity(AC)",
     "Loan Status",
   ];
 
-  const totalCols = 1 + baseHeaders.length;
+  const totalCols = 1 + baseHeaders?.length;
 
   return (
     <Box
@@ -245,11 +167,10 @@ function AllLoan({ selected, setSelected }) {
               >
                 <Checkbox
                   size="sm"
-                  checked={selected.length === paginatedPayments.length}
+                  checked={selected?.length === loanData?.length}
                   onChange={handleSelectAll}
                   indeterminate={
-                    selected.length > 0 &&
-                    selected.length < paginatedPayments.length
+                    selected?.length > 0 && selected?.length < loanData?.length
                   }
                 />
               </th>
@@ -296,8 +217,8 @@ function AllLoan({ selected, setSelected }) {
                   </Box>
                 </td>
               </tr>
-            ) : draftPayments.length > 0 ? (
-              draftPayments.map((project, index) => (
+            ) : loanData?.length > 0 ? (
+              loanData.map((loan, index) => (
                 <tr
                   key={index}
                   style={{
@@ -314,14 +235,14 @@ function AllLoan({ selected, setSelected }) {
                   >
                     <Checkbox
                       size="sm"
-                      checked={selected.includes(project._id)}
+                      checked={selected.includes(loan._id)}
                       onChange={(event) =>
-                        handleRowSelect(project._id, event.target.checked)
+                        handleRowSelect(loan._id, event.target.checked)
                       }
                     />
                   </td>
 
-                  {/* Project Id */}
+                  {/* loan Id */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -329,25 +250,7 @@ function AllLoan({ selected, setSelected }) {
                       textAlign: "left",
                     }}
                   >
-                    {project.is_locked === "locked" &&
-                    project.status_of_handoversheet === "Approved" ? (
-                      <Tooltip title="View Project Detail" arrow>
-                        <span>
-                          <ProjectOverView
-                            currentPage={currentPage}
-                            project_id={project?.project_id}
-                            code={project?.code}
-                            id={project?._id}
-                          />
-                        </span>
-                      </Tooltip>
-                    ) : (
-                      <Tooltip title="No Project Found" arrow>
-                        <span style={{ pointerEvents: "none", opacity: 1 }}>
-                          <button disabled>{project?.code}</button>
-                        </span>
-                      </Tooltip>
-                    )}
+                    {loan.code}
                   </td>
 
                   {/* Customer */}
@@ -358,7 +261,7 @@ function AllLoan({ selected, setSelected }) {
                       textAlign: "left",
                     }}
                   >
-                    {project.customer || "-"}
+                    {loan.customer || "-"}
                   </td>
 
                   {/* Mobile */}
@@ -369,7 +272,7 @@ function AllLoan({ selected, setSelected }) {
                       textAlign: "left",
                     }}
                   >
-                    {project.number || "-"}
+                    {loan.number || "-"}
                   </td>
 
                   {/* State */}
@@ -380,10 +283,10 @@ function AllLoan({ selected, setSelected }) {
                       textAlign: "left",
                     }}
                   >
-                    {project.state || "-"}
+                    {loan.state || "-"}
                   </td>
-
-                  {/* Type (scheme) */}
+                  
+                  {/* Capacity(AC) */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -391,20 +294,7 @@ function AllLoan({ selected, setSelected }) {
                       textAlign: "left",
                     }}
                   >
-                    {project.scheme || "-"}
-                  </td>
-
-                  {/* Capacity(AC/DC) */}
-                  <td
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    {project.project_kwp && project.proposed_dc_capacity
-                      ? `${project.project_kwp} AC / ${project.proposed_dc_capacity} DC`
-                      : "-"}
+                    {loan.project_kwp ? `${loan.project_kwp} AC` : "-"}
                   </td>
 
                   {/* Slnko Service Charges (with GST) */}
@@ -414,9 +304,7 @@ function AllLoan({ selected, setSelected }) {
                       padding: "8px",
                       textAlign: "left",
                     }}
-                  >
-                    {project.total_gst || "-"}
-                  </td>
+                  ></td>
                 </tr>
               ))
             ) : (
@@ -474,7 +362,7 @@ function AllLoan({ selected, setSelected }) {
           Previous
         </Button>
 
-        <Box>Showing {draftPayments.length} results</Box>
+        <Box>Showing {loanData?.length} results</Box>
 
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}

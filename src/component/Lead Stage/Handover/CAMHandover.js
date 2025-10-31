@@ -329,19 +329,18 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
         },
       }));
     }
-   
-      const docs = Array.isArray(handoverData?.documents)
-        ? handoverData?.documents.map((d) => ({
-            filename: d?.filename || "document",
-            fileurl: d?.fileurl || d?.url || "",
-          }))
-        : [];
-   
-      setExistingDocs(docs.filter((d) => d.fileurl));
-   
+
+    const docs = Array.isArray(handoverData?.documents)
+      ? handoverData?.documents.map((d) => ({
+          filename: d?.filename || "document",
+          fileurl: d?.fileurl || d?.url || "",
+        }))
+      : [];
+
+    setExistingDocs(docs.filter((d) => d.fileurl));
   }, [getHandOverSheet]);
 
-  console.log(handoverData?.documents)
+  console.log(handoverData?.documents);
 
   const handoverSchema = Yup.object().shape({
     customer_details: Yup.object().shape({
@@ -695,10 +694,7 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
       </Typography>
 
       <Accordion>
-        <AccordionSummary
-          expandIcon={<ExpandMoreIcon />}
-         sx={summarySx}
-        >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={summarySx}>
           <Typography level="h4">CAM</Typography>
         </AccordionSummary>
         <AccordionDetails>
@@ -1325,10 +1321,7 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
       </Accordion>
 
       <Accordion>
-        <AccordionSummary
-          expandIcon={<ExpandMoreIcon />}
-          sx={summarySx}
-        >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={summarySx}>
           <Typography level="h4">Internal Ops</Typography>
         </AccordionSummary>
 
@@ -1432,10 +1425,7 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
       </Accordion>
 
       <Accordion>
-        <AccordionSummary
-          expandIcon={<ExpandMoreIcon />}
-          sx={summarySx}
-        >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={summarySx}>
           <Typography level="h4">BD</Typography>
         </AccordionSummary>
         <AccordionDetails>
@@ -2286,22 +2276,28 @@ const CamHandoverSheetForm = ({ onBack, p_id }) => {
         </AccordionDetails>
       </Accordion>
       {!isCAMDash && (
-        <Grid container justifyContent={'flex-end'} display={'flex'} spacing={2} sx={{ marginTop: 2 }}>
-          <Grid item xs={3} display={'flex'} justifyContent={'flex-end'}>
+        <Grid
+          container
+          justifyContent={"flex-end"}
+          display={"flex"}
+          spacing={2}
+          sx={{ marginTop: 2 }}
+        >
+          <Grid item xs={3} display={"flex"} justifyContent={"flex-end"}>
             <Button
               onClick={handleSubmit}
-            variant="solid"
-            sx={{
-              backgroundColor: "#3366a3",
-              color: "#fff",
-              "&:hover": { backgroundColor: "#285680" },
-              height: "8px",
-              p: 1.5,
-              fontSize: "1rem",
-              fontWeight: "bold",
-            }}
-            disabled={isLoading}
-            fullWidth
+              variant="solid"
+              sx={{
+                backgroundColor: "#3366a3",
+                color: "#fff",
+                "&:hover": { backgroundColor: "#285680" },
+                height: "8px",
+                p: 1.5,
+                fontSize: "1rem",
+                fontWeight: "bold",
+              }}
+              disabled={isLoading}
+              fullWidth
             >
               Submit
             </Button>
@@ -2325,6 +2321,5 @@ const summarySx = {
   padding: 1.5,
   marginBottom: "1.5rem",
 };
-
 
 export default CamHandoverSheetForm;

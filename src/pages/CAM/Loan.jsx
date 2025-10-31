@@ -7,13 +7,12 @@ import MainHeader from "../../component/Partials/MainHeader";
 import { Button, ModalClose, Modal, ModalDialog, Typography } from "@mui/joy";
 import { useNavigate } from "react-router-dom";
 import SubHeader from "../../component/Partials/SubHeader";
-import { Add, AssignmentIndTwoTone } from "@mui/icons-material";
+import { Add } from "@mui/icons-material";
 import AllLoan from "../../component/AllLoan";
 import AddLoan from "../../component/Forms/AddLoan";
 
 function Loan() {
   const [user, setUser] = useState(null);
-  const [userModel, setUserModel] = useState(false);
   const [selected, setSelected] = useState([]);
   const [snack, setSnack] = useState({ open: false, msg: "" });
   const navigate = useNavigate();
@@ -125,26 +124,6 @@ function Loan() {
           sticky
           rightSlot={
             <>
-              {selected.length > 0 && (
-                <Button
-                  size="sm"
-                  variant="outlined"
-                  sx={{
-                    color: "#3366a3",
-                    borderColor: "#3366a3",
-                    backgroundColor: "transparent",
-                    "--Button-hoverBg": "#e0e0e0",
-                    "--Button-hoverBorderColor": "#3366a3",
-                    "&:hover": { color: "#3366a3" },
-                    height: "8px",
-                  }}
-                  startDecorator={<AssignmentIndTwoTone />}
-                  onClick={() => setUserModel(true)}
-                >
-                  Assign Project
-                </Button>
-              )}
-
               <Button
                 variant="solid"
                 size="sm"

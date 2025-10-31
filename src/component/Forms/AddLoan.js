@@ -16,6 +16,9 @@ import {
   Table,
   IconButton,
   Divider,
+  Chip,
+  Modal,
+  ModalDialog,
 } from "@mui/joy";
 import Delete from "@mui/icons-material/Delete";
 import Add from "@mui/icons-material/Add";
@@ -23,15 +26,17 @@ import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 
 import SearchPickerModal from "../../component/SearchPickerModal";
 import { useLazyGetProjectSearchDropdownQuery } from "../../redux/projectsSlice";
+import { useGetDocumentByNameQuery } from "../../redux/documentSlice";
 
-// --- light/white theme ---
+import {
+  useGetUniqueBanksQuery,
+  useCreateLoanMutation,
+} from "../../redux/loanSlice";
+
+/* ---------------- Theme ---------------- */
 const theme = extendTheme({
   colorSchemes: {
-    light: {
-      palette: {
-        background: { body: "#ffffff", surface: "#ffffff" },
-      },
-    },
+    light: { palette: { background: { body: "#ffffff", surface: "#ffffff" } } },
   },
   fontFamily: {
     body: "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
@@ -42,7 +47,7 @@ const FIRST_LIMIT = 7;
 const MODAL_LIMIT = 7;
 const ACCENT = "#3363a3";
 
-/* ---------------------- Small helpers ---------------------- */
+/* ---------------- Small helpers ---------------- */
 function useDebounce(val, delay = 300) {
   const [v, setV] = React.useState(val);
   React.useEffect(() => {
@@ -56,7 +61,81 @@ const labelFromRow = (r) => {
   return [code].filter(Boolean).join(", ");
 };
 
-/* ---------------- Styled, typeable dropdown ---------------- */
+/* ---------------- Drag & Drop Upload Modal ---------------- */
+function UploadModal({ open, onClose, onPick }) {
+  const [isOver, setIsOver] = React.useState(false);
+  const fileRef = React.useRef(null);
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) onPick(file);
+  };
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsOver(true);
+  };
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsOver(false);
+  };
+
+  return (
+    <Modal open={open} onClose={onClose}>
+      <ModalDialog
+        layout="center"
+        sx={{ p: 2, width: 520, borderRadius: "md", boxShadow: "lg" }}
+      >
+        <Typography level="title-md" sx={{ mb: 1 }}>
+          Upload Document
+        </Typography>
+        <Box
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          sx={{
+            mt: 1,
+            mb: 2,
+            p: 4,
+            textAlign: "center",
+            border: "2px dashed",
+            borderColor: isOver ? "primary.solidBg" : "neutral.outlinedBorder",
+            borderRadius: "md",
+            bgcolor: isOver ? "primary.softBg" : "neutral.softBg",
+            transition: "all .15s",
+            cursor: "pointer",
+          }}
+          onClick={() => fileRef.current?.click()}
+        >
+          <Typography level="body-sm">
+            Drag & drop a file here, or <strong>click to browse</strong>
+          </Typography>
+          <input
+            ref={fileRef}
+            type="file"
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) onPick(f);
+              e.target.value = "";
+            }}
+          />
+        </Box>
+        <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
+          <Button variant="outlined" onClick={onClose}>
+            Cancel
+          </Button>
+        </Box>
+      </ModalDialog>
+    </Modal>
+  );
+}
+
+/* ---------------- Searchable project select ---------------- */
 function SearchableSelect({
   placeholder = "Type to find a project...",
   valueLabel,
@@ -66,24 +145,17 @@ function SearchableSelect({
   onSearchMore,
 }) {
   const rootRef = React.useRef(null);
-  const listRef = React.useRef(null);
-
   const [open, setOpen] = React.useState(false);
   const [input, setInput] = React.useState(valueLabel || "");
   const debounced = useDebounce(input, 150);
 
-  React.useEffect(() => {
-    setInput(valueLabel || "");
-  }, [valueLabel]);
+  React.useEffect(() => setInput(valueLabel || ""), [valueLabel]);
 
   const filtered = React.useMemo(() => {
     const q = (debounced || "").toLowerCase();
     if (!q) return options;
     return options.filter((r) => labelFromRow(r).toLowerCase().includes(q));
   }, [debounced, options]);
-
-  const [highlight, setHighlight] = React.useState(-1);
-  React.useEffect(() => setHighlight(-1), [filtered.length, open]);
 
   React.useEffect(() => {
     function onDocClick(e) {
@@ -101,34 +173,6 @@ function SearchableSelect({
     setOpen(false);
   };
 
-  const onKeyDown = (e) => {
-    if (!open && (e.key === "ArrowDown" || e.key === "Enter")) {
-      setOpen(true);
-      return;
-    }
-    if (!open) return;
-
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setHighlight((h) => Math.min(h + 1, filtered.length)); // +1 is "Search more..."
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setHighlight((h) => Math.max(h - 1, -1));
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      if (highlight === filtered.length) {
-        onSearchMore?.();
-        setOpen(false);
-        return;
-      }
-      if (highlight >= 0 && highlight < filtered.length) {
-        choose(filtered[highlight]);
-      }
-    } else if (e.key === "Escape") {
-      setOpen(false);
-    }
-  };
-
   return (
     <Box ref={rootRef} sx={{ position: "relative" }}>
       <Input
@@ -139,7 +183,6 @@ function SearchableSelect({
           onChangeLabel?.(e.target.value);
         }}
         onFocus={() => setOpen(true)}
-        onKeyDown={onKeyDown}
         startDecorator={<SearchRoundedIcon />}
         variant="plain"
         sx={{
@@ -154,7 +197,6 @@ function SearchableSelect({
 
       {open && (
         <Sheet
-          ref={listRef}
           variant="outlined"
           sx={{
             position: "absolute",
@@ -164,7 +206,6 @@ function SearchableSelect({
             right: 0,
             borderRadius: "sm",
             overflow: "hidden",
-            // dark popup styling like screenshot
             bgcolor: "#fff",
             borderColor: "#fff",
             color: "#fff",
@@ -180,14 +221,11 @@ function SearchableSelect({
               flexDirection: "column",
             }}
           >
-            {filtered.map((r, idx) => {
+            {filtered.map((r) => {
               const lbl = labelFromRow(r);
-              const active = idx === highlight;
               return (
                 <Box
                   key={String(r?._id ?? lbl)}
-                  onMouseEnter={() => setHighlight(idx)}
-                  onMouseLeave={() => setHighlight(-1)}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => choose(r)}
                   sx={{
@@ -195,9 +233,8 @@ function SearchableSelect({
                     py: 1,
                     cursor: "pointer",
                     borderBottom: "1px solid black",
-                    backgroundColor: active ? "#fff" : "#fff",
-                    "&:hover": { backgroundColor: "#fff" },
                     "&:last-of-type": { borderBottom: "none" },
+                    "&:hover": { backgroundColor: "#fff" },
                   }}
                 >
                   <Typography level="body-md">{lbl}</Typography>
@@ -205,21 +242,13 @@ function SearchableSelect({
               );
             })}
 
-            {/* Search more... */}
             <Box
-              onMouseEnter={() => setHighlight(filtered.length)}
-              onMouseLeave={() => setHighlight(-1)}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => {
                 onSearchMore?.();
                 setOpen(false);
               }}
-              sx={{
-                px: 1.25,
-                py: 1,
-                cursor: "pointer",
-                color: ACCENT,
-              }}
+              sx={{ px: 1.25, py: 1, cursor: "pointer", color: ACCENT }}
             >
               <Typography level="body-md" sx={{ fontStyle: "italic" }}>
                 Search more…
@@ -232,58 +261,404 @@ function SearchableSelect({
   );
 }
 
+/* ---------------- Doc title cell ---------------- */
+function DocTitleCell({ value, onChange, onPickExisting, projectId }) {
+  const [input, setInput] = React.useState(value || "");
+  const [open, setOpen] = React.useState(false);
+  const rootRef = React.useRef(null);
+
+  const debounced = useDebounce(input, 350);
+  const skip = !projectId || !debounced?.trim();
+  const { data } = useGetDocumentByNameQuery(
+    { projectId, name: debounced },
+    { skip }
+  );
+  const rows = React.useMemo(() => data?.data || [], [data]);
+
+  React.useEffect(() => setInput(value || ""), [value]);
+
+  React.useEffect(() => {
+    const onClick = (e) => {
+      if (!rootRef.current) return;
+      if (!rootRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  const pick = (doc) => {
+    const filename = (doc?.filename || "").trim();
+    onChange?.(filename);
+    onPickExisting?.(filename);
+    setOpen(false);
+  };
+
+  return (
+    <Box ref={rootRef} sx={{ position: "relative" }}>
+      <Input
+        placeholder="Document title (e.g., LOI)"
+        value={input}
+        onChange={(e) => {
+          const v = e.target.value;
+          setInput(v);
+          onChange?.(v);
+        }}
+        onFocus={() => setOpen(true)}
+        variant="plain"
+        sx={{
+          fontSize: 16,
+          fontWeight: 400,
+          width: "100%",
+          borderRadius: 0,
+          borderBottom: `2px solid ${ACCENT}`,
+          "--Input-focusedThickness": "0px",
+          px: 0,
+          backgroundColor: "transparent",
+          "&:hover": { borderBottomColor: "#3363a3" },
+          "& input": { paddingBottom: "0px" },
+        }}
+      />
+
+      {open && rows.length > 0 && (
+        <Sheet
+          variant="outlined"
+          sx={{
+            position: "absolute",
+            zIndex: 8,
+            left: 0,
+            right: 0,
+            mt: 0.5,
+            borderRadius: "sm",
+            overflow: "hidden",
+            bgcolor: "#fff",
+            borderColor: "neutral.outlinedBorder",
+            boxShadow:
+              "0px 8px 24px rgba(0,0,0,0.12), 0 1px 0 0 rgba(255,255,255,0.06) inset",
+          }}
+        >
+          <Box
+            sx={{
+              maxHeight: 220,
+              overflowY: "auto",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            {rows.map((doc, idx) => (
+              <Box
+                key={doc?._id || `${doc?.filename || "doc"}-${idx}`}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => pick(doc)}
+                sx={{
+                  px: 1.25,
+                  py: 1,
+                  cursor: "pointer",
+                  borderBottom: "1px solid var(--joy-palette-neutral-200)",
+                  "&:last-of-type": { borderBottom: "none" },
+                  "&:hover": { backgroundColor: "neutral.softBg" },
+                }}
+              >
+                <Typography level="body-sm">
+                  {(doc?.filename || "").trim()}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </Sheet>
+      )}
+    </Box>
+  );
+}
+
+/* --------------- Presence/Upload cell ---------------- */
+function DocPresenceCell({
+  projectId,
+  title,
+  source, // 'existing' | 'uploaded' | null
+  file, // File | null
+  onChangePresence,
+  onChangeSource,
+  onFilePicked,
+  onMaybeSetTitle,
+}) {
+  const [openUpload, setOpenUpload] = React.useState(false);
+  const debouncedTitle = useDebounce(title || "", 400);
+  const skip = !projectId || !debouncedTitle?.trim();
+  const { data } = useGetDocumentByNameQuery(
+    { projectId, name: debouncedTitle },
+    { skip }
+  );
+
+  const hits = data?.data || [];
+  const firstUrl = hits[0]?.fileurl;
+
+  const isExisting = source === "existing" && !!firstUrl;
+  const isUploaded = source === "uploaded";
+
+  const handleChipClick = () => {
+    if (isExisting) {
+      window.open(firstUrl, "_blank", "noopener,noreferrer");
+      onChangePresence?.(true);
+    } else {
+      setOpenUpload(true);
+    }
+  };
+
+  const handlePick = (picked) => {
+    onFilePicked?.(picked);
+    onChangeSource?.("uploaded");
+    onChangePresence?.(false);
+    if (!title?.trim()) onMaybeSetTitle?.(picked?.name || "");
+    setOpenUpload(false);
+  };
+
+  return (
+    <>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Chip
+          size="sm"
+          color={isExisting ? "success" : "neutral"}
+          variant="soft"
+          onClick={handleChipClick}
+          sx={{ cursor: "pointer", userSelect: "none" }}
+        >
+          {isExisting ? "Present" : "Not Present"}
+        </Chip>
+
+        {!isExisting && isUploaded && file?.name && (
+          <Typography level="body-sm" sx={{ color: "neutral.700" }}>
+            {file.name}
+          </Typography>
+        )}
+      </Box>
+
+      <UploadModal
+        open={openUpload}
+        onClose={() => setOpenUpload(false)}
+        onPick={handlePick}
+      />
+    </>
+  );
+}
+
+function BankNameCell({ value, onPick, accent = "#3363a3" }) {
+  const [open, setOpen] = React.useState(false);
+  const [input, setInput] = React.useState(value || "");
+  const debounced = useDebounce(input, 250);
+  const rootRef = React.useRef(null);
+
+  // live search to backend
+  const { data } = useGetUniqueBanksQuery({ search: debounced }, { skip: !debounced });
+  const options = React.useMemo(() => data?.data || [], [data]);
+
+  React.useEffect(() => setInput(value || ""), [value]);
+
+  React.useEffect(() => {
+    const onClick = (e) => {
+      if (!rootRef.current) return;
+      if (!rootRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  const choose = (b) => {
+    onPick?.({
+      name: (b?.name || "").toUpperCase(),         // you can remove toUpperCase if you prefer
+      branch: b?.branch || "",
+      ifsc_code: (b?.ifsc_code || "").toUpperCase()
+    });
+    setOpen(false);
+  };
+
+  return (
+    <Box ref={rootRef} sx={{ position: "relative" }}>
+      <Input
+        placeholder="Bank Name"
+        value={input}
+        onChange={(e) => {
+          const v = e.target.value;
+          setInput(v);
+          // allow free typing; parent will set only name here
+          onPick?.({ name: v });
+        }}
+        onFocus={() => setOpen(true)}
+        variant="plain"
+        sx={{
+          fontSize: 16,
+          borderRadius: 0,
+          px: 0,
+          "--Input-focusedThickness": "0px",
+          borderBottom: `2px solid ${accent}`,
+          "& input": { pb: 0.5 },
+        }}
+      />
+
+      {open && options.length > 0 && (
+        <Sheet
+          variant="outlined"
+          sx={{
+            position: "absolute",
+            zIndex: 10,
+            mt: 0.5,
+            left: 0,
+            right: 0,
+            borderRadius: "sm",
+            overflow: "hidden",
+            bgcolor: "#fff",
+            borderColor: "neutral.outlinedBorder",
+            boxShadow: "0px 8px 24px rgba(0,0,0,0.12)",
+          }}
+        >
+          <Box sx={{ maxHeight: 240, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+            {options.map((b, idx) => (
+              <Box
+                key={`${b.name}-${b.ifsc_code}-${idx}`}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => choose(b)}
+                sx={{
+                  px: 1.25,
+                  py: 1,
+                  cursor: "pointer",
+                  borderBottom: "1px solid var(--joy-palette-neutral-200)",
+                  "&:last-of-type": { borderBottom: "none" },
+                  "&:hover": { backgroundColor: "neutral.softBg" },
+                }}
+              >
+                {/* Show Bank • IFSC • Branch in dropdown */}
+                <Typography level="body-sm">
+                  {(b.name || "").toUpperCase()} • {(b.ifsc_code || "").toUpperCase()}
+                  {b.branch ? ` • ${b.branch}` : ""}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </Sheet>
+      )}
+    </Box>
+  );
+}
+
+
 /* ---------------------------- Page ---------------------------- */
 export default function AddLoan() {
   const [tab, setTab] = React.useState(0);
 
   const [header, setHeader] = React.useState({
-    orderNumber: "S00001",
-    customer: "SlnkoEnergy, Siddharth Singh",
     project: "",
     project_id: "",
-    orderDate: "",
-    pricelist: "Default (INR)",
-    paymentTerms: "21 Days",
-    rentalStart: "",
-    rentalEnd: "",
-    durationDays: 1,
     expectedSanctionDate: "",
     expectedDisbursementDate: "",
   });
 
   const [docs, setDocs] = React.useState([
-    { title: "Booking Fees Receipt", file: null },
+    { title: "", file: null, present: false, source: null },
   ]);
+
+  const [banks, setBanks] = React.useState([
+    { name: "", branch: "", ifsc_code: "" },
+  ]);
+
+  const { data: uniqueBanksResp } = useGetUniqueBanksQuery();
+  const uniqueBanks = React.useMemo(
+    () => uniqueBanksResp?.data || [],
+    [uniqueBanksResp]
+  );
+
+  const [createLoan, { isLoading: creating }] = useCreateLoanMutation();
+
   const onHeader = (key) => (e, v) => {
     const value = e?.target ? e.target.value : v;
     setHeader((h) => ({ ...h, [key]: value }));
   };
-  const addDoc = () => setDocs((d) => [...d, { title: "", file: null }]);
+  const addDoc = () =>
+    setDocs((d) => [
+      ...d,
+      { title: "", file: null, present: false, source: null },
+    ]);
   const removeDoc = (idx) => setDocs((d) => d.filter((_, i) => i !== idx));
   const updateDoc = (idx, key, value) =>
     setDocs((d) =>
       d.map((row, i) => (i === idx ? { ...row, [key]: value } : row))
     );
 
-  const submit = (e) => {
-    e.preventDefault();
-    const fd = new FormData();
-    Object.entries(header).forEach(([k, v]) => fd.append(k, v ?? ""));
-    docs.forEach((d, i) => {
-      fd.append(`documents[${i}][title]`, d.title || "");
-      if (d.file) fd.append(`documents[${i}][file]`, d.file);
-    });
-    console.log("Submitting…");
-    for (const [k, v] of fd.entries()) console.log(k, v);
-    alert("Form payload logged in console.");
+  const addBank = () =>
+    setBanks((b) => [...b, { name: "", branch: "", ifsc_code: "" }]);
+  const removeBank = (idx) => setBanks((b) => b.filter((_, i) => i !== idx));
+  const updateBank = (idx, key, value) =>
+    setBanks((b) =>
+      b.map((row, i) => (i === idx ? { ...row, [key]: value } : row))
+    );
+
+  const onBankNameChange = (idx) => (e) => {
+    const val = e.target.value || "";
+    updateBank(idx, "name", val);
+
+    const lower = val.trim().toLowerCase();
+    const match = uniqueBanks.find(
+      (ub) => (ub?.name || "").toString().trim().toLowerCase() === lower
+    );
+    if (match) {
+      updateBank(idx, "branch", match.branch || "");
+      updateBank(idx, "ifsc_code", match.ifsc_code || "");
+    } else {
+    }
   };
 
-  // ---- Project options (first 7) + modal fetch for more ----
+  const submit = async (e) => {
+    e.preventDefault();
+
+    if (!header.project_id) {
+      alert("Pick a project first.");
+      return;
+    }
+
+    try {
+      const files = [];
+      docs.forEach((d) => {
+        if (d?.source === "uploaded" && d?.file) {
+          files.push({ file: d.file, name: d.title || d.file.name });
+        }
+      });
+
+      const data = {
+        expectedSanctionDate: header.expectedSanctionDate || "",
+        expectedDisbursementDate: header.expectedDisbursementDate || "",
+        documents: docs.map((d) => ({
+          title: d.title || "",
+          present: !!d.present,
+          source: d.source || "",
+        })),
+        banking_details: banks.map((b) => ({
+          name: b.name || "",
+          branch: b.branch || "",
+          ifsc_code: b.ifsc_code || "",
+        })),
+      };
+      console.log({data})
+      const res = await createLoan({
+        projectId: header.project_id,
+        data,
+        files,
+        links: [], 
+      }).unwrap();
+
+      console.log("Loan created:", res);
+      alert("Loan created successfully.");
+    } catch (err) {
+      console.error("Create loan failed:", err);
+      alert(
+        err?.data?.message ||
+          err?.error ||
+          "Failed to create loan. Check console."
+      );
+    }
+  };
+
+  /* -------- Projects data (first 7) & modal for more -------- */
   const [triggerSearch] = useLazyGetProjectSearchDropdownQuery();
   const [projectOptions, setProjectOptions] = React.useState([]);
-  const [projectTotal, setProjectTotal] = React.useState(0);
   const [projectModalOpen, setProjectModalOpen] = React.useState(false);
-
   const debouncedProjectQuery = useDebounce(header.project, 300);
 
   React.useEffect(() => {
@@ -296,21 +671,9 @@ export default function AddLoan() {
         );
         const payload = res?.data || {};
         const rows = payload?.data || payload?.rows || [];
-        const total =
-          payload?.total ??
-          Number(res?.meta?.total) ??
-          Number(res?.data?.total) ??
-          rows.length;
-
-        if (!cancelled) {
-          setProjectOptions(rows);
-          setProjectTotal(Number(total) || rows.length);
-        }
-      } catch (e) {
-        if (!cancelled) {
-          setProjectOptions([]);
-          setProjectTotal(0);
-        }
+        if (!cancelled) setProjectOptions(rows);
+      } catch {
+        if (!cancelled) setProjectOptions([]);
       }
     })();
     return () => {
@@ -326,13 +689,10 @@ export default function AddLoan() {
       );
       const payload = res?.data || {};
       const rows = payload?.data || payload?.rows || [];
-      const total = payload?.total ?? rows.length;
       setProjectOptions(rows);
-      setProjectTotal(Number(total) || rows.length);
     } catch (err) {
       console.error("Initial project fetch failed:", err);
       setProjectOptions([]);
-      setProjectTotal(0);
     }
   }, [triggerSearch]);
 
@@ -345,17 +705,11 @@ export default function AddLoan() {
       { search: search || "", page, limit: pageSize },
       true
     );
-
-    // RTK Query lazy trigger returns { data, ... }
     const rows = res?.data?.data ?? [];
     const pg = res?.data?.pagination;
     let total = pg?.total;
-
-    // Fallback: if backend omitted total (shouldn’t in your case), synthesize it
-    if (!Number.isFinite(total)) {
+    if (!Number.isFinite(total))
       total = page * pageSize + (rows.length === pageSize ? 1 : 0);
-    }
-
     return { rows, total };
   };
 
@@ -368,7 +722,6 @@ export default function AddLoan() {
     }));
   };
 
-  // “line-like” inputs
   const lineInputSx = {
     fontSize: 16,
     fontWeight: 400,
@@ -381,6 +734,8 @@ export default function AddLoan() {
     "&:hover": { borderBottomColor: "#3363a3" },
     "& input": { paddingBottom: "0px" },
   };
+
+  
 
   return (
     <CssVarsProvider theme={theme} defaultMode="light">
@@ -396,23 +751,22 @@ export default function AddLoan() {
           border: "1px solid var(--joy-palette-neutral-200)",
         }}
       >
-        {/* Project (top) — styled, typeable dropdown with Search more… */}
+        {/* Project (top) */}
         <Box sx={{ mb: 2 }}>
           <Typography level="body-md" sx={{ color: "neutral.900", mb: 0.5 }}>
             Project
           </Typography>
-
           <SearchableSelect
             placeholder="Type to find a project..."
             valueLabel={header.project}
             onChangeLabel={(lbl) => setHeader((h) => ({ ...h, project: lbl }))}
             options={projectOptions}
-            onPickRow={(row) => onPickProject(row)}
+            onPickRow={onPickProject}
             onSearchMore={() => setProjectModalOpen(true)}
           />
         </Box>
 
-        {/* Grid of details */}
+        {/* Dates */}
         <Grid container spacing={3} sx={{ mb: 1 }}>
           <Grid xs={12} md={6}>
             <Box
@@ -473,35 +827,54 @@ export default function AddLoan() {
               <thead>
                 <tr>
                   <th>Document Title</th>
-                  <th style={{ width: 360 }}>Received</th>
+                  <th>Present / Upload</th>
                   <th style={{ width: 40 }} />
                 </tr>
               </thead>
               <tbody>
                 {docs.map((row, idx) => (
                   <tr key={idx}>
-                    <td>
-                      <Input
-                        placeholder="e.g., Booking Fees Receipt"
+                    <td style={{ position: "relative" }}>
+                      <DocTitleCell
                         value={row.title}
-                        onChange={(e) =>
-                          updateDoc(idx, "title", e.target.value)
-                        }
-                        variant="plain"
-                        sx={lineInputSx}
+                        projectId={header.project_id}
+                        onChange={(v) => {
+                          updateDoc(idx, "title", v);
+                          if (!v || !v.trim()) {
+                            updateDoc(idx, "present", false);
+                            updateDoc(idx, "file", null);
+                            updateDoc(idx, "source", null);
+                          } else {
+                            updateDoc(idx, "present", false);
+                            if (row.source === "existing") {
+                              updateDoc(idx, "source", null);
+                            }
+                          }
+                        }}
+                        onPickExisting={(pickedName) => {
+                          updateDoc(idx, "title", pickedName);
+                          updateDoc(idx, "present", true);
+                          updateDoc(idx, "source", "existing");
+                          updateDoc(idx, "file", null);
+                        }}
                       />
                     </td>
+
                     <td>
-                      <Input
-                        placeholder="Attach / mark as received"
-                        value={row.received || ""}
-                        onChange={(e) =>
-                          updateDoc(idx, "received", e.target.value)
+                      <DocPresenceCell
+                        projectId={header.project_id}
+                        title={row.title}
+                        source={row.source}
+                        file={row.file}
+                        onChangePresence={(p) => updateDoc(idx, "present", p)}
+                        onChangeSource={(s) => updateDoc(idx, "source", s)}
+                        onFilePicked={(file) => updateDoc(idx, "file", file)}
+                        onMaybeSetTitle={(name) =>
+                          updateDoc(idx, "title", name)
                         }
-                        variant="plain"
-                        sx={lineInputSx}
                       />
                     </td>
+
                     <td>
                       <IconButton
                         variant="plain"
@@ -533,74 +906,61 @@ export default function AddLoan() {
                 <tr>
                   <th>Bank Name</th>
                   <th style={{ width: 200 }}>Branch</th>
-                  <th style={{ width: 200 }}>State</th>
                   <th style={{ width: 200 }}>IFSC Code</th>
                   <th style={{ width: 40 }} />
                 </tr>
               </thead>
-              <tbody>
-                {docs.map((row, idx) => (
-                  <tr key={idx}>
-                    <td>
-                      <Input
-                        placeholder="Bank Name"
-                        value={row.bank_name || ""}
-                        onChange={(e) =>
-                          updateDoc(idx, "bank_name", e.target.value)
-                        }
-                        variant="plain"
-                        sx={lineInputSx}
-                      />
-                    </td>
-                    <td>
-                      <Input
-                        placeholder="Branch"
-                        value={row.branch || ""}
-                        onChange={(e) =>
-                          updateDoc(idx, "branch", e.target.value)
-                        }
-                        variant="plain"
-                        sx={lineInputSx}
-                      />
-                    </td>
-                    <td>
-                      <Input
-                        placeholder="State"
-                        value={row.state || ""}
-                        onChange={(e) =>
-                          updateDoc(idx, "state", e.target.value)
-                        }
-                        variant="plain"
-                        sx={lineInputSx}
-                      />
-                    </td>
-                    <td>
-                      <Input
-                        placeholder="IFSC"
-                        value={row.ifsc || ""}
-                        onChange={(e) => updateDoc(idx, "ifsc", e.target.value)}
-                        variant="plain"
-                        sx={lineInputSx}
-                      />
-                    </td>
-                    <td>
-                      <IconButton
-                        variant="plain"
-                        color="danger"
-                        onClick={() => removeDoc(idx)}
-                      >
-                        <Delete />
-                      </IconButton>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
+      
+<tbody>
+  {banks.map((row, idx) => (
+    <tr key={idx}>
+      <td>
+        <BankNameCell
+          value={row.name || ""}
+          accent={ACCENT}
+          onPick={(picked) => {
+            if (picked.name !== undefined) updateBank(idx, "name", picked.name);
+            if (picked.branch !== undefined) updateBank(idx, "branch", picked.branch);
+            if (picked.ifsc_code !== undefined) updateBank(idx, "ifsc_code", picked.ifsc_code);
+          }}
+        />
+      </td>
+
+      <td>
+        <Input
+          placeholder="Branch"
+          value={row.branch || ""}
+          onChange={(e) => updateBank(idx, "branch", e.target.value)}
+          variant="plain"
+          sx={lineInputSx}
+        />
+      </td>
+
+      <td>
+        <Input
+          placeholder="IFSC"
+          value={row.ifsc_code || ""}
+          onChange={(e) => updateBank(idx, "ifsc_code", e.target.value)}
+          variant="plain"
+          sx={lineInputSx}
+        />
+      </td>
+
+      <td>
+        <IconButton variant="plain" color="danger" onClick={() => removeBank(idx)}>
+          <Delete />
+        </IconButton>
+      </td>
+    </tr>
+  ))}
+</tbody>
+
             </Table>
 
             <Button
               startDecorator={<Add />}
               variant="plain"
-              onClick={addDoc}
+              onClick={addBank}
               sx={{
                 color: "#3366a3",
                 borderColor: "#3366a3",
@@ -615,22 +975,31 @@ export default function AddLoan() {
             >
               Add Banks
             </Button>
+
+            {/* suggestions list (only rendered if we have data) */}
+            {uniqueBanks.length > 0 && (
+              <datalist id="bank-suggestions">
+                {uniqueBanks.map((b, i) => (
+                  <option key={`${b.name}-${i}`} value={b.name} />
+                ))}
+              </datalist>
+            )}
           </TabPanel>
         </Tabs>
 
         <Divider sx={{ my: 2 }} />
 
-        {/* Footer buttons */}
+        {/* Footer */}
         <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
           <Button
             variant="outlined"
             sx={{
-              color: "#3366a3",
-              borderColor: "#3366a3",
+              color: "#3363a3",
+              borderColor: "#3363a3",
               backgroundColor: "transparent",
               "--Button-hoverBg": "#e0e0e0",
-              "--Button-hoverBorderColor": "#3366a3",
-              "&:hover": { color: "#3366a3" },
+              "--Button-hoverBorderColor": "#3363a3",
+              "&:hover": { color: "#3363a3" },
               height: "8px",
             }}
           >
@@ -638,19 +1007,20 @@ export default function AddLoan() {
           </Button>
           <Button
             onClick={submit}
+            disabled={creating}
             sx={{
-              backgroundColor: "#3366a3",
+              backgroundColor: "#3363a3",
               color: "#fff",
               "&:hover": { backgroundColor: "#285680" },
               height: "8px",
             }}
           >
-            Save
+            {creating ? "Saving…" : "Save"}
           </Button>
         </Box>
       </Sheet>
 
-      {/* ---- Search Picker Modal (from “Search more…”) ---- */}
+      {/* Search Picker Modal */}
       <SearchPickerModal
         open={projectModalOpen}
         onClose={() => setProjectModalOpen(false)}
@@ -669,7 +1039,6 @@ export default function AddLoan() {
             true
           );
           const payload = res?.data || {};
-          console.log({ payload });
           const rows = payload?.data ?? [];
           const total = payload?.pagination?.total ?? rows.length;
           return { rows, total };

@@ -28,9 +28,10 @@ import { poHistoryApi } from "../redux/poHistory";
 import { inspectionApi } from "../redux/inspectionSlice";
 import { postsApi } from "../redux/postsSlice";
 import { approvalsApi } from "../redux/ApprovalsSlice";
-import {leadsApi} from "../redux/leadsSlice"
+import { leadsApi } from "../redux/leadsSlice";
 import { emailApi } from "../redux/emailSlice";
 import { documentApi } from "../redux/documentSlice";
+import { loanApi } from "../redux/loanSlice";
 
 export const store = configureStore({
   reducer: {
@@ -56,16 +57,17 @@ export const store = configureStore({
     [templatesApi.reducerPath]: templatesApi.reducer,
     [billsApi.reducerPath]: billsApi.reducer,
     [masterSheetApi.reducerPath]: masterSheetApi.reducer,
-    [GlobalTaskApi.reducerPath]:GlobalTaskApi.reducer,
-    [AccountsApi.reducerPath]:AccountsApi.reducer,
+    [GlobalTaskApi.reducerPath]: GlobalTaskApi.reducer,
+    [AccountsApi.reducerPath]: AccountsApi.reducer,
     [productsApi.reducerPath]: productsApi.reducer,
     [vendorsApi.reducerPath]: vendorsApi.reducer,
     [poHistoryApi.reducerPath]: poHistoryApi.reducer,
     [inspectionApi.reducerPath]: inspectionApi.reducer,
-    [postsApi.reducerPath] : postsApi.reducer,
-    [approvalsApi.reducerPath] : approvalsApi.reducer,
+    [postsApi.reducerPath]: postsApi.reducer,
+    [approvalsApi.reducerPath]: approvalsApi.reducer,
     [emailApi.reducerPath]: emailApi.reducer,
-    [documentApi.reducerPath]: documentApi.reducer
+    [documentApi.reducerPath]: documentApi.reducer,
+    [loanApi.reducerPath]: loanApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -100,6 +102,7 @@ export const store = configureStore({
       postsApi.middleware,
       approvalsApi.middleware,
       emailApi.middleware,
-      documentApi.middleware
+      documentApi.middleware,
+      loanApi.middleware
     ),
 });
