@@ -13,6 +13,8 @@ import Header from "../../component/Partials/Header";
 import { useNavigate } from "react-router-dom";
 import Dash_eng from "../../component/EngDashboard";
 import LogisticsTable from "../../component/LogisticsSummary";
+import MainHeader from "../../component/Partials/MainHeader";
+import SubHeader from "../../component/Partials/SubHeader";
 
 function Logistics() {
   const navigate = useNavigate();
@@ -34,94 +36,159 @@ function Logistics() {
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
       <Box sx={{ display: "flex", minHeight: "100dvh" }}>
-        <Header />
         <Sidebar />
+        <MainHeader title="SCM" sticky>
+          <Box display="flex" gap={1}>
+            {user?.name === "IT Team" ||
+            user?.department === "admin" ||
+            (user?.department === "Accounts" &&
+              (user?.name === "Deepak Kumar Maurya" ||
+                user?.name === "Gagan Tayal" ||
+                user?.name === "Ajay Singh" ||
+                user?.name === "Sachin Raghav" ||
+                user?.name === "Anamika Poonia" ||
+                user?.name === "Meena Verma" ||
+                user?.name === "Kailash Chand" ||
+                user?.name === "Chandan Singh")) ||
+            (user?.department === "Accounts" &&
+              user?.name === "Sujan Maharjan") ||
+            user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Varun Mishra" ||
+            user?.name === "Prachi Singh" ||
+            user?.role === "purchase" ||
+            (user?.role === "manager" && user?.name === "Naresh Kumar") ||
+            (user?.role === "visitor" &&
+              (user?.name === "Sanjiv Kumar" ||
+                user?.name === "Sushant Ranjan Dubey")) ||
+            (user?.department === "CAM" && user?.name === "Shantanu Sameer") ? (
+              <Button
+                size="sm"
+                onClick={() => navigate("/purchase-order")}
+                sx={{
+                  color: "white",
+                  bgcolor: "transparent",
+                  fontWeight: 500,
+                  fontSize: "1rem",
+                  letterSpacing: 0.5,
+                  borderRadius: "6px",
+                  px: 1.5,
+                  py: 0.5,
+                  "&:hover": {
+                    bgcolor: "rgba(255,255,255,0.15)",
+                  },
+                }}
+              >
+                Purchase Order
+              </Button>
+            ) : null}
+
+            {user?.name === "IT Team" ||
+            user?.department === "admin" ||
+            user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Varun Mishra" ||
+            user?.name === "Prachi Singh" ||
+            user?.role === "purchase" ||
+            (user?.role === "manager" && user?.name === "Naresh Kumar") ||
+            user?.department === "Logistic" ? (
+              <Button
+                size="sm"
+                onClick={() => navigate(`/logistics`)}
+                sx={{
+                  color: "white",
+                  bgcolor: "transparent",
+                  fontWeight: 500,
+                  fontSize: "1rem",
+                  letterSpacing: 0.5,
+                  borderRadius: "6px",
+                  px: 1.5,
+                  py: 0.5,
+                  "&:hover": {
+                    bgcolor: "rgba(255,255,255,0.15)",
+                  },
+                }}
+              >
+                Logistics
+              </Button>
+            ) : null}
+            {(user?.department === "SCM" ||
+              user?.department === "Accounts" ||
+              user?.department === "superadmin" ||
+              user?.department === "admin") && (
+              <Button
+                size="sm"
+                onClick={() => navigate(`/vendors`)}
+                sx={{
+                  color: "white",
+                  bgcolor: "transparent",
+                  fontWeight: 500,
+                  fontSize: "1rem",
+                  letterSpacing: 0.5,
+                  borderRadius: "6px",
+                  px: 1.5,
+                  py: 0.5,
+                  "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+                }}
+              >
+                Vendors
+              </Button>
+            )}
+            {user?.name === "IT Team" ||
+            user?.department === "admin" ||
+            (user?.department === "Accounts" &&
+              (user?.name === "Deepak Kumar Maurya" ||
+                user?.name === "Gagan Tayal" ||
+                user?.name === "Ajay Singh" ||
+                user?.name === "Sachin Raghav" ||
+                user?.name === "Anamika Poonia" ||
+                user?.name === "Meena Verma" ||
+                user?.name === "Kailash Chand" ||
+                user?.name === "Chandan Singh")) ||
+            (user?.department === "Accounts" &&
+              user?.name === "Sujan Maharjan") ||
+            user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Varun Mishra" ||
+            user?.name === "Prachi Singh" ||
+            user?.role === "purchase" ||
+            (user?.role === "manager" && user?.name === "Naresh Kumar") ? (
+              <Button
+                size="sm"
+                onClick={() => navigate(`/vendor_bill`)}
+                sx={{
+                  color: "white",
+                  bgcolor: "transparent",
+                  fontWeight: 500,
+                  fontSize: "1rem",
+                  letterSpacing: 0.5,
+                  borderRadius: "6px",
+                  px: 1.5,
+                  py: 0.5,
+                  "&:hover": {
+                    bgcolor: "rgba(255,255,255,0.15)",
+                  },
+                }}
+              >
+                Vendor Bill
+              </Button>
+            ) : null}
+          </Box>
+        </MainHeader>
+
+        <SubHeader title="Logistic" isBackEnabled={false} sticky></SubHeader>
+
         <Box
           component="main"
           className="MainContent"
           sx={{
-            px: { xs: 2, md: 6 },
-            pt: {
-              xs: "calc(12px + var(--Header-height))",
-              sm: "calc(12px + var(--Header-height))",
-              md: 3,
-            },
-            pb: { xs: 2, sm: 2, md: 3 },
             flex: 1,
             display: "flex",
             flexDirection: "column",
-            minWidth: 0,
-            height: "100dvh",
             gap: 1,
+            mt: "108px",
+            p: "16px",
+            px: "24px",
+            overflow: "hidden",
           }}
         >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              marginLeft: { xl: "15%", lg: "18%" },
-            }}
-          >
-            <Breadcrumbs
-              size="sm"
-              aria-label="breadcrumbs"
-              separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0, marginTop: { md: "4%", lg: "0%" } }}
-            >
-              {user?.department !== "Accounts" && (
-                <Link
-                  underline="none"
-                  color="neutral"
-                  sx={{ fontSize: 12, fontWeight: 500 }}
-                >
-                  Logistics
-                </Link>
-              )}
-              <Typography
-                color="primary"
-                sx={{ fontWeight: 500, fontSize: 12 }}
-              >
-                {user?.department === "Accounts"
-                  ? "Handover Dashboard"
-                  : "Logistics"}
-              </Typography>
-            </Breadcrumbs>
-          </Box>
-
-          <Box
-            sx={{
-              display: "flex",
-              mb: 1,
-              gap: 1,
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: { xs: "start", sm: "center" },
-              flexWrap: "wrap",
-              justifyContent: "space-between",
-              marginLeft: { xl: "15%", lg: "18%" },
-            }}
-          >
-            <Typography level="h2" component="h1">
-              {user?.department === "Accounts"
-                ? "Logistics"
-                : "Logistics"}
-            </Typography>
-            {user?.department !== "Accounts" && (
-              <Box
-                sx={{
-                  display: "flex",
-                  flexDirection: { xs: "column", sm: "row" },
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexWrap: "wrap",
-                  bgcolor: "background.level1",
-                  borderRadius: "lg",
-                  boxShadow: "sm",
-                }}
-              >
-                
-              </Box>
-            )}
-          </Box>
           <LogisticsTable />
         </Box>
       </Box>

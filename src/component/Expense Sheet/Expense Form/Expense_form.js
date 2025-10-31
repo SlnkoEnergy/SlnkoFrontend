@@ -716,7 +716,7 @@ const Expense_Form = () => {
                           inputRef={(el) => (inputRefs.current[rowIndex] = el)}
                           autoComplete="off"
                           sx={{ width: "100%" }}
-                          // disabled={rows[rowIndex]?.items?.[0]?.projectSelected}
+                        // disabled={rows[rowIndex]?.items?.[0]?.projectSelected}
                         />
                       </Box>
                       {dropdownOpenIndex === rowIndex &&
@@ -804,7 +804,7 @@ const Expense_Form = () => {
                             sx: { maxHeight: 160, overflowY: "auto" },
                           },
                         }}
-                        // sx={{ width: "100%" }}
+                      // sx={{ width: "100%" }}
                       >
                         {getCategoryOptionsByDepartment(user?.department).map(
                           (cat, idx) => (

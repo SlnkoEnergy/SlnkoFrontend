@@ -29,13 +29,14 @@ export const billsApi = createApi({
         search = "",
         status = "",
         pageSize = 10,
-        date = "",
+        dateFrom = "",
+        dateEnd = "",
         po_number,
       }) => {
         // decode status so %20 becomes space
         const cleanStatus = status ? decodeURIComponent(status) : "";
 
-        return `bill?page=${page}&search=${search}&status=${cleanStatus}&pageSize=${pageSize}&date=${date}&po_number=${po_number}`;
+        return `bill?page=${page}&search=${search}&status=${cleanStatus}&pageSize=${pageSize}&dateFrom=${dateFrom}&dateEnd=${dateEnd}&po_number=${po_number}`;
       },
       transformResponse: (response) => ({
         data: response.data || [],
@@ -46,6 +47,7 @@ export const billsApi = createApi({
       }),
       providesTags: ["Bill"],
     }),
+
 
     exportBills: builder.mutation({
       query: ({ from, to, exportAll }) => {
@@ -157,6 +159,6 @@ export const {
   useDeleteCreditMutation,
   useApproveBillMutation,
   useGetBillByIdQuery,
- useLazyGetBillHistoryQuery,
- useAddBillHistoryMutation
+  useLazyGetBillHistoryQuery,
+  useAddBillHistoryMutation
 } = billsApi;

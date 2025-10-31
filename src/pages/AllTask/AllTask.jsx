@@ -119,7 +119,7 @@ function AllTask() {
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
-      <Box sx={{ display: "flex", minHeight: "100dvh" }}>
+      <Box sx={{ display: "flex", minHeight: "100vh" }}>
         <Sidebar />
 
         <MainHeader title="Tasks" sticky>
@@ -159,7 +159,6 @@ function AllTask() {
             >
               All Tasks
             </Button>
-            
           </Box>
         </MainHeader>
 

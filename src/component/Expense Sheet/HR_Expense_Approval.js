@@ -47,7 +47,8 @@ const HrExpense = forwardRef((props, ref) => {
   const [selectedstatus, setSelectedstatus] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-
+  const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
+  const [perPage, setPerPage] = useState(initialPageSize);
   // --- NEW: helper to merge into URL params without wiping others ---
   const updateParams = (patch) => {
     const next = new URLSearchParams(searchParams);
@@ -62,6 +63,7 @@ const HrExpense = forwardRef((props, ref) => {
 
   const { data: getExpense = [], isLoading } = useGetAllExpenseQuery({
     page: currentPage,
+    limit: perPage,
     department: selectedDepartment,
     search: searchParam,
     status: selectedstatus,
@@ -94,7 +96,6 @@ const HrExpense = forwardRef((props, ref) => {
 
     return pages;
   };
-  debugger;
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -157,78 +158,7 @@ const HrExpense = forwardRef((props, ref) => {
           alignItems: "center",
           mb: 2,
         }}
-      >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Department</FormLabel>
-          <Select
-            value={selectedDepartment}
-            onChange={(e, newValue) => {
-              setSelectedDepartment(newValue);
-              setCurrentPage(1);
-              // --- NEW: push to URL ---
-              updateParams({ department: newValue ?? "", page: 1 });
-            }}
-            size="sm"
-            placeholder="Select Department"
-          >
-            <Option value="">All Departments</Option>
-            {departments.map((dept) => (
-              <Option key={dept} value={dept}>
-                {dept}
-              </Option>
-            ))}
-          </Select>
-        </FormControl>
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Status</FormLabel>
-          <Select
-            value={selectedstatus}
-            onChange={(e, newValue) => {
-              setSelectedstatus(newValue);
-              setCurrentPage(1);
-              // --- NEW: push to URL ---
-              updateParams({ status: newValue ?? "", page: 1 });
-            }}
-            size="sm"
-            placeholder="Select Status"
-          >
-            <Option value="">All Status</Option>
-            {statuses.map((status) => (
-              <Option key={status.value} value={status.value}>
-                {status.label}
-              </Option>
-            ))}
-          </Select>
-        </FormControl>
-
-        <FormControl size="sm" sx={{ minWidth: 140 }}>
-          <FormLabel>From Date</FormLabel>
-          <Input
-            type="date"
-            value={from}
-            onChange={(e) => {
-              setFrom(e.target.value);
-              setCurrentPage(1);
-              // --- NEW: push to URL ---
-              updateParams({ from: e.target.value, page: 1 });
-            }}
-          />
-        </FormControl>
-
-        <FormControl size="sm" sx={{ minWidth: 140 }}>
-          <FormLabel>To Date</FormLabel>
-          <Input
-            type="date"
-            value={to}
-            onChange={(e) => {
-              setTo(e.target.value);
-              setCurrentPage(1);
-              // --- NEW: push to URL ---
-              updateParams({ to: e.target.value, page: 1 });
-            }}
-          />
-        </FormControl>
-      </Box>
+      ></Box>
     );
   };
 
@@ -353,7 +283,10 @@ const HrExpense = forwardRef((props, ref) => {
 
   // --- UPDATED: read all filters from URL and sync local state ---
   useEffect(() => {
-    const pageParam = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const pageParam = Math.max(
+      1,
+      parseInt(searchParams.get("page") || "1", 10)
+    );
     if (pageParam !== currentPage) setCurrentPage(pageParam);
 
     const qParam = searchParams.get("q") || "";
@@ -374,7 +307,6 @@ const HrExpense = forwardRef((props, ref) => {
 
   const paginatedExpenses = expenses;
 
-  console.log("paginatedExpenses", paginatedExpenses);
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
@@ -386,10 +318,10 @@ const HrExpense = forwardRef((props, ref) => {
   const ExpenseCode = ({ currentPage, expense_code, createdAt }) => {
     const formattedDate = createdAt
       ? new Date(createdAt).toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        })
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
       : "N/A";
     return (
       <>
@@ -421,33 +353,41 @@ const HrExpense = forwardRef((props, ref) => {
   };
 
   return (
-    <>
+    <Box
+      sx={{
+        ml: { lg: "var(--Sidebar-width)" },
+        px: "0px",
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+      }}
+    >
       {/* Tablet and Up Filters */}
       <Box
-        className="SearchAndFilters-tabletUp"
-        sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          borderRadius: "sm",
-          py: 2,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1.5,
-          "& > *": {
-            minWidth: { xs: "120px", md: "160px" },
-          },
-        }}
+        display="flex"
+        justifyContent="flex-end"
+        alignItems="center"
+        pb={0.5}
+        flexWrap="wrap"
+        gap={1}
       >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search</FormLabel>
-          <Input
-            size="sm"
-            placeholder="Search by Exp. Code, Emp. Code, Emp. Name, or Status"
-            startDecorator={<SearchIcon />}
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-        </FormControl>
-        {renderFilters()}
+        <Box
+          sx={{
+            py: 1,
+            display: "flex",
+            alignItems: "flex-end",
+            gap: 1.5,
+            width: { xs: "100%", md: "50%" },
+          }}
+        >
+          <FormControl sx={{ flex: 1 }} size="sm">
+            <Input
+              size="sm"
+              placeholder="Search by Exp. Code, Emp. Code, Emp. Name, or Status"
+              startDecorator={<SearchIcon />}
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+          </FormControl>
+        </Box>
       </Box>
 
       {/* Table */}
@@ -455,14 +395,11 @@ const HrExpense = forwardRef((props, ref) => {
         className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: "flex",
+          display: { xs: "none", sm: "block" },
           width: "100%",
           borderRadius: "sm",
-          flexShrink: 1,
+          maxHeight: { xs: "66vh", xl: "75vh" },
           overflow: "auto",
-          minHeight: 0,
-          marginLeft: { xl: "15%", lg: "18%" },
-          maxWidth: { lg: "85%", sm: "100%" },
         }}
       >
         <Box
@@ -474,6 +411,10 @@ const HrExpense = forwardRef((props, ref) => {
               <Box
                 component="th"
                 sx={{
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 3,
+                  backgroundColor: "neutral.softBg",
                   borderBottom: "1px solid #ddd",
                   padding: "8px",
                   textAlign: "left",
@@ -512,6 +453,11 @@ const HrExpense = forwardRef((props, ref) => {
                   component="th"
                   key={index}
                   sx={{
+                    position: "sticky",
+                    zIndex: 3,
+                    top: 0,
+                    borderBottom: "1px solid #ddd",
+                    backgroundColor: "neutral.softBg",
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
                     textAlign: "left",
@@ -659,8 +605,8 @@ const HrExpense = forwardRef((props, ref) => {
                   >
                     {expense.disbursement_date
                       ? new Date(expense.disbursement_date).toLocaleDateString(
-                          "en-GB"
-                        )
+                        "en-GB"
+                      )
                       : "-"}
                   </Box>
                   <Box
@@ -724,11 +670,7 @@ const HrExpense = forwardRef((props, ref) => {
                               title={remarks || "Remarks not found"}
                               arrow
                             >
-                              <IconButton
-                                size="sm"
-                               
-                                color="danger"
-                              >
+                              <IconButton size="sm" color="danger">
                                 <InfoIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
@@ -786,13 +728,12 @@ const HrExpense = forwardRef((props, ref) => {
       <Box
         className="Pagination-laptopUp"
         sx={{
-          pt: 2,
+          pt: 1,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
-          flexDirection: { xs: "column", md: "row" },
-          marginLeft: { xl: "15%", lg: "18%" },
         }}
       >
         <Button
@@ -832,6 +773,28 @@ const HrExpense = forwardRef((props, ref) => {
           )}
         </Box>
 
+        <FormControl size="sm" sx={{ minWidth: 80 }}>
+          <Select
+            value={perPage}
+            onChange={(_e, newValue) => {
+              setPerPage(newValue);
+              setCurrentPage(1);
+              setSearchParams((prev) => {
+                const next = new URLSearchParams(prev);
+                next.set("page", "1");
+                next.set("pageSize", String(newValue));
+                return next;
+              });
+            }}
+          >
+            {[10, 30, 60, 100, 500, 1000].map((num) => (
+              <Option key={num} value={num}>
+                {num}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
+
         <Button
           size="sm"
           variant="outlined"
@@ -843,7 +806,7 @@ const HrExpense = forwardRef((props, ref) => {
           Next
         </Button>
       </Box>
-    </>
+    </Box>
   );
 });
 export default HrExpense;

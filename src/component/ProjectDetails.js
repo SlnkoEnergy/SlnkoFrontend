@@ -64,8 +64,11 @@ const sanitizeTabFromQuery = (raw) => {
 
 const canUserSeePO = (user) => {
   if (!user) return false;
+
   const role = String(user.role || "").toLowerCase();
   const dept = user.department || "";
+  const name = String(user.name || "").trim();
+  if (name === "Ranvijay Singh" || name === "Rishav Mahato") return true;
   const special = user.emp_id === "SE-013";
   const privileged = special || role === "admin" || role === "superadmin";
   return privileged || dept !== "Engineering";
@@ -548,7 +551,7 @@ export default function Project_Detail() {
               <TabList>
                 <Tab value="notes">Notes</Tab>
                 {allowedHandover && <Tab value="handover">Handover Sheet</Tab>}
-                <Tab value="scope">Scope</Tab>
+                <Tab value="scope">Material Status</Tab>
                 {allowedPO && <Tab value="po">Purchase Order</Tab>}
                 <Tab value="eng">Engineering</Tab>
               </TabList>

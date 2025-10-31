@@ -18,7 +18,10 @@ export default function SubHeader({
   const navigate = useNavigate();
   const location = useLocation();
   const handleBack = () => (onBack ? onBack() : navigate(-1));
-  const isProjectsPage = location.pathname === "/view_pm";
+  const isProjectsPage =
+    location.pathname === "/view_pm" ||
+    location.pathname === "/email" ||
+    location.pathname === "/email_template";
   return (
     <Sheet
       variant="primary"
