@@ -42,6 +42,8 @@ function Expense_Table() {
     const sp = new URLSearchParams(searchParams);
     if (department) sp.set("department", department);
     else sp.delete("department");
+
+    sp.set("page", 1);
     setSearchParams(sp);
   }, [department]);
 

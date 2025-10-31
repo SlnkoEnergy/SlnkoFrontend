@@ -221,9 +221,11 @@ function DashboardSCM() {
     if (deliveryTo) sp.set("delivery_to", deliveryTo);
     else sp.delete("delivery_to");
 
+    if (selectBillStatus || selectStatus || selectItem || etdDateFrom || etdDateTo || deliveryFrom || deliveryTo)
+      sp.set("page", 1);
+
     setSearchParams(sp);
   }, [
-    searchParams,
     selectStatus,
     selectBillStatus,
     selectItem,

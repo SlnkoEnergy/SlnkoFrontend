@@ -57,6 +57,7 @@ function ApprovalExpense() {
     if (dateTo) sp.set("to", dateTo);
     else sp.delete("to");
 
+    sp.set("page", 1);
     setSearchParams(sp);
   }, [status, dateFrom, dateTo]);
 
