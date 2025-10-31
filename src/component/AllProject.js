@@ -1,4 +1,3 @@
-// component/AllProjects.jsx
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import SearchIcon from "@mui/icons-material/Search";
@@ -92,7 +91,7 @@ function AllProjects() {
   } = useGetAllProjectsQuery({
     page: currentPage,
     status: statusFilter,
-    search: searchQuery, // <- always in sync with URL
+    search: searchQuery,
     limit: rowsPerPage,
     sort: "-createdAt",
   });
