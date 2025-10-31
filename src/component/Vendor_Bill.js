@@ -15,14 +15,20 @@ import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Typography from "@mui/joy/Typography";
 import { useSnackbar } from "notistack";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useGetAllBillsQuery } from "../redux/billsSlice";
+import { useExportBillsMutation, useGetAllBillsQuery } from "../redux/billsSlice";
 import Axios from "../utils/Axios";
 import dayjs from "dayjs";
 
 
-function VendorBillSummary() {
+const VendorBillSummary = forwardRef((props, ref) => {
+
+  const { onSelectionChange } = props;
+  useImperativeHandle(ref, () => ({
+    handleExport,
+    selectedIds,
+  }))
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -37,7 +43,6 @@ function VendorBillSummary() {
   const dateFilterEnd = searchParams.get("to") || "";
   const dateFilterFrom = searchParams.get("from") || "";
   const selectStatus = searchParams.get("status") || "";
-
   // selection
   const [selectedIds, setSelectedIds] = useState([]);
 
@@ -58,6 +63,11 @@ function VendorBillSummary() {
     status: selectStatus,
   });
 
+  useEffect(() => {
+    onSelectionChange?.(selectedIds.length, selectedIds);
+  }, [selectedIds, onSelectionChange]);
+
+
   const {
     data: billsData = [],
     total = 0,
@@ -72,10 +82,31 @@ function VendorBillSummary() {
     [getBill]
   );
 
-  // Clear selection when list changes (page/filter)
+  const [exportBills, { isLoading: isExporting }] = useExportBillsMutation();
+
+  const handleExport = async (isExportAll) => {
+    try {
+      const res = await exportBills({ Ids: selectedIds }).unwrap();
+
+      const url = URL.createObjectURL(res);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "bills_export.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Export failed", err);
+      alert("Failed to export bills");
+    }
+  };
+
   useEffect(() => {
     setSelectedIds([]);
   }, [bills, currentPage, perPage]);
+
+  useEffect(() => {
+    setCurrentPage(initialPage)
+  }, [initialPage])
 
   // Pagination
   const startIndex = (page - 1) * pageSize + 1;
@@ -99,6 +130,26 @@ function VendorBillSummary() {
       next.set("pageSize", String(newValue));
       return next;
     });
+  };
+
+
+  const getPaginationRange = () => {
+    const siblings = 1;
+    const pages = [];
+    if (totalPages <= 5 + siblings * 2) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      const left = Math.max(currentPage - siblings, 2);
+      const right = Math.min(currentPage + siblings, totalPages - 1);
+
+      pages.push(1);
+      if (left > 2) pages.push("...");
+      for (let i = left; i <= right; i++) pages.push(i);
+      if (right < totalPages - 1) pages.push("...");
+      pages.push(totalPages);
+    }
+
+    return pages;
   };
 
   // Selection handlers
@@ -130,8 +181,8 @@ function VendorBillSummary() {
     const rawLabel = isFullyBilled
       ? "Fully Billed"
       : isPending
-      ? `${balance} - Waiting Bills`
-      : status;
+        ? `${balance} - Waiting Bills`
+        : status;
     return (
       <Chip
         variant="soft"
@@ -150,41 +201,111 @@ function VendorBillSummary() {
     );
   };
 
-  const { enqueueSnackbar } = useSnackbar();
-
-  const BillAcceptance = ({ billNumber, approvedBy }) => {
+  const BillAcceptance = ({
+    billNumber,
+    poNumber,
+    approvedBy,
+    currentUser,
+  }) => {
+    const { enqueueSnackbar } = useSnackbar();
     const [isAccepted, setIsAccepted] = useState(Boolean(approvedBy));
+    const [loading, setLoading] = useState(false);
+
+    const pickSuccessMessage = (res, fallback) => {
+      const d = res?.data;
+      return d?.msg || d?.message || fallback;
+    };
+
+    const pickErrorMessage = (err) => {
+      const d = err?.response?.data;
+      return (
+        d?.message ||
+        d?.msg ||
+        (Array.isArray(d?.errors) && d.errors[0]?.msg) ||
+        d?.error ||
+        err?.response?.statusText ||
+        err?.message ||
+        "Something went wrong."
+      );
+    };
+
+    const statusToVariant = (status) => {
+      if (status === 409) return "warning";
+      if (status === 400 || status === 422) return "warning";
+      if (status === 401 || status === 403 || status === 404) return "error";
+      if (status >= 500) return "error";
+      return "error";
+    };
+
+    // --- normalize array or string -> string
+    const firstNonEmpty = (val) => {
+      if (Array.isArray(val)) {
+        const first = val.find((x) => x && String(x).trim().length > 0);
+        return first ? String(first).trim() : "";
+      }
+      return val ? String(val).trim() : "";
+    };
+
     const handleAcceptance = async () => {
+      if (loading || isAccepted) return;
+      setLoading(true);
       try {
         const token = localStorage.getItem("authToken");
-        const localUser = user;
         if (!token) throw new Error("No auth token found");
+
+        const po_number = firstNonEmpty(poNumber);
+        const bill_number = firstNonEmpty(billNumber);
+
+        if (!po_number) {
+          enqueueSnackbar("PO number is missing/empty.", {
+            variant: "warning",
+          });
+          return;
+        }
+        if (!bill_number) {
+          enqueueSnackbar("Bill number is missing/empty.", {
+            variant: "warning",
+          });
+          return;
+        }
+
         const res = await Axios.put(
           "/accepted-by",
-          { bill_number: billNumber },
+          { po_number, bill_number },
           { headers: { "x-auth-token": token } }
         );
+
         if (res.status === 200) {
           setIsAccepted(true);
-          enqueueSnackbar(`Bill accepted successfully by ${localUser?.name}`, {
-            variant: "success",
-          });
+          enqueueSnackbar(
+            pickSuccessMessage(
+              res,
+              `Bill accepted successfully${currentUser?.name ? ` by ${currentUser.name}` : ""
+              }.`
+            ),
+            { variant: "success" }
+          );
         } else {
           enqueueSnackbar("Failed to accept the bill. Please try again.", {
             variant: "error",
           });
         }
       } catch (err) {
-        enqueueSnackbar("This bill has already been accepted.", {
-          variant: "error",
+        const status = err?.response?.status;
+        enqueueSnackbar(pickErrorMessage(err), {
+          variant: statusToVariant(status),
         });
+      } finally {
+        setLoading(false);
       }
     };
+
     return (
       <Box>
         {isAccepted ? (
           <Tooltip
-            title={`Approved by: ${approvedBy || user?.name || "Unknown"}`}
+            title={`Approved by: ${approvedBy || currentUser?.name || "Unknown"
+              }`}
             variant="soft"
           >
             <Typography
@@ -206,6 +327,7 @@ function VendorBillSummary() {
               color="success"
               onClick={handleAcceptance}
               size="sm"
+              disabled={loading}
               sx={{
                 boxShadow: "0 2px 6px rgba(0, 128, 0, 0.2)",
                 transition: "all .2s",
@@ -213,6 +335,8 @@ function VendorBillSummary() {
                   transform: "scale(1.1)",
                   boxShadow: "0 4px 10px rgba(0, 128, 0, 0.3)",
                 },
+                opacity: loading ? 0.7 : 1,
+                pointerEvents: loading ? "none" : "auto",
               }}
             >
               <CheckRoundedIcon />
@@ -361,6 +485,7 @@ function VendorBillSummary() {
               bills.map((bill, idx) => {
                 const id = bill._id || `${bill.bill_no}-${idx}`;
                 const isChecked = selectedIds.includes(id);
+
                 return (
                   <Box
                     component="tr"
@@ -426,46 +551,46 @@ function VendorBillSummary() {
                     >
                       {Array.isArray(bill.item) && bill.item.length
                         ? (() => {
-                            const unique = [
-                              ...new Set(
-                                bill.item
-                                  .map((it) => it?.category_name)
-                                  .filter(Boolean)
-                              ),
-                            ];
-                            const first = unique[0];
-                            const remaining = unique.slice(1);
-                            return (
-                              <>
-                                {first}
-                                {remaining.length > 0 && (
-                                  <Tooltip title={remaining.join(", ")} arrow>
-                                    <Box
-                                      component="span"
-                                      sx={{
-                                        ml: 1,
-                                        px: 1,
-                                        borderRadius: "50%",
-                                        backgroundColor: "primary.solidBg",
-                                        color: "white",
-                                        fontSize: "12px",
-                                        fontWeight: 500,
-                                        display: "inline-flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        minWidth: "22px",
-                                        height: "22px",
-                                        lineHeight: 1,
-                                        cursor: "pointer",
-                                      }}
-                                    >
-                                      +{remaining.length}
-                                    </Box>
-                                  </Tooltip>
-                                )}
-                              </>
-                            );
-                          })()
+                          const unique = [
+                            ...new Set(
+                              bill.item
+                                .map((it) => it?.category_name)
+                                .filter(Boolean)
+                            ),
+                          ];
+                          const first = unique[0];
+                          const remaining = unique.slice(1);
+                          return (
+                            <>
+                              {first}
+                              {remaining.length > 0 && (
+                                <Tooltip title={remaining.join(", ")} arrow>
+                                  <Box
+                                    component="span"
+                                    sx={{
+                                      ml: 1,
+                                      px: 1,
+                                      borderRadius: "50%",
+                                      backgroundColor: "primary.solidBg",
+                                      color: "white",
+                                      fontSize: "12px",
+                                      fontWeight: 500,
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      minWidth: "22px",
+                                      height: "22px",
+                                      lineHeight: 1,
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    +{remaining.length}
+                                  </Box>
+                                </Tooltip>
+                              )}
+                            </>
+                          );
+                        })()
                         : bill.item?.category_name || "-"}
                     </Box>
 
@@ -512,8 +637,10 @@ function VendorBillSummary() {
                       sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}
                     >
                       <BillAcceptance
-                        billNumber={bill.bill_no}
+                        billNumber={bill.bill_no || []}
+                        poNumber={bill.po_no || []}
                         approvedBy={bill.approved_by_name}
+                        currentUser={user}
                       />
                     </Box>
 
@@ -565,47 +692,32 @@ function VendorBillSummary() {
         </Button>
 
         <Box>
+          {/* Showing page {currentPage} of {totalPages} ({total} results) */}
           <Typography level="body-sm">
-            Showing {(page - 1) * pageSize + 1}–
-            {Math.min(page * pageSize, total)} of {total} results
+            Showing {startIndex}–{endIndex} of {total} results
           </Typography>
         </Box>
 
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
-          {(() => {
-            const siblings = 1;
-            const pages = [];
-            if (totalPages <= 5 + siblings * 2) {
-              for (let i = 1; i <= totalPages; i++) pages.push(i);
-            } else {
-              const left = Math.max(currentPage - siblings, 2);
-              const right = Math.min(currentPage + siblings, totalPages - 1);
-              pages.push(1);
-              if (left > 2) pages.push("...");
-              for (let i = left; i <= right; i++) pages.push(i);
-              if (right < totalPages - 1) pages.push("...");
-              pages.push(totalPages);
-            }
-            return pages.map((p, idx) =>
-              p === "..." ? (
-                <Box key={`ellipsis-${idx}`} sx={{ px: 1 }}>
-                  ...
-                </Box>
-              ) : (
-                <IconButton
-                  key={p}
-                  size="sm"
-                  variant={p === currentPage ? "contained" : "outlined"}
-                  color="neutral"
-                  onClick={() => handlePageChange(p)}
-                >
-                  {p}
-                </IconButton>
-              )
-            );
-          })()}
+          {getPaginationRange()?.map((page, idx) =>
+            page === "..." ? (
+              <Box key={`ellipsis-${idx}`} sx={{ px: 1 }}>
+                ...
+              </Box>
+            ) : (
+              <IconButton
+                key={page}
+                size="sm"
+                variant={page === currentPage ? "contained" : "outlined"}
+                color="neutral"
+                onClick={() => handlePageChange(page)}
+              >
+                {page}
+              </IconButton>
+            )
+          )}
         </Box>
 
         <FormControl size="sm" sx={{ minWidth: 120 }}>
@@ -631,6 +743,6 @@ function VendorBillSummary() {
       </Box>
     </Box>
   );
-}
+})
 
 export default VendorBillSummary;

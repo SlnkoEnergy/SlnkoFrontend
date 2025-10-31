@@ -1,4 +1,3 @@
-// src/components/ViewDeatils/CustomerPaymentSummary.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
@@ -199,13 +198,28 @@ export default function CustomerPaymentSummary() {
     return isNaN(x) ? "—" : `${x.toLocaleDateString()}`;
   };
 
-  const normalizeAttachments = (atts) =>
-    (Array.isArray(atts) ? atts : [])
-      .map((a) => ({
-        url: a?.url || a?.attachment_url || "",
-        name: a?.name || a?.attachment_name || "File",
-      }))
-      .filter((a) => a.url);
+const normalizeAttachments = (atts) => {
+
+  const arr = Array.isArray(atts) ? atts : atts ? [atts] : [];
+
+  return arr
+    .map((a) => {
+      const url =
+        a?.url ||
+        a?.attachment_url ||
+        a?.fileurl ||
+        "";
+      const name =
+        a?.name ||
+        a?.attachment_name ||
+        a?.filename ||
+        (url ? url.split("/").pop() : "File");
+
+      return { url, name };
+    })
+    .filter((a) => a.url);
+};
+
 
   const getItemLabel = (row) => {
     if (typeof row?.item_name === "string") return row.item_name;
@@ -747,33 +761,33 @@ export default function CustomerPaymentSummary() {
   };
 
   const addFiles = (files) => {
-    const incoming = Array.from(files || []).map((f) => ({
-      file: f,
-      attachment_name: f.name,
-    }));
-
+    const newFiles = Array.from(files).map((file) => ({ file }));
     setSalesFiles((prev) => {
-      const map = new Map(
-        prev.map((x) => [x.file.name + x.file.size + x.file.lastModified, x])
-      );
-      incoming.forEach((x) => {
-        const k = x.file.name + x.file.size + x.file.lastModified;
-        if (!map.has(k)) map.set(k, x);
+      const all = [...prev, ...newFiles];
+      // Remove duplicates by name + size + lastModified
+      const seen = new Set();
+      return all.filter((f) => {
+        const key = `${f.file.name}-${f.file.size}-${f.file.lastModified}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
       });
-      return Array.from(map.values());
     });
   };
 
   const onFileInputChange = (e) => addFiles(e.target.files);
+
   const onDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
     addFiles(e.dataTransfer.files);
   };
+
   const onDragOver = (e) => {
     e.preventDefault();
     setIsDragging(true);
   };
+
   const onDragLeave = () => setIsDragging(false);
 
   const removeFile = (file) => {
@@ -788,6 +802,7 @@ export default function CustomerPaymentSummary() {
       )
     );
   };
+
   const clearAllFiles = () => setSalesFiles([]);
   const [saleDetailOpen, setSaleDetailOpen] = useState(false);
   const [activeSale, setActiveSale] = useState(null);
@@ -1006,12 +1021,6 @@ export default function CustomerPaymentSummary() {
         </Box>
       </Box>
     );
-  };
-
-  const formatIndianNumber = (val) => {
-    const n = Number(val);
-    if (!isFinite(n)) return "—";
-    return n.toLocaleString("en-IN");
   };
 
   const RupeeValue = ({ value, showSymbol = true }) => {
@@ -1239,8 +1248,6 @@ export default function CustomerPaymentSummary() {
             useFlexGap
             sx={{ mb: 2 }}
           >
-          
-
             {responseData?.billing_type && (
               <Chip
                 size="md"
@@ -1437,56 +1444,55 @@ export default function CustomerPaymentSummary() {
         </Box>
 
         <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 2 }}>
-        <TabList
-  variant="plain"
-  color="neutral"
-  sx={{
-    gap: 0.5,
-    p: 0.5,
-    borderRadius: "lg",
-    bgcolor: "rgba(255, 255, 255, 0.6)",
-    backdropFilter: "blur(12px)",
-    boxShadow: "sm",
-    border: "1px solid rgba(255, 255, 255, 0.4)",
-    display: "flex",
-    justifyContent: "flex-start",
-    alignItems: "center",
-    overflowX: "auto",
-  }}
->
-  {TABS.map((t) => (
-    <Tab
-      key={t}
-      value={t}
-      sx={{
-        textTransform: "capitalize",
-        fontWeight: 600,
-        fontSize: 15,
-        px: 2.5,
-        py: 1,
-        borderRadius: "xl",
-        transition: "all 0.25s ease",
-        color: "text.secondary",
-        bgcolor: "rgba(255, 255, 255, 0.3)",
-        backdropFilter: "blur(10px)",
-        "&:hover": {
-          bgcolor: "rgba(255, 255, 255, 0.55)",
-          color: "text.primary",
-          transform: "translateY(-1px)",
-        },
-        "&[aria-selected='true']": {
-          bgcolor: "primary.solidBg",
-          color: "primary.softColor",
-          boxShadow: "md",
-          transform: "translateY(-1px)",
-        },
-      }}
-    >
-      {t}
-    </Tab>
-  ))}
-</TabList>
-
+          <TabList
+            variant="plain"
+            color="neutral"
+            sx={{
+              gap: 0.5,
+              p: 0.5,
+              borderRadius: "lg",
+              bgcolor: "rgba(255, 255, 255, 0.6)",
+              backdropFilter: "blur(12px)",
+              boxShadow: "sm",
+              border: "1px solid rgba(255, 255, 255, 0.4)",
+              display: "flex",
+              justifyContent: "flex-start",
+              alignItems: "center",
+              overflowX: "auto",
+            }}
+          >
+            {TABS.map((t) => (
+              <Tab
+                key={t}
+                value={t}
+                sx={{
+                  textTransform: "capitalize",
+                  fontWeight: 600,
+                  fontSize: 15,
+                  px: 2.5,
+                  py: 1,
+                  borderRadius: "xl",
+                  transition: "all 0.25s ease",
+                  color: "text.secondary",
+                  bgcolor: "rgba(255, 255, 255, 0.3)",
+                  backdropFilter: "blur(10px)",
+                  "&:hover": {
+                    bgcolor: "rgba(255, 255, 255, 0.55)",
+                    color: "text.primary",
+                    transform: "translateY(-1px)",
+                  },
+                  "&[aria-selected='true']": {
+                    bgcolor: "primary.solidBg",
+                    color: "primary.softColor",
+                    boxShadow: "md",
+                    transform: "translateY(-1px)",
+                  },
+                }}
+              >
+                {t}
+              </Tab>
+            ))}
+          </TabList>
 
           {/* ====================== CREDIT ====================== */}
           <TabPanel value="credit" sx={{ p: 0 }}>
@@ -1657,8 +1663,8 @@ export default function CustomerPaymentSummary() {
                 </Table>
 
                 {/* pagination for CREDIT */}
-                <Divider sx={{ my: 1 }} />
-                <PaginationFooter />
+                {/* <Divider sx={{ my: 1 }} />
+                <PaginationFooter /> */}
               </Sheet>
             </Box>
           </TabPanel>
@@ -1849,8 +1855,8 @@ export default function CustomerPaymentSummary() {
                 </Table>
 
                 {/* pagination for DEBIT */}
-                <Divider sx={{ my: 1 }} />
-                <PaginationFooter />
+                {/* <Divider sx={{ my: 1 }} />
+                <PaginationFooter /> */}
               </Sheet>
             </Box>
           </TabPanel>
@@ -1884,6 +1890,7 @@ export default function CustomerPaymentSummary() {
                     "Chandan Singh",
                     "Gagan Tayal",
                     "Sachin Raghav",
+                    "Kailash Chand",
                   ].includes(user?.name) && (
                     <>
                       <Button
@@ -1895,19 +1902,22 @@ export default function CustomerPaymentSummary() {
                         Sales Conversion
                       </Button>
 
-                      {user?.name !== "Chandan Singh" && (
-                        <Divider orientation="vertical" flexItem />
-                      )}
-
-                      {user?.name !== "Chandan Singh" &&
-                        user?.name !== "Sachin Raghav" && (
-                          <IconButton
-                            color="danger"
-                            disabled={selectedClients.length === 0}
-                            onClick={handleDeleteClient}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
+                      {user?.name &&
+                        ![
+                          "Chandan Singh",
+                          "Sachin Raghav",
+                          "Kailash Chand",
+                        ].includes(user.name) && (
+                          <>
+                            <Divider orientation="vertical" flexItem />
+                            <IconButton
+                              color="danger"
+                              disabled={selectedClients.length === 0}
+                              onClick={handleDeleteClient}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </>
                         )}
                     </>
                   )}
@@ -2182,14 +2192,14 @@ export default function CustomerPaymentSummary() {
                 </Table>
 
                 {/* pagination for PURCHASE uses meta when present */}
-                <Divider sx={{ my: 1 }} />
+                {/* <Divider sx={{ my: 1 }} />
                 <PaginationFooter
                   totalHint={
                     clientHistory?.meta?.totalPages
                       ? `of ${clientHistory.meta.totalPages} page(s)`
                       : undefined
                   }
-                />
+                /> */}
               </Sheet>
             </Box>
           </TabPanel>
@@ -2351,7 +2361,10 @@ export default function CustomerPaymentSummary() {
                         return (
                           <tr key={sale._id || `${sale.po_number}-${idx}`}>
                             {/* Converted PO */}
-                            <td>
+                            <td style={{          
+    minWidth: "160px",
+
+  }}>
                               <Stack spacing={0.75}>
                                 <Stack
                                   direction="row"
@@ -2541,14 +2554,14 @@ export default function CustomerPaymentSummary() {
                 </Table>
 
                 {/* pagination for SALES uses meta when present */}
-                <Divider sx={{ my: 1 }} />
+                {/* <Divider sx={{ my: 1 }} />
                 <PaginationFooter
                   totalHint={
                     SalesMeta?.totalPages
                       ? `of ${SalesMeta.totalPages} page(s)`
                       : undefined
                   }
-                />
+                /> */}
               </Sheet>
 
               {/* Sales detail modal (kept minimal) */}
@@ -2573,7 +2586,7 @@ export default function CustomerPaymentSummary() {
 
                       <Typography level="body-sm">
                         <strong>Converted By:</strong>{" "}
-                        {activeSale?.user_name ?? "—"}
+                        {activeSale?.converted_by ?? "—"}
                       </Typography>
                       <Stack direction="row" spacing={1} alignItems="center">
                         <Typography level="body-sm">
@@ -2685,68 +2698,59 @@ export default function CustomerPaymentSummary() {
                         );
                       })()}
 
-                      {/* --- Attachments --- */}
-                      <Box>
-                        <Typography level="body-sm" sx={{ mb: 0.5 }}>
-                          <strong>Attachments</strong>
-                        </Typography>
-                        <Sheet
-                          variant="soft"
-                          sx={{
-                            p: 1,
-                            borderRadius: "md",
-                            maxHeight: 220,
-                            overflow: "auto",
-                          }}
-                        >
-                          <Stack spacing={0.75}>
-                            {normalizeAttachments(activeSale?.attachments)
-                              .length ? (
-                              normalizeAttachments(activeSale?.attachments).map(
-                                (a, i) => (
-                                  <Box
-                                    key={a.url || `file-${i}`}
-                                    sx={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "space-between",
-                                      gap: 1,
-                                      px: 1,
-                                      py: 0.75,
-                                      borderRadius: "sm",
-                                      "&:hover": {
-                                        backgroundColor: "neutral.plainHoverBg",
-                                      },
-                                    }}
-                                  >
-                                    <Stack
-                                      direction="row"
-                                      spacing={1}
-                                      alignItems="center"
-                                    >
-                                      <InsertDriveFileRounded fontSize="small" />
-                                      <Link
-                                        href={a.url}
-                                        target="_blank"
-                                        rel="noopener"
-                                        underline="hover"
-                                      >
-                                        {a.name}
-                                      </Link>
-                                    </Stack>
-                                  </Box>
-                                )
-                              )
-                            ) : (
-                              <Typography level="body-xs" sx={{ opacity: 0.7 }}>
-                                No attachments
-                              </Typography>
-                            )}
-                          </Stack>
-                        </Sheet>
-                      </Box>
+                  
+<Box>
+  <Typography level="body-sm" sx={{ mb: 0.5 }}>
+    <strong>Attachments</strong>
+  </Typography>
+  <Sheet
+    variant="soft"
+    sx={{ p: 1, borderRadius: "md", maxHeight: 220, overflow: "auto" }}
+  >
+    <Stack spacing={0.75}>
+      {(() => {
+      
+        const files = normalizeAttachments(activeSale?.attachments);
 
-                      {/* --- Footer --- */}
+        return files.length ? (
+          files.map((a, i) => (
+            <Box
+              key={a.url || `file-${i}`}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 1,
+                px: 1,
+                py: 0.75,
+                borderRadius: "sm",
+                "&:hover": { backgroundColor: "neutral.plainHoverBg" },
+              }}
+            >
+              <Stack direction="row" spacing={1} alignItems="center">
+                <InsertDriveFileRounded fontSize="small" />
+                <Link
+                  href={a.url}
+                  target="_blank"
+                  rel="noopener"
+                  underline="hover"
+                >
+                  {a.name || a.url?.split("/").pop() || "File"}
+                </Link>
+              </Stack>
+            </Box>
+          ))
+        ) : (
+          <Typography level="body-xs" sx={{ opacity: 0.7 }}>
+            No attachments
+          </Typography>
+        );
+      })()}
+    </Stack>
+  </Sheet>
+</Box>
+
+
                       <Stack
                         direction="row"
                         spacing={1}
@@ -2986,8 +2990,8 @@ export default function CustomerPaymentSummary() {
                 </Table>
 
                 {/* pagination for ADJUSTMENT */}
-                <Divider sx={{ my: 1 }} />
-                <PaginationFooter />
+                {/* <Divider sx={{ my: 1 }} />
+                <PaginationFooter /> */}
               </Sheet>
             </Box>
           </TabPanel>
@@ -3043,392 +3047,434 @@ export default function CustomerPaymentSummary() {
         </Box>
       </Card>
 
-        <Modal
-          open={confirmCloseOpen}
-          onClose={() => setConfirmCloseOpen(false)}
+      <Modal open={confirmCloseOpen} onClose={() => setConfirmCloseOpen(false)}>
+        <ModalDialog sx={{ width: 420 }}>
+          <DialogTitle>
+            Close selected PO{selectedClients.length > 1 ? "s" : ""}?
+          </DialogTitle>
+
+          <DialogContent>
+            Are you sure you want to close {selectedClients.length} PO
+            {selectedClients.length > 1 ? "s" : ""}? This will convert them to
+            Sales.
+          </DialogContent>
+
+          <Stack direction="row" spacing={1} justifyContent="flex-end">
+            <Button variant="plain" onClick={() => setConfirmCloseOpen(false)}>
+              No
+            </Button>
+
+            <Button
+              variant="solid"
+              color="danger"
+              onClick={() => {
+                setConfirmCloseOpen(false);
+
+                if (!selectedClients.length) {
+                  toast.error("Select at least 1 PO for Sales Conversion.");
+                  return;
+                }
+
+                // ✅ Get the full PO data from ClientSummary
+                const selectedPOsData = ClientSummary.filter((po) =>
+                  selectedClients.includes(po._id)
+                );
+
+                if (!selectedPOsData.length) {
+                  toast.error("Selected PO(s) not found in current list.");
+                  return;
+                }
+
+                // ✅ Filter only those with total_billed_value > 0
+                const validPOs = selectedPOsData.filter(
+                  (po) => Number(po.total_billed_value || 0) > 0
+                );
+
+                // ✅ Handle cases
+                if (validPOs.length === 0) {
+                  toast.error(
+                    "Only POs with billed value greater than 0 can be converted."
+                  );
+                  return;
+                }
+
+                // if (validPOs.length < selectedPOsData.length) {
+                //   const skipped = selectedPOsData
+                //     .filter((po) => Number(po.total_billed_value || 0) <= 0)
+                //     .map((p) => p.po_number)
+                //     .join(", ");
+                //   toast.warning(
+                //     // `Skipped PO(s) without billed value: ${skipped}`
+                //   );
+                // }
+
+                // ✅ Proceed with valid ones only
+                setSelectedPO(validPOs);
+                setSalesAmounts(
+                  validPOs.reduce((acc, po) => {
+                    acc[po._id] = { basic: "", gst: "" };
+                    return acc;
+                  }, {})
+                );
+
+                setSalesOpen(true);
+              }}
+            >
+              Yes, continue
+            </Button>
+          </Stack>
+        </ModalDialog>
+      </Modal>
+
+      {/* ================= Sales Conversion Modal ================= */}
+      <Modal open={salesOpen} onClose={() => setSalesOpen(false)}>
+        <ModalDialog
+          aria-labelledby="sales-convert-title"
+          sx={{
+            width: 720,
+            borderRadius: "lg",
+            boxShadow: "xl",
+            p: 3,
+            background: "linear-gradient(180deg, #fff 0%, #f9f9f9 100%)",
+          }}
         >
-          <ModalDialog sx={{ width: 420 }}>
-            <DialogTitle>
-              Close selected PO{selectedClients.length > 1 ? "s" : ""}?
-            </DialogTitle>
+          <DialogTitle id="sales-convert-title" sx={{ fontWeight: 700, mb: 1 }}>
+            Sales Conversion
+          </DialogTitle>
 
-            <DialogContent>
-              Are you sure you want to close {selectedClients.length} PO
-              {selectedClients.length > 1 ? "s" : ""}? This will convert them to
-              Sales.
-            </DialogContent>
-
-            <Stack direction="row" spacing={1} justifyContent="flex-end">
-              <Button
-                variant="plain"
-                onClick={() => setConfirmCloseOpen(false)}
-              >
-                No
-              </Button>
-
-              <Button
-                variant="solid"
-                color="danger"
-                onClick={() => {
-                  setConfirmCloseOpen(false);
-
-                  if (!selectedClients.length) {
-                    toast.error("Select at least 1 PO for Sales Conversion.");
-                    return;
-                  }
-
-                  // ✅ Get the full PO data from ClientSummary
-                  const selectedPOsData = ClientSummary.filter((po) =>
-                    selectedClients.includes(po._id)
-                  );
-
-                  if (!selectedPOsData.length) {
-                    toast.error("Selected PO(s) not found in current list.");
-                    return;
-                  }
-
-                  // ✅ Filter only those with total_billed_value > 0
-                  const validPOs = selectedPOsData.filter(
-                    (po) => Number(po.total_billed_value || 0) > 0
-                  );
-
-                  // ✅ Handle cases
-                  if (validPOs.length === 0) {
-                    toast.error(
-                      "Only POs with billed value greater than 0 can be converted."
-                    );
-                    return;
-                  }
-
-                  // if (validPOs.length < selectedPOsData.length) {
-                  //   const skipped = selectedPOsData
-                  //     .filter((po) => Number(po.total_billed_value || 0) <= 0)
-                  //     .map((p) => p.po_number)
-                  //     .join(", ");
-                  //   toast.warning(
-                  //     // `Skipped PO(s) without billed value: ${skipped}`
-                  //   );
-                  // }
-
-                  // ✅ Proceed with valid ones only
-                  setSelectedPO(validPOs);
-                  setSalesAmounts(
-                    validPOs.reduce((acc, po) => {
-                      acc[po._id] = { basic: "", gst: "" };
-                      return acc;
-                    }, {})
-                  );
-
-                  setSalesOpen(true);
+          <DialogContent>
+            <Stack spacing={2.5}>
+              {/* ---- PO Table ---- */}
+              <Sheet
+                variant="outlined"
+                sx={{
+                  borderRadius: "md",
+                  overflow: "auto",
+                  maxHeight: 280,
+                  borderColor: "neutral.outlinedBorder",
                 }}
               >
-                Yes, continue
-              </Button>
-            </Stack>
-          </ModalDialog>
-        </Modal>
-
-        {/* ================= Sales Conversion Modal ================= */}
-        <Modal open={salesOpen} onClose={() => setSalesOpen(false)}>
-          <ModalDialog
-            aria-labelledby="sales-convert-title"
-            sx={{
-              width: 720,
-              borderRadius: "lg",
-              boxShadow: "xl",
-              p: 3,
-              background: "linear-gradient(180deg, #fff 0%, #f9f9f9 100%)",
-            }}
-          >
-            <DialogTitle
-              id="sales-convert-title"
-              sx={{ fontWeight: 700, mb: 1 }}
-            >
-              Sales Conversion
-            </DialogTitle>
-
-            <DialogContent>
-              <Stack spacing={2.5}>
-                {/* ---- PO Table ---- */}
-                <Sheet
-                  variant="outlined"
+                {/* Header Row */}
+                <Box
                   sx={{
-                    borderRadius: "md",
-                    overflow: "auto",
-                    maxHeight: 280,
+                    display: "grid",
+                    gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr",
+                    gap: 1,
+                    px: 1.5,
+                    py: 1,
+                    backgroundColor: "neutral.softBg",
+                    position: "sticky",
+                    top: 0,
+                    borderBottom: "1px solid",
                     borderColor: "neutral.outlinedBorder",
+                    fontWeight: 600,
+                    zIndex: 2,
                   }}
                 >
-                  {/* Header Row */}
-                  <Box
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr",
-                      gap: 1,
-                      px: 1.5,
-                      py: 1,
-                      backgroundColor: "neutral.softBg",
-                      position: "sticky",
-                      top: 0,
-                      borderBottom: "1px solid",
-                      borderColor: "neutral.outlinedBorder",
-                      fontWeight: 600,
-                      zIndex: 2,
-                    }}
-                  >
-                    {[
-                      { label: "PO No.", align: "left" },
-                      { label: "PO Value", align: "right" },
-                      { label: "Bill Basic", align: "right" },
-                      { label: "Advance Paid", align: "right" },
-                      { label: "Basic Sales", align: "right" },
-                      { label: "GST on Sales", align: "right" },
-                    ].map((col) => (
-                      <Typography
-                        key={col.label}
-                        level="body-sm"
-                        textAlign={col.align}
-                        sx={{ fontWeight: 700 }}
+                  {[
+                    { label: "PO No.", align: "left" },
+                    { label: "PO Value", align: "right" },
+                    { label: "Bill Basic", align: "right" },
+                    { label: "Advance Paid", align: "right" },
+                    { label: "Basic Sales", align: "right" },
+                    { label: "GST on Sales", align: "right" },
+                  ].map((col) => (
+                    <Typography
+                      key={col.label}
+                      level="body-sm"
+                      textAlign={col.align}
+                      sx={{ fontWeight: 700 }}
+                    >
+                      {col.label}
+                    </Typography>
+                  ))}
+                </Box>
+
+                {/* Data Rows */}
+                {(selectedPO || [])
+                  .filter((po) => Number(po.bill_basic) > 0)
+                  .map((po, idx) => {
+                    const id = po._id;
+                    const poValue = Number(po.po_value || 0);
+                    const billBasic = Number(po.bill_basic || 0);
+                    const totalAdvance = Number(po.advance_paid || 0);
+                    const basic = Number(salesAmounts[id]?.basic || 0);
+                    const gst = Number(salesAmounts[id]?.gst || 0);
+
+                    const basicExceeds = basic > billBasic;
+                    const showInfo = billBasic > totalAdvance;
+
+                    return (
+                      <Box
+                        key={id}
+                        sx={{
+                          display: "grid",
+                          gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr",
+                          gap: 1,
+                          px: 1.5,
+                          py: 0.9,
+                          alignItems: "center",
+                          borderBottom: "1px dashed",
+                          borderColor: "neutral.outlinedBorder",
+                          backgroundColor:
+                            idx % 2 === 0
+                              ? "background.body"
+                              : "neutral.softBg",
+                          "&:hover": {
+                            backgroundColor: "neutral.plainHoverBg",
+                          },
+                        }}
                       >
-                        {col.label}
-                      </Typography>
-                    ))}
-                  </Box>
+                        {/* PO No. */}
+                        <Typography level="body-sm" sx={{ fontWeight: 600 }}>
+                          {po.po_number}
+                        </Typography>
 
-                  {/* Data Rows */}
-                  {(selectedPO || [])
-                    .filter((po) => Number(po.bill_basic) > 0)
-                    .map((po, idx) => {
-                      const id = po._id;
-                      const poValue = Number(po.po_value || 0);
-                      const billBasic = Number(po.bill_basic || 0);
-                      const totalAdvance = Number(po.advance_paid || 0);
-                      const basic = Number(salesAmounts[id]?.basic || 0);
-                      const gst = Number(salesAmounts[id]?.gst || 0);
-
-                      const basicExceeds = basic > billBasic;
-                      const showInfo = billBasic > totalAdvance;
-                      const infoText = `Bill Basic (${billBasic.toLocaleString()}) exceeds advance paid (${totalAdvance.toLocaleString()})`;
-
-                      return (
-                        <Box
-                          key={id}
-                          sx={{
-                            display: "grid",
-                            gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr",
-                            gap: 1,
-                            px: 1.5,
-                            py: 0.9,
-                            alignItems: "center",
-                            borderBottom: "1px dashed",
-                            borderColor: "neutral.outlinedBorder",
-                            backgroundColor:
-                              idx % 2 === 0
-                                ? "background.body"
-                                : "neutral.softBg",
-                            "&:hover": {
-                              backgroundColor: "neutral.plainHoverBg",
-                            },
-                          }}
+                        <Typography level="body-sm" textAlign="right">
+                          {poValue.toLocaleString()}
+                        </Typography>
+                        <Typography level="body-sm" textAlign="right">
+                          {billBasic.toLocaleString()}
+                        </Typography>
+                        <Typography
+                          level="body-sm"
+                          textAlign="right"
+                          color={showInfo ? "danger.plainColor" : "neutral"}
                         >
-                          {/* PO No + Info Icon */}
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 0.75,
-                              justifyContent: "flex-start",
-                            }}
-                          >
-                            {/* {showInfo && (
-                      <Tooltip title={infoText} placement="top-start">
-                        <InfoOutlined
+                          {totalAdvance.toLocaleString()}
+                        </Typography>
+
+                        {/* Basic Sales */}
+                        <Input
+                          size="sm"
+                          type="number"
+                          value={salesAmounts[id]?.basic ?? ""}
+                          placeholder="Basic"
+                          onChange={(e) =>
+                            setSalesAmounts((prev) => ({
+                              ...prev,
+                              [id]: { ...prev[id], basic: e.target.value },
+                            }))
+                          }
                           sx={{
-                            color: "danger.solidBg",
-                            fontSize: 18,
-                            cursor: "pointer",
-                            flexShrink: 0,
+                            width: 100,
+                            ml: "auto",
+                            borderColor: basicExceeds
+                              ? "danger.solidBg"
+                              : undefined,
                           }}
                         />
-                      </Tooltip>
-                    )} */}
-                            <Typography
-                              level="body-sm"
-                              sx={{ fontWeight: 600 }}
-                            >
-                              {po.po_number}
-                            </Typography>
-                          </Box>
 
-                          {/* PO Value */}
-                          <Typography level="body-sm" textAlign="right">
-                            {poValue.toLocaleString()}
-                          </Typography>
+                        {/* GST on Sales */}
+                        <Input
+                          size="sm"
+                          type="number"
+                          value={salesAmounts[id]?.gst ?? ""}
+                          placeholder="GST"
+                          onChange={(e) =>
+                            setSalesAmounts((prev) => ({
+                              ...prev,
+                              [id]: { ...prev[id], gst: e.target.value },
+                            }))
+                          }
+                          sx={{
+                            width: 100,
+                            ml: "auto",
+                          }}
+                        />
+                      </Box>
+                    );
+                  })}
+              </Sheet>
 
-                          {/* Bill Basic */}
-                          <Typography level="body-sm" textAlign="right">
-                            {billBasic.toLocaleString()}
-                          </Typography>
-
-                          {/* Advance Paid */}
-                          <Typography
-                            level="body-sm"
-                            textAlign="right"
-                            color={showInfo ? "danger.plainColor" : "neutral"}
-                          >
-                            {totalAdvance.toLocaleString()}
-                          </Typography>
-
-                          {/* Basic Sales */}
-                          <Input
-                            size="sm"
-                            type="number"
-                            value={salesAmounts[id]?.basic ?? ""}
-                            placeholder="Basic"
-                            onChange={(e) =>
-                              setSalesAmounts((prev) => ({
-                                ...prev,
-                                [id]: { ...prev[id], basic: e.target.value },
-                              }))
-                            }
-                            sx={{
-                              width: 100,
-                              ml: "auto",
-                              borderColor: basicExceeds
-                                ? "danger.solidBg"
-                                : undefined,
-                            }}
-                          />
-
-                          {/* GST on Sales (always editable) */}
-                          <Input
-                            size="sm"
-                            type="number"
-                            value={salesAmounts[id]?.gst ?? ""}
-                            placeholder="GST"
-                            onChange={(e) =>
-                              setSalesAmounts((prev) => ({
-                                ...prev,
-                                [id]: { ...prev[id], gst: e.target.value },
-                              }))
-                            }
-                            sx={{
-                              width: 100,
-                              ml: "auto",
-                            }}
-                          />
-                        </Box>
-                      );
-                    })}
-                </Sheet>
-
-                {/* ---- File Upload ---- */}
-                <Sheet
-                  variant="soft"
-                  onClick={() => fileInputRef.current?.click()}
-                  onDrop={onDrop}
-                  onDragOver={onDragOver}
-                  onDragLeave={onDragLeave}
+              {/* ---- File Upload ---- */}
+              <Sheet
+                variant="soft"
+                onClick={() => fileInputRef.current?.click()}
+                onDrop={onDrop}
+                onDragOver={onDragOver}
+                onDragLeave={onDragLeave}
+                sx={{
+                  border: "2px dashed",
+                  borderColor: isDragging
+                    ? "primary.solidBg"
+                    : "neutral.outlinedBorder",
+                  borderRadius: "lg",
+                  p: 3,
+                  textAlign: "center",
+                  cursor: "pointer",
+                  transition: "all .2s ease-in-out",
+                  "&:hover": {
+                    borderColor: "primary.solidBg",
+                    backgroundColor: "neutral.softBg",
+                  },
+                }}
+              >
+                <Typography level="title-sm">
+                  <strong>Drop files here</strong> or <u>browse</u>
+                </Typography>
+                <Typography level="body-xs" color="neutral">
+                  Supports multiple files (.PNG, .JPG, .PDF)
+                </Typography>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*,application/pdf"
+                  onChange={onFileInputChange}
+                  style={{ display: "none" }}
+                />
+                <Typography level="body-sm" sx={{ mt: 1 }}>
+                  {salesFiles.length
+                    ? `${salesFiles.length} file(s) selected`
+                    : "No files selected"}
+                </Typography>
+              </Sheet>
+        
+              {salesFiles.length > 0 && (
+                <Box
                   sx={{
-                    border: "2px dashed",
-                    borderColor: isDragging
-                      ? "primary.solidBg"
-                      : "neutral.outlinedBorder",
-                    borderRadius: "lg",
-                    p: 3,
-                    textAlign: "center",
-                    cursor: "pointer",
-                    transition: "all .2s ease-in-out",
-                    "&:hover": {
-                      borderColor: "primary.solidBg",
-                      backgroundColor: "neutral.softBg",
-                    },
+                    mt: 1.5,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 0.75,
+                    maxHeight: 140,
+                    overflowY: "auto",
                   }}
                 >
-                  <Typography level="title-sm">
-                    <strong>Drop files here</strong> or <u>browse</u>
-                  </Typography>
-                  <Typography level="body-xs" color="neutral">
-                    Supports multiple files (.PNG, .JPG, .PDF)
-                  </Typography>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept="image/*,application/pdf"
-                    onChange={onFileInputChange}
-                    style={{ display: "none" }}
-                  />
-                  <Typography level="body-sm" sx={{ mt: 1 }}>
-                    {salesFiles.length
-                      ? `${salesFiles.length} file(s) selected`
-                      : "No files selected"}
-                  </Typography>
-                </Sheet>
+                  {salesFiles.map(({ file }) => (
+                    <Box
+                      key={`${file.name}-${file.size}-${file.lastModified}`}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        backgroundColor: "background.level1",
+                        borderRadius: "sm",
+                        px: 1.2,
+                        py: 0.5,
+                        border: "1px solid",
+                        borderColor: "neutral.outlinedBorder",
+                        "&:hover": {
+                          backgroundColor: "neutral.plainHoverBg",
+                        },
+                      }}
+                    >
+                      <Typography
+                        level="body-sm"
+                        sx={{
+                          wordBreak: "break-all",
+                          flex: 1,
+                          pr: 1,
+                          fontSize: "sm",
+                        }}
+                      >
+                        {file.name}
+                      </Typography>
 
-                {/* ---- Invoice ---- */}
-                <FormControl>
-                  <FormLabel sx={{ fontWeight: 600 }}>
-                    Sales Invoice No.
-                  </FormLabel>
-                  <Input
-                    size="md"
+                    
+                      <Box
+                        onClick={() => removeFile(file)}
+                        sx={{
+                          cursor: "pointer",
+                          color: "danger.solidBg",
+                          "&:hover": { color: "danger.plainColor" },
+                          display: "flex",
+                          alignItems: "center",
+                        }}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          width="18"
+                          fill="currentColor"
+                        >
+                          <path d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7A1 1 0 0 0 5.7 7.11L10.59 12l-4.9 4.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.9a1 1 0 0 0 1.41-1.41L13.41 12l4.9-4.89a1 1 0 0 0-.01-1.4z" />
+                        </svg>
+                      </Box>
+                    </Box>
+                  ))}
+
+                  <Button
                     variant="outlined"
-                    placeholder="Enter Sales Invoice Number"
-                    value={salesInvoice}
-                    onChange={(e) => setSalesInvoice(e.target.value)}
+                    color="neutral"
+                    size="sm"
+                    onClick={clearAllFiles}
                     sx={{
-                      borderRadius: "md",
-                      backgroundColor: "background.body",
+                      alignSelf: "flex-end",
+                      mt: 0.5,
+                      fontSize: "xs",
                     }}
-                  />
-                </FormControl>
+                  >
+                    Clear All
+                  </Button>
+                </Box>
+              )}
 
-                {/* ---- Remarks ---- */}
-                <Textarea
-                  minRows={3}
-                  placeholder="Enter remarks..."
-                  variant="soft"
-                  value={salesRemarks}
-                  onChange={(e) => setSalesRemarks(e.target.value)}
+              {/* ---- Invoice ---- */}
+              <FormControl>
+                <FormLabel sx={{ fontWeight: 600 }}>
+                  Sales Invoice No.
+                </FormLabel>
+                <Input
+                  size="md"
+                  variant="outlined"
+                  placeholder="Enter Sales Invoice Number"
+                  value={salesInvoice}
+                  onChange={(e) => setSalesInvoice(e.target.value)}
                   sx={{
-                    fontSize: "sm",
                     borderRadius: "md",
                     backgroundColor: "background.body",
                   }}
                 />
+              </FormControl>
 
-                {/* ---- Actions ---- */}
-                <Stack direction="row" spacing={1.5} justifyContent="flex-end">
-                  <Button
-                    variant="plain"
-                    color="neutral"
-                    onClick={() => setSalesOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="solid"
-                    color="primary"
-                    loading={isConverting}
-                    disabled={
-                      !salesRemarks.trim() ||
-                      selectedPO.some((po) => {
-                        const id = po._id;
-                        const billBasic = Number(po.bill_basic || 0);
-                        const basic = Number(salesAmounts[id]?.basic || 0);
-                        return basic < 0 || basic > billBasic;
-                      })
-                    }
-                    onClick={handleSalesConvert}
-                  >
-                    Convert
-                  </Button>
-                </Stack>
+              {/* ---- Remarks ---- */}
+              <Textarea
+                minRows={3}
+                placeholder="Enter remarks..."
+                variant="soft"
+                value={salesRemarks}
+                onChange={(e) => setSalesRemarks(e.target.value)}
+                sx={{
+                  fontSize: "sm",
+                  borderRadius: "md",
+                  backgroundColor: "background.body",
+                }}
+              />
+
+              {/* ---- Actions ---- */}
+              <Stack direction="row" spacing={1.5} justifyContent="flex-end">
+                <Button
+                  variant="plain"
+                  color="neutral"
+                  onClick={() => setSalesOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="solid"
+                  color="primary"
+                  loading={isConverting}
+                  disabled={
+                    !salesRemarks.trim() ||
+                    selectedPO.some((po) => {
+                      const id = po._id;
+                      const billBasic = Number(po.bill_basic || 0);
+                      const basic = Number(salesAmounts[id]?.basic || 0);
+                      return basic < 0 || basic > billBasic;
+                    })
+                  }
+                  onClick={handleSalesConvert}
+                >
+                  Convert
+                </Button>
               </Stack>
-            </DialogContent>
-          </ModalDialog>
-        </Modal>
+            </Stack>
+          </DialogContent>
+        </ModalDialog>
+      </Modal>
     </Box>
   );
 }

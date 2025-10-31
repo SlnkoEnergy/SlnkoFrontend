@@ -569,8 +569,8 @@ function AddVendor({ setOpenAddVendorModal, vendorId }) {
                 ? "Updating…"
                 : "Update Vendor"
               : isCreating
-              ? "Saving…"
-              : "Save Vendor"}
+                ? "Saving…"
+                : "Save Vendor"}
           </Button>
         </Stack>
 

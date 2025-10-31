@@ -13,7 +13,7 @@ import { Button } from "@mui/joy";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import SubHeader from "../../component/Partials/SubHeader";
 import Filter from "../../component/Partials/Filter";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useExportBillsMutation } from "../../redux/billsSlice";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 
@@ -21,6 +21,17 @@ function Bill_History() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(null);
+  const vendorRef = useRef();
+  const [selectedCount, setSelectedCount] = useState(0);
+  const canExport = selectedCount > 0;
+
+  const exportData = () => {
+
+    if (vendorRef.current) {
+      vendorRef.current.handleExport();
+    }
+  }
+
 
   useEffect(() => {
     const userData = getUserData();
@@ -44,7 +55,7 @@ function Bill_History() {
 
   const fields = [
     {
-      key: "billStatus",
+      key: "status",
       label: "Filter By Bill Status",
       type: "select",
       options: status.map((d) => ({
@@ -83,26 +94,12 @@ function Bill_History() {
     if (dateFilterEnd) sp.set("to", dateFilterEnd);
     else sp.delete("to");
 
+    if (selectStatus || dateFilterEnd || dateFilterFrom) sp.set("page", 1);
+
     setSearchParams(sp);
   }, [selectStatus, dateFilterEnd, dateFilterFrom]);
 
-  const [exportBills, { isLoading: isExporting }] = useExportBillsMutation();
 
-  const handleExport = async (isExportAll) => {
-    try {
-      const res = await exportBills({}).unwrap();
-
-      const url = URL.createObjectURL(res);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "bills_export.csv";
-      link.click();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Export failed", err);
-      alert("Failed to export bills");
-    }
-  };
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -112,27 +109,27 @@ function Bill_History() {
         <MainHeader title="SCM" sticky>
           <Box display="flex" gap={1}>
             {user?.name === "IT Team" ||
-            user?.department === "admin" ||
-            (user?.department === "Accounts" &&
-              (user?.name === "Deepak Kumar Maurya" ||
-                user?.name === "Gagan Tayal" ||
-                user?.name === "Ajay Singh" ||
-                user?.name === "Sachin Raghav" ||
-                user?.name === "Anamika Poonia" ||
-                user?.name === "Meena Verma" ||
-                user?.name === "Kailash Chand" ||
-                user?.name === "Chandan Singh")) ||
-            (user?.department === "Accounts" &&
-              user?.name === "Sujan Maharjan") ||
-            user?.name === "Guddu Rani Dubey" ||
-            user?.name === "Varun Mishra" ||
-            user?.name === "Prachi Singh" ||
-            user?.role === "purchase" ||
-            (user?.role === "manager" && user?.name === "Naresh Kumar") ||
-            (user?.role === "visitor" &&
-              (user?.name === "Sanjiv Kumar" ||
-                user?.name === "Sushant Ranjan Dubey")) ||
-            (user?.department === "CAM" && user?.name === "Shantanu Sameer") ? (
+              user?.department === "admin" ||
+              (user?.department === "Accounts" &&
+                (user?.name === "Deepak Kumar Maurya" ||
+                  user?.name === "Gagan Tayal" ||
+                  user?.name === "Ajay Singh" ||
+                  user?.name === "Sachin Raghav" ||
+                  user?.name === "Anamika Poonia" ||
+                  user?.name === "Meena Verma" ||
+                  user?.name === "Kailash Chand" ||
+                  user?.name === "Chandan Singh")) ||
+              (user?.department === "Accounts" &&
+                user?.name === "Sujan Maharjan") ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" && user?.name === "Naresh Kumar") ||
+              (user?.role === "visitor" &&
+                (user?.name === "Sanjiv Kumar" ||
+                  user?.name === "Sushant Ranjan Dubey")) ||
+              (user?.department === "CAM" && user?.name === "Shantanu Sameer") ? (
               <Button
                 size="sm"
                 onClick={() => navigate("/purchase-order")}
@@ -155,13 +152,13 @@ function Bill_History() {
             ) : null}
 
             {user?.name === "IT Team" ||
-            user?.department === "admin" ||
-            user?.name === "Guddu Rani Dubey" ||
-            user?.name === "Varun Mishra" ||
-            user?.name === "Prachi Singh" ||
-            user?.role === "purchase" ||
-            (user?.role === "manager" && user?.name === "Naresh Kumar") ||
-            user?.department === "Logistic" ? (
+              user?.department === "admin" ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" && user?.name === "Naresh Kumar") ||
+              user?.department === "Logistic" ? (
               <Button
                 size="sm"
                 onClick={() => navigate(`/logistics`)}
@@ -186,42 +183,42 @@ function Bill_History() {
               user?.department === "Accounts" ||
               user?.department === "superadmin" ||
               user?.department === "admin") && (
-              <Button
-                size="sm"
-                onClick={() => navigate(`/vendors`)}
-                sx={{
-                  color: "white",
-                  bgcolor: "transparent",
-                  fontWeight: 500,
-                  fontSize: "1rem",
-                  letterSpacing: 0.5,
-                  borderRadius: "6px",
-                  px: 1.5,
-                  py: 0.5,
-                  "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
-                }}
-              >
-                Vendors
-              </Button>
-            )}
+                <Button
+                  size="sm"
+                  onClick={() => navigate(`/vendors`)}
+                  sx={{
+                    color: "white",
+                    bgcolor: "transparent",
+                    fontWeight: 500,
+                    fontSize: "1rem",
+                    letterSpacing: 0.5,
+                    borderRadius: "6px",
+                    px: 1.5,
+                    py: 0.5,
+                    "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+                  }}
+                >
+                  Vendors
+                </Button>
+              )}
             {user?.name === "IT Team" ||
-            user?.department === "admin" ||
-            (user?.department === "Accounts" &&
-              (user?.name === "Deepak Kumar Maurya" ||
-                user?.name === "Gagan Tayal" ||
-                user?.name === "Ajay Singh" ||
-                user?.name === "Sachin Raghav" ||
-                user?.name === "Anamika Poonia" ||
-                user?.name === "Meena Verma" ||
-                user?.name === "Kailash Chand" ||
-                user?.name === "Chandan Singh")) ||
-            (user?.department === "Accounts" &&
-              user?.name === "Sujan Maharjan") ||
-            user?.name === "Guddu Rani Dubey" ||
-            user?.name === "Varun Mishra" ||
-            user?.name === "Prachi Singh" ||
-            user?.role === "purchase" ||
-            (user?.role === "manager" && user?.name === "Naresh Kumar") ? (
+              user?.department === "admin" ||
+              (user?.department === "Accounts" &&
+                (user?.name === "Deepak Kumar Maurya" ||
+                  user?.name === "Gagan Tayal" ||
+                  user?.name === "Ajay Singh" ||
+                  user?.name === "Sachin Raghav" ||
+                  user?.name === "Anamika Poonia" ||
+                  user?.name === "Meena Verma" ||
+                  user?.name === "Kailash Chand" ||
+                  user?.name === "Chandan Singh")) ||
+              (user?.department === "Accounts" &&
+                user?.name === "Sujan Maharjan") ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" && user?.name === "Naresh Kumar") ? (
               <Button
                 size="sm"
                 onClick={() => navigate(`/vendor_bill`)}
@@ -247,16 +244,18 @@ function Bill_History() {
 
         <SubHeader title="Vendor Bill" isBackEnabled={false} sticky>
           <>
-            <Button
+            {canExport && (<Button
               variant="outlined"
               size="sm"
               color="primary"
-              onClick={() => handleExport(false)}
-              loading={isExporting}
+              onClick={() => exportData(false)}
               startDecorator={<CalendarMonthIcon />}
             >
               Export
-            </Button>
+            </Button>)
+
+            }
+
 
             <Filter
               open={open}
@@ -264,7 +263,7 @@ function Bill_History() {
               title="Filters"
               fields={fields}
               onApply={(values) => {
-                setSelectStatus(values?.billStatus || "");
+                setSelectStatus(values?.status || "");
                 setDateFilterFrom(values?.dateFilter?.from || "");
                 setDateFilterEnd(values?.dateFilter?.to || "");
 
@@ -294,7 +293,10 @@ function Bill_History() {
             px: "24px",
           }}
         >
-          <VendorBill />
+          <VendorBill
+            ref={vendorRef}
+            onSelectionChange={(len) => setSelectedCount(len)}
+          />
         </Box>
       </Box>
     </CssVarsProvider>

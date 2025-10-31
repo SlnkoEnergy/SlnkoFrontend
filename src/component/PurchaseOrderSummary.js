@@ -63,31 +63,16 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     project_code,
     vendor_id,
     onSelectionChange,
-    selectItem = () => {},
+    selectItem = () => { },
   } = props;
   const [po, setPO] = useState("");
-  const [selectedpo, setSelectedpo] = useState("");
   const [selectedtype, setSelectedtype] = useState("");
   const [selected, setSelected] = useState([]);
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const [bulkRemarks, setBulkRemarks] = useState("");
   const [bulkDate, setBulkDate] = useState("");
-  const [selectedPoNumber, setSelectedPoNumber] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const [modalAction, setModalAction] = useState("");
-  const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
-  const [openFilter, setOpenFilter] = useState(false);
-  const [etdFrom, setEtdFrom] = useState("");
-  const [etdTo, setEtdTo] = useState("");
-  const [poFrom, setPoFrom] = useState("");
-  const [poTo, setPoTo] = useState("");
-  const [deliveryFrom, setDeliveryFrom] = useState("");
-  const [deliveryTo, setDeliveryTo] = useState("");
-  const [activeDateFilter, setActiveDateFilter] = useState("");
-
   const initialPage = parseInt(searchParams.get("page")) || 1;
   const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
   const [currentPage, setCurrentPage] = useState(initialPage);
@@ -96,9 +81,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const [remarks, setRemarks] = useState("");
   const [perPage, setPerPage] = useState(initialPageSize);
 
-  const [selectedStatusFilter, setSelectedStatusFilter] = useState(""); // status filter
-  const [selecteditem, setSelecteditem] = useState(""); // category
-  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+
+
 
   const projectId = project_code || "";
 
@@ -137,6 +121,14 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
 
   const pr_id = searchParams.get("pr_id") || state?.pr_id || "";
   const item_id = searchParams.get("item_id") || state?.item_id || "";
+  const selecteditem = searchParams.get("itemSearch") || ""
+  const selectedStatusFilter = searchParams.get("status") || "";
+  const deliveryFrom = searchParams.get("delivery_from") || "";
+  const deliveryTo = searchParams.get("delivery_to") || "";
+  const selectedpo = searchParams.get("poStatus") || "";
+  const etdFrom = searchParams.get("etd_from") || "";
+  const etdTo = searchParams.get("etd_to") || "";
+
 
   const {
     data: getPO = [],
@@ -185,29 +177,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     return pages;
   };
 
-  useEffect(() => {
-    const statusParam = searchParams.get("status") || "";
-    if (statusParam !== selectedStatusFilter)
-      setSelectedStatusFilter(statusParam);
 
-    const etdFromParam = searchParams.get("etdFrom") || "";
-    if (etdFromParam !== etdFrom) setEtdFrom(etdFromParam);
-
-    const etdToParam = searchParams.get("etdTo") || "";
-    if (etdToParam !== etdTo) setEtdTo(etdToParam);
-
-    const deliveryFromParam = searchParams.get("deliveryFrom") || "";
-    if (deliveryFromParam !== deliveryFrom) setDeliveryFrom(deliveryFromParam);
-
-    const deliveryToParam = searchParams.get("deliveryTo") || "";
-    if (deliveryToParam !== deliveryTo) setDeliveryTo(deliveryToParam);
-
-    const selectPoParam = searchParams.get("poStatus") || "";
-    if (selectPoParam !== selectedpo) setSelectedpo(selectPoParam);
-
-    const selectItemParam = searchParams.get("itemSearch") || "";
-    if (selectItemParam !== selectItem) setSelecteditem(selectItemParam);
-  }, [searchParams]);
 
   const handleCloseBulkModal = () => {
     setBulkModalOpen(false);
@@ -404,8 +374,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     const label = isFullyBilled
       ? "Fully Billed"
       : isPending
-      ? "Pending"
-      : status;
+        ? "Pending"
+        : status;
 
     const icon = isFullyBilled ? (
       <CheckRoundedIcon />
@@ -712,8 +682,8 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     const categories = Array.isArray(item)
       ? item.filter(Boolean).map(String)
       : item
-      ? [String(item)]
-      : [];
+        ? [String(item)]
+        : [];
 
     const onlyOther =
       categories.length === 1 && categories[0].trim().toLowerCase() === "other";
@@ -848,9 +818,9 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     const formattedAmount =
       billed > 0
         ? new Intl.NumberFormat("en-IN", {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-          }).format(billed)
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 2,
+        }).format(billed)
         : null;
 
     return (
@@ -1293,7 +1263,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
                               0,
                               Math.floor(
                                 (new Date(po.dispatch_date) - etd) /
-                                  (1000 * 60 * 60 * 24)
+                                (1000 * 60 * 60 * 24)
                               )
                             );
                           } else if (now > etd) {

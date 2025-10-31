@@ -69,7 +69,15 @@ function DashboardSCM() {
       }
 
       // scope === "all"
-      const filters = poSummaryRef.current?.getCurrentFilters?.() || {};
+      const filters = {
+        filter: selectStatus,
+        status: selectBillStatus,
+        itemSearch: selectItem,
+        etdFrom: etdDateFrom,
+        etdTo: etdDateTo,
+        deliveryFrom: deliveryFrom,
+        deliveryTo: deliveryTo,
+      }
       const blob = await exportPos({ filters }).unwrap();
       const fileName = `po_filtered_${new Date()
         .toISOString()
@@ -127,9 +135,16 @@ function DashboardSCM() {
     "Delivered",
   ];
 
+  const status = [
+    { label: "All Status", value: "" },
+    { label: "Fully Billed", value: "Fully Billed" },
+    { label: "Bill Pending", value: "Bill Pending" },
+  ];
+
+
   const fields = [
     {
-      key: "Status",
+      key: "status",
       label: "Filter By Delivery Status",
       type: "select",
       options: statusOptions.map((d) => ({ label: d, value: d })),
@@ -138,9 +153,9 @@ function DashboardSCM() {
       key: "poStatus",
       label: "Filter By Bill Status",
       type: "select",
-      options: ["All Status", "Fully Billed", "Bill Pending"].map((d) => ({
-        label: d,
-        value: d,
+      options: status.map((d) => ({
+        label: d.label,
+        value: d.value,
       })),
     },
     {
@@ -150,12 +165,12 @@ function DashboardSCM() {
       options: allMaterials.map((d) => ({ label: d.name, value: d.name })),
     },
     {
-      key: "etd_date",
+      key: "etd",
       label: "Filter By ETD Date",
       type: "daterange",
     },
     {
-      key: "delivery_date",
+      key: "delivery",
       label: "Filter By Delivery Date",
       type: "daterange",
     },
@@ -163,7 +178,7 @@ function DashboardSCM() {
 
   // IMPORTANT: read the SAME KEYS the child writes/reads
   const [selectStatus, setSelectStatus] = useState(
-    searchParams.get("status") || ""
+    searchParams.get("status" || "")
   );
   const [selectBillStatus, setSelectBillStatus] = useState(
     searchParams.get("poStatus") || ""
@@ -172,14 +187,14 @@ function DashboardSCM() {
     searchParams.get("itemSearch") || ""
   );
   const [etdDateFrom, setEtdDateFrom] = useState(
-    searchParams.get("etdFrom") || ""
+    searchParams.get("etd_from") || ""
   );
-  const [etdDateTo, setEtdDateTo] = useState(searchParams.get("etdTo") || "");
+  const [etdDateTo, setEtdDateTo] = useState(searchParams.get("etd_to") || "");
   const [deliveryFrom, setDeliveryFrom] = useState(
-    searchParams.get("deliveryFrom") || ""
+    searchParams.get("delivery_from") || ""
   );
   const [deliveryTo, setDeliveryTo] = useState(
-    searchParams.get("deliveryTo") || ""
+    searchParams.get("delivery_to") || ""
   );
 
   useEffect(() => {
@@ -194,17 +209,20 @@ function DashboardSCM() {
     if (selectItem) sp.set("itemSearch", selectItem);
     else sp.delete("itemSearch");
 
-    if (etdDateTo) sp.set("etdTo", etdDateTo);
-    else sp.delete("etdTo");
+    if (etdDateTo) sp.set("etd_to", etdDateTo);
+    else sp.delete("etd_to");
 
-    if (etdDateFrom) sp.set("etdFrom", etdDateFrom);
-    else sp.delete("etdFrom");
+    if (etdDateFrom) sp.set("etd_from", etdDateFrom);
+    else sp.delete("etd_from");
 
-    if (deliveryFrom) sp.set("deliveryFrom", deliveryFrom);
-    else sp.delete("deliveryFrom");
+    if (deliveryFrom) sp.set("delivery_from", deliveryFrom);
+    else sp.delete("delivery_from");
 
-    if (deliveryTo) sp.set("deliveryTo", deliveryTo);
-    else sp.delete("deliveryTo");
+    if (deliveryTo) sp.set("delivery_to", deliveryTo);
+    else sp.delete("delivery_to");
+
+    if (selectBillStatus || selectStatus || selectItem || etdDateFrom || etdDateTo || deliveryFrom || deliveryTo)
+      sp.set("page", 1);
 
     setSearchParams(sp);
   }, [
@@ -217,7 +235,6 @@ function DashboardSCM() {
     deliveryTo,
   ]);
 
-  // Version flag to let child know Apply/Reset happened
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -227,27 +244,27 @@ function DashboardSCM() {
         <MainHeader title="SCM" sticky>
           <Box display="flex" gap={1}>
             {user?.name === "IT Team" ||
-            user?.department === "admin" ||
-            (user?.department === "Accounts" &&
-              (user?.name === "Deepak Kumar Maurya" ||
-                user?.name === "Gagan Tayal" ||
-                user?.name === "Ajay Singh" ||
-                user?.name === "Sachin Raghav" ||
-                user?.name === "Anamika Poonia" ||
-                user?.name === "Meena Verma" ||
-                user?.name === "Kailash Chand" ||
-                user?.name === "Chandan Singh")) ||
-            (user?.department === "Accounts" &&
-              user?.name === "Sujan Maharjan") ||
-            user?.name === "Guddu Rani Dubey" ||
-            user?.name === "Varun Mishra" ||
-            user?.name === "Prachi Singh" ||
-            user?.role === "purchase" ||
-            (user?.role === "manager" && user?.name === "Naresh Kumar") ||
-            (user?.role === "visitor" &&
-              (user?.name === "Sanjiv Kumar" ||
-                user?.name === "Sushant Ranjan Dubey")) ||
-            (user?.department === "CAM" && user?.name === "Shantanu Sameer") ? (
+              user?.department === "admin" ||
+              (user?.department === "Accounts" &&
+                (user?.name === "Deepak Kumar Maurya" ||
+                  user?.name === "Gagan Tayal" ||
+                  user?.name === "Ajay Singh" ||
+                  user?.name === "Sachin Raghav" ||
+                  user?.name === "Anamika Poonia" ||
+                  user?.name === "Meena Verma" ||
+                  user?.name === "Kailash Chand" ||
+                  user?.name === "Chandan Singh")) ||
+              (user?.department === "Accounts" &&
+                user?.name === "Sujan Maharjan") ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" && user?.name === "Naresh Kumar") ||
+              (user?.role === "visitor" &&
+                (user?.name === "Sanjiv Kumar" ||
+                  user?.name === "Sushant Ranjan Dubey")) ||
+              (user?.department === "CAM" && user?.name === "Shantanu Sameer") ? (
               <Button
                 size="sm"
                 onClick={() => navigate("/purchase-order")}
@@ -270,13 +287,13 @@ function DashboardSCM() {
             ) : null}
 
             {user?.name === "IT Team" ||
-            user?.department === "admin" ||
-            user?.name === "Guddu Rani Dubey" ||
-            user?.name === "Varun Mishra" ||
-            user?.name === "Prachi Singh" ||
-            user?.role === "purchase" ||
-            (user?.role === "manager" && user?.name === "Naresh Kumar") ||
-            user?.department === "Logistic" ? (
+              user?.department === "admin" ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" && user?.name === "Naresh Kumar") ||
+              user?.department === "Logistic" ? (
               <Button
                 size="sm"
                 onClick={() => navigate(`/logistics`)}
@@ -320,23 +337,23 @@ function DashboardSCM() {
                 </Button>
               )}
             {user?.name === "IT Team" ||
-            user?.department === "admin" ||
-            (user?.department === "Accounts" &&
-              (user?.name === "Deepak Kumar Maurya" ||
-                user?.name === "Gagan Tayal" ||
-                user?.name === "Ajay Singh" ||
-                user?.name === "Sachin Raghav" ||
-                user?.name === "Anamika Poonia" ||
-                user?.name === "Meena Verma" ||
-                user?.name === "Kailash Chand" ||
-                user?.name === "Chandan Singh")) ||
-            (user?.department === "Accounts" &&
-              user?.name === "Sujan Maharjan") ||
-            user?.name === "Guddu Rani Dubey" ||
-            user?.name === "Varun Mishra" ||
-            user?.name === "Prachi Singh" ||
-            user?.role === "purchase" ||
-            (user?.role === "manager" && user?.name === "Naresh Kumar") ? (
+              user?.department === "admin" ||
+              (user?.department === "Accounts" &&
+                (user?.name === "Deepak Kumar Maurya" ||
+                  user?.name === "Gagan Tayal" ||
+                  user?.name === "Ajay Singh" ||
+                  user?.name === "Sachin Raghav" ||
+                  user?.name === "Anamika Poonia" ||
+                  user?.name === "Meena Verma" ||
+                  user?.name === "Kailash Chand" ||
+                  user?.name === "Chandan Singh")) ||
+              (user?.department === "Accounts" &&
+                user?.name === "Sujan Maharjan") ||
+              user?.name === "Guddu Rani Dubey" ||
+              user?.name === "Varun Mishra" ||
+              user?.name === "Prachi Singh" ||
+              user?.role === "purchase" ||
+              (user?.role === "manager" && user?.name === "Naresh Kumar") ? (
               <Button
                 size="sm"
                 onClick={() => navigate(`/vendor_bill`)}
@@ -442,13 +459,13 @@ function DashboardSCM() {
                 title="Filters"
                 fields={fields}
                 onApply={(values) => {
-                  setSelectStatus(values?.Status || "");
-                  setSelectBillStatus(values?.poStatus || "");
-                  setSelectItem(values?.itemSearch || "");
-                  setEtdDateFrom(values?.etd_date?.from || "");
-                  setEtdDateTo(values?.etd_date?.to || "");
-                  setDeliveryFrom(values?.delivery_date?.from || "");
-                  setDeliveryTo(values?.delivery_date?.to || "");
+                  setSelectStatus(values?.status);
+                  setSelectBillStatus(values?.poStatus);
+                  setSelectItem(values?.itemSearch);
+                  setEtdDateFrom(values?.etd?.from);
+                  setEtdDateTo(values?.etd?.to);
+                  setDeliveryFrom(values?.delivery?.from);
+                  setDeliveryTo(values?.delivery?.to);
 
                   setOpen(false);
                 }}
@@ -486,7 +503,7 @@ function DashboardSCM() {
             ref={poSummaryRef}
             onSelectionChange={setSelectedPOIds}
             hideInlineBulkBar
-            selectStatus={selectStatus}
+            // selectStatus={selectStatus}
             selectBillStatus={selectBillStatus}
             selectItem={selectItem}
             delivery_From={deliveryFrom}

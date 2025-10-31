@@ -24,31 +24,19 @@ export const billsApi = createApi({
     }),
 
     getAllBills: builder.query({
-      query: (args = {}) => {
-        const {
-          page = 1,
-          pageSize = 10,
-          search,
-          status,
-          dateFrom,
-          dateEnd,
-          po_number,
-          date,
-        } = args;
+      query: ({
+        page = 1,
+        search = "",
+        status = "",
+        pageSize = 10,
+        dateFrom = "",
+        dateEnd = "",
+        po_number,
+      }) => {
+        // decode status so %20 becomes space
+        const cleanStatus = status ? decodeURIComponent(status) : "";
 
-        const params = new URLSearchParams();
-        params.set("page", String(page));
-        params.set("pageSize", String(pageSize));
-
-        if (search && search.trim()) params.set("search", search);
-        if (status && status.trim()) params.set("status", status);        // URLSearchParams will encode it
-        if (dateFrom && dateFrom.trim()) params.set("dateFrom", dateFrom);
-        if (dateEnd && dateEnd.trim()) params.set("dateEnd", dateEnd);
-        if (po_number && String(po_number).trim()) params.set("po_number", po_number);
-
-        console.log(params.toString());
-
-        return `bill?${params.toString()}`;
+        return `bill?page=${page}&search=${search}&status=${cleanStatus}&pageSize=${pageSize}&dateFrom=${dateFrom}&dateEnd=${dateEnd}&po_number=${po_number}`;
       },
       transformResponse: (response) => ({
         data: response.data || [],
@@ -62,7 +50,8 @@ export const billsApi = createApi({
 
 
     exportBills: builder.mutation({
-      query: ({ from, to, exportAll }) => {
+      query: ({ from, to, exportAll, Ids }) => {
+
         const params = new URLSearchParams();
 
         if (exportAll) {
@@ -71,10 +60,10 @@ export const billsApi = createApi({
           params.set("from", from);
           params.set("to", to);
         }
-
         return {
           url: `get-export-bill?${params}`,
-          method: "GET",
+          method: "POST",
+          body: { Ids },
           responseHandler: (response) => response.blob(),
         };
       },
