@@ -13,7 +13,7 @@ import { Button } from "@mui/joy";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import SubHeader from "../../component/Partials/SubHeader";
 import Filter from "../../component/Partials/Filter";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useExportBillsMutation } from "../../redux/billsSlice";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 
@@ -21,6 +21,17 @@ function Bill_History() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(null);
+  const vendorRef = useRef();
+  const [selectedCount, setSelectedCount] = useState(0);
+  const canExport = selectedCount > 0;
+
+  const exportData = () => {
+
+    if (vendorRef.current) {
+      vendorRef.current.handleExport();
+    }
+  }
+
 
   useEffect(() => {
     const userData = getUserData();
@@ -83,28 +94,12 @@ function Bill_History() {
     if (dateFilterEnd) sp.set("to", dateFilterEnd);
     else sp.delete("to");
 
-    if(selectStatus || dateFilterEnd || dateFilterFrom) sp.set("page", 1);
+    if (selectStatus || dateFilterEnd || dateFilterFrom) sp.set("page", 1);
 
     setSearchParams(sp);
   }, [selectStatus, dateFilterEnd, dateFilterFrom]);
 
-  const [exportBills, { isLoading: isExporting }] = useExportBillsMutation();
 
-  const handleExport = async (isExportAll) => {
-    try {
-      const res = await exportBills({}).unwrap();
-
-      const url = URL.createObjectURL(res);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "bills_export.csv";
-      link.click();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Export failed", err);
-      alert("Failed to export bills");
-    }
-  };
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -249,16 +244,18 @@ function Bill_History() {
 
         <SubHeader title="Vendor Bill" isBackEnabled={false} sticky>
           <>
-            <Button
+            {canExport && (<Button
               variant="outlined"
               size="sm"
               color="primary"
-              onClick={() => handleExport(false)}
-              loading={isExporting}
+              onClick={() => exportData(false)}
               startDecorator={<CalendarMonthIcon />}
             >
               Export
-            </Button>
+            </Button>)
+
+            }
+
 
             <Filter
               open={open}
@@ -296,7 +293,10 @@ function Bill_History() {
             px: "24px",
           }}
         >
-          <VendorBill />
+          <VendorBill
+            ref={vendorRef}
+            onSelectionChange={(len) => setSelectedCount(len)}
+          />
         </Box>
       </Box>
     </CssVarsProvider>
