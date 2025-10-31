@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import Sidebar from "../../component/Partials/Sidebar";
 import SubHeader from "../../component/Partials/SubHeader";
 import MainHeader from "../../component/Partials/MainHeader";
+import DPRTable from "../../component/Dpr";
 
 function DprManagement() {
   const navigate = useNavigate();
@@ -119,28 +120,8 @@ function DprManagement() {
             px: "24px",
           }}
         >
-          {/* Placeholder content area */}
-          <Sheet
-            variant="outlined"
-            sx={{
-              p: 2,
-              borderRadius: "md",
-              minHeight: "40vh",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              textAlign: "center",
-            }}
-          >
-            <Box>
-              <Typography level="h4" sx={{ mb: 1 }}>
-                DPR List (Coming Soon)
-              </Typography>
-              <Typography level="body-md" sx={{ color: "text.tertiary" }}>
-                This page is intentionally simplified—no API or Redux integrations.
-              </Typography>
-            </Box>
-          </Sheet>
+        <DPRTable />
+         
         </Box>
       </Box>
     </CssVarsProvider>
