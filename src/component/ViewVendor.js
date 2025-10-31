@@ -95,7 +95,7 @@ export default function Vendor_Detail() {
           (f) => String(f?.user_id?._id || f?.user_id) === String(currentUserId)
         );
       setIsFollowing(meIsFollowing);
-    } catch {}
+    } catch { }
   }, [postsResp, currentUserId]);
 
   const headerOffset = 72;
@@ -210,7 +210,7 @@ export default function Vendor_Detail() {
                 <b>Type:</b>{" "}
                 {vendorDetails?.type
                   ? vendorDetails.type.charAt(0).toUpperCase() +
-                    vendorDetails.type.slice(1)
+                  vendorDetails.type.slice(1)
                   : "-"}
               </Typography>
               {vendorDetails?.type === "person" && (
@@ -218,7 +218,7 @@ export default function Vendor_Detail() {
                   <b>Company Name:</b>{" "}
                   {vendorDetails?.company_name
                     ? vendorDetails.company_name.charAt(0).toUpperCase() +
-                      vendorDetails.company_name.slice(1)
+                    vendorDetails.company_name.slice(1)
                     : "-"}
                 </Typography>
               )}

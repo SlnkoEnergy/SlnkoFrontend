@@ -38,6 +38,9 @@ const AllExpense = forwardRef((props, ref) => {
   const [selectedExpenses, setSelectedExpenses] = useState([]);
   const [expandedCard, setExpandedCard] = useState(null);
   const [selectedDepartment, setSelectedDepartment] = useState("");
+  const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
+  const [perPage, setPerPage] = useState(initialPageSize);
+
 
   const toggleExpand = (id) => {
     setExpandedCard(expandedCard === id ? null : id);
@@ -45,6 +48,7 @@ const AllExpense = forwardRef((props, ref) => {
 
   const { data: getExpense = [], isLoading } = useGetAllExpenseQuery({
     page: currentPage,
+    limit: perPage,
     department: selectedDepartment,
     search: searchQuery,
   });
@@ -281,10 +285,15 @@ const AllExpense = forwardRef((props, ref) => {
               <Box
                 component="th"
                 sx={{
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 3,
+                  backgroundColor: "neutral.softBg",
                   borderBottom: "1px solid #ddd",
                   padding: "8px",
                   textAlign: "left",
                 }}
+
               >
                 <Checkbox
                   size="sm"
@@ -319,6 +328,11 @@ const AllExpense = forwardRef((props, ref) => {
                   component="th"
                   key={index}
                   sx={{
+                    position: "sticky",
+                    zIndex: 3,
+                    top: 0,
+                    borderBottom: "1px solid #ddd",
+                    backgroundColor: "neutral.softBg",
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
                     textAlign: "left",
@@ -795,6 +809,28 @@ const AllExpense = forwardRef((props, ref) => {
             )
           )}
         </Box>
+
+        <FormControl size="sm" sx={{ minWidth: 80 }}>
+          <Select
+            value={perPage}
+            onChange={(_e, newValue) => {
+              setPerPage(newValue);
+              setCurrentPage(1);
+              setSearchParams((prev) => {
+                const next = new URLSearchParams(prev);
+                next.set("page", "1");
+                next.set("pageSize", String(newValue));
+                return next;
+              });
+            }}
+          >
+            {[10, 30, 60, 100, 500, 1000].map((num) => (
+              <Option key={num} value={num}>
+                {num}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
 
         <Button
           size="sm"
