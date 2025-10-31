@@ -19,6 +19,8 @@ import {
   Chip,
   Modal,
   ModalDialog,
+  Select,
+  Option,
 } from "@mui/joy";
 import Delete from "@mui/icons-material/Delete";
 import Add from "@mui/icons-material/Add";
@@ -32,6 +34,7 @@ import {
   useGetUniqueBanksQuery,
   useCreateLoanMutation,
 } from "../../redux/loanSlice";
+import { toast } from "react-toastify";
 
 /* ---------------- Theme ---------------- */
 const theme = extendTheme({
@@ -46,6 +49,49 @@ const theme = extendTheme({
 const FIRST_LIMIT = 7;
 const MODAL_LIMIT = 7;
 const ACCENT = "#3363a3";
+
+/** ---------- India States & Union Territories ---------- */
+const IN_STATES = [
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chhattisgarh",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal",
+];
+
+const IN_UTS = [
+  "Andaman and Nicobar Islands",
+  "Chandigarh",
+  "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi",
+  "Jammu and Kashmir",
+  "Ladakh",
+  "Lakshadweep",
+  "Puducherry",
+];
 
 /* ---------------- Small helpers ---------------- */
 function useDebounce(val, delay = 300) {
@@ -441,6 +487,7 @@ function DocPresenceCell({
   );
 }
 
+/* ----------- Bank Name with server suggestions ----------- */
 function BankNameCell({ value, onPick, accent = "#3363a3" }) {
   const [open, setOpen] = React.useState(false);
   const [input, setInput] = React.useState(value || "");
@@ -448,7 +495,10 @@ function BankNameCell({ value, onPick, accent = "#3363a3" }) {
   const rootRef = React.useRef(null);
 
   // live search to backend
-  const { data } = useGetUniqueBanksQuery({ search: debounced }, { skip: !debounced });
+  const { data } = useGetUniqueBanksQuery(
+    { search: debounced },
+    { skip: !debounced }
+  );
   const options = React.useMemo(() => data?.data || [], [data]);
 
   React.useEffect(() => setInput(value || ""), [value]);
@@ -464,9 +514,10 @@ function BankNameCell({ value, onPick, accent = "#3363a3" }) {
 
   const choose = (b) => {
     onPick?.({
-      name: (b?.name || "").toUpperCase(),         // you can remove toUpperCase if you prefer
+      name: (b?.name || "").toUpperCase(),
       branch: b?.branch || "",
-      ifsc_code: (b?.ifsc_code || "").toUpperCase()
+      ifsc_code: (b?.ifsc_code || "").toUpperCase(),
+      state: b?.state || "",
     });
     setOpen(false);
   };
@@ -479,7 +530,6 @@ function BankNameCell({ value, onPick, accent = "#3363a3" }) {
         onChange={(e) => {
           const v = e.target.value;
           setInput(v);
-          // allow free typing; parent will set only name here
           onPick?.({ name: v });
         }}
         onFocus={() => setOpen(true)}
@@ -510,7 +560,14 @@ function BankNameCell({ value, onPick, accent = "#3363a3" }) {
             boxShadow: "0px 8px 24px rgba(0,0,0,0.12)",
           }}
         >
-          <Box sx={{ maxHeight: 240, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+          <Box
+            sx={{
+              maxHeight: 240,
+              overflowY: "auto",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
             {options.map((b, idx) => (
               <Box
                 key={`${b.name}-${b.ifsc_code}-${idx}`}
@@ -525,10 +582,11 @@ function BankNameCell({ value, onPick, accent = "#3363a3" }) {
                   "&:hover": { backgroundColor: "neutral.softBg" },
                 }}
               >
-                {/* Show Bank • IFSC • Branch in dropdown */}
                 <Typography level="body-sm">
-                  {(b.name || "").toUpperCase()} • {(b.ifsc_code || "").toUpperCase()}
+                  {(b.name || "").toUpperCase()} •{" "}
+                  {(b.ifsc_code || "").toUpperCase()}
                   {b.branch ? ` • ${b.branch}` : ""}
+                  {b.state ? ` • ${b.state}` : ""}
                 </Typography>
               </Box>
             ))}
@@ -538,7 +596,6 @@ function BankNameCell({ value, onPick, accent = "#3363a3" }) {
     </Box>
   );
 }
-
 
 /* ---------------------------- Page ---------------------------- */
 export default function AddLoan() {
@@ -556,7 +613,7 @@ export default function AddLoan() {
   ]);
 
   const [banks, setBanks] = React.useState([
-    { name: "", branch: "", ifsc_code: "" },
+    { name: "", branch: "", ifsc_code: "", state: "" },
   ]);
 
   const { data: uniqueBanksResp } = useGetUniqueBanksQuery();
@@ -583,7 +640,7 @@ export default function AddLoan() {
     );
 
   const addBank = () =>
-    setBanks((b) => [...b, { name: "", branch: "", ifsc_code: "" }]);
+    setBanks((b) => [...b, { name: "", branch: "", ifsc_code: "", state: "" }]); // 👈 include state
   const removeBank = (idx) => setBanks((b) => b.filter((_, i) => i !== idx));
   const updateBank = (idx, key, value) =>
     setBanks((b) =>
@@ -601,6 +658,7 @@ export default function AddLoan() {
     if (match) {
       updateBank(idx, "branch", match.branch || "");
       updateBank(idx, "ifsc_code", match.ifsc_code || "");
+      if (match.state) updateBank(idx, "state", match.state || "");
     } else {
     }
   };
@@ -609,7 +667,12 @@ export default function AddLoan() {
     e.preventDefault();
 
     if (!header.project_id) {
-      alert("Pick a project first.");
+      toast.error("Pick a project first.");
+      return;
+    }
+
+    if (!header.expectedSanctionDate || !header.expectedSanctionDate) {
+      toast.error("Expected Disburement and Sanctioned Date are required");
       return;
     }
 
@@ -633,21 +696,19 @@ export default function AddLoan() {
           name: b.name || "",
           branch: b.branch || "",
           ifsc_code: b.ifsc_code || "",
+          state: b.state || "",
         })),
       };
-      console.log({data})
       const res = await createLoan({
         projectId: header.project_id,
         data,
         files,
-        links: [], 
+        links: [],
       }).unwrap();
 
-      console.log("Loan created:", res);
-      alert("Loan created successfully.");
+      toast.success("Loan created successfully.");
     } catch (err) {
-      console.error("Create loan failed:", err);
-      alert(
+      toast.error(
         err?.data?.message ||
           err?.error ||
           "Failed to create loan. Check console."
@@ -700,19 +761,6 @@ export default function AddLoan() {
     loadInitialProjects();
   }, [loadInitialProjects]);
 
-  const fetchProjectsPage = async ({ page, search, pageSize }) => {
-    const res = await triggerSearch(
-      { search: search || "", page, limit: pageSize },
-      true
-    );
-    const rows = res?.data?.data ?? [];
-    const pg = res?.data?.pagination;
-    let total = pg?.total;
-    if (!Number.isFinite(total))
-      total = page * pageSize + (rows.length === pageSize ? 1 : 0);
-    return { rows, total };
-  };
-
   const onPickProject = (row) => {
     if (!row) return;
     setHeader((h) => ({
@@ -734,8 +782,6 @@ export default function AddLoan() {
     "&:hover": { borderBottomColor: "#3363a3" },
     "& input": { paddingBottom: "0px" },
   };
-
-  
 
   return (
     <CssVarsProvider theme={theme} defaultMode="light">
@@ -907,54 +953,102 @@ export default function AddLoan() {
                   <th>Bank Name</th>
                   <th style={{ width: 200 }}>Branch</th>
                   <th style={{ width: 200 }}>IFSC Code</th>
+                  <th style={{ width: 220 }}>State</th>
+                  {/* 👈 new column */}
                   <th style={{ width: 40 }} />
                 </tr>
               </thead>
-      
-<tbody>
-  {banks.map((row, idx) => (
-    <tr key={idx}>
-      <td>
-        <BankNameCell
-          value={row.name || ""}
-          accent={ACCENT}
-          onPick={(picked) => {
-            if (picked.name !== undefined) updateBank(idx, "name", picked.name);
-            if (picked.branch !== undefined) updateBank(idx, "branch", picked.branch);
-            if (picked.ifsc_code !== undefined) updateBank(idx, "ifsc_code", picked.ifsc_code);
-          }}
-        />
-      </td>
 
-      <td>
-        <Input
-          placeholder="Branch"
-          value={row.branch || ""}
-          onChange={(e) => updateBank(idx, "branch", e.target.value)}
-          variant="plain"
-          sx={lineInputSx}
-        />
-      </td>
+              <tbody>
+                {banks.map((row, idx) => (
+                  <tr key={idx}>
+                    <td>
+                      <BankNameCell
+                        value={row.name || ""}
+                        accent={ACCENT}
+                        onPick={(picked) => {
+                          if (picked.name !== undefined)
+                            updateBank(idx, "name", picked.name);
+                          if (picked.branch !== undefined)
+                            updateBank(idx, "branch", picked.branch);
+                          if (picked.ifsc_code !== undefined)
+                            updateBank(idx, "ifsc_code", picked.ifsc_code);
+                          if (picked.state !== undefined)
+                            updateBank(idx, "state", picked.state); // 👈 set state if provided
+                        }}
+                      />
+                    </td>
 
-      <td>
-        <Input
-          placeholder="IFSC"
-          value={row.ifsc_code || ""}
-          onChange={(e) => updateBank(idx, "ifsc_code", e.target.value)}
-          variant="plain"
-          sx={lineInputSx}
-        />
-      </td>
+                    <td>
+                      <Input
+                        placeholder="Branch"
+                        value={row.branch || ""}
+                        onChange={(e) =>
+                          updateBank(idx, "branch", e.target.value)
+                        }
+                        variant="plain"
+                        sx={lineInputSx}
+                      />
+                    </td>
 
-      <td>
-        <IconButton variant="plain" color="danger" onClick={() => removeBank(idx)}>
-          <Delete />
-        </IconButton>
-      </td>
-    </tr>
-  ))}
-</tbody>
+                    <td>
+                      <Input
+                        placeholder="IFSC"
+                        value={row.ifsc_code || ""}
+                        onChange={(e) =>
+                          updateBank(idx, "ifsc_code", e.target.value)
+                        }
+                        variant="plain"
+                        sx={lineInputSx}
+                      />
+                    </td>
 
+                    <td>
+                      <Select
+                        placeholder="Select State"
+                        value={row.state || ""}
+                        onChange={(_, v) => updateBank(idx, "state", v || "")}
+                        slotProps={{ listbox: { sx: { maxHeight: 320 } } }}
+                        sx={{
+                          minWidth: 200,
+                          "--Select-indicatorPadding": "6px",
+                          borderRadius: 0,
+                          borderBottom: `2px solid ${ACCENT}`,
+                          "--Select-focusedThickness": "0px",
+                          "& button": { py: 0.5 },
+                        }}
+                      >
+                        <Option value="" disabled>
+                          Choose state
+                        </Option>
+                        {IN_STATES.map((s) => (
+                          <Option key={s} value={s}>
+                            {s}
+                          </Option>
+                        ))}
+                        <Option value="__divider__" disabled>
+                          — Union Territories —
+                        </Option>
+                        {IN_UTS.map((s) => (
+                          <Option key={s} value={s}>
+                            {s}
+                          </Option>
+                        ))}
+                      </Select>
+                    </td>
+
+                    <td>
+                      <IconButton
+                        variant="plain"
+                        color="danger"
+                        onClick={() => removeBank(idx)}
+                      >
+                        <Delete />
+                      </IconButton>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
             </Table>
 
             <Button

@@ -1,70 +1,192 @@
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import SearchIcon from "@mui/icons-material/Search";
-import { CircularProgress, Option, Select } from "@mui/joy";
+import {
+  Avatar,
+  Chip,
+  CircularProgress,
+  Option,
+  Select,
+  Sheet,
+} from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
 import FormControl from "@mui/joy/FormControl";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
-import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { useEffect, useState } from "react";
+import Stack from "@mui/joy/Stack";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
 import { useGetAllProjectsForLoanQuery } from "../redux/projectsSlice";
+
+/* ------------ small helpers ------------ */
+function relTime(iso) {
+  if (!iso) return "";
+  const now = Date.now();
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return "";
+  const diff = Math.max(1, Math.floor((now - t) / 1000)); // sec
+  const mins = Math.floor(diff / 60);
+  const hrs = Math.floor(mins / 60);
+  const days = Math.floor(hrs / 24);
+  if (diff < 60) return `${diff}s ago`;
+  if (mins < 60) return `${mins}m ago`;
+  if (hrs < 24) return `${hrs}h ago`;
+  if (days < 7) return `${days} d ago`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 5) return `${weeks} w ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months} mo ago`;
+  const years = Math.floor(days / 365);
+  return `${years}y ago`;
+}
+
+function latestPerUser(comments = [], limit = 2) {
+  if (!Array.isArray(comments) || comments.length === 0) return [];
+  const sorted = [...comments].sort(
+    (a, b) => new Date(b?.updatedAt || 0) - new Date(a?.updatedAt || 0)
+  );
+  const seen = new Set();
+  const picked = [];
+  for (const c of sorted) {
+    const uid =
+      c?.createdBy?._id ||
+      c?.createdBy ||
+      c?.user_id?._id ||
+      c?.user_id ||
+      "na";
+    if (seen.has(String(uid))) continue;
+    seen.add(String(uid));
+    picked.push(c);
+    if (picked.length >= limit) break;
+  }
+  return picked;
+}
+
+function statusColor(s) {
+  switch (String(s || "").toLowerCase()) {
+    case "document pending":
+      return "danger";
+    case "under process bank":
+      return "warning";
+    case "sanctioned":
+      return "primary";
+    case "disbursed":
+      return "success";
+    default:
+      return "neutral";
+  }
+}
+
+function CommentPill({ c }) {
+  const name = c?.createdBy?.name || "User";
+  const avatar = c?.createdBy?.attachment_url || "";
+  const when = relTime(c?.updatedAt || c?.createdAt);
+  const text = (c?.remarks || "").toString();
+
+  return (
+    <Sheet
+      variant="soft"
+      sx={{
+        borderRadius: "xl",
+        px: 1.25,
+        py: 0.75,
+        display: "inline-flex",
+        alignItems: "flex-start",
+        gap: 1,
+        maxWidth: 360,
+      }}
+    >
+      <Avatar
+        src={avatar || undefined}
+        variant={avatar ? "soft" : "solid"}
+        size="sm"
+        sx={{ width: 24, height: 24, mt: 0.25, flex: "0 0 auto" }}
+      >
+        {!avatar && name ? name.charAt(0).toUpperCase() : null}
+      </Avatar>
+      <Box sx={{ minWidth: 0 }}>
+        <Stack direction="row" alignItems="baseline" gap={0.75}>
+          <Typography
+            level="body-sm"
+            fontWeight="lg"
+            sx={{ whiteSpace: "nowrap" }}
+          >
+            {name}
+          </Typography>
+          <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
+            {when}
+          </Typography>
+        </Stack>
+        <Typography
+          level="body-sm"
+          sx={{
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            lineHeight: 1.4,
+            mt: 0.25,
+          }}
+        >
+          {text || "—"}
+        </Typography>
+      </Box>
+    </Sheet>
+  );
+}
 
 function AllLoan({ selected, setSelected }) {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
-  const [user, setUser] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
 
   const options = [1, 5, 10, 20, 50, 100];
   const [rowsPerPage, setRowsPerPage] = useState(
     () => Number(searchParams.get("pageSize")) || 10
   );
+  const project_status = searchParams.get("project_status") || "";
+  const state = searchParams.get("state") || "";
+  const loan_status = searchParams.get("loan_status") || "";
+  const expected_sanction_from =
+    searchParams.get("expected_sanction_from") || "";
+  const expected_sanction_to = searchParams.get("expected_sanction_to") || "";
+  const expected_disbursement_from =
+    searchParams.get("expected_disbursement_from") || "";
+  const expected_disbursement_to =
+    searchParams.get("expected_disbursement_to") || "";
+  const actual_sanction_from = searchParams.get("actual_sanction_from") || "";
+  const actual_sanction_to = searchParams.get("actual_sanction_to") || "";
+  const actual_disbursement_from =
+    searchParams.get("actual_disbursement_from") || "";
+  const actual_disbursement_to =
+    searchParams.get("actual_disbursement_to") || "";
 
-  const {
-    data: getLoan = {},
-    isLoading,
-    refetch,
-  } = useGetAllProjectsForLoanQuery({
+  const { data: getLoan = {}, isLoading } = useGetAllProjectsForLoanQuery({
     page: currentPage,
     search: searchQuery,
-    status: "",
+    status: project_status,
     limit: rowsPerPage,
+    bank_state: state,
+    loan_status: loan_status,
+    expected_sanction_from: expected_sanction_from,
+    expected_sanction_to: expected_sanction_to,
+    expected_disbursement_from: expected_disbursement_from,
+    expected_disbursement_to: expected_disbursement_to,
+    actual_sanction_from: actual_sanction_from,
+    actual_sanction_to: actual_sanction_to,
+    actual_disbursement_from: actual_disbursement_from,
+    actual_disbursement_to: actual_disbursement_to,
     sort: "-createdAt",
   });
 
-  const loanData = getLoan?.data;
-  const loanPagination = getLoan?.pagination;
-  useEffect(() => {
-    const storedUser = localStorage.getItem("userDetails");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
-
-  const handleSearch = (query) => {
-    setSearchQuery(query.toLowerCase());
-  };
-
-  const handleSelectAll = (event) => {
-    if (event.target.checked) {
-      setSelected(loanData.map((row) => row._id));
-    } else {
-      setSelected([]);
-    }
-  };
-
-  const handleRowSelect = (_id) => {
-    setSelected((prev) =>
-      prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
-    );
-  };
+  const loanData = getLoan?.data || [];
+  const loanPagination = getLoan?.pagination || {};
 
   useEffect(() => {
     const page = parseInt(searchParams.get("page")) || 1;
@@ -82,6 +204,22 @@ function AllLoan({ selected, setSelected }) {
     }
   };
 
+  const handleSearch = (query) => setSearchQuery(query.toLowerCase());
+
+  const handleSelectAll = (event) => {
+    if (event.target.checked) {
+      setSelected(loanData.map((row) => row._id));
+    } else {
+      setSelected([]);
+    }
+  };
+
+  const handleRowSelect = (_id) => {
+    setSelected((prev) =>
+      prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
+    );
+  };
+
   const baseHeaders = [
     "Project Id",
     "Customer",
@@ -89,28 +227,19 @@ function AllLoan({ selected, setSelected }) {
     "State",
     "Capacity(AC)",
     "Loan Status",
+    "Comments", // 👈 new column
   ];
-
-  const totalCols = 1 + baseHeaders?.length;
+  const totalCols = 1 + baseHeaders.length;
 
   return (
     <Box
       sx={{
-        ml: {
-          lg: "var(--Sidebar-width)",
-        },
+        ml: { lg: "var(--Sidebar-width)" },
         px: "0px",
         width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
       }}
     >
-      <Box display={"flex"} justifyContent={"space-between"} pb={0.5}>
-        {/* Tablet and Up Filters */}
-        <Box
-          display={"flex"}
-          justifyContent={"space-between"}
-          width={"100%"}
-          alignItems={"center"}
-        ></Box>
+      <Box display={"flex"} justifyContent={"flex-end"} pb={0.5}>
         <Box
           className="SearchAndFilters-tabletUp"
           sx={{
@@ -119,7 +248,7 @@ function AllLoan({ selected, setSelected }) {
             display: "flex",
             flexWrap: "wrap",
             gap: 1,
-            width: { lg: "100%" },
+            width: { xs: "100%", lg: "50%" },
           }}
         >
           <FormControl sx={{ flex: 1 }} size="sm">
@@ -175,7 +304,6 @@ function AllLoan({ selected, setSelected }) {
                 />
               </th>
 
-              {/* dynamic headers */}
               {baseHeaders.map((header, index) => (
                 <th
                   key={index}
@@ -218,95 +346,122 @@ function AllLoan({ selected, setSelected }) {
                 </td>
               </tr>
             ) : loanData?.length > 0 ? (
-              loanData.map((loan, index) => (
-                <tr
-                  key={index}
-                  style={{
-                    "&:hover": { backgroundColor: "neutral.plainHoverBg" },
-                  }}
-                >
-                  {/* checkbox cell */}
-                  <td
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    <Checkbox
-                      size="sm"
-                      checked={selected.includes(loan._id)}
-                      onChange={(event) =>
-                        handleRowSelect(loan._id, event.target.checked)
-                      }
-                    />
-                  </td>
+              loanData.map((loan) => {
+                // compute latest-two, one-per-user
+                const comments = latestPerUser(loan?.loan_comments || [], 2);
 
-                  {/* loan Id */}
-                  <td
+                return (
+                  <tr
+                    key={loan._id}
                     style={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
+                      cursor: "pointer",
                     }}
+                    onClick={() =>
+                      navigate(`/view_loan?project_id=${loan._id}`)
+                    }
                   >
-                    {loan.code}
-                  </td>
+                    {/* checkbox cell */}
+                    <td
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "left",
+                      }}
+                    >
+                      <Checkbox
+                        size="sm"
+                        checked={selected.includes(loan._id)}
+                        onChange={() => handleRowSelect(loan._id)}
+                      />
+                    </td>
 
-                  {/* Customer */}
-                  <td
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    {loan.customer || "-"}
-                  </td>
+                    {/* Project Id */}
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "left",
+                      }}
+                    >
+                      <Chip
+                        size="sm"
+                        variant="outlined"
+                        color="primary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/project_detail?project_id=${loan._id}`);
+                        }}
+                        sx={{ cursor: "pointer" }}
+                      >
+                        {loan.code}
+                      </Chip>
+                    </td>
 
-                  {/* Mobile */}
-                  <td
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    {loan.number || "-"}
-                  </td>
+                    {/* Customer */}
+                    <td
+                      style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                    >
+                      {loan.customer || "-"}
+                    </td>
 
-                  {/* State */}
-                  <td
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    {loan.state || "-"}
-                  </td>
-                  
-                  {/* Capacity(AC) */}
-                  <td
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    {loan.project_kwp ? `${loan.project_kwp} AC` : "-"}
-                  </td>
+                    {/* Mobile */}
+                    <td
+                      style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                    >
+                      {loan.number || "-"}
+                    </td>
 
-                  {/* Slnko Service Charges (with GST) */}
-                  <td
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  ></td>
-                </tr>
-              ))
+                    {/* State */}
+                    <td
+                      style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                    >
+                      {loan.state || "-"}
+                    </td>
+
+                    {/* Capacity(AC) */}
+                    <td
+                      style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                    >
+                      {loan.project_kwp ? `${loan.project_kwp} AC` : "-"}
+                    </td>
+
+                    {/* Loan Status */}
+                    <td
+                      style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                    >
+                      <Chip
+                        size="sm"
+                        variant="soft"
+                        color={statusColor(loan?.loan_current_status?.status)}
+                        sx={{ textTransform: "capitalize", fontWeight: 500 }}
+                      >
+                        {loan?.loan_current_status?.status || "Not Submitted"}
+                      </Chip>
+                    </td>
+
+                    {/* Comments (latest two, one per user) */}
+                    <td
+                      style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                    >
+                      {comments.length === 0 ? (
+                        <Typography
+                          level="body-sm"
+                          sx={{ color: "text.tertiary" }}
+                        >
+                          —
+                        </Typography>
+                      ) : (
+                        <Stack direction="column" gap={0.75}>
+                          {comments.map((c) => (
+                            <CommentPill key={c?._id} c={c} />
+                          ))}
+                        </Stack>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
             ) : (
               <tr>
                 <td
@@ -328,7 +483,7 @@ function AllLoan({ selected, setSelected }) {
                       style={{ width: 50, height: 50, marginBottom: 8 }}
                     />
                     <Typography fontStyle="italic">
-                      No Handover Sheet Found
+                      No Loan Projects Found
                     </Typography>
                   </Box>
                 </td>
@@ -350,7 +505,6 @@ function AllLoan({ selected, setSelected }) {
           alignItems: "center",
         }}
       >
-        {/* Previous Button */}
         <Button
           size="sm"
           variant="outlined"
@@ -414,11 +568,7 @@ function AllLoan({ selected, setSelected }) {
             }}
             size="sm"
             variant="outlined"
-            sx={{
-              minWidth: 80,
-              borderRadius: "md",
-              boxShadow: "sm",
-            }}
+            sx={{ minWidth: 80, borderRadius: "md", boxShadow: "sm" }}
           >
             {options.map((value) => (
               <Option key={value} value={value}>
@@ -428,7 +578,6 @@ function AllLoan({ selected, setSelected }) {
           </Select>
         </Box>
 
-        {/* Next Button */}
         <Button
           size="sm"
           variant="outlined"

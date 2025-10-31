@@ -5,16 +5,19 @@ import { useEffect, useState } from "react";
 import Sidebar from "../../component/Partials/Sidebar";
 import MainHeader from "../../component/Partials/MainHeader";
 import { Button, ModalClose, Modal, ModalDialog, Typography } from "@mui/joy";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import SubHeader from "../../component/Partials/SubHeader";
 import { Add } from "@mui/icons-material";
 import AllLoan from "../../component/AllLoan";
 import AddLoan from "../../component/Forms/AddLoan";
+import Filter from "../../component/Partials/Filter";
 
 function Loan() {
   const [user, setUser] = useState(null);
   const [selected, setSelected] = useState([]);
   const [snack, setSnack] = useState({ open: false, msg: "" });
+  const [open, setOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const safeMsg = String(snack?.msg ?? "");
@@ -32,6 +35,119 @@ function Loan() {
     const userData = getUserData();
     setUser(userData);
   }, []);
+
+  const indianStates = [
+    { label: "Andhra Pradesh", value: "andhra pradesh" },
+    { label: "Arunachal Pradesh", value: "arunachal pradesh" },
+    { label: "Assam", value: "assam" },
+    { label: "Bihar", value: "bihar" },
+    { label: "Chhattisgarh", value: "chhattisgarh" },
+    { label: "Goa", value: "goa" },
+    { label: "Gujarat", value: "gujarat" },
+    { label: "Haryana", value: "haryana" },
+    { label: "Himachal Pradesh", value: "himachal pradesh" },
+    { label: "Jharkhand", value: "jharkhand" },
+    { label: "Karnataka", value: "karnataka" },
+    { label: "Kerala", value: "kerala" },
+    { label: "Madhya Pradesh", value: "madhya pradesh" },
+    { label: "Maharashtra", value: "maharashtra" },
+    { label: "Manipur", value: "manipur" },
+    { label: "Meghalaya", value: "meghalaya" },
+    { label: "Mizoram", value: "mizoram" },
+    { label: "Nagaland", value: "nagaland" },
+    { label: "Odisha", value: "odisha" },
+    { label: "Punjab", value: "punjab" },
+    { label: "Rajasthan", value: "rajasthan" },
+    { label: "Sikkim", value: "sikkim" },
+    { label: "Tamil Nadu", value: "tamil nadu" },
+    { label: "Telangana", value: "telangana" },
+    { label: "Tripura", value: "tripura" },
+    { label: "Uttar Pradesh", value: "uttar pradesh" },
+    { label: "Uttarakhand", value: "uttarakhand" },
+    { label: "West Bengal", value: "west bengal" },
+    { label: "Andaman and Nicobar Islands", value: "andaman nicobar" },
+    { label: "Chandigarh", value: "chandigarh" },
+    {
+      label: "Dadra and Nagar Haveli and Daman and Diu",
+      value: "dadra and nagar haveli and daman and diu",
+    },
+    { label: "Lakshadweep", value: "lakshadweep" },
+    { label: "Delhi", value: "delhi" },
+    { label: "Puducherry", value: "puducherry" },
+    { label: "Ladakh", value: "ladakh" },
+    { label: "Jammu and Kashmir", value: "jammu kashmir" },
+    { label: "Nagaland", value: "nagaland" },
+  ];
+
+  const fields = [
+    {
+      key: "project_status",
+      label: "Filter by Project Status",
+      type: "select",
+      options: [
+        { label: "To Be Started", value: "to be started" },
+        { label: "Ongoing", value: "ongoing" },
+        { label: "Completed", value: "completed" },
+        { label: "On Hold", value: "on_hold" },
+        { label: "Delayed", value: "delayed" },
+        { label: "Dead", value: "dead" },
+      ],
+    },
+    {
+      key: "state",
+      label: "Filter by Bank State",
+      type: "select",
+      options: indianStates.length
+        ? indianStates
+        : [{ label: "No states found", value: "" }],
+    },
+    // {
+    //   key: "cam",
+    //   label: "Filter by CAM",
+    //   type: "select",
+    //   options: camLoading
+    //     ? [{ label: "Loading…", value: "" }]
+    //     : camError
+    //     ? [{ label: "Failed to load CAM users", value: "" }]
+    //     : camOptions.length
+    //     ? camOptions
+    //     : [{ label: "No CAM users found", value: "" }],
+    // },
+
+    {
+      key: "loan_status",
+      label: "Filter by Loan Status",
+      type: "select",
+      options: [
+        { label: "Not Submitted", value: "not submitted" },
+        { label: "Submitted", value: "submitted" },
+        { label: "Document Pending", value: "document pending" },
+        { label: "Under process bank", value: "under process bank" },
+        { label: "Sanctioned", value: "sanctioned" },
+        { label: "Disbursed", value: "disbursed" },
+      ],
+    },
+    {
+      key: "expected_sanction",
+      label: "Filter by Expected Sanction Date",
+      type: "daterange",
+    },
+    {
+      key: "expected_disbursement",
+      label: "Filter by Expected disbursement Date",
+      type: "daterange",
+    },
+    {
+      key: "actual_sanction",
+      label: "Filter by Actual Sanction Date",
+      type: "daterange",
+    },
+    {
+      key: "actual_disbursement",
+      label: "Filter by Actual Disbursement Date",
+      type: "daterange",
+    },
+  ];
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -138,6 +254,113 @@ function Loan() {
               >
                 Add Loan
               </Button>
+              <Filter
+                open={open}
+                onOpenChange={setOpen}
+                fields={fields}
+                title="Filters"
+                onApply={(values) => {
+                  setSearchParams((prev) => {
+                    const merged = Object.fromEntries(prev?.entries());
+
+                    delete merged.actual_disbursement_from;
+                    delete merged.actual_disbursement_to;
+                    delete merged.actual_sanction_from;
+                    delete merged.actual_sanction_to;
+                    delete merged.matchMode;
+                    delete merged.state;
+                    delete merged.cam;
+                    delete merged.loan_status;
+                    delete merged.expected_disbursement_from;
+                    delete merged.expected_disbursement_to;
+                    delete merged.project_status;
+                    delete merged.expected_sanction_from;
+                    delete merged.expected_sanction_to;
+
+                    const next = {
+                      ...merged,
+                      page: "1",
+                      ...(values.cam && { cam: String(values.cam) }),
+                      ...(values.project_id && {
+                        project_id: String(values.project_id),
+                      }),
+                      ...(values.state && { state: String(values.state) }),
+                      ...(values.category && {
+                        category: String(values.category),
+                      }),
+                      ...(values.scope && { scope: String(values.scope) }),
+                      ...(values.loan_status && {
+                        loan_status: String(values.loan_status),
+                      }),
+                      ...(values.project_status && {
+                        project_status: String(values.project_status),
+                      }),
+                    };
+
+                    if (values.matcher) {
+                      next.matchMode = values.matcher === "OR" ? "any" : "all";
+                    }
+
+                    if (values.actual_disbursement?.from)
+                      next.actual_disbursement_from = String(
+                        values.actual_disbursement.from
+                      );
+                    if (values.actual_disbursement?.to)
+                      next.actual_disbursement_to = String(
+                        values.actual_disbursement.to
+                      );
+
+                    if (values.actual_sanction?.from)
+                      next.actual_sanction_from = String(
+                        values.actual_sanction.from
+                      );
+                    if (values.actual_sanction?.to)
+                      next.actual_sanction_to = String(
+                        values.actual_sanction.to
+                      );
+
+                    if (values.expected_disbursement?.from)
+                      next.expected_disbursement_from = String(
+                        values.expected_disbursement.from
+                      );
+                    if (values.expected_disbursement?.to)
+                      next.expected_disbursement_to = String(
+                        values.expected_disbursement.to
+                      );
+
+                    if (values.expected_sanction?.from)
+                      next.expected_sanction_from = String(
+                        values.expected_sanction.from
+                      );
+                    if (values.expected_sanction?.to)
+                      next.expected_sanction_to = String(
+                        values.expected_sanction.to
+                      );
+                    return next;
+                  });
+                  setOpen(false);
+                }}
+                onReset={() => {
+                  setSearchParams((prev) => {
+                    const merged = Object.fromEntries(prev.entries());
+                    delete merged.project_status;
+                    delete merged.actual_disbursement_from;
+                    delete merged.actual_disbursement_to;
+                    delete merged.actual_sanction_from;
+                    delete merged.actual_sanction_to;
+                    delete merged.matchMode;
+                    delete merged.state;
+                    delete merged.cam;
+                    delete merged.loan_status;
+                    delete merged.expected_disbursement_from;
+                    delete merged.expected_disbursement_to;
+                    delete merged.expected_sanction_from;
+                    delete merged.expected_sanction_to;
+
+                    return { ...merged, page: "1" };
+                  });
+                }}
+              />
             </>
           }
         ></SubHeader>
@@ -194,7 +417,6 @@ function Loan() {
 
           {/* Content: render your AddLoan form */}
           <Box sx={{ p: 2, overflow: "auto" }}>
-            {/* Pass prefill info & onClose so the child can close modal after submit */}
             <AddLoan />
           </Box>
         </ModalDialog>

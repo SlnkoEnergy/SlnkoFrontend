@@ -27,6 +27,7 @@ import SendRoundedIcon from "@mui/icons-material/SendRounded";
 import FormatColorTextIcon from "@mui/icons-material/FormatColorText";
 import FormatColorFillIcon from "@mui/icons-material/FormatColorFill";
 import CloudUploadRoundedIcon from "@mui/icons-material/CloudUploadRounded";
+import { useLocation } from "react-router-dom";
 
 export default function CommentComposer({
   value,
@@ -43,7 +44,7 @@ export default function CommentComposer({
 }) {
   const editorRef = useRef(null);
   const lastRangeRef = useRef(null);
-
+  const location = useLocation();
   const emojiBtnRef = useRef(null);
   const [showEmoji, setShowEmoji] = useState(false);
   const [emojiPos, setEmojiPos] = useState({ top: 0, left: 0 });
@@ -280,6 +281,8 @@ export default function CommentComposer({
   const primaryBtnLabel = hasFiles
     ? `Upload ${attachments.length > 1 ? "Files" : "File"}`
     : "Add Notes";
+  
+  const isLoan = location.pathname === "/view_loan"
 
   return (
     <Sheet
@@ -610,7 +613,8 @@ export default function CommentComposer({
           spacing={1}
           sx={{ flexWrap: "wrap" }}
         >
-          <Button
+          {!isLoan && (
+            <Button
             variant="outlined"
             startDecorator={<CloudUploadRoundedIcon />}
             onClick={onAttachClick}
@@ -625,6 +629,7 @@ export default function CommentComposer({
           >
             Attach Files
           </Button>
+          )}
 
           {Array.isArray(attachments) && attachments.length > 0 && (
             <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap" }}>

@@ -88,6 +88,71 @@ export const loanApi = createApi({
             ]
           : [{ type: "UniqueBanks", id: "LIST" }],
     }),
+
+    getLoanById: builder.query({
+        query: (project_id) => ({
+        url: `/loan?project_id=${project_id}`,
+        method: "GET",
+      }),
+      providesTags: (result) =>
+        result?.data?.length
+          ? [
+              ...result.data.map((_, i) => ({ type: "UniqueBanks", id: i })),
+              { type: "Loan", id: "LIST" },
+            ]
+          : [{ type: "Loan", id: "LIST" }],
+    }),
+
+    updateLoanStatus: builder.mutation({
+        query: ({project_id, status, remarks}) => ({
+        url: `/${project_id}/status`,
+        method: "PATCH",
+        body:{status, remarks}
+      }),
+      providesTags: (result) =>
+        result?.data?.length
+          ? [
+              ...result.data.map((_, i) => ({ type: "UniqueBanks", id: i })),
+              { type: "Loan", id: "LIST" },
+            ]
+          : [{ type: "Loan", id: "LIST" }],
+    }),
+
+     addComment: builder.mutation({
+        query: ({project_id, remarks}) => ({
+        url: `/comment?project_id=${project_id}`,
+        method: "PATCH",
+        body:{remarks}
+      }),
+      providesTags: (result) =>
+        result?.data?.length
+          ? [
+              ...result.data.map((_, i) => ({ type: "UniqueBanks", id: i })),
+              { type: "Loan", id: "LIST" },
+            ]
+          : [{ type: "Loan", id: "LIST" }],
+    }),
+
+     uploadExistingDocument: builder.mutation({
+      query: ({ project_id, document_id, file, file_url }) => {
+        const url = `/upload-existing-document?project_id=${project_id}&document_id=${document_id}`;
+        if (file) {
+          const form = new FormData();
+          form.append("file", file);
+          return {
+            url,
+            method: "PATCH",
+            body: form,
+          };
+        }
+        return {
+          url,
+          method: "PATCH",
+          body: { file_url: file_url || "" },
+        };
+      },
+      invalidatesTags: [{ type: "Loan", id: "LIST" }],
+    }),
   }),
 });
 
@@ -95,4 +160,8 @@ export const {
   useGetUniqueBanksQuery,
   useCreateLoanMutation,
   useGetAllLoanQuery,
+  useGetLoanByIdQuery,
+  useUpdateLoanStatusMutation,
+  useAddCommentMutation,
+  useUploadExistingDocumentMutation
 } = loanApi;
