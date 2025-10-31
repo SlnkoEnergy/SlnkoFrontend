@@ -658,7 +658,6 @@ const View_Project_Management = forwardRef(
       toast.info("User(s) removed successfully.");
     };
 
-
     function dedupeStatus(arr) {
       const map = new Map();
       arr.forEach((e) => map.set(String(e.user_id), e));
@@ -1000,6 +999,8 @@ const View_Project_Management = forwardRef(
       remarks: "",
       assigned_to: [],
       assigned_status: null,
+      work_completion_value: "",
+      work_completion_unit: "number",
     });
 
     const statusChanged = form.status !== initialStatusRef.current;
@@ -1078,7 +1079,6 @@ const View_Project_Management = forwardRef(
     //   console.log(`[ASSIGN-DBG] ${label}`, JSON.parse(JSON.stringify(obj)));
     // };
 
-
     useEffect(() => {
       const hasPreds = (form.predecessors || []).length > 0;
       const dur = Number(form.duration || 0);
@@ -1135,6 +1135,10 @@ const View_Project_Management = forwardRef(
       const assignedByName = assignedBy?.name || "";
       const assignedByUrl = assignedBy?.attachment_url || "";
 
+      const wc = act?.work_completion || {};
+      const wcUnit = typeof wc.unit === "string" ? wc.unit : "number";
+      const wcValue = Number.isFinite(Number(wc.value)) ? String(wc.value) : "";
+
       // 🔁 Predecessors for UI
       const uiPreds = preds
         .map((p) => {
@@ -1184,6 +1188,8 @@ const View_Project_Management = forwardRef(
         assignedByUrl,
         assigned_to: assignedToIds,
         assigned_status: assignedStatusStr,
+        work_completion_value: wcValue,
+        work_completion_unit: wcUnit,
       });
 
       // 🔁 Optional: recompute dates if predecessors exist
@@ -1262,6 +1268,12 @@ const View_Project_Management = forwardRef(
         assigned_to: ensureIds(form.assigned_to),
         assigned_status: computedAssignedStatus || undefined,
       };
+      if (form.work_completion_value !== "") {
+        payload.work_completion = {
+          unit: form.work_completion_unit || "number",
+          value: Number(form.work_completion_value),
+        };
+      }
 
       console.log("🛰️ Sending update payload:", payload);
 
@@ -2521,6 +2533,61 @@ const View_Project_Management = forwardRef(
                 </Stack>
 
                 <Divider />
+
+                {/* ---------- WORK COMPLETION ---------- */}
+
+                <FormControl>
+                  <FormLabel>Work Completion</FormLabel>
+                  <Stack direction="row" spacing={1}>
+                    {/* value */}
+                    <Input
+                      size="sm"
+                      type="number"
+                      placeholder="Enter value"
+                      value={form.work_completion_value || ""}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          work_completion_value: e.target.value,
+                        }))
+                      }
+                      disabled={disableEditing}
+                      sx={{ width: "60%" }}
+                    />
+
+                    {/* unit (Joy Select uses <Option/>, not MenuItem) */}
+                    <Select
+                      size="sm"
+                      value={form.work_completion_unit || "number"}
+                      onChange={(_, v) =>
+                        setForm((f) => ({
+                          ...f,
+                          work_completion_unit: v || "number",
+                        }))
+                      }
+                      disabled={disableEditing}
+                      sx={{ width: "40%" }}
+                      slotProps={{
+                        // keep the options above the drawer/sheet
+                        listbox: {
+                          sx: {
+                            zIndex: 1700,
+                            maxHeight: 240,
+                            overflowY: "auto",
+                          },
+                        },
+                        // optional: ensure the popper itself has elevation
+                        popper: { sx: { zIndex: 1700 } },
+                      }}
+                    >
+                      <Option value="m">m</Option>
+                      <Option value="kg">kg</Option>
+                      <Option value="percentage">percentage</Option>
+                      <Option value="number">number</Option>
+                    </Select>
+                  </Stack>
+                </FormControl>
+
                 <FormControl>
                   <FormLabel>Assigned To (Site Engineers)</FormLabel>
                   <Autocomplete
@@ -2586,7 +2653,6 @@ const View_Project_Management = forwardRef(
                     </Button>
                   </Stack>
 
-                 
                   {(form.assigned_to?.length ?? 0) > 0 ? (
                     <Stack spacing={0.75} sx={{ mt: 1.5 }}>
                       <Typography
@@ -2640,7 +2706,9 @@ const View_Project_Management = forwardRef(
                                         assigned_status: newStatus,
                                       };
                                     });
-                                    toast.info("Engineer's removed successfully.");
+                                    toast.info(
+                                      "Engineer's removed successfully."
+                                    );
                                   }}
                                 />
                               }

@@ -90,6 +90,7 @@ import Vendors from "../pages/SCM/Vendors";
 import ViewVendors from "../pages/SCM/ViewVendor";
 import Email from "../pages/Emails/Email";
 import Template from "../pages/Emails/Template";
+import DprManagement from "../pages/Projects/Dpr";
 
 function index() {
   return (
@@ -359,6 +360,14 @@ function index() {
         element={
           <PrivateRoute>
             <ProjectManagement />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/dpr_management"
+        element={
+          <PrivateRoute>
+            <DprManagement />
           </PrivateRoute>
         }
       />
