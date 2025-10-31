@@ -20,9 +20,9 @@ export const productsApi = createApi({
       providesTags: (result) =>
         result?.data
           ? [
-              { type: "Products", id: "LIST" },
-              ...result.data.map((p) => ({ type: "Products", id: p._id })),
-            ]
+            { type: "Products", id: "LIST" },
+            ...result.data.map((p) => ({ type: "Products", id: p._id })),
+          ]
           : [{ type: "Products", id: "LIST" }],
     }),
 
@@ -86,10 +86,14 @@ export const productsApi = createApi({
       providesTags: (result) =>
         result?.data
           ? [
-              { type: "Categories", id: "LIST" },
-              ...result.data.map((c) => ({ type: "Categories", id: c._id })),
-            ]
+            { type: "Categories", id: "LIST" },
+            ...result.data.map((c) => ({ type: "Categories", id: c._id })),
+          ]
           : [{ type: "Categories", id: "LIST" }],
+    }),
+
+    getAllCategoriesDropdown: builder.query({
+      query: () => `/products/categories-dropdown`
     }),
 
     getCategoriesNameSearch: builder.query({
@@ -131,8 +135,8 @@ export const productsApi = createApi({
     }),
 
     getAllMaterialsPO: builder.query({
-      query: ({ page = 1, pageSize = 10, search = "" }) =>
-        `/engineering/all-materials-po?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(
+      query: ({ page = 1, limit = 10, search = "" }) =>
+        `/engineering/all-materials-po?page=${page}&limit=${limit}&search=${encodeURIComponent(
           search
         )}`,
       providesTags: [{ type: "Categories", id: "LIST" }],
@@ -161,6 +165,7 @@ export const {
 
   // categories
   useGetAllCategoriesQuery,
+  useGetAllCategoriesDropdownQuery,
   useGetCategoriesNameSearchQuery,
   useLazyGetCategoriesNameSearchQuery,
   useGetMaterialCategoryByIdQuery,

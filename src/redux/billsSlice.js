@@ -47,6 +47,7 @@ export const billsApi = createApi({
       providesTags: ["Bill"],
     }),
 
+
     exportBills: builder.mutation({
       query: ({ from, to, exportAll }) => {
         const params = new URLSearchParams();
@@ -157,6 +158,6 @@ export const {
   useDeleteCreditMutation,
   useApproveBillMutation,
   useGetBillByIdQuery,
- useLazyGetBillHistoryQuery,
- useAddBillHistoryMutation
+  useLazyGetBillHistoryQuery,
+  useAddBillHistoryMutation
 } = billsApi;

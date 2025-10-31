@@ -8,7 +8,7 @@ import {
 import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 import { Box, IconButton } from "@mui/joy";
 import { useNavigate } from "react-router-dom";
-import main_logo from "../../assets/protrac_logo.png"
+import main_logo from "../../assets/protrac_logo.png";
 
 const isIOS =
   typeof navigator !== "undefined" &&
@@ -18,11 +18,14 @@ const isStandalone =
   (typeof window !== "undefined" &&
     (window.matchMedia?.("(display-mode: standalone)")?.matches ||
       // iOS Safari legacy flag when launched from Home Screen
-      (navigator).standalone === true)) || false;
+      navigator.standalone === true)) ||
+  false;
 
 const hasWindow = () => typeof window !== "undefined";
 const hasWebNotification =
-  hasWindow() && "Notification" in window && typeof window.Notification === "function";
+  hasWindow() &&
+  "Notification" in window &&
+  typeof window.Notification === "function";
 const hasSWShowNotification =
   typeof navigator !== "undefined" &&
   "serviceWorker" in navigator &&
@@ -34,7 +37,6 @@ const permissionGranted = () =>
   hasWebNotification && window.Notification.permission === "granted";
 
 function NotificationListener() {
-
   const ctx = useNotifications();
   const notifications = ctx?.notifications ?? [];
   const bootstrapped = useRef(false);
@@ -44,7 +46,7 @@ function NotificationListener() {
   useEffect(() => {
     try {
       lastShownIdRef.current = localStorage.getItem(STORAGE_KEY);
-    } catch { }
+    } catch {}
   }, []);
   // console.log(STORAGE_KEY);
 
@@ -55,51 +57,59 @@ function NotificationListener() {
         : n?.payload?.message || "You have a new message";
 
     const link =
-      (n?.payload?.type === "sales" && n?.payload?.link1)
+      n?.payload?.type === "sales" && n?.payload?.link1
         ? n.payload.link1
         : n?.payload?.link || "/dashboard";
 
     const title = n?.payload?.Module || "Notification";
-    const body = n?.payload?.sendBy_Name ? `${n.payload.sendBy_Name}: ${message}` : message;
+    const body = n?.payload?.sendBy_Name
+      ? `${n.payload.sendBy_Name}: ${message}`
+      : message;
 
     try {
-      if ((isIOS || isStandalone) && hasSWShowNotification && permissionGranted()) {
+      if (
+        (isIOS || isStandalone) &&
+        hasSWShowNotification &&
+        permissionGranted()
+      ) {
         const reg = await navigator.serviceWorker.ready;
-        await reg.showNotification(
-          n?.payload?.Module || "",
-          {
-            body,
-            icon: main_logo,
-            data: { link },
-          },
-        );
+        await reg.showNotification(n?.payload?.Module || "", {
+          body,
+          icon: main_logo,
+          data: { link },
+        });
         return;
       }
-    } catch { /* fall through to other paths */ }
+    } catch {
+      /* fall through to other paths */
+    }
 
     try {
       if (hasWebNotification && permissionGranted()) {
-        const notif = new window.Notification(
-          n?.payload?.Module || "",
-          {
-            body,
-            icon: main_logo,
-            data: { link },
-          },
-        );
+        const notif = new window.Notification(n?.payload?.Module || "", {
+          body,
+          icon: main_logo,
+          data: { link },
+        });
         notif.onclick = () => {
-          try { window.focus(); } catch { }
+          try {
+            window.focus();
+          } catch {}
           if (/^https?:\/\//i.test(link)) window.location.assign(link);
           else window.location.href = link;
           notif.close();
         };
         return;
       }
-    } catch { /* fall through */ }
+    } catch {
+      /* fall through */
+    }
 
-    console.warn("Notifications not supported/granted; falling back to toast:", { title, body, link });
+    console.warn(
+      "Notifications not supported/granted; falling back to toast:",
+      { title, body, link }
+    );
   };
-
 
   useEffect(() => {
     if (!notifications.length) return;
@@ -111,7 +121,9 @@ function NotificationListener() {
       bootstrapped.current = true;
       if (ids[0] && lastShownIdRef.current !== ids[0]) {
         lastShownIdRef.current = ids[0];
-        try { localStorage.setItem(STORAGE_KEY, ids[0]); } catch { }
+        try {
+          localStorage.setItem(STORAGE_KEY, ids[0]);
+        } catch {}
       }
       return;
     }
@@ -129,11 +141,15 @@ function NotificationListener() {
 
       const newestProcessed = newIds[0];
       lastShownIdRef.current = newestProcessed;
-      try { localStorage.setItem(STORAGE_KEY, newestProcessed); } catch { }
+      try {
+        localStorage.setItem(STORAGE_KEY, newestProcessed);
+      } catch {}
     } else {
       if (ids[0] && lastShownIdRef.current !== ids[0]) {
         lastShownIdRef.current = ids[0];
-        try { localStorage.setItem(STORAGE_KEY, ids[0]); } catch { }
+        try {
+          localStorage.setItem(STORAGE_KEY, ids[0]);
+        } catch {}
       }
     }
   }, [notifications]);
@@ -168,13 +184,25 @@ const AppNotification = () => {
           display: "block",
         }}
       >
-
         <NovuProvider
           subscriberId={subscribeId}
           applicationIdentifier={process.env.REACT_APP_NOVU_IDENTIFIER}
+          backendUrl={process.env.REACT_APP_NOVU_BACKEND_URL}
+          socketUrl={process.env.REACT_APP_NOVU_SOCKET_URL}
         >
-          <div style={{ position: "absolute", width: 0, height: 0, overflow: "hidden" }}>
-            <NotificationCenter onUrlChange={() => { /* noop */ }} />
+          <div
+            style={{
+              position: "absolute",
+              width: 0,
+              height: 0,
+              overflow: "hidden",
+            }}
+          >
+            <NotificationCenter
+              onUrlChange={() => {
+                /* noop */
+              }}
+            />
           </div>
 
           <NotificationListener />
@@ -192,13 +220,15 @@ const AppNotification = () => {
               position="bottom-end"
               offset={20}
               onNotificationClick={(notification) => {
-                if (notification?.payload?.type === "sales" && notification?.payload?.link1) {
+                if (
+                  notification?.payload?.type === "sales" &&
+                  notification?.payload?.link1
+                ) {
                   navigate(notification?.payload?.link1);
                 } else if (notification?.payload?.link) {
                   navigate(notification?.payload?.link);
                 }
               }}
-
             >
               {({ unseenCount }) => (
                 <IconButton

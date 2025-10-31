@@ -110,54 +110,54 @@ export const AccountsApi = createApi({
       providesTags: ["Accounts"],
     }),
 
-    getCustomerSummary: builder.query({
-      query: ({
-        p_id,
-        _id,
-        start,
-        end,
-        searchClient,
-        searchDebit,
-        searchAdjustment,
-      }) => {
-        const params = new URLSearchParams();
+ getCustomerSummary: builder.query({
+  query: ({
+    p_id,
+    _id,
+    start,
+    end,
+    searchClient,
+    searchDebit,
+    searchAdjustment,
+    tab,
+    page = 1,
+    pageSize = 20,
+  }) => {
+    const params = new URLSearchParams();
 
-        // prefer _id if both are present
-        if (_id) {
-          params.append("_id", _id);
-        } else if (
-          p_id !== undefined &&
-          p_id !== null &&
-          String(p_id).trim() !== ""
-        ) {
-          params.append("p_id", String(p_id));
-        }
+    if (_id) params.append("_id", _id);
+    else if (p_id) params.append("p_id", p_id);
 
-        if (start) params.append("start", start);
-        if (end) params.append("end", end);
-        if (searchClient) params.append("searchClient", searchClient);
-        if (searchDebit) params.append("searchDebit", searchDebit);
-        if (searchAdjustment)
-          params.append("searchAdjustment", searchAdjustment);
+    if (start) params.append("start", start);
+    if (end) params.append("end", end);
+    if (searchClient) params.append("searchClient", searchClient);
+    if (searchDebit) params.append("searchDebit", searchDebit);
+    if (searchAdjustment) params.append("searchAdjustment", searchAdjustment);
+    if (tab) params.append("tab", tab.toLowerCase());
+    params.append("page", page);
+    params.append("pageSize", pageSize);
 
-        return `accounting/customer-payment-summary?${params.toString()}`;
-      },
-      transformResponse: (response) => ({
-        adjustment: {
-          history: [],
-          totalCredit: 0,
-          totalDebit: 0,
-          ...(response?.adjustment || {}),
-        },
-        ...response,
-      }),
-      providesTags: ["Accounts"],
-    }),
+    return `accounting/customer-payment-summary?${params}`;
+  },
+  transformResponse: (res) => ({
+    adjustment: { history: [], totalCredit: 0, totalDebit: 0, ...(res?.adjustment || {}) },
+    ...res,
+  }),
+  providesTags: ["Accounts"],
+}),
+
 
     updateSalesPO: builder.mutation({
-      query: ({ id, remarks, files }) => {
+      query: ({ id, po_number, remarks, basic_sales, gst_on_sales,sales_invoice, files }) => {
         const form = new FormData();
-        form.append("remarks", remarks ?? "");
+
+        if (remarks) form.append("remarks", remarks);
+        if (basic_sales !== undefined) form.append("basic_sales", basic_sales);
+        if (gst_on_sales !== undefined)
+          form.append("gst_on_sales", gst_on_sales);
+        if (sales_invoice) form.append("sales_invoice", sales_invoice);
+        if (po_number) form.append("po_number", po_number);
+         if (sales_invoice) form.append("sales_invoice", sales_invoice);
 
         if (Array.isArray(files)) {
           files.forEach((f) => {
@@ -170,9 +170,10 @@ export const AccountsApi = createApi({
             }
           });
         }
+        const url = id ? `sales-update/${id}` : `sales-update/by-number`;
 
         return {
-          url: `sales-update/${id}`,
+          url,
           method: "PUT",
           body: form,
         };

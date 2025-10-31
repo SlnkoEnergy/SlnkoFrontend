@@ -37,6 +37,7 @@ import {
 import { CreditCard, Money } from "@mui/icons-material";
 import { PaymentProvider } from "../../store/Context/Payment_History";
 import PaymentHistory from "../PaymentHistory";
+import { useNavigate } from "react-router-dom";
 
 const PaymentAccountApproval = forwardRef(
   ({ searchQuery, currentPage, perPage, delaydays }, ref) => {
@@ -61,6 +62,7 @@ const PaymentAccountApproval = forwardRef(
     // console.log("paginatedData Instant are in Account :", paginatedData);
 
     const [user, setUser] = useState(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
       const userData = getUserData();
@@ -530,6 +532,7 @@ const PaymentAccountApproval = forwardRef(
                     opacity: 0.9,
                   },
                 }}
+                   
               >
                 {cr_id}
               </Chip>

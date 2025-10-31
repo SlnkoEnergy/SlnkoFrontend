@@ -1,84 +1,160 @@
-import DeleteIcon from "@mui/icons-material/Delete";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Avatar,
   Box,
-  Button,
-  Card,
-  CardContent,
-  Checkbox,
+  Sheet,
+  Typography,
+  Table,
   Chip,
-  DialogContent,
-  DialogTitle,
   Divider,
+  Input,
+  Button,
+  Tabs,
+  TabList,
+  Tab,
+  TabPanel,
+  IconButton,
+  Checkbox,
+  Stack,
   FormControl,
   FormLabel,
-  Grid,
-  IconButton,
-  Input,
-  Link,
   Modal,
   ModalDialog,
-  Stack,
-  Tab,
-  TabList,
-  TabPanel,
-  Tabs,
+  DialogTitle,
+  DialogContent,
   Textarea,
   Tooltip,
-  Typography,
+  Card,
+  CircularProgress,
+  Link,
+  Grid,
+  Option,
+  Select,
 } from "@mui/joy";
-import Sheet from "@mui/joy/Sheet";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import DeleteIcon from "@mui/icons-material/Delete";
+import CurrencyRupee from "@mui/icons-material/CurrencyRupee";
+import VisibilityRounded from "@mui/icons-material/VisibilityRounded";
+import AttachFileIcon from "@mui/icons-material/AttachFile";
+import InsertDriveFileRounded from "@mui/icons-material/InsertDriveFileRounded";
+import CloseRounded from "@mui/icons-material/CloseRounded";
+import Axios from "../../utils/Axios";
+import InfoOutlined from "@mui/icons-material/InfoOutlined";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import Img12 from "../../assets/slnko_blue_logo.png";
 import BoltIcon from "@mui/icons-material/Bolt";
 import BusinessIcon from "@mui/icons-material/Business";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import GroupsIcon from "@mui/icons-material/Groups";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import FolderIcon from "@mui/icons-material/Folder";
-import Table from "@mui/joy/Table";
-import VisibilityRounded from "@mui/icons-material/VisibilityRounded";
 import PrintIcon from "@mui/icons-material/Print";
-import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { useEffect, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { toast } from "react-toastify";
-import Img12 from "../../assets/slnko_blue_logo.png";
-import AttachFileIcon from "@mui/icons-material/AttachFile";
-import InsertDriveFileRounded from "@mui/icons-material/InsertDriveFileRounded";
-import CloseRounded from "@mui/icons-material/CloseRounded";
-import Axios from "../../utils/Axios";
-import CurrencyRupee from "@mui/icons-material/CurrencyRupee";
+import { debounce } from "lodash";
+
 import {
   useGetCustomerSummaryQuery,
   useUpdateSalesPOMutation,
 } from "../../redux/Accounts";
-import { debounce } from "lodash";
-import { useMemo } from "react";
+import { toast } from "react-toastify";
 
-const Customer_Payment_Summary = () => {
+// ---------------- constants ----------------
+const TABS = ["credit", "debit", "purchase", "sales", "adjustment"];
+const DEFAULT_PAGE_SIZE = 20;
+
+export default function CustomerPaymentSummary() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [searchParams] = useSearchParams();
+  // URL params -> local state
   const p_id = searchParams.get("p_id");
   const _id = searchParams.get("_id");
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
-  const [tabIndex, setTabIndex] = useState(0);
-  const [searchClient, setSearchClient] = useState("");
-  const [searchDebit, setSearchDebit] = useState("");
-  const [searchAdjustment, setSearchAdjustment] = useState("");
-  const [selectedClients, setSelectedClients] = useState([]);
-  const [selectedAdjust, setSelectedAdjust] = useState([]);
-  const [selectedCredits, setSelectedCredits] = useState([]);
-  const [selectedDebits, setSelectedDebits] = useState([]);
+  const tabParam = (searchParams.get("tab") || "credit").toLowerCase();
+  const pageParam = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+  const pageSizeParam = Math.max(
+    1,
+    parseInt(searchParams.get("pageSize") || String(DEFAULT_PAGE_SIZE), 10)
+  );
 
+  const [activeTab, setActiveTab] = useState(
+    TABS.includes(tabParam) ? tabParam : "credit"
+  );
+  const [page, setPage] = useState(pageParam);
+  const [pageSize, setPageSize] = useState(pageSizeParam);
+
+  // filters & local UI state
+  const [startDate, setStartDate] = useState(searchParams.get("start") || "");
+  const [endDate, setEndDate] = useState(searchParams.get("end") || "");
+  const [searchClient, setSearchClient] = useState(
+    searchParams.get("searchClient") || ""
+  );
+  const [searchDebit, setSearchDebit] = useState(
+    searchParams.get("searchDebit") || ""
+  );
+  const [searchAdjustment, setSearchAdjustment] = useState(
+    searchParams.get("searchAdjustment") || ""
+  );
   const [searchSales, setSearchSales] = useState("");
 
+  const [selectedClients, setSelectedClients] = useState([]);
+  const [selectedCredits, setSelectedCredits] = useState([]);
+  const [selectedDebits, setSelectedDebits] = useState([]);
+  const [selectedAdjust, setSelectedAdjust] = useState([]);
+
+  const [user, setUser] = useState(null);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  useEffect(() => {
+    const raw = localStorage.getItem("userDetails");
+    if (raw) setUser(JSON.parse(raw));
+  }, []);
+
+  // sync local state when the URL changes externally
+  useEffect(() => {
+    const newTab = (searchParams.get("tab") || "credit").toLowerCase();
+    const newPage = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const newPageSize = Math.max(
+      1,
+      parseInt(searchParams.get("pageSize") || String(DEFAULT_PAGE_SIZE), 10)
+    );
+
+    setActiveTab(TABS.includes(newTab) ? newTab : "credit");
+    setPage(newPage);
+    // pageSize fixed for the session (already seeded from URL on first load)
+    // eslint-disable-next-line
+  }, [searchParams]);
+
+  // When user clicks a tab, reset page to 1 and write URL
+  const handleTabChange = (_, newTab) => {
+    const safeTab = String(newTab).toLowerCase();
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", safeTab);
+    next.set("page", "1");
+    next.set("pageSize", String(pageSize));
+    if (p_id) next.set("p_id", p_id);
+
+    // keep current filters in the URL
+    startDate ? next.set("start", startDate) : next.delete("start");
+    endDate ? next.set("end", endDate) : next.delete("end");
+    searchClient
+      ? next.set("searchClient", searchClient)
+      : next.delete("searchClient");
+    searchDebit
+      ? next.set("searchDebit", searchDebit)
+      : next.delete("searchDebit");
+    searchAdjustment
+      ? next.set("searchAdjustment", searchAdjustment)
+      : next.delete("searchAdjustment");
+
+    setSearchParams(next);
+  };
+
+  // ------------- data fetch (RTK) -------------
   const {
     data: responseData,
     isLoading,
     refetch,
-    error: fetchError,
+    error,
   } = useGetCustomerSummaryQuery({
     p_id,
     _id,
@@ -87,11 +163,14 @@ const Customer_Payment_Summary = () => {
     searchClient,
     searchDebit,
     searchAdjustment,
+    tab: activeTab,
+    page,
+    pageSize,
   });
 
+  // shape-safe fallbacks
   const {
     projectDetails = {},
-    balanceSummary = {},
     credit = { history: [], total: 0 },
     debit = { history: [], total: 0 },
     clientHistory = { data: [], meta: {} },
@@ -104,11 +183,11 @@ const Customer_Payment_Summary = () => {
   const ClientSummary = Array.isArray(clientHistory.data)
     ? clientHistory.data
     : [];
-  const ClientTotal = clientHistory?.meta ?? {};
+  const ClientMeta = clientHistory?.meta ?? {};
   const SalesSummary = Array.isArray(salesHistory.data)
     ? salesHistory.data
     : [];
-  const SalesTotal = salesHistory?.meta ?? {};
+  const SalesMeta = salesHistory?.meta ?? {};
   const AdjustmentSummary = Array.isArray(adjustment.history)
     ? adjustment.history
     : [];
@@ -128,9 +207,9 @@ const Customer_Payment_Summary = () => {
       .filter((a) => a.url);
 
   const getItemLabel = (row) => {
-    if (typeof row?.item === "string") return row.item;
-    if (Array.isArray(row?.item)) {
-      return row.item
+    if (typeof row?.item_name === "string") return row.item_name;
+    if (Array.isArray(row?.item_name)) {
+      return row.item_name
         .map(
           (it) => it?.product_name || it?.category?.name || it?.category || ""
         )
@@ -140,6 +219,7 @@ const Customer_Payment_Summary = () => {
     return row?.item_name || "-";
   };
 
+  // Client-side search for Sales (optional)
   const filteredSales = useMemo(() => {
     const q = (searchSales || "").trim().toLowerCase();
     if (!q) return SalesSummary || [];
@@ -151,31 +231,75 @@ const Customer_Payment_Summary = () => {
     });
   }, [SalesSummary, searchSales]);
 
-  const saleTotalsFiltered = useMemo(
-    () =>
-      (filteredSales || []).reduce(
-        (acc, s) => {
-          const po = Number(s?.po_value ?? s?.total_po ?? 0);
-          const adv = Number(s?.advance_paid ?? 0);
-          acc.total_sale += po;
-          acc.total_advance_paid += adv;
-          return acc;
-        },
-        { total_sale: 0, total_advance_paid: 0 }
-      ),
-    [filteredSales]
-  );
-
+  // Debounced refetch on filter changes
   useEffect(() => {
-    const delayedSearch = debounce(() => {
-      refetch();
-    }, 500);
-    delayedSearch();
-    return delayedSearch.cancel;
-  }, [searchClient, searchDebit, searchAdjustment, startDate, endDate]);
+    const debounced = debounce(() => refetch(), 400);
+    debounced();
+    return () => debounced.cancel();
+  }, [
+    searchClient,
+    searchDebit,
+    searchAdjustment,
+    startDate,
+    endDate,
+    refetch,
+  ]);
 
-  const [isPrinting, setIsPrinting] = useState(false);
+  // URL helpers for pagination
+  const writeUrl = (newPage) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", activeTab);
+    next.set("page", String(newPage));
+    next.set("pageSize", String(pageSize));
+    if (p_id) next.set("p_id", p_id);
+    startDate ? next.set("start", startDate) : next.delete("start");
+    endDate ? next.set("end", endDate) : next.delete("end");
+    searchClient
+      ? next.set("searchClient", searchClient)
+      : next.delete("searchClient");
+    searchDebit
+      ? next.set("searchDebit", searchDebit)
+      : next.delete("searchDebit");
+    searchAdjustment
+      ? next.set("searchAdjustment", searchAdjustment)
+      : next.delete("searchAdjustment");
+    setSearchParams(next);
+  };
 
+  const onPrev = () => {
+    if (page <= 1) return;
+    const p = page - 1;
+    setPage(p);
+    writeUrl(p);
+  };
+
+  // canNext logic
+  const lenForTab = {
+    credit: CreditSummary.length,
+    debit: DebitSummary.length,
+    purchase: ClientSummary.length,
+    sales: SalesSummary.length,
+    adjustment: AdjustmentSummary.length,
+  }[activeTab];
+
+  const hasNextByMeta =
+    activeTab === "purchase"
+      ? Boolean(ClientMeta?.hasNext)
+      : activeTab === "sales"
+      ? Boolean(SalesMeta?.hasNext)
+      : undefined;
+
+  const canNext =
+    typeof hasNextByMeta === "boolean" ? hasNextByMeta : lenForTab >= pageSize;
+
+  const onNext = () => {
+    if (!canNext) return;
+    const p = page + 1;
+    setPage(p);
+    writeUrl(p);
+  };
+
+  // Actions: print & export
   const handlePrint = async () => {
     try {
       setIsPrinting(true);
@@ -203,6 +327,7 @@ const Customer_Payment_Summary = () => {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Error downloading PDF:", err);
+      toast.error("Failed to download PDF.");
     } finally {
       setIsPrinting(false);
     }
@@ -215,8 +340,6 @@ const Customer_Payment_Summary = () => {
 
   const currentDay = today.toLocaleDateString("en-US", dayOptions);
   const currentDate = today.toLocaleDateString("en-US", dateOptions);
-
-  const [isExporting, setIsExporting] = useState(false);
 
   const handleExportAll = async () => {
     try {
@@ -317,21 +440,6 @@ const Customer_Payment_Summary = () => {
     setSelectedDebits((prev) =>
       prev.includes(_id) ? prev.filter((id) => id !== _id) : [...prev, _id]
     );
-  };
-
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    const userData = getUserData();
-    setUser(userData);
-  }, []);
-
-  const getUserData = () => {
-    const userData = localStorage.getItem("userDetails");
-    if (userData) {
-      return JSON.parse(userData);
-    }
-    return null;
   };
 
   const handleStartDateChange = (event) => {
@@ -492,271 +600,6 @@ const Customer_Payment_Summary = () => {
     }
   };
 
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const handleRefresh = async () => {
-    try {
-      setIsRefreshing(true);
-      await Axios.post("/project-balances/sync-all", {});
-      await refetch();
-    } catch (e) {
-      console.error(e);
-      toast.error("Refresh failed");
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
-  // ***Balance Summary***
-
-  const {
-    total_received,
-    total_return,
-    netBalance,
-    total_advance_paid,
-    balance_payable_to_vendors,
-    total_adjustment,
-    balance_with_slnko,
-    total_po_basic,
-    gst_as_po_basic,
-    total_po_with_gst,
-    gst_with_type_percentage,
-    gst_difference,
-    total_po_value,
-    total_sales,
-    total_billed_value,
-    net_advanced_paid,
-    billing_type,
-    tcs_as_applicable,
-    balance_required,
-    extraGST,
-  } = balanceSummary || {};
-
-  const formatIndianNumber = (val) => {
-    const n = Number(val);
-    if (!isFinite(n)) return "—";
-    return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(
-      Math.round(Math.abs(n))
-    );
-  };
-
-  const RupeeValue = ({ value }) => {
-    const n = Number(value);
-    const isNeg = n < 0;
-    return (
-      <span
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "flex-end",
-          gap: 4,
-        }}
-      >
-        {isNeg && <span>-</span>}
-        <CurrencyRupee style={{ fontSize: 16, marginBottom: 1 }} />
-        <span>{formatIndianNumber(n)}</span>
-      </span>
-    );
-  };
-
-  const Balance_Summary = () => {
-    const safeRound = (v) => {
-      const n = Number(v);
-      return Number.isFinite(n) ? Math.round(n) : NaN;
-    };
-
-    const rows = [
-      ["1", "Total Received", total_received],
-      ["2", "Total Return", total_return],
-      ["3", "Net Balance [(1)-(2)]", netBalance, "muted"],
-      ["4", "Total Advance Paid to Vendors", total_advance_paid],
-      ["4A", "Total Adjustment (Debit-Credit)", total_adjustment],
-      [
-        "5",
-        "Balance With Slnko [(3)-(4)-(4A)]",
-        safeRound(balance_with_slnko),
-        "highlight",
-        true,
-      ],
-      ["6", "Total PO Basic Value", safeRound(total_po_basic)],
-      ["7", "GST Value as per PO", safeRound(gst_as_po_basic)],
-      ["8", "Total PO with GST", safeRound(total_po_with_gst)],
-      ["8A", "Total Sales with GST", safeRound(total_sales)],
-      [
-        "9",
-        billing_type === "Composite"
-          ? "GST (13.8%)"
-          : billing_type === "Individual"
-          ? "GST (18%)"
-          : "GST (Type - N/A)",
-        gst_with_type_percentage,
-      ],
-      ["10", "Total Billed Value", total_billed_value],
-      ["11", "Net Advance Paid [(4)-(10)]", net_advanced_paid],
-      [
-        "12",
-        "Balance Payable to Vendors [(8)-(10)-(11)]",
-        safeRound(balance_payable_to_vendors),
-        "highlight",
-        true,
-      ],
-      ["13", "TCS as Applicable", safeRound(tcs_as_applicable)],
-      [
-        "14",
-        "Extra GST Recoverable from Client [(8)-(6)]",
-        safeRound(extraGST),
-      ],
-      [
-        "15",
-        "Balance Required [(5)-(12)-(13)]",
-        safeRound(balance_required),
-        "highlight",
-        true,
-        Number(balance_required) >= 0 ? "pos" : "neg",
-      ],
-    ];
-
-    return (
-      <Grid container spacing={2}>
-        {/* Balance table */}
-        <Grid item xs={12} sm={8} md={8}>
-          <Sheet
-            variant="outlined"
-            sx={{
-              borderRadius: "8px",
-              p: 2,
-              backgroundColor: "#fff",
-              overflowX: "auto",
-              "@media print": { boxShadow: "none", border: "none" },
-            }}
-          >
-            <Typography
-              level="h5"
-              sx={{ fontWeight: "bold", mb: 1.5, fontSize: 16 }}
-            >
-              Balance Summary
-            </Typography>
-
-            <Table
-              aria-label="Balance summary"
-              borderAxis="both"
-              stickyHeader={false}
-              sx={{
-                minWidth: 560,
-                tableLayout: "fixed",
-                "& thead": {
-                  backgroundColor: "neutral.softBg",
-                  "@media print": { backgroundColor: "#f0f0f0" },
-                },
-                "& th, & td": {
-                  px: 1.5,
-                  py: 1,
-                  fontSize: 14,
-                  "@media print": {
-                    px: 1,
-                    py: 0.75,
-                    fontSize: 12,
-                    border: "1px solid #ddd",
-                  },
-                },
-                "& th.num, & td.num": {
-                  textAlign: "right",
-                  fontVariantNumeric: "tabular-nums",
-                  whiteSpace: "nowrap",
-                },
-              }}
-            >
-              <thead>
-                <tr>
-                  <th style={{ width: 64 }}>S.No.</th>
-                  <th>Description</th>
-                  <th className="num" style={{ width: 180 }}>
-                    Value
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map(([sno, desc, value, tone, bold, state]) => (
-                  <tr
-                    key={sno}
-                    style={{
-                      background:
-                        tone === "highlight"
-                          ? "#B6F4C633"
-                          : tone === "muted"
-                          ? "#C8C8C633"
-                          : "transparent",
-                      fontWeight: bold ? 700 : 400,
-                      color:
-                        state === "pos"
-                          ? "var(--joy-palette-success-700)"
-                          : state === "neg"
-                          ? "var(--joy-palette-danger-700)"
-                          : "inherit",
-                    }}
-                  >
-                    <td>{sno}</td>
-                    <td>{desc}</td>
-                    <td className="num">
-                      {isLoading ? "• • •" : <RupeeValue value={value} />}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          </Sheet>
-        </Grid>
-
-        {/* KPIs */}
-        <Grid item xs={12} sm={4} md={4}>
-          <Stack
-            direction="row"
-            flexWrap="wrap"
-            useFlexGap
-            spacing={1}
-            sx={{ mt: { xs: 1, sm: 0 } }}
-          >
-            <Chip
-              size="md"
-              variant="soft"
-              color={(Number(gst_difference) ?? 0) >= 0 ? "success" : "danger"}
-              sx={{ fontWeight: "bold" }}
-            >
-              <span
-                style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-              >
-                GST (Diff):{" "}
-                {isLoading ? (
-                  "• • •"
-                ) : (
-                  <>
-                    <CurrencyRupee sx={{ fontSize: 16, mb: "2px" }} />
-                    {formatIndianNumber(gst_difference)}
-                  </>
-                )}
-              </span>
-            </Chip>
-
-            {billing_type && (
-              <Chip
-                size="md"
-                variant="soft"
-                color="neutral"
-                sx={{ fontWeight: 600 }}
-              >
-                Billing:{" "}
-                {billing_type === "Composite"
-                  ? "Composite (13.8%)"
-                  : billing_type === "Individual"
-                  ? "Individual (18%)"
-                  : "N/A"}
-              </Chip>
-            )}
-          </Stack>
-        </Grid>
-      </Grid>
-    );
-  };
-
   const [updateSalesPO, { isLoading: isConverting }] =
     useUpdateSalesPOMutation();
 
@@ -766,42 +609,138 @@ const Customer_Payment_Summary = () => {
   const [salesFiles, setSalesFiles] = useState([]);
   const fileInputRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
-
-  const formatBytes = (b) => {
-    if (!b && b !== 0) return "—";
-    const u = ["B", "KB", "MB", "GB"];
-    let i = 0,
-      n = b;
-    while (n >= 1024 && i < u.length - 1) {
-      n /= 1024;
-      i++;
-    }
-    return `${n.toFixed(n < 10 && i > 0 ? 1 : 0)} ${u[i]}`;
-  };
+  const [selectedPO, setSelectedPO] = useState([]);
+  const [salesAmounts, setSalesAmounts] = useState({});
+  const [salesInvoice, setSalesInvoice] = useState("");
 
   const handleSalesConvert = async () => {
     try {
-      if (!selectedClients.length) return;
+      // ✅ 1. Ensure PO(s) selected
+      if (!selectedPO.length) {
+        toast.error("No PO(s) selected.");
+        return;
+      }
 
-      await Promise.all(
-        selectedClients.map((id) =>
-          updateSalesPO({
-            id,
-            remarks: salesRemarks.trim(),
-            files: salesFiles,
-          }).unwrap()
-        )
+      // ✅ 2. Filter out POs with total_billed_value = 0 or missing
+      const validPOs = selectedPO.filter(
+        (po) => Number(po.total_billed_value || 0) > 0
       );
 
-      toast.success(`Converted ${selectedClients.length} PO(s)`);
-      setSalesOpen(false);
-      setSalesRemarks("");
-      setSalesFiles([]);
-      setSelectedClients([]);
-      refetch();
+      if (validPOs.length === 0) {
+        toast.error(
+          "Only POs with billed value greater than 0 can be converted."
+        );
+        return;
+      }
+
+      // If some selected POs are invalid, notify user and continue with valid ones
+      // if (validPOs.length < selectedPO.length) {
+      //   const skipped = selectedPO
+      //     .filter((po) => Number(po.total_billed_value || 0) <= 0)
+      //     .map((p) => p.po_number)
+      //     .join(", ");
+      //   toast.warning(`Skipped PO(s) without billed value: ${skipped}`);
+      // }
+
+      // ✅ 3. Ensure remarks
+      if (!salesRemarks.trim()) {
+        toast.error("Remarks are required.");
+        return;
+      }
+
+      // ✅ 4. Ensure Sales Invoice
+      const inv = (salesInvoice || "").trim();
+      if (!inv) {
+        toast.error("Sales Invoice No. is required.");
+        return;
+      }
+
+      // Basic format validation
+      const invoiceOk = /^[A-Za-z0-9\/\-.]+$/.test(inv);
+      if (!invoiceOk) {
+        toast.error(
+          "Sales Invoice No. can contain letters, numbers, '/', '-' or '.'."
+        );
+        return;
+      }
+
+      // ✅ 5. Validate Basic values for selected POs
+      const invalidPOs = validPOs.filter((po) => {
+        const id = po._id;
+        const basic = salesAmounts[id]?.basic;
+        return basic === undefined || basic === "" || isNaN(Number(basic));
+      });
+
+      if (invalidPOs.length > 0) {
+        const poList = invalidPOs.map((p) => p.po_number).join(", ");
+        toast.error(`Please enter Basic Sales value for: ${poList}`);
+        return;
+      }
+
+      // ✅ 6. Basic Sales <= Bill Basic guard
+      const capErrors = validPOs.filter((po) => {
+        const id = po._id;
+        const billBasic = Number(po.bill_basic || 0);
+        const basic = Number(salesAmounts[id]?.basic || 0);
+        return basic < 0 || basic > billBasic;
+      });
+
+      if (capErrors.length > 0) {
+        const poList = capErrors.map((p) => p.po_number).join(", ");
+        toast.error(
+          `Basic Sales must not exceed Billed Basic Value for: ${poList}`
+        );
+        return;
+      }
+
+      // ✅ 7. Perform conversion calls only for valid POs
+      const results = await Promise.allSettled(
+        validPOs.map(async (po) => {
+          const id = po._id;
+          const poNumber = po.po_number;
+          const basic = Number(salesAmounts[id]?.basic || 0);
+          const gst = Number(salesAmounts[id]?.gst || 0);
+
+          return await updateSalesPO({
+            id,
+            po_number: poNumber,
+            remarks: salesRemarks.trim(),
+            basic_sales: basic,
+            gst_on_sales: gst,
+            sales_invoice: inv,
+            files: salesFiles,
+          }).unwrap();
+        })
+      );
+
+      // ✅ 8. Count results
+      let ok = 0,
+        fail = 0;
+      for (const r of results) {
+        if (r.status === "fulfilled") ok++;
+        else fail++;
+      }
+
+      if (ok) toast.success(`Converted ${ok} PO(s) successfully.`);
+      if (fail) toast.warning(`Failed ${fail} PO(s).`);
+
+      // ✅ 9. Reset form after success
+      if (ok) {
+        setSalesOpen(false);
+        setSelectedPO([]);
+        setSelectedClients?.([]);
+        setSalesFiles([]);
+        setSalesRemarks("");
+        setSalesInvoice?.("");
+        setSalesAmounts({});
+        refetch?.();
+      }
     } catch (err) {
       const msg =
-        err?.data?.message || err?.error || "Failed to convert selected PO(s).";
+        err?.data?.message ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "Sales conversion failed.";
       toast.error(msg);
     }
   };
@@ -906,15 +845,18 @@ const Customer_Payment_Summary = () => {
     );
   }
 
-  const headerOffset = 72;
-  const initials = (name = "") =>
-    name
-      .split(" ")
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((w) => w[0])
-      .join("")
-      .toUpperCase();
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
 
   function EllipsisTooltipInput({ value, startDecorator, placeholder = "—" }) {
     const inputRef = useRef(null);
@@ -977,2012 +919,2504 @@ const Customer_Payment_Summary = () => {
     );
   }
 
+  // Shared footer
+  const PaginationFooter = ({ totalHint }) => {
+    const pageSizeOptions = [10, 25, 50, 100];
+
+    const handlePageSizeChange = (newSize) => {
+      const parsed = Number(newSize);
+      if (!Number.isFinite(parsed) || parsed <= 0) return;
+
+      // Reset to page 1 when changing size
+      setPage(1);
+      setPageSize(parsed);
+
+      const next = new URLSearchParams(searchParams);
+      next.set("tab", activeTab);
+      next.set("page", "1");
+      next.set("pageSize", String(parsed));
+      if (p_id) next.set("p_id", p_id);
+      setSearchParams(next);
+    };
+
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+          flexWrap: "wrap",
+          justifyContent: "space-between",
+          mt: 1.5,
+        }}
+      >
+        {/* Left side: page and total hint */}
+        <Typography level="body-sm">
+          Page {page}
+          {totalHint ? ` • ${totalHint}` : ""}
+        </Typography>
+
+        {/* Right side: pagination controls */}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1.5,
+            flexWrap: "wrap",
+          }}
+        >
+          {/* Page size selection */}
+          <Stack direction="row" spacing={0.5} alignItems="center">
+            <Typography level="body-sm">Rows per page:</Typography>
+            <Select
+              size="sm"
+              value={pageSize}
+              onChange={(_, val) => handlePageSizeChange(val)}
+              sx={{ minWidth: 80 }}
+            >
+              {pageSizeOptions.map((size) => (
+                <Option key={size} value={size}>
+                  {size}/page
+                </Option>
+              ))}
+            </Select>
+          </Stack>
+
+          {/* Prev / Next */}
+          <Stack direction="row" alignItems="center" spacing={0.5}>
+            <Button
+              size="sm"
+              variant="plain"
+              disabled={page <= 1}
+              onClick={onPrev}
+            >
+              Prev
+            </Button>
+            <Typography level="body-sm">/</Typography>
+            <Button
+              size="sm"
+              variant="plain"
+              disabled={!canNext || isLoading}
+              onClick={onNext}
+            >
+              Next
+            </Button>
+          </Stack>
+        </Box>
+      </Box>
+    );
+  };
+
+  const formatIndianNumber = (val) => {
+    const n = Number(val);
+    if (!isFinite(n)) return "—";
+    return n.toLocaleString("en-IN");
+  };
+
+  const RupeeValue = ({ value, showSymbol = true }) => {
+    const n = Number(value);
+    if (!isFinite(n)) return "—";
+    const formatted = n.toLocaleString("en-IN");
+    return (
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          gap: 4,
+        }}
+      >
+        {showSymbol && (
+          <CurrencyRupee style={{ fontSize: 16, marginBottom: 1 }} />
+        )}
+        <span>{formatted}</span>
+      </span>
+    );
+  };
+
+  const Balance_Summary = ({ isLoading = false }) => {
+    const safeRound = (v) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? Math.round(n) : "• • •";
+    };
+
+    const rows = [
+      [
+        "1",
+        "Total Received",
+        safeRound(responseData?.total_received),
+        "#FFF59D",
+      ],
+      ["2", "Total Return", safeRound(responseData?.total_return), "#FFF59D"],
+      [
+        "3",
+        "Net Balance [(1)-(2)]",
+        safeRound(responseData?.netBalance),
+        "#FFE082",
+        true,
+      ],
+      [
+        "4",
+        "Total Advances Paid to Vendors",
+        safeRound(responseData?.total_advance_paid),
+        "#FFF",
+      ],
+      ["", "Billing Details", "", "#F5F5F5"],
+      [
+        "5",
+        "Invoice issued to customer",
+        safeRound(responseData?.total_sales_value),
+        "#FFF",
+      ],
+      [
+        "6",
+        "Bills received, yet to be invoiced to customer",
+        safeRound(responseData?.aggregate_billed_value),
+        "#FFF",
+      ],
+      [
+        "7",
+        "Advances left after bills received [4-5-6]",
+        safeRound(responseData?.remaining_advance_left_after_billed),
+        "#FFF",
+      ],
+      [
+        "8",
+        "Adjustment (Debit-Credit)",
+        safeRound(responseData?.total_adjustment),
+        "#FFF",
+      ],
+      [
+        "9",
+        "Balance With Slnko [3 - 5 - 6 - 7 - 8]",
+        safeRound(responseData?.balance_with_slnko),
+        "#FFECB3",
+        true,
+      ],
+    ];
+
+    const formulaMap = {
+      1: "Amount Received from Customer",
+      2: "Amount Returned to Customer",
+      3: "Net Balance = (1) - (2)",
+      4: "Advance lying with vendors",
+      5: "Value of material delivered (PO Closed) & Sales Invoice issued (including Sales GST)",
+      6: "Value of material delivered (PO Closed) including Purchase GST",
+      7: "Advance left after bills received [4-5-6] ",
+      8: "Adjustments (Debit / Credit)",
+      9: "",
+    };
+
+    const summaryData = [
+      ["Total PO Value", safeRound(responseData?.total_po_with_gst)],
+      ["Billed Value", safeRound(responseData?.aggregate_billed_value)],
+      ["Advance Paid", safeRound(responseData?.total_advance_paid)],
+      [
+        "Remaining to Pay",
+        safeRound(responseData?.exact_remaining_pay_to_vendor),
+        responseData?.aggregate_billed_value > responseData?.total_advance_paid
+          ? "success"
+          : "warning",
+      ],
+    ];
+
+    return (
+      <Grid container spacing={2}>
+        {/* ---------- LEFT: Balance Summary ---------- */}
+        <Grid item xs={12} sm={8} md={8}>
+          <Sheet
+            variant="outlined"
+            sx={{
+              borderRadius: "8px",
+              p: 2,
+              backgroundColor: "#fff",
+              overflowX: "auto",
+              "@media print": { boxShadow: "none", border: "none" },
+            }}
+          >
+            <Typography
+              level="h5"
+              sx={{ fontWeight: "bold", mb: 1.5, fontSize: 16 }}
+            >
+              Balance Summary
+            </Typography>
+
+            <Table
+              aria-label="Balance summary"
+              borderAxis="both"
+              sx={{
+                minWidth: 560,
+                tableLayout: "fixed",
+                "& th, & td": {
+                  px: 1.5,
+                  py: 1,
+                  fontSize: 14,
+                  "@media print": {
+                    px: 1,
+                    py: 0.75,
+                    fontSize: 12,
+                    border: "1px solid #ddd",
+                  },
+                },
+                "& th.num, & td.num": {
+                  textAlign: "right",
+                  fontVariantNumeric: "tabular-nums",
+                  whiteSpace: "nowrap",
+                },
+              }}
+            >
+              <thead>
+                <tr>
+                  <th style={{ width: 64 }}>S.No.</th>
+                  <th>Description</th>
+                  <th className="num" style={{ width: 180 }}>
+                    Value
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map(([sno, desc, value, bg, bold]) => {
+                  if (sno === "") {
+                    return (
+                      <tr key={desc}>
+                        <td
+                          colSpan={3}
+                          style={{
+                            background: "#F5F5F5",
+                            textAlign: "center",
+                            fontWeight: 700,
+                            color: "#333",
+                          }}
+                        >
+                          {desc}
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  return (
+                    <Tooltip
+                      key={sno + desc}
+                      title={formulaMap[sno] || ""}
+                      arrow
+                      placement="top-start"
+                    >
+                      <tr
+                        style={{
+                          background: bg,
+                          fontWeight: bold ? 700 : 400,
+                        }}
+                      >
+                        <td>{sno}</td>
+                        <td>{desc}</td>
+                        <td className="num">
+                          {isLoading ? (
+                            "• • •"
+                          ) : (
+                            <RupeeValue
+                              value={value}
+                              showSymbol={!(sno === "5" || sno === "6")}
+                            />
+                          )}
+                        </td>
+                      </tr>
+                    </Tooltip>
+                  );
+                })}
+              </tbody>
+            </Table>
+          </Sheet>
+        </Grid>
+
+        {/* ---------- RIGHT: KPIs + PAYABLE ---------- */}
+        <Grid item xs={12} sm={4} md={4}>
+          {/* KPI chips */}
+          <Stack
+            direction="row"
+            flexWrap="wrap"
+            spacing={1}
+            useFlexGap
+            sx={{ mb: 2 }}
+          >
+            {responseData?.billing_type && (
+              <Chip
+                size="md"
+                variant="soft"
+                color="neutral"
+                sx={{ fontWeight: 600 }}
+              >
+                Billing:&nbsp;
+                {responseData?.billing_type === "Composite"
+                  ? "Composite (8.9%)"
+                  : responseData?.billing_type === "Individual"
+                  ? "Individual (18%)"
+                  : "N/A"}
+              </Chip>
+            )}
+          </Stack>
+
+          {/* Payable to Vendors */}
+          <Sheet
+            variant="outlined"
+            sx={{
+              borderRadius: "8px",
+              p: 2,
+              backgroundColor: "#fff",
+              overflowX: "auto",
+            }}
+          >
+            <Typography
+              level="h6"
+              sx={{
+                fontWeight: "bold",
+                mb: 1,
+                fontSize: 15,
+                backgroundColor: "#FBC02D",
+                px: 1.5,
+                py: 0.5,
+                borderRadius: "6px",
+                textAlign: "center",
+              }}
+            >
+              Payable to Vendors
+            </Typography>
+
+            <Table
+              aria-label="Payable to Vendors"
+              borderAxis="both"
+              sx={{
+                minWidth: 400,
+                "& th, & td": { px: 1.5, py: 1, fontSize: 14 },
+                "& th.num, & td.num": { textAlign: "right" },
+                "& tbody tr:hover": { backgroundColor: "#FFFDE7" },
+              }}
+            >
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th className="num" style={{ width: 180 }}>
+                    Value
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {summaryData.map(([desc, value, tone]) => (
+                  <Tooltip
+                    key={desc}
+                    title={
+                      desc === "Remaining to Pay"
+                        ? "If Billed > Advance → (PO with GST − Billed), else = (PO with GST − Total Advance Paid)"
+                        : ""
+                    }
+                    arrow
+                    placement="top-start"
+                  >
+                    <tr
+                      style={{
+                        background:
+                          desc === "Remaining to Pay"
+                            ? tone === "success"
+                              ? "#E8F5E9"
+                              : "#FFF9C4"
+                            : "#FFFFFF",
+                        fontWeight: desc === "Remaining to Pay" ? 700 : 400,
+                      }}
+                    >
+                      <td>{desc}</td>
+                      <td className="num">
+                        {isLoading ? "• • •" : value?.toLocaleString("en-IN")}
+                      </td>
+                    </tr>
+                  </Tooltip>
+                ))}
+              </tbody>
+            </Table>
+          </Sheet>
+        </Grid>
+      </Grid>
+    );
+  };
+
   return (
     <Box
       sx={{
-        ml: { lg: "var(--Sidebar-width)" },
         px: { xs: 1, md: 2 },
+        ml: {
+          lg: "var(--Sidebar-width)",
+        },
         width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
       }}
     >
-      <Box
+      <Card
+        variant="outlined"
         sx={{
-          maxWidth: { xs: "100%", lg: 1400, xl: 1600 },
-          mx: "auto",
-          width: "100%",
+          borderRadius: "xl",
+          p: { xs: 2, md: 3 },
+          boxShadow: "lg",
+          borderColor: "neutral.outlinedBorder",
         }}
       >
-        {/* Header Section */}
-
         <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: {
-              xs: "1fr",
-              md: "300px 1fr",
-            },
-            gap: { xs: 1.5, md: 2 },
-            alignItems: "start",
-          }}
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={3}
+          sx={{ flexWrap: "wrap", gap: 2 }}
         >
-          {/* Project Details Section */}
-
-          <Card
-            variant="outlined"
-            sx={{
-              position: "sticky",
-              top: { xs: 8, md: headerOffset + 16 },
-              alignSelf: "start",
-              borderRadius: "lg",
-              width: "100%",
-              flexShrink: 0,
-              maxHeight: {
-                xs: "calc(100dvh - 16px)",
-                md: `calc(100dvh - ${headerOffset + 32}px)`,
-              },
-              display: "flex",
-              flexDirection: "column",
-              overflow: "hidden",
-              boxShadow: "sm",
-              borderColor: "neutral.outlinedBorder",
-              zIndex: 1,
-            }}
+          <Box>
+            <img src={Img12} style={{ maxHeight: "60px", width: "auto" }} />
+          </Box>
+          <Typography
+            variant="h3"
+            fontSize={"2.5rem"}
+            fontFamily="Playfair Display"
+            sx={{ textAlign: "center", flexGrow: 1, fontWeight: 700 }}
           >
-            <Box
-              sx={{
-                position: "sticky",
-                top: 0,
-                zIndex: 2,
-                mb: 1,
-                p: 1.25,
-                borderBottom: "1px solid",
-                borderColor: "neutral.outlinedBorder",
-                background:
-                  "linear-gradient(135deg, var(--joy-palette-primary-softBg), #eef4ff)",
-                display: "flex",
-                alignItems: "center",
-                gap: 1.25,
-              }}
-            >
-              <Avatar
-                variant="soft"
-                size="lg"
-                src={projectDetails?.avatar_url || ""}
-                alt={
-                  projectDetails?.customer_name ||
-                  projectDetails?.name ||
-                  "Project"
-                }
-                sx={{ "--Avatar-size": "56px", fontWeight: 700 }}
-              >
-                {initials(
-                  projectDetails?.customer_name || projectDetails?.name || ""
-                )}
-              </Avatar>
+            Customer Payment Summary
+          </Typography>
+          <Box textAlign="right" minWidth={180}>
+            <Typography variant="subtitle1" fontFamily="Bona Nova SC">
+              {currentDay}
+            </Typography>
+            <Typography variant="subtitle1" fontFamily="Bona Nova SC">
+              {currentDate}
+            </Typography>
+          </Box>
+        </Box>
 
-              <Box sx={{ minWidth: 0 }}>
-                <Typography
-                  level="title-md"
-                  sx={{ fontWeight: 700, lineHeight: 1 }}
-                >
-                  {isLoading ? "—" : projectDetails?.customer_name || "—"}
-                </Typography>
-                <Typography
-                  level="body-sm"
-                  sx={{
-                    opacity: 0.85,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
-                  title={projectDetails?.name}
-                >
-                  {projectDetails?.name || "—"}
-                </Typography>
-              </Box>
-            </Box>
-
-            {/* Label chip */}
-            <Chip
-              color="primary"
-              variant="soft"
-              sx={{ mb: 1, fontWeight: 700 }}
-            >
-              Project Details
-            </Chip>
-
-            {/* Fields */}
-            <Grid container spacing={1.5}>
-              <Grid xs={12}>
-                <EllipsisTooltipInput
-                  value={projectDetails.code}
-                  startDecorator={<FolderIcon />}
-                />
-              </Grid>
-
-              <Grid xs={12}>
-                <EllipsisTooltipInput
-                  value={projectDetails.name}
-                  startDecorator={<BusinessIcon />}
-                />
-              </Grid>
-
-              <Grid xs={12}>
-                <Input
-                  value={isLoading ? "" : projectDetails.customer_name || "-"}
-                  readOnly
-                  startDecorator={<AccountCircleIcon />}
-                  placeholder={isLoading ? "Loading..." : ""}
-                />
-              </Grid>
-
-              <Grid xs={12}>
-                <Input
-                  value={isLoading ? "" : projectDetails.p_group || "-"}
-                  readOnly
-                  startDecorator={<GroupsIcon />}
-                  placeholder={isLoading ? "Loading..." : ""}
-                />
-              </Grid>
-
-              <Grid xs={12}>
-                <EllipsisTooltipInput
-                  value={projectDetails.site_address}
-                  startDecorator={<LocationOnIcon />}
-                />
-              </Grid>
-
-              <Grid xs={12}>
-                <Input
-                  value={isLoading ? "" : projectDetails.project_kwp || "-"}
-                  readOnly
-                  startDecorator={<BoltIcon />}
-                  placeholder={isLoading ? "Loading..." : ""}
-                />
-              </Grid>
+        {/* =================== 1️⃣ PROJECT DETAILS =================== */}
+        <Box>
+          <Typography level="h4" sx={{ mb: 2, fontWeight: 700 }}>
+            Project Details
+          </Typography>
+          <Divider sx={{ mb: 2 }} />
+          <Grid container spacing={1.5}>
+            <Grid xs={12} sm={6} md={4}>
+              <EllipsisTooltipInput
+                value={projectDetails.code}
+                startDecorator={<FolderIcon />}
+              />
             </Grid>
-          </Card>
+            <Grid xs={12} sm={6} md={4}>
+              <EllipsisTooltipInput
+                value={projectDetails.name}
+                startDecorator={<BusinessIcon />}
+              />
+            </Grid>
+            <Grid xs={12} sm={6} md={4}>
+              <Input
+                value={projectDetails.customer_name || "-"}
+                readOnly
+                startDecorator={<AccountCircleIcon />}
+              />
+            </Grid>
+            <Grid xs={12} sm={6} md={4}>
+              <Input
+                value={projectDetails.p_group || "-"}
+                readOnly
+                startDecorator={<GroupsIcon />}
+              />
+            </Grid>
+            <Grid xs={12} sm={6} md={4}>
+              <EllipsisTooltipInput
+                value={projectDetails.site_address}
+                startDecorator={<LocationOnIcon />}
+              />
+            </Grid>
+            <Grid xs={12} sm={6} md={4}>
+              <Input
+                value={projectDetails.project_kwp || "-"}
+                readOnly
+                startDecorator={<BoltIcon />}
+              />
+            </Grid>
+          </Grid>
+        </Box>
 
-          {/* Credit History Section */}
-          <Card
+        <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 2 }}>
+          <TabList
+            variant="plain"
+            color="neutral"
             sx={{
+              gap: 0.5,
+              p: 0.5,
               borderRadius: "lg",
-              p: { xs: 1, md: 1.5 },
-              minWidth: 0,
+              bgcolor: "rgba(255, 255, 255, 0.6)",
+              backdropFilter: "blur(12px)",
+              boxShadow: "sm",
+              border: "1px solid rgba(255, 255, 255, 0.4)",
+              display: "flex",
+              justifyContent: "flex-start",
+              alignItems: "center",
+              overflowX: "auto",
             }}
           >
-            <Box
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              mb={3}
-              sx={{ flexWrap: "wrap", gap: 2 }}
-            >
-              <Box>
-                <img src={Img12} style={{ maxHeight: "60px", width: "auto" }} />
-              </Box>
-              <Typography
-                variant="h3"
-                fontSize={"2.5rem"}
-                fontFamily="Playfair Display"
-                sx={{ textAlign: "center", flexGrow: 1, fontWeight: 700 }}
+            {TABS.map((t) => (
+              <Tab
+                key={t}
+                value={t}
+                sx={{
+                  textTransform: "capitalize",
+                  fontWeight: 600,
+                  fontSize: 15,
+                  px: 2.5,
+                  py: 1,
+                  borderRadius: "xl",
+                  transition: "all 0.25s ease",
+                  color: "text.secondary",
+                  bgcolor: "rgba(255, 255, 255, 0.3)",
+                  backdropFilter: "blur(10px)",
+                  "&:hover": {
+                    bgcolor: "rgba(255, 255, 255, 0.55)",
+                    color: "text.primary",
+                    transform: "translateY(-1px)",
+                  },
+                  "&[aria-selected='true']": {
+                    bgcolor: "primary.solidBg",
+                    color: "primary.softColor",
+                    boxShadow: "md",
+                    transform: "translateY(-1px)",
+                  },
+                }}
               >
-                Customer Payment Summary
-              </Typography>
-              <Box textAlign="right" minWidth={180}>
-                <Typography variant="subtitle1" fontFamily="Bona Nova SC">
-                  {currentDay}
-                </Typography>
-                <Typography variant="subtitle1" fontFamily="Bona Nova SC">
-                  {currentDate}
-                </Typography>
-              </Box>
-            </Box>
+                {t}
+              </Tab>
+            ))}
+          </TabList>
 
-            <Stack gap={2}>
-              <Box>
-                <Chip
-                  color="success"
-                  variant="soft"
-                  size="md"
-                  sx={{ fontSize: "1.1rem", fontWeight: 600, px: 2, py: 1 }}
-                >
-                  Credit History
-                </Chip>
-                <Divider
-                  sx={{ borderWidth: "2px", marginBottom: "20px", mt: 2 }}
-                />
-
+          {/* ====================== CREDIT ====================== */}
+          <TabPanel value="credit" sx={{ p: 0 }}>
+            <Box>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexDirection: { md: "row", xs: "column" },
+                  "@media print": { display: "none" },
+                }}
+                mb={2}
+              >
                 <Box
                   sx={{
                     display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
                     flexDirection: { md: "row", xs: "column" },
-                    "@media print": {
-                      display: "none",
-                    },
+                    alignItems: { md: "flex-end", xs: "stretch" },
+                    gap: 2,
+                    flexWrap: "wrap",
                   }}
-                  mb={2}
                 >
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexDirection: { md: "row", xs: "column" },
-                      alignItems: { md: "flex-end", xs: "stretch" },
-                      gap: 2,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <FormControl sx={{ minWidth: 200 }}>
-                      <FormLabel>Start Date</FormLabel>
-                      <Input
-                        type="date"
-                        value={startDate}
-                        onChange={handleCreditStartDateChange}
-                      />
-                    </FormControl>
+                  {/* <FormControl sx={{ minWidth: 200 }}>
+                    <FormLabel>Start Date</FormLabel>
+                    <Input
+                      type="date"
+                      value={startDate}
+                      onChange={handleCreditStartDateChange}
+                    />
+                  </FormControl>
 
-                    <FormControl sx={{ minWidth: 200 }}>
-                      <FormLabel>End Date</FormLabel>
-                      <Input
-                        type="date"
-                        value={endDate}
-                        onChange={handleCreditEndDateChange}
-                      />
-                    </FormControl>
-                  </Box>
-
-                  {(user?.name === "IT Team" ||
-                    user?.name === "Guddu Rani Dubey" ||
-                    user?.name === "Varun Mishra" ||
-                    user?.name === "Prachi Singh" ||
-                    user?.name === "admin") && (
-                    <Box>
-                      <IconButton
-                        color="danger"
-                        disabled={selectedCredits.length === 0}
-                        onClick={handleDeleteCredit}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Box>
-                  )}
+                  <FormControl sx={{ minWidth: 200 }}>
+                    <FormLabel>End Date</FormLabel>
+                    <Input
+                      type="date"
+                      value={endDate}
+                       onChange={handleCreditEndDateChange}
+                    />
+                  </FormControl> */}
                 </Box>
 
-                <Sheet
-                  variant="outlined"
-                  sx={{
-                    borderRadius: "12px",
-                    overflow: "hidden",
-                    p: 2,
-                    boxShadow: "md",
-                    maxWidth: "100%",
-                    width: "100%",
-                    "@media print": {
-                      boxShadow: "none",
-                      p: 0,
-                      borderRadius: 0,
-                      overflow: "visible",
-                    },
-                  }}
-                >
-                  <Table
-                    borderAxis="both"
-                    stickyHeader
-                    sx={{
-                      minWidth: "100%",
-                      "& thead": {
-                        backgroundColor: "neutral.softBg",
-                        "@media print": {
-                          backgroundColor: "#ddd",
-                        },
-                      },
-                      "& th, & td": {
-                        textAlign: "left",
-                        px: 2,
-                        py: 1.5,
-                        "@media print": {
-                          px: 1,
-                          py: 1,
-                          fontSize: "12px",
-                          border: "1px solid #ccc",
-                        },
-                      },
-                      "@media print": {
-                        borderCollapse: "collapse",
-                        width: "100%",
-                        tableLayout: "fixed",
-                      },
-                    }}
-                  >
-                    {/* Table Header */}
-                    <thead>
-                      <tr>
-                        <th>Credit Date</th>
-                        <th>Credit Mode</th>
-                        <th>Credited Amount (₹)</th>
-                        <th style={{ textAlign: "center" }}>
-                          <Checkbox
-                            color="primary"
-                            onChange={handleSelectAllCredit}
-                            checked={
-                              selectedCredits.length === CreditSummary.length
-                            }
-                          />
-                        </th>
-                      </tr>
-                    </thead>
+                {(user?.name === "IT Team" ||
+                  user?.name === "Guddu Rani Dubey" ||
+                  user?.name === "Varun Mishra" ||
+                  user?.name === "Prachi Singh" ||
+                  user?.name === "admin") && (
+                  <Box>
+                    <IconButton
+                      color="danger"
+                      disabled={selectedCredits.length === 0}
+                      onClick={handleDeleteCredit}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
+                )}
+              </Box>
 
-                    {/* Table Body */}
-
-                    <tbody>
-                      {isLoading ? (
-                        <tr>
-                          <td
-                            colSpan={4}
-                            style={{ textAlign: "center", padding: "20px" }}
-                          >
-                            <Typography
-                              level="body-md"
-                              sx={{ fontStyle: "italic" }}
-                            >
-                              Loading credit history...
-                            </Typography>
-                          </td>
-                        </tr>
-                      ) : CreditSummary.length > 0 ? (
-                        CreditSummary.map((row) => (
-                          <tr key={row.id}>
-                            <td>
-                              {new Date(
-                                row.cr_date || row.createdAt
-                              ).toLocaleDateString("en-IN", {
-                                day: "2-digit",
-                                month: "short",
-                                year: "numeric",
-                              })}
-                            </td>
-                            <td>{row.cr_mode}</td>
-                            <td>
-                              ₹ {(row.cr_amount ?? 0).toLocaleString("en-IN")}
-                            </td>
-                            <td style={{ textAlign: "center" }}>
-                              <Checkbox
-                                color="primary"
-                                checked={selectedCredits.includes(row._id)}
-                                onChange={() =>
-                                  handleCreditCheckboxChange(row._id)
-                                }
-                              />
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td
-                            colSpan={4}
-                            style={{ textAlign: "center", padding: "20px" }}
-                          >
-                            <Typography level="body-md">
-                              No credit history available
-                            </Typography>
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-
-                    {/* Total Row */}
-
-                    <tfoot>
-                      {CreditSummary.length > 0 && (
-                        <tr
-                          style={{
-                            fontWeight: "bold",
-                            backgroundColor: "#f5f5f5",
+              <Sheet
+                variant="outlined"
+                sx={{
+                  borderRadius: "12px",
+                  overflow: "hidden",
+                  p: 2,
+                  boxShadow: "md",
+                  width: "100%",
+                }}
+              >
+                <Table borderAxis="both" stickyHeader sx={{ minWidth: "100%" }}>
+                  <thead>
+                    <tr>
+                      <th>Credit Date</th>
+                      <th>Credit Mode</th>
+                      <th>Credited Amount (₹)</th>
+                      <th style={{ textAlign: "center" }}>
+                        <Checkbox
+                          color="primary"
+                          onChange={(e) => {
+                            if (e.target.checked)
+                              setSelectedCredits(
+                                CreditSummary.map((r) => r._id)
+                              );
+                            else setSelectedCredits([]);
                           }}
-                        >
-                          <td
-                            colSpan={2}
-                            style={{
-                              color: "dodgerblue",
-                              textAlign: "right",
-                            }}
-                          >
-                            Total Credited:
-                          </td>
-                          <td style={{ color: "dodgerblue" }}>
-                            ₹{" "}
-                            {credit?.total
-                              ? credit.total.toLocaleString("en-IN")
-                              : "0"}
-                          </td>
-                          <td />
-                        </tr>
-                      )}
-                    </tfoot>
-                  </Table>
-                </Sheet>
-              </Box>
-
-              {/* Debit History Section */}
-
-              <Box>
-                <Chip
-                  color="danger"
-                  variant="soft"
-                  size="md"
-                  sx={{
-                    fontSize: "1.1rem",
-                    fontWeight: 600,
-                    px: 2,
-                    py: 1,
-                    mt: 3,
-                  }}
-                >
-                  Debit History
-                </Chip>
-                <Divider
-                  sx={{ borderWidth: "2px", marginBottom: "20px", mt: 2 }}
-                />
-
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    flexDirection: { md: "row", xs: "column" },
-                    "@media print": {
-                      display: "none",
-                    },
-                  }}
-                  mb={2}
-                >
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexDirection: { md: "row", xs: "column" },
-                      alignItems: { md: "flex-end", xs: "stretch" },
-                      gap: 2,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <FormControl sx={{ minWidth: 250 }}>
-                      <FormLabel>Search Paid For</FormLabel>
-                      <Input
-                        placeholder="Enter name or vendor"
-                        value={searchDebit}
-                        onChange={(e) => setSearchDebit(e.target.value)}
-                      />
-                    </FormControl>
-
-                    <FormControl sx={{ minWidth: 200 }}>
-                      <FormLabel>Start Date</FormLabel>
-                      <Input
-                        type="date"
-                        value={startDate}
-                        onChange={handleStartDateChange}
-                      />
-                    </FormControl>
-
-                    <FormControl sx={{ minWidth: 200 }}>
-                      <FormLabel>End Date</FormLabel>
-                      <Input
-                        type="date"
-                        value={endDate}
-                        onChange={handleEndDateChange}
-                      />
-                    </FormControl>
-                  </Box>
-
-                  {(user?.name === "IT Team" ||
-                    user?.name === "Guddu Rani Dubey" ||
-                    user?.name === "Varun Mishra" ||
-                    user?.name === "Prachi Singh" ||
-                    user?.name === "admin") && (
-                    <Box>
-                      <IconButton
-                        color="danger"
-                        disabled={selectedDebits.length === 0}
-                        onClick={handleDeleteDebit}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Box>
-                  )}
-                </Box>
-
-                <Sheet
-                  variant="outlined"
-                  sx={{
-                    borderRadius: "12px",
-
-                    overflowX: "auto",
-                    overflowY: "hidden",
-                    p: 2,
-                    boxShadow: "md",
-                    maxWidth: "100%",
-                    width: "100%",
-                    "@media print": {
-                      boxShadow: "none",
-                      p: 0,
-                      borderRadius: 0,
-                      overflow: "visible",
-                    },
-                  }}
-                >
-                  <Table
-                    borderAxis="both"
-                    stickyHeader
-                    sx={{
-                      minWidth: "100%",
-                      tableLayout: "fixed",
-                      "& thead": {
-                        backgroundColor: "neutral.softBg",
-                        "@media print": { backgroundColor: "#ddd" },
-                      },
-                      "& th, & td": {
-                        textAlign: "left",
-                        px: 2,
-                        py: 1.5,
-                        verticalAlign: "middle",
-                        "@media print": {
-                          px: 1,
-                          py: 1,
-                          fontSize: "12px",
-                          border: "1px solid #ccc",
-                        },
-                      },
-                      "& th.utrCell, & td.utrCell": {
-                        maxWidth: { xs: 120, sm: 180, md: 260 },
-                        whiteSpace: { xs: "normal", md: "nowrap" },
-                        overflow: { md: "hidden" },
-                        textOverflow: { md: "ellipsis" },
-                        overflowWrap: "anywhere",
-                        wordBreak: "break-word",
-                        fontFamily:
-                          'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-                      },
-                      "@media print": {
-                        borderCollapse: "collapse",
-                        width: "100%",
-                        tableLayout: "fixed",
-                      },
-                    }}
-                  >
-                    <thead>
+                          checked={
+                            selectedCredits.length === CreditSummary.length &&
+                            CreditSummary.length > 0
+                          }
+                        />
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {isLoading ? (
                       <tr>
-                        <th>Debit Date</th>
-                        <th>PO Number</th>
-                        <th>Paid For</th>
-                        <th>Paid To</th>
-                        <th>Amount (₹)</th>
-                        <th className="utrCell">UTR</th>
-                        <th style={{ textAlign: "center" }}>
-                          <Box>
+                        <td
+                          colSpan={4}
+                          style={{ textAlign: "center", padding: 20 }}
+                        >
+                          <Typography
+                            level="body-md"
+                            sx={{ fontStyle: "italic" }}
+                          >
+                            Loading credit history...
+                          </Typography>
+                        </td>
+                      </tr>
+                    ) : CreditSummary.length > 0 ? (
+                      CreditSummary.map((row) => (
+                        <tr key={row._id || row.id}>
+                          <td>
+                            {formatDateTime(row.cr_date || row.createdAt)}
+                          </td>
+                          <td>{row.cr_mode || "—"}</td>
+                          <td>
+                            <RupeeValue value={row.cr_amount ?? 0} />
+                          </td>
+                          <td style={{ textAlign: "center" }}>
                             <Checkbox
                               color="primary"
-                              onChange={handleSelectAllDebits}
-                              checked={
-                                selectedDebits.length === DebitSummary.length
+                              checked={selectedCredits.includes(row._id)}
+                              onChange={() =>
+                                setSelectedCredits((prev) =>
+                                  prev.includes(row._id)
+                                    ? prev.filter((id) => id !== row._id)
+                                    : [...prev, row._id]
+                                )
                               }
                             />
-                          </Box>
-                        </th>
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {isLoading ? (
-                        <tr>
-                          <td
-                            colSpan={7}
-                            style={{ textAlign: "center", padding: 20 }}
-                          >
-                            <Typography
-                              level="body-md"
-                              sx={{ fontStyle: "italic" }}
-                            >
-                              Loading debit history...
-                            </Typography>
                           </td>
                         </tr>
-                      ) : DebitSummary.length === 0 ? (
-                        <tr>
-                          <td
-                            colSpan={7}
-                            style={{ textAlign: "center", padding: 20 }}
-                          >
-                            <Typography level="body-md">
-                              No debit history available
-                            </Typography>
-                          </td>
-                        </tr>
-                      ) : (
-                        DebitSummary.map((row) => (
-                          <tr key={row._id || row.id}>
-                            <td>
-                              {new Date(row.dbt_date).toLocaleDateString(
-                                "en-IN",
-                                {
-                                  day: "2-digit",
-                                  month: "short",
-                                  year: "numeric",
-                                }
-                              )}
-                            </td>
-                            <td>{row.po_number}</td>
-                            <td>{row.paid_for}</td>
-                            <td>{row.vendor}</td>
-                            <td>
-                              ₹{" "}
-                              {Number(row.amount_paid).toLocaleString("en-IN")}
-                            </td>
-
-                            {/* UTR with responsive wrap/ellipsis and hover tooltip (no icon) */}
-                            <td className="utrCell" title={row.utr || "-"}>
-                              {row.utr || "-"}
-                            </td>
-
-                            <td style={{ textAlign: "center" }}>
-                              <Checkbox
-                                color="primary"
-                                checked={selectedDebits.includes(row._id)}
-                                onChange={() =>
-                                  handleDebitCheckboxChange(row._id)
-                                }
-                              />
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-
-                    {DebitSummary.length > 0 && (
-                      <tfoot>
-                        <tr
-                          style={{
-                            fontWeight: "bold",
-                            backgroundColor: "#f5f5f5",
-                          }}
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          style={{ textAlign: "center", padding: 20 }}
                         >
-                          <td
-                            colSpan={4}
-                            style={{ color: "red", textAlign: "right" }}
-                          >
-                            Total Debited:
-                          </td>
-                          <td colSpan={3} style={{ color: "red" }}>
-                            ₹ {debit?.total?.toLocaleString("en-IN")}
-                          </td>
-                        </tr>
-                      </tfoot>
+                          <Typography level="body-md">
+                            No credit history available
+                          </Typography>
+                        </td>
+                      </tr>
                     )}
-                  </Table>
-                </Sheet>
+                  </tbody>
+                  {CreditSummary.length > 0 && (
+                    <tfoot>
+                      <tr
+                        style={{
+                          fontWeight: "bold",
+                          backgroundColor: "#f5f5f5",
+                        }}
+                      >
+                        <td
+                          colSpan={2}
+                          style={{ color: "dodgerblue", textAlign: "right" }}
+                        >
+                          Total Credited:
+                        </td>
+                        <td style={{ color: "dodgerblue" }}>
+                          <RupeeValue value={credit?.total || 0} />
+                        </td>
+                        <td />
+                      </tr>
+                    </tfoot>
+                  )}
+                </Table>
+
+                {/* pagination for CREDIT */}
+                {/* <Divider sx={{ my: 1 }} />
+                <PaginationFooter /> */}
+              </Sheet>
+            </Box>
+          </TabPanel>
+
+          {/* ====================== DEBIT ====================== */}
+          <TabPanel value="debit" sx={{ p: 0 }}>
+            <Box mt={4}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexDirection: { md: "row", xs: "column" },
+                  "@media print": { display: "none" },
+                }}
+                mb={2}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: { md: "row", xs: "column" },
+                    alignItems: { md: "flex-end", xs: "stretch" },
+                    gap: 2,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <FormControl sx={{ minWidth: 350 }}>
+                    {/* <FormLabel>Search Paid For</FormLabel> */}
+                    <Input
+                      placeholder="Enter PO Number, Item or Vendor..."
+                      value={searchDebit}
+                      onChange={(e) => setSearchDebit(e.target.value)}
+                    />
+                  </FormControl>
+
+                  {/* <FormControl sx={{ minWidth: 200 }}>
+                    <FormLabel>Start Date</FormLabel>
+                    <Input
+                      type="date"
+                      value={startDate}
+                       onChange={handleStartDateChange}
+                    />
+                  </FormControl>
+
+                  <FormControl sx={{ minWidth: 200 }}>
+                    <FormLabel>End Date</FormLabel>
+                    <Input
+                      type="date"
+                      value={endDate}
+                      onChange={handleEndDateChange}
+                    />
+                  </FormControl> */}
+                </Box>
+
+                {(user?.name === "IT Team" ||
+                  user?.name === "Guddu Rani Dubey" ||
+                  user?.name === "Varun Mishra" ||
+                  user?.name === "Prachi Singh" ||
+                  user?.name === "admin") && (
+                  <Box>
+                    <IconButton
+                      color="danger"
+                      disabled={selectedDebits.length === 0}
+                      onClick={handleDeleteDebit}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
+                )}
               </Box>
 
-              {/* Client History Section */}
-              <Box>
-                <Tabs
-                  value={tabIndex}
-                  onChange={(_, v) => setTabIndex(v)}
-                  sx={{
-                    "--Tabs-indicatorThickness": "0px",
-                    "--Tabs-indicatorColor": "transparent",
-                    backgroundColor: "transparent",
-                  }}
-                  slotProps={{ tabIndicator: { sx: { display: "none" } } }}
+              <Sheet
+                variant="outlined"
+                sx={{
+                  borderRadius: "12px",
+                  overflowX: "auto",
+                  overflowY: "hidden",
+                  p: 2,
+                  boxShadow: "md",
+                  width: "100%",
+                }}
+              >
+                <Table
+                  borderAxis="both"
+                  stickyHeader
+                  sx={{ minWidth: "100%", tableLayout: "fixed" }}
                 >
-                  <TabList
-                    variant="plain"
-                    sx={{
-                      "--Tabs-gap": "8px",
-                      "--Tabs-radius": "999px",
-                      p: 0.5,
-                      borderRadius: "999px",
-                      boxShadow: "sm",
-                      width: "fit-content",
-                      padding: "9px",
-                      mt: 2,
-                      bgcolor: "transparent",
-                      "& .MuiTab-root::after": { display: "none" },
-                      "& .Mui-selected::after": { display: "none" },
-                    }}
-                  >
-                    <Tab
-                      variant="plain"
-                      sx={{
-                        borderRadius: "999px",
-                        letterSpacing: 0.2,
-                        fontSize: "1.1rem",
-                        fontWeight: 600,
-                        px: 2,
-                        py: 1,
-                        "&:hover": { bgcolor: "neutral.softHoverBg" },
-                        '&[aria-selected="false"]': {
-                          bgcolor: "neutral.softBg",
-                          color: "neutral.softColor",
-                        },
-                        '&[aria-selected="true"]': {
-                          bgcolor: "warning.softBg",
-                          color: "warning.softColor",
-                          boxShadow: "sm",
-                        },
-                        "&::after": { display: "none" },
-                      }}
-                    >
-                      Purchase History
-                    </Tab>
-                    &nbsp;&nbsp;
-                    <Tab
-                      variant="plain"
-                      sx={{
-                        borderRadius: "999px",
-                        fontSize: "1.1rem",
-                        fontWeight: 600,
-                        px: 2,
-                        py: 1,
-                        letterSpacing: 0.2,
-                        "&:hover": { bgcolor: "neutral.softHoverBg" },
-                        '&[aria-selected="false"]': {
-                          bgcolor: "neutral.softBg",
-                          color: "neutral.softColor",
-                        },
-                        '&[aria-selected="true"]': {
-                          bgcolor: "primary.softBg",
-                          color: "primary.softColor",
-                          boxShadow: "sm",
-                        },
-                        "&::after": { display: "none" },
-                      }}
-                    >
-                      Sales History
-                    </Tab>
-                  </TabList>
-                  <Divider
-                    sx={{ borderWidth: "2px", marginBottom: "20px", mt: 2 }}
-                  />
-
-                  {/* -------------------- PURCHASE HISTORY -------------------- */}
-                  <TabPanel value={0} sx={{ p: 0, pt: 2 }}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        flexDirection: { xs: "column", md: "row" },
-                        gap: 2,
-                        mb: 2,
-                        "@media print": { display: "none" },
-                      }}
-                    >
-                      {/* Search Input */}
-                      <Input
-                        placeholder="Search Client"
-                        value={searchClient}
-                        onChange={(e) => setSearchClient(e.target.value)}
-                        sx={{ width: { xs: "100%", md: 250 } }}
-                      />
-
-                      {/* Actions: Delete + Sales Conversion */}
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1,
+                  <thead>
+                    <tr>
+                      <th>Debit Date</th>
+                      <th>PO Number</th>
+                      <th>Paid For</th>
+                      <th>Paid To</th>
+                      <th>Amount (₹)</th>
+                      <th className="utrCell">UTR</th>
+                      <th style={{ textAlign: "center" }}>
+                        <Checkbox
+                          color="primary"
+                          onChange={(e) => {
+                            if (e.target.checked)
+                              setSelectedDebits(DebitSummary.map((r) => r._id));
+                            else setSelectedDebits([]);
+                          }}
+                          checked={
+                            selectedDebits.length === DebitSummary.length &&
+                            DebitSummary.length > 0
+                          }
+                        />
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {isLoading ? (
+                      <tr>
+                        <td
+                          colSpan={7}
+                          style={{ textAlign: "center", padding: 20 }}
+                        >
+                          <Typography
+                            level="body-md"
+                            sx={{ fontStyle: "italic" }}
+                          >
+                            Loading debit history...
+                          </Typography>
+                        </td>
+                      </tr>
+                    ) : DebitSummary.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={7}
+                          style={{ textAlign: "center", padding: 20 }}
+                        >
+                          <Typography level="body-md">
+                            No debit history available
+                          </Typography>
+                        </td>
+                      </tr>
+                    ) : (
+                      DebitSummary.map((row) => (
+                        <tr key={row._id || row.id}>
+                          <td>{formatDateTime(row.dbt_date)}</td>
+                          <td>{row.po_number || "—"}</td>
+                          <td>{row.paid_for || "—"}</td>
+                          <td>{row.vendor || "—"}</td>
+                          <td>
+                            <RupeeValue value={row.amount_paid} />
+                          </td>
+                          <td className="utrCell" title={row.utr || "-"}>
+                            {row.utr || "-"}
+                          </td>
+                          <td style={{ textAlign: "center" }}>
+                            <Checkbox
+                              color="primary"
+                              checked={selectedDebits.includes(row._id)}
+                              onChange={() =>
+                                setSelectedDebits((prev) =>
+                                  prev.includes(row._id)
+                                    ? prev.filter((id) => id !== row._id)
+                                    : [...prev, row._id]
+                                )
+                              }
+                            />
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                  {DebitSummary.length > 0 && (
+                    <tfoot>
+                      <tr
+                        style={{
+                          fontWeight: "bold",
+                          backgroundColor: "#f5f5f5",
                         }}
                       >
-                        {[
-                          "IT Team",
-                          "Guddu Rani Dubey",
-                          "Prachi Singh",
-                          "admin",
+                        <td
+                          colSpan={4}
+                          style={{ color: "red", textAlign: "right" }}
+                        >
+                          Total Debited:
+                        </td>
+                        <td colSpan={3} style={{ color: "red" }}>
+                          <RupeeValue value={debit?.total || 0} />
+                        </td>
+                      </tr>
+                    </tfoot>
+                  )}
+                </Table>
+
+                {/* pagination for DEBIT */}
+                {/* <Divider sx={{ my: 1 }} />
+                <PaginationFooter /> */}
+              </Sheet>
+            </Box>
+          </TabPanel>
+
+          {/* ====================== PURCHASE (Client History) ====================== */}
+          <TabPanel value="purchase" sx={{ p: 0 }}>
+            <Box mt={4}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexDirection: { xs: "column", md: "row" },
+                  gap: 2,
+                  mb: 2,
+                }}
+              >
+                <Input
+                  placeholder="Search PO Number, Item or Vendor..."
+                  value={searchClient}
+                  onChange={(e) => setSearchClient(e.target.value)}
+                  sx={{ width: { xs: "100%", md: 350 } }}
+                />
+
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  {[
+                    "IT Team",
+                    "Guddu Rani Dubey",
+                    "Prachi Singh",
+                    "admin",
+                    "Chandan Singh",
+                    "Gagan Tayal",
+                    "Sachin Raghav",
+                    "Kailash Chand",
+                  ].includes(user?.name) && (
+                    <>
+                      <Button
+                        variant="solid"
+                        color="primary"
+                        disabled={selectedClients.length === 0}
+                        onClick={() => setConfirmCloseOpen(true)}
+                      >
+                        Sales Conversion
+                      </Button>
+
+                      {user?.name &&
+                        ![
                           "Chandan Singh",
-                          "Gagan Tayal" 
-                        ].includes(user?.name) && (
+                          "Sachin Raghav",
+                          "Kailash Chand",
+                        ].includes(user.name) && (
                           <>
-                            <Button
-                              variant="solid"
-                              color="primary"
+                            <Divider orientation="vertical" flexItem />
+                            <IconButton
+                              color="danger"
                               disabled={selectedClients.length === 0}
-                              onClick={() => setConfirmCloseOpen(true)}
+                              onClick={handleDeleteClient}
                             >
-                              Sales Conversion
-                            </Button>
-
-                            {user?.name !== "Chandan Singh" && (
-                              <Divider orientation="vertical" flexItem />
-                            )}
-
-                            {user?.name !== "Chandan Singh" && (
-                              <IconButton
-                                color="danger"
-                                disabled={selectedClients.length === 0}
-                                onClick={handleDeleteClient}
-                              >
-                                <DeleteIcon />
-                              </IconButton>
-                            )}
+                              <DeleteIcon />
+                            </IconButton>
                           </>
                         )}
-                      </Box>
-                    </Box>
+                    </>
+                  )}
+                </Box>
+              </Box>
 
-                    <Sheet
-                      variant="outlined"
-                      sx={{
-                        borderRadius: "12px",
-                        overflowX: "auto",
-                        overflowY: "hidden",
-                        p: 2,
-                        boxShadow: "md",
-                        maxWidth: "100%",
-                        "@media print": {
-                          boxShadow: "none",
-                          p: 0,
-                          borderRadius: 0,
-                          overflow: "visible",
-                        },
-                      }}
-                    >
-                      <Table
-                        borderAxis="both"
-                        sx={{
-                          minWidth: "100%",
-                          tableLayout: "fixed",
-                          "& thead": {
-                            backgroundColor: "neutral.softBg",
-                            "@media print": { backgroundColor: "#eee" },
-                          },
-                          "& th, & td": {
-                            textAlign: "left",
-                            px: 2,
-                            py: 1.5,
-                            verticalAlign: "middle",
-                            "@media print": {
-                              px: 1,
-                              py: 1,
-                              fontSize: "12px",
-                              border: "1px solid #ccc",
-                            },
-                          },
-                          // PO & Vendor: no tooltip/ellipsis — just wrap
-                          "& th.poCell, & td.poCell, & th.vendorCell, & td.vendorCell":
-                            {
-                              whiteSpace: "normal",
-                              overflowWrap: "anywhere",
-                              wordBreak: "break-word",
-                              maxWidth: "unset",
-                            },
-                          // Item: allow truncation (ellipsis) on wider screens only
-                          "& th.itemCell, & td.itemCell": {
-                            maxWidth: { xs: 160, sm: 220, md: 320 },
-                            whiteSpace: { xs: "normal", md: "nowrap" },
-                            overflow: { md: "hidden" },
-                            textOverflow: { md: "ellipsis" },
-                            overflowWrap: "anywhere",
-                          },
-                          "@media print": {
-                            borderCollapse: "collapse",
-                            width: "100%",
-                            tableLayout: "fixed",
-                          },
-                        }}
-                      >
-                        <thead>
-                          <tr>
-                            <th className="poCell">PO Number</th>
-                            <th className="vendorCell">Vendor</th>
-                            <th className="itemCell">Item Name</th>
-                            <th>PO Value (₹)</th>
-                            <th>Advance Paid (₹)</th>
-                            <th>Remaining Amount (₹)</th>
-                            <th>Total Billed Value (₹)</th>
-                            <th style={{ textAlign: "center" }}>
-                              <Checkbox
-                                onChange={handleSelectAllClient}
-                                checked={
-                                  ClientSummary.length > 0 &&
-                                  selectedClients.length ===
-                                    ClientSummary.length
-                                }
-                                disabled={ClientSummary.length === 0}
-                              />
-                            </th>
-                          </tr>
-                        </thead>
+              <Sheet
+                variant="outlined"
+                sx={{
+                  borderRadius: 12,
+                  overflowX: "auto",
+                  p: { xs: 1, sm: 2 },
+                  boxShadow: "md",
+                  bgcolor: "#fff",
+                  "@media print": {
+                    boxShadow: "none",
+                    border: "none",
+                    borderRadius: 0,
+                    p: 0,
+                    overflow: "visible",
+                  },
+                }}
+              >
+                <Table
+                  borderAxis="both"
+                  stickyHeader
+                  sx={{
+                    width: "100%",
+                    minWidth: 1000,
+                    tableLayout: "auto",
+                    fontSize: { xs: 12, sm: 14 },
+                    "& thead": {
+                      backgroundColor: "background.level1",
+                      "& th": {
+                        px: 2,
+                        py: 1.1,
+                        fontWeight: 600,
+                        color: "text.secondary",
+                        borderColor: "neutral.outlinedBorder",
+                        textAlign: "center",
+                      },
+                    },
+                    "& tbody tr:hover": {
+                      backgroundColor: "background.level1",
+                    },
+                    "& th, & td": {
+                      px: { xs: 1, sm: 2 },
+                      py: 1,
+                      verticalAlign: "middle",
+                      lineHeight: 1.5,
+                      borderColor: "neutral.outlinedBorder",
+                    },
+                    "& td": {
+                      wordBreak: "break-word",
+                      overflowWrap: "anywhere",
+                    },
+                    "& td.em": { fontWeight: 700, color: "text.primary" },
+                    "& th.em": { fontWeight: 800, color: "text.primary" },
+                  }}
+                >
+                  <colgroup>
+                    <col style={{ width: "150px" }} />
+                    <col style={{ width: "200px" }} />
+                    <col style={{ width: "300px" }} />
+                    <col style={{ width: "120px" }} />
+                    <col style={{ width: "120px" }} />
+                    <col style={{ width: "120px" }} />
+                    <col style={{ width: "120px" }} />
+                    <col style={{ width: "120px" }} />
+                    <col style={{ width: "120px" }} />
+                    <col style={{ width: "120px" }} />
+                    <col style={{ width: "120px" }} />
+                    <col style={{ width: "60px" }} />
+                  </colgroup>
 
-                        <tbody>
-                          {isLoading ? (
-                            <tr>
-                              <td
-                                colSpan={8}
-                                style={{ textAlign: "center", padding: 20 }}
-                              >
-                                <Typography
-                                  level="body-md"
-                                  sx={{ fontStyle: "italic" }}
-                                >
-                                  Loading purchase history...
-                                </Typography>
-                              </td>
-                            </tr>
-                          ) : ClientSummary.length > 0 ? (
-                            ClientSummary.map((client) => (
-                              <tr key={client._id}>
-                                {/* PO: wrap freely, no title */}
-                                <td className="poCell">
-                                  {client.po_number || "N/A"}
-                                </td>
-
-                                {/* Vendor: wrap freely, no title */}
-                                <td className="vendorCell">
-                                  {client.vendor || "N/A"}
-                                </td>
-
-                                {/* Item: compact ellipsis + native title inside ItemNameCell */}
-                                <td className="itemCell">
-                                  <ItemNameCell text={client.item_name} />
-                                </td>
-
-                                <td>
-                                  ₹{" "}
-                                  {(client?.po_value || 0).toLocaleString(
-                                    "en-IN"
-                                  )}
-                                </td>
-                                <td>
-                                  ₹{" "}
-                                  {(client?.advance_paid || 0).toLocaleString(
-                                    "en-IN"
-                                  )}
-                                </td>
-                                <td>
-                                  ₹{" "}
-                                  {(
-                                    client?.remaining_amount || 0
-                                  ).toLocaleString("en-IN")}
-                                </td>
-                                <td>
-                                  ₹{" "}
-                                  {(
-                                    client?.total_billed_value || 0
-                                  ).toLocaleString("en-IN")}
-                                </td>
-                                <td style={{ textAlign: "center" }}>
-                                  <Checkbox
-                                    checked={selectedClients.includes(
-                                      client._id
-                                    )}
-                                    onChange={() =>
-                                      handleClientCheckboxChange(client._id)
-                                    }
-                                    aria-label={`Select client ${
-                                      client.po_number || client._id
-                                    }`}
-                                  />
-                                </td>
-                              </tr>
-                            ))
-                          ) : (
-                            <tr>
-                              <td
-                                colSpan={8}
-                                style={{ textAlign: "center", padding: 20 }}
-                              >
-                                <Typography level="body-md">
-                                  No purchase history available
-                                </Typography>
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-
-                        {ClientSummary.length > 0 && (
-                          <tfoot>
-                            <tr
-                              style={{
-                                fontWeight: "bold",
-                                backgroundColor: "#f5f5f5",
-                              }}
-                            >
-                              <td colSpan={3} style={{ textAlign: "right" }}>
-                                Total:
-                              </td>
-                              <td>
-                                ₹{" "}
-                                {ClientTotal?.total_po_value?.toLocaleString(
-                                  "en-IN"
-                                )}
-                              </td>
-                              <td>
-                                ₹{" "}
-                                {ClientTotal?.total_advance_paid?.toLocaleString(
-                                  "en-IN"
-                                )}
-                              </td>
-                              <td>
-                                ₹{" "}
-                                {ClientTotal?.total_remaining_amount?.toLocaleString(
-                                  "en-IN"
-                                )}
-                              </td>
-                              <td>
-                                ₹{" "}
-                                {ClientTotal?.total_billed_value?.toLocaleString(
-                                  "en-IN"
-                                )}
-                              </td>
-                              <td />
-                            </tr>
-                          </tfoot>
-                        )}
-                      </Table>
-                    </Sheet>
-                  </TabPanel>
-
-                  {/* -------------------- SALES HISTORY -------------------- */}
-                  <TabPanel value={1} sx={{ p: 0, pt: 2 }}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        flexDirection: { xs: "column", md: "row" },
-                        gap: 2,
-                        mb: 2,
-                        "@media print": { display: "none" },
-                      }}
-                    >
-                      <Input
-                        placeholder="Search Vendor or Item or PO"
-                        value={searchSales ?? ""}
-                        onChange={(e) => setSearchSales(e.target.value)}
-                        sx={{ width: { xs: "100%", md: 300 } }}
-                      />
-                    </Box>
-
-                    <Sheet
-                      variant="outlined"
-                      sx={{
-                        borderRadius: "12px",
-                        overflowX: "auto",
-                        overflowY: "hidden",
-                        p: 2,
-                        boxShadow: "md",
-                        maxWidth: "100%",
-                        "@media print": {
-                          boxShadow: "none",
-                          p: 0,
-                          borderRadius: 0,
-                          overflow: "visible",
-                        },
-                      }}
-                    >
-                      <Table
-                        borderAxis="both"
-                        sx={{
-                          tableLayout: "fixed",
-                          minWidth: { xs: 780, md: "100%" },
-                          "& thead": {
-                            backgroundColor: "neutral.softBg",
-                            "@media print": { backgroundColor: "#eee" },
-                          },
-                          "& th, & td": {
-                            textAlign: "left",
-                            px: 2,
-                            py: 1.5,
-                            verticalAlign: "middle",
-                            "@media print": {
-                              px: 1,
-                              py: 1,
-                              fontSize: "12px",
-                              border: "1px solid #ccc",
-                            },
-                          },
-                          // Only keep ellipsis behavior for Item
-                          "& th.itemCell, & td.itemCell": {
-                            maxWidth: { xs: 180, sm: 220, md: 280 },
-                            whiteSpace: { xs: "normal", md: "nowrap" },
-                            overflow: { md: "hidden" },
-                            textOverflow: { md: "ellipsis" },
-                            overflowWrap: "anywhere",
-                          },
-                          "@media print": {
-                            borderCollapse: "collapse",
-                            width: "100%",
-                            tableLayout: "fixed",
-                          },
-                        }}
-                      >
-                        <thead>
-                          <tr>
-                            <th>Converted PO's</th>
-                            <th>Conversion Date</th>
-                            <th>Vendor</th>
-                            <th className="itemCell">Item</th>
-                            <th>Sales Value (₹)</th>
-                          </tr>
-                        </thead>
-
-                        <tbody>
-                          {isLoading ? (
-                            <tr>
-                              <td
-                                colSpan={5}
-                                style={{ textAlign: "center", padding: 20 }}
-                              >
-                                <Typography
-                                  level="body-md"
-                                  sx={{ fontStyle: "italic" }}
-                                >
-                                  Loading sales history...
-                                </Typography>
-                              </td>
-                            </tr>
-                          ) : (SalesSummary?.length || 0) === 0 ? (
-                            <tr>
-                              <td
-                                colSpan={5}
-                                style={{ textAlign: "center", padding: 20 }}
-                              >
-                                <Typography level="body-md">
-                                  No sales history available
-                                </Typography>
-                              </td>
-                            </tr>
-                          ) : filteredSales.length === 0 ? (
-                            <tr>
-                              <td
-                                colSpan={5}
-                                style={{ textAlign: "center", padding: 20 }}
-                              >
-                                <Typography level="body-md">
-                                  No matching results
-                                </Typography>
-                              </td>
-                            </tr>
-                          ) : (
-                            filteredSales.map((sale, idx) => {
-                              const atts = normalizeAttachments(
-                                sale.attachments
+                  <thead>
+                    <tr>
+                      <th rowSpan={2} className="text">
+                        PO Number
+                      </th>
+                      <th rowSpan={2} className="text">
+                        Vendor
+                      </th>
+                      <th rowSpan={2} className="text">
+                        Item
+                      </th>
+                      <th colSpan={3} className="poGroup">
+                        PO Value (₹)
+                      </th>
+                      <th rowSpan={2} className="num">
+                        Advance Paid (₹)
+                      </th>
+                      <th rowSpan={2} className="num groupSplitRight">
+                        Advance Remaining (₹)
+                      </th>
+                      <th colSpan={3} className="billedGroup">
+                        Total Billed (₹)
+                      </th>
+                      <th rowSpan={1} style={{ textAlign: "center" }}>
+                        <Checkbox
+                          onChange={(e) => {
+                            if (e.target.checked)
+                              setSelectedClients(
+                                ClientSummary.map((c) => c._id)
                               );
-                              return (
-                                <tr
-                                  key={sale._id || `${sale.po_number}-${idx}`}
-                                >
-                                  {/* PO number: no tooltip/ellipsis, free to wrap */}
-                                  <td>
-                                    <Stack spacing={0.75}>
-                                      <Stack
-                                        direction="row"
-                                        spacing={0.5}
-                                        alignItems="center"
-                                      >
-                                        <Chip
-                                          size="sm"
-                                          variant="soft"
-                                          color="primary"
-                                        >
-                                          <Typography
-                                            level="body-sm"
-                                            sx={{ fontWeight: 700 }}
-                                          >
-                                            {sale.po_number || "N/A"}
-                                          </Typography>
-                                        </Chip>
+                            else setSelectedClients([]);
+                          }}
+                          checked={
+                            ClientSummary.length > 0 &&
+                            selectedClients.length === ClientSummary.length
+                          }
+                          disabled={ClientSummary.length === 0}
+                        />
+                      </th>
+                    </tr>
+                    <tr>
+                      <th className="num em poGroup">Basic (₹)</th>
+                      <th className="num em poGroup">GST (₹)</th>
+                      <th className="num em poGroup">Total (₹)</th>
+                      <th className="num em billedGroup">Basic (₹)</th>
+                      <th className="num em billedGroup">GST (₹)</th>
+                      <th className="num em billedGroup">Total (₹)</th>
+                    </tr>
+                  </thead>
 
-                                        <Tooltip
-                                          title="View conversion"
-                                          placement="top"
-                                        >
-                                          <IconButton
-                                            size="sm"
-                                            variant="plain"
-                                            onClick={() => openSaleDetail(sale)}
-                                            aria-label={`View conversion for PO ${
-                                              sale.po_number || sale._id
-                                            }`}
-                                          >
-                                            <VisibilityRounded fontSize="small" />
-                                          </IconButton>
-                                        </Tooltip>
-                                      </Stack>
-
-                                      {/* Attachments */}
-                                      <Stack
-                                        direction="row"
-                                        spacing={1}
-                                        flexWrap="wrap"
-                                        useFlexGap
-                                      >
-                                        {atts.length > 0 ? (
-                                          atts.map((att, i) => (
-                                            <Link
-                                              key={
-                                                att.url ||
-                                                `${sale._id}-att-${i}`
-                                              }
-                                              href={att.url}
-                                              target="_blank"
-                                              rel="noopener"
-                                              underline="hover"
-                                              sx={{
-                                                display: "inline-flex",
-                                                alignItems: "center",
-                                                gap: 0.5,
-                                                fontSize: 12,
-                                                px: 1,
-                                                py: 0.25,
-                                                borderRadius: "8px",
-                                                backgroundColor:
-                                                  "neutral.softBg",
-                                                maxWidth: 180,
-                                                overflow: "hidden",
-                                                textOverflow: "ellipsis",
-                                                whiteSpace: "nowrap",
-                                              }}
-                                              title={att.name}
-                                            >
-                                              <AttachFileIcon
-                                                sx={{ fontSize: 16 }}
-                                              />
-                                              {att.name || `File ${i + 1}`}
-                                            </Link>
-                                          ))
-                                        ) : (
-                                          <Typography
-                                            level="body-xs"
-                                            sx={{ opacity: 0.7 }}
-                                          >
-                                            No attachments
-                                          </Typography>
-                                        )}
-                                      </Stack>
-                                    </Stack>
-                                  </td>
-
-                                  <td style={{ fontSize: "0.9rem" }}>
-                                    {formatDateTime(sale?.converted_at)}
-                                  </td>
-
-                                  {/* Vendor: no tooltip/ellipsis, free to wrap */}
-                                  <td
-                                    style={{
-                                      whiteSpace: "normal",
-                                      overflowWrap: "anywhere",
-                                    }}
-                                  >
-                                    {sale.vendor || "N/A"}
-                                  </td>
-
-                                  {/* Item: ellipsis + native title only here */}
-                                  <td
-                                    className="itemCell"
-                                    title={getItemLabel(sale) || "N/A"}
-                                  >
-                                    <span
-                                      style={{
-                                        display: "inline-block",
-                                        maxWidth: "100%",
-                                        overflow: "hidden",
-                                        whiteSpace: "nowrap",
-                                        textOverflow: "ellipsis",
-                                        verticalAlign: "bottom",
-                                      }}
-                                    >
-                                      {getItemLabel(sale) || "N/A"}
-                                    </span>
-                                  </td>
-
-                                  <td>
-                                    ₹{" "}
-                                    {Math.round(
-                                      sale?.po_value || 0
-                                    ).toLocaleString("en-IN")}
-                                  </td>
-                                </tr>
-                              );
-                            })
-                          )}
-                        </tbody>
-
-                        {filteredSales.length > 0 && (
-                          <tfoot>
-                            <tr
-                              style={{
-                                fontWeight: "bold",
-                                backgroundColor: "#f5f5f5",
-                              }}
-                            >
-                              <td colSpan={4} style={{ textAlign: "right" }}>
-                                Total:
-                              </td>
-                              <td>
-                                ₹{" "}
-                                {Math.round(
-                                  saleTotalsFiltered?.total_sale
-                                )?.toLocaleString("en-IN")}
-                              </td>
-                            </tr>
-                          </tfoot>
-                        )}
-                      </Table>
-                    </Sheet>
-
-                    <Modal open={saleDetailOpen} onClose={closeSaleDetail}>
-                      <ModalDialog sx={{ width: 520 }}>
-                        <DialogTitle>Sales Conversion</DialogTitle>
-                        <DialogContent>
-                          <Stack spacing={1.25}>
-                            <Typography level="title-sm">
-                              PO:{" "}
-                              <strong>{activeSale?.po_number ?? "—"}</strong>
-                            </Typography>
-
-                            <Stack
-                              direction="row"
-                              spacing={1}
-                              alignItems="center"
-                            >
-                              <Typography level="body-sm">
-                                <strong>Converted At:</strong>
-                              </Typography>
-                              <Chip size="sm" variant="soft">
-                                {formatDateTime(activeSale?.converted_at)}
-                              </Chip>
-                            </Stack>
-
-                            <Typography level="body-sm">
-                              <strong>Converted By:</strong>{" "}
-                              {activeSale?.user_name ?? "—"}
-                            </Typography>
-
+                  <tbody>
+                    {isLoading ? (
+                      <tr>
+                        <td
+                          colSpan={12}
+                          style={{ textAlign: "center", padding: 20 }}
+                        >
+                          <Typography
+                            level="body-md"
+                            sx={{ fontStyle: "italic" }}
+                          >
+                            Loading purchase history...
+                          </Typography>
+                        </td>
+                      </tr>
+                    ) : ClientSummary.length > 0 ? (
+                      ClientSummary.map((client) => (
+                        <tr key={client._id}>
+                          <td className="text">{client.po_number || "N/A"}</td>
+                          <td className="text">{client.vendor || "N/A"}</td>
+                          <td
+                            className="text item"
+                            title={getItemLabel(client) || "—"}
+                          >
                             <Typography
                               level="body-sm"
-                              sx={{ whiteSpace: "pre-wrap" }}
+                              sx={{
+                                display: "block",
+                                maxWidth: { xs: "100%", md: 280 },
+                                overflow: "hidden",
+                                textOverflow: { xs: "clip", md: "ellipsis" },
+                                whiteSpace: { xs: "normal", md: "nowrap" },
+                              }}
                             >
-                              <strong>Remarks:</strong>{" "}
-                              {activeSale?.remarks?.trim()
-                                ? activeSale.remarks
-                                : "—"}
+                              {getItemLabel(client)}
                             </Typography>
+                          </td>
+                          <td className="num em">
+                            <RupeeValue value={client.po_basic || 0} />
+                          </td>
+                          <td className="num em">
+                            <RupeeValue value={client.gst || 0} />
+                          </td>
+                          <td className="num em">
+                            <RupeeValue value={client.po_value || 0} />
+                          </td>
+                          <td className="num">
+                            <RupeeValue value={client.advance_paid || 0} />
+                          </td>
+                          <td className="num">
+                            <RupeeValue value={client.remaining_amount || 0} />
+                          </td>
+                          <td className="num em">
+                            <RupeeValue value={client.bill_basic || 0} />
+                          </td>
+                          <td className="num em">
+                            <RupeeValue value={client.bill_gst || 0} />
+                          </td>
+                          <td className="num em">
+                            <RupeeValue
+                              value={client.total_billed_value || 0}
+                            />
+                          </td>
+                          <td style={{ textAlign: "center" }}>
+                            <Checkbox
+                              checked={selectedClients.includes(client._id)}
+                              onChange={() =>
+                                setSelectedClients((prev) =>
+                                  prev.includes(client._id)
+                                    ? prev.filter((id) => id !== client._id)
+                                    : [...prev, client._id]
+                                )
+                              }
+                            />
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={12}
+                          style={{ textAlign: "center", padding: 20 }}
+                        >
+                          <Typography level="body-md">
+                            No purchase history available
+                          </Typography>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
 
-                            <Box>
-                              <Typography level="body-sm" sx={{ mb: 0.5 }}>
-                                <strong>Attachments</strong>
-                              </Typography>
-                              <Sheet
-                                variant="soft"
-                                sx={{
-                                  p: 1,
-                                  borderRadius: "md",
-                                  maxHeight: 220,
-                                  overflow: "auto",
-                                }}
-                              >
-                                <Stack spacing={0.75}>
-                                  {normalizeAttachments(activeSale?.attachments)
-                                    .length ? (
-                                    normalizeAttachments(
-                                      activeSale?.attachments
-                                    ).map((a, i) => (
-                                      <Box
-                                        key={a.url || `file-${i}`}
+                  {ClientSummary.length > 0 && (
+                    <tfoot>
+                      <tr>
+                        <td
+                          colSpan={3}
+                          style={{ textAlign: "right", fontWeight: 700 }}
+                        >
+                          Total:
+                        </td>
+                        <td className="num em">
+                          <RupeeValue
+                            value={clientHistory?.meta?.total_po_basic || 0}
+                          />
+                        </td>
+                        <td className="num em">
+                          <RupeeValue
+                            value={clientHistory?.meta?.total_gst || 0}
+                          />
+                        </td>
+                        <td className="num em">
+                          <RupeeValue
+                            value={clientHistory?.meta?.total_po_value || 0}
+                          />
+                        </td>
+                        <td className="num">
+                          <RupeeValue
+                            value={clientHistory?.meta?.total_advance_paid || 0}
+                          />
+                        </td>
+                        <td className="num">
+                          <RupeeValue
+                            value={
+                              clientHistory?.meta?.total_remaining_amount || 0
+                            }
+                          />
+                        </td>
+                        <td className="num em">
+                          <RupeeValue
+                            value={clientHistory?.meta?.total_bill_basic || 0}
+                          />
+                        </td>
+                        <td className="num em">
+                          <RupeeValue
+                            value={clientHistory?.meta?.total_bill_gst || 0}
+                          />
+                        </td>
+                        <td className="num em">
+                          <RupeeValue
+                            value={clientHistory?.meta?.total_billed_value || 0}
+                          />
+                        </td>
+                        <td />
+                      </tr>
+                    </tfoot>
+                  )}
+                </Table>
+
+                {/* pagination for PURCHASE uses meta when present */}
+                {/* <Divider sx={{ my: 1 }} />
+                <PaginationFooter
+                  totalHint={
+                    clientHistory?.meta?.totalPages
+                      ? `of ${clientHistory.meta.totalPages} page(s)`
+                      : undefined
+                  }
+                /> */}
+              </Sheet>
+            </Box>
+          </TabPanel>
+
+          {/* ====================== SALES ====================== */}
+          <TabPanel value="sales" sx={{ p: 0 }}>
+            <Box mt={4}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexDirection: { xs: "column", md: "row" },
+                  gap: 2,
+                  mb: 2,
+                  "@media print": { display: "none" },
+                }}
+              >
+                <Input
+                  placeholder="Search Vendor or Item or PO"
+                  value={searchSales}
+                  onChange={(e) => setSearchSales(e.target.value)}
+                  sx={{ width: { xs: "100%", md: 350 } }}
+                />
+              </Box>
+
+              <Sheet
+                variant="outlined"
+                sx={{
+                  borderRadius: "12px",
+                  overflowX: "auto",
+                  overflowY: "hidden",
+                  p: { xs: 1, sm: 2 },
+                  boxShadow: "md",
+                  bgcolor: "#fff",
+                  width: "100%",
+                  maxWidth: "100%",
+                  "@media print": {
+                    boxShadow: "none",
+                    border: "none",
+                    borderRadius: 0,
+                    overflow: "visible",
+                    p: 0,
+                  },
+                }}
+              >
+                <Table
+                  borderAxis="both"
+                  stickyHeader
+                  sx={{
+                    minWidth: 950,
+                    width: "100%",
+                    tableLayout: "fixed",
+                    fontSize: { xs: 12, sm: 14 },
+                    "& thead": { backgroundColor: "neutral.softBg" },
+                    "& tbody tr:nth-of-type(even)": {
+                      backgroundColor: "rgba(0,0,0,0.02)",
+                    },
+                    "& th, & td": {
+                      px: { xs: 1, sm: 2 },
+                      py: { xs: 1, sm: 1.25 },
+                      verticalAlign: "top",
+                      wordBreak: "break-word",
+                      overflowWrap: "anywhere",
+                      textAlign: "left",
+                      lineHeight: 1.4,
+                    },
+                    "& th.num, & td.num": {
+                      textAlign: "right",
+                      fontVariantNumeric: "tabular-nums",
+                      whiteSpace: "nowrap",
+                    },
+                  }}
+                >
+                  <thead>
+                    <tr>
+                      <th rowSpan={2}>Converted PO’s</th>
+                      <th rowSpan={2}>Conversion Date</th>
+                      <th rowSpan={2}>Item</th>
+                      <th rowSpan={2}>Invoice Number</th>
+                      <th rowSpan={2} className="num">
+                        Bill Basic (₹)
+                      </th>
+                      <th colSpan={3} style={{ textAlign: "center" }}>
+                        Sales
+                      </th>
+                    </tr>
+                    <tr>
+                      <th className="num">Value (₹)</th>
+                      <th className="num">GST (₹)</th>
+                      <th
+                        className="num"
+                        style={{ backgroundColor: "#E3F2FD" }}
+                      >
+                        Total Sales (₹)
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {isLoading ? (
+                      <tr>
+                        <td
+                          colSpan={8}
+                          style={{ textAlign: "center", padding: 20 }}
+                        >
+                          <Typography
+                            level="body-md"
+                            sx={{ fontStyle: "italic" }}
+                          >
+                            Loading sales history...
+                          </Typography>
+                        </td>
+                      </tr>
+                    ) : (SalesSummary?.length || 0) === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={8}
+                          style={{ textAlign: "center", padding: 20 }}
+                        >
+                          <Typography level="body-md">
+                            No sales history available
+                          </Typography>
+                        </td>
+                      </tr>
+                    ) : filteredSales.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={8}
+                          style={{ textAlign: "center", padding: 20 }}
+                        >
+                          <Typography level="body-md">
+                            No matching results
+                          </Typography>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredSales.map((sale, idx) => {
+                        const atts = normalizeAttachments(sale.attachments);
+                        const toNum = (v) =>
+                          Number.isFinite(Number(v)) ? Number(v) : 0;
+
+                        const billBasic = toNum(
+                          sale.bill_basic ??
+                            sale.bill_basic_value ??
+                            sale.bill_basic_amount
+                        );
+                        const salesBasic = toNum(
+                          sale.sales_basic ??
+                            sale.basic_sales ??
+                            sale.basicSales ??
+                            sale.total_sales_value
+                        );
+                        const salesGst = toNum(
+                          sale.sales_gst ?? sale.gst_on_sales ?? sale.gstSales
+                        );
+                        const totalSales = salesBasic + salesGst;
+
+                        return (
+                          <tr key={sale._id || `${sale.po_number}-${idx}`}>
+                            {/* Converted PO */}
+                            <td>
+                              <Stack spacing={0.75}>
+                                <Stack
+                                  direction="row"
+                                  spacing={0.5}
+                                  alignItems="center"
+                                  flexWrap="wrap"
+                                >
+                                  <Chip
+                                    size="sm"
+                                    variant="soft"
+                                    color="primary"
+                                  >
+                                    <Typography
+                                      level="body-sm"
+                                      sx={{ fontWeight: 700 }}
+                                    >
+                                      {sale.po_number || "N/A"}
+                                    </Typography>
+                                  </Chip>
+                                  <Tooltip
+                                    title="View conversion"
+                                    placement="top"
+                                  >
+                                    <IconButton
+                                      size="sm"
+                                      variant="plain"
+                                      onClick={() => openSaleDetail(sale)}
+                                      aria-label={`View conversion for PO ${
+                                        sale.po_number || sale._id
+                                      }`}
+                                    >
+                                      <VisibilityRounded fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                </Stack>
+
+                                {/* Attachments */}
+                                <Stack
+                                  direction="row"
+                                  spacing={0.75}
+                                  flexWrap="wrap"
+                                  useFlexGap
+                                  sx={{ mt: 0.5 }}
+                                >
+                                  {atts.length > 0 ? (
+                                    atts.map((att, i) => (
+                                      <Link
+                                        key={att.url || `${sale._id}-att-${i}`}
+                                        href={att.url}
+                                        target="_blank"
+                                        rel="noopener"
+                                        underline="hover"
                                         sx={{
-                                          display: "flex",
+                                          display: "inline-flex",
                                           alignItems: "center",
-                                          justifyContent: "space-between",
-                                          gap: 1,
+                                          gap: 0.5,
+                                          fontSize: 12,
                                           px: 1,
-                                          py: 0.75,
-                                          borderRadius: "sm",
-                                          "&:hover": {
-                                            backgroundColor:
-                                              "neutral.plainHoverBg",
-                                          },
+                                          py: 0.25,
+                                          borderRadius: "8px",
+                                          backgroundColor: "neutral.softBg",
+                                          maxWidth: 160,
+                                          overflow: "hidden",
+                                          textOverflow: "ellipsis",
+                                          whiteSpace: "nowrap",
                                         }}
+                                        title={att.name}
                                       >
-                                        <Stack
-                                          direction="row"
-                                          spacing={1}
-                                          alignItems="center"
-                                        >
-                                          <InsertDriveFileRounded fontSize="small" />
-                                          <Link
-                                            href={a.url}
-                                            target="_blank"
-                                            rel="noopener"
-                                            underline="hover"
-                                          >
-                                            {a.name}
-                                          </Link>
-                                        </Stack>
-                                      </Box>
+                                        <AttachFileIcon sx={{ fontSize: 15 }} />
+                                        {att.name || `File ${i + 1}`}
+                                      </Link>
                                     ))
                                   ) : (
                                     <Typography
                                       level="body-xs"
-                                      sx={{ opacity: 0.7 }}
+                                      sx={{ opacity: 0.6, fontStyle: "italic" }}
                                     >
                                       No attachments
                                     </Typography>
                                   )}
                                 </Stack>
-                              </Sheet>
-                            </Box>
-
-                            <Stack
-                              direction="row"
-                              spacing={1}
-                              justifyContent="flex-end"
-                              sx={{ mt: 1 }}
-                            >
-                              <Button variant="plain" onClick={closeSaleDetail}>
-                                Close
-                              </Button>
-                            </Stack>
-                          </Stack>
-                        </DialogContent>
-                      </ModalDialog>
-                    </Modal>
-                  </TabPanel>
-                </Tabs>
-              </Box>
-
-              {/* Adjust History Section */}
-              <Box>
-                <Chip
-                  color="neutral"
-                  variant="soft"
-                  size="md"
-                  sx={{
-                    fontSize: "1.1rem",
-                    fontWeight: 600,
-                    px: 2,
-                    py: 1,
-                    mt: 3,
-                  }}
-                >
-                  Adjustment History
-                </Chip>
-                <Divider
-                  sx={{ borderWidth: "2px", marginBottom: "20px", mt: 2 }}
-                />
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    flexDirection: { md: "row", xs: "column" },
-                    "@media print": {
-                      display: "none",
-                    },
-                  }}
-                  mb={2}
-                >
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      flexDirection: { md: "row", xs: "column" },
-                    }}
-                  >
-                    <Input
-                      placeholder="Search here"
-                      value={searchAdjustment}
-                      onChange={(e) => setSearchAdjustment(e.target.value)}
-                      style={{ width: "250px" }}
-                    />
-                  </Box>
-                  {(user?.name === "IT Team" ||
-                    user?.name === "Guddu Rani Dubey" ||
-                    user?.name === "Varun Mishra" ||
-                    user?.name === "Prachi Singh" ||
-                    user?.name === "admin") && (
-                    <Box>
-                      <IconButton
-                        color="danger"
-                        disabled={selectedAdjust.length === 0}
-                        onClick={handleDeleteAdjust}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Box>
-                  )}
-                </Box>
-
-                <Sheet
-                  variant="outlined"
-                  sx={{
-                    borderRadius: "12px",
-                    overflowX: "auto",
-                    overflowY: "hidden",
-                    p: 2,
-                    boxShadow: "md",
-                    maxWidth: "100%",
-                    "@media print": {
-                      boxShadow: "none",
-                      p: 0,
-                      borderRadius: 0,
-                      overflow: "visible",
-                    },
-                  }}
-                >
-                  <Table
-                    borderAxis="both"
-                    stickyHeader
-                    sx={{
-                      minWidth: "100%",
-                      tableLayout: "fixed",
-                      "& thead": {
-                        backgroundColor: "neutral.softBg",
-                        "@media print": { backgroundColor: "#eee" },
-                      },
-                      "& th, & td": {
-                        textAlign: "left",
-                        px: 2,
-                        py: 1.5,
-                        verticalAlign: "middle",
-                        "@media print": {
-                          px: 1,
-                          py: 1,
-                          fontSize: "12px",
-                          border: "1px solid #ccc",
-                        },
-                      },
-                      // column behaviors
-                      "& th.dateCell, & td.dateCell": { minWidth: 120 },
-                      "& th.typeCell, & td.typeCell": {
-                        minWidth: 120,
-                        whiteSpace: "normal",
-                      },
-
-                      // Reason + Description: ellipsis on md+, wrap on small screens, show full on print
-                      "& th.reasonCell, & td.reasonCell, & th.descCell, & td.descCell":
-                        {
-                          maxWidth: { xs: 180, sm: 240, md: 320 },
-                          whiteSpace: { xs: "normal", md: "nowrap" },
-                          overflow: { md: "hidden" },
-                          textOverflow: { md: "ellipsis" },
-                          overflowWrap: "anywhere",
-                        },
-
-                      // PO + Paid For: allow wrapping
-                      "& th.poCell, & td.poCell, & th.paidForCell, & td.paidForCell":
-                        {
-                          whiteSpace: "normal",
-                          overflowWrap: "anywhere",
-                          wordBreak: "break-word",
-                          minWidth: 120,
-                        },
-
-                      // Money cells right-aligned
-                      "& th.money, & td.money": { textAlign: "right" },
-
-                      "@media print": {
-                        borderCollapse: "collapse",
-                        width: "100%",
-                        tableLayout: "fixed",
-                        "& td, & th": {
-                          whiteSpace: "normal",
-                          overflow: "visible",
-                          textOverflow: "clip",
-                        },
-                      },
-                    }}
-                  >
-                    <thead>
-                      <tr>
-                        <th className="dateCell">Adjust Date</th>
-                        <th className="typeCell">Adjustment Type</th>
-                        <th className="reasonCell">Reason</th>
-                        <th className="poCell">PO Number</th>
-                        <th className="paidForCell">Paid For</th>
-                        <th className="descCell">Description</th>
-                        <th className="money">Credit Adjustment</th>
-                        <th className="money">Debit Adjustment</th>
-                        <th style={{ textAlign: "center" }}>
-                          <Checkbox
-                            onChange={handleSelectAllAdjust}
-                            checked={
-                              selectedAdjust.length === AdjustmentSummary.length
-                            }
-                          />
-                        </th>
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {isLoading ? (
-                        <tr>
-                          <td
-                            colSpan={9}
-                            style={{ textAlign: "center", padding: 20 }}
-                          >
-                            <Typography
-                              level="body-md"
-                              sx={{ fontStyle: "italic" }}
-                            >
-                              Loading adjustment history...
-                            </Typography>
-                          </td>
-                        </tr>
-                      ) : AdjustmentSummary.length > 0 ? (
-                        AdjustmentSummary.map((row) => (
-                          <tr key={row._id || row.id}>
-                            <td className="dateCell">
-                              {new Date(row.adj_date).toLocaleDateString(
-                                "en-IN",
-                                {
-                                  day: "2-digit",
-                                  month: "short",
-                                  year: "numeric",
-                                }
-                              )}
+                              </Stack>
                             </td>
-                            <td className="typeCell">{row.pay_type}</td>
 
-                            {/* Reason — ellipsis on md+, full on small/print; native title on hover */}
+                            {/* Conversion Date */}
+                            <td style={{ whiteSpace: "nowrap" }}>
+                              {formatDateTime(sale?.converted_at)}
+                            </td>
+
+                            {/* Item */}
                             <td
-                              className="reasonCell"
-                              title={row.description || "-"}
+                              title={getItemLabel(sale) || "N/A"}
+                              style={{
+                                whiteSpace: "nowrap",
+                                textOverflow: "ellipsis",
+                                overflow: "hidden",
+                                maxWidth: "100%",
+                              }}
                             >
-                              {row.description || "-"}
+                              {getItemLabel(sale) || "N/A"}
                             </td>
 
-                            <td className="poCell">{row.po_number || "-"}</td>
-                            <td className="paidForCell">
-                              {row.paid_for || "-"}
-                            </td>
+                            {/* Invoice Number */}
+                            <td>{sale.sales_invoice || "—"}</td>
 
-                            {/* Description — same behavior as Reason */}
-                            <td className="descCell" title={row.comment || "-"}>
-                              {row.comment || "-"}
+                            <td className="num">
+                              <RupeeValue value={Math.round(billBasic)} />
                             </td>
+                            <td className="num">
+                              <RupeeValue value={Math.round(salesBasic)} />
+                            </td>
+                            <td className="num">
+                              <RupeeValue value={Math.round(salesGst)} />
+                            </td>
+                            <td
+                              className="num"
+                              style={{ backgroundColor: "#E3F2FD" }}
+                            >
+                              <RupeeValue value={Math.round(totalSales)} />
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
 
-                            <td className="money">
-                              {row.adj_type === "Add"
-                                ? `₹ ${parseFloat(
-                                    row.adj_amount || 0
-                                  ).toLocaleString("en-IN")}`
-                                : "-"}
+                  {/* Totals for filtered rows (client-side) */}
+                  {filteredSales.length > 0 && (
+                    <tfoot>
+                      {(() => {
+                        const toNum = (v) =>
+                          Number.isFinite(Number(v)) ? Number(v) : 0;
+                        const sum = (pick) =>
+                          filteredSales.reduce((acc, s) => acc + pick(s), 0);
+                        const totalBillBasic = sum((s) =>
+                          toNum(
+                            s.bill_basic ??
+                              s.bill_basic_value ??
+                              s.bill_basic_amount
+                          )
+                        );
+                        const totalSalesBasic = sum((s) =>
+                          toNum(
+                            s.sales_basic ??
+                              s.basic_sales ??
+                              s.basicSales ??
+                              s.total_sales_value
+                          )
+                        );
+                        const totalSalesGst = sum((s) =>
+                          toNum(s.sales_gst ?? s.gst_on_sales ?? s.gstSales)
+                        );
+                        const totalSalesOverall =
+                          totalSalesBasic + totalSalesGst;
+                        return (
+                          <tr
+                            style={{
+                              fontWeight: "bold",
+                              backgroundColor: "#FFF9C4",
+                            }}
+                          >
+                            <td colSpan={4} style={{ textAlign: "right" }}>
+                              Total:
                             </td>
-                            <td className="money">
-                              {row.adj_type === "Subtract"
-                                ? `₹ ${parseFloat(
-                                    row.adj_amount || 0
-                                  ).toLocaleString("en-IN")}`
-                                : "-"}
+                            <td className="num">
+                              <RupeeValue value={Math.round(totalBillBasic)} />
                             </td>
-                            <td style={{ textAlign: "center" }}>
-                              <Checkbox
-                                color="primary"
-                                checked={selectedAdjust.includes(row._id)}
-                                onChange={() =>
-                                  handleAdjustCheckboxChange(row._id)
-                                }
+                            <td className="num">
+                              <RupeeValue value={Math.round(totalSalesBasic)} />
+                            </td>
+                            <td className="num">
+                              <RupeeValue value={Math.round(totalSalesGst)} />
+                            </td>
+                            <td
+                              className="num"
+                              style={{ backgroundColor: "#E3F2FD" }}
+                            >
+                              <RupeeValue
+                                value={Math.round(totalSalesOverall)}
                               />
                             </td>
                           </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td
-                            colSpan={9}
-                            style={{ textAlign: "center", padding: 20 }}
-                          >
-                            <Typography level="body-md">
-                              No adjustment history available
-                            </Typography>
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
+                        );
+                      })()}
+                    </tfoot>
+                  )}
+                </Table>
 
-                    {!isLoading && AdjustmentSummary.length > 0 && (
-                      <tfoot>
-                        <tr
-                          style={{
-                            fontWeight: "bold",
-                            backgroundColor: "#f5f5f5",
+                {/* pagination for SALES uses meta when present */}
+                {/* <Divider sx={{ my: 1 }} />
+                <PaginationFooter
+                  totalHint={
+                    SalesMeta?.totalPages
+                      ? `of ${SalesMeta.totalPages} page(s)`
+                      : undefined
+                  }
+                /> */}
+              </Sheet>
+
+              {/* Sales detail modal (kept minimal) */}
+              <Modal open={saleDetailOpen} onClose={closeSaleDetail}>
+                <ModalDialog sx={{ width: 520 }}>
+                  <DialogTitle>Sales Conversion</DialogTitle>
+                  <DialogContent>
+                    <Stack spacing={1.25}>
+                      {/* --- Header Info --- */}
+                      <Typography level="title-sm">
+                        PO: <strong>{activeSale?.po_number ?? "—"}</strong>
+                      </Typography>
+
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Typography level="body-sm">
+                          <strong>Converted At:</strong>
+                        </Typography>
+                        <Chip size="sm" variant="soft">
+                          {formatDateTime(activeSale?.converted_at)}
+                        </Chip>
+                      </Stack>
+
+                      <Typography level="body-sm">
+                        <strong>Converted By:</strong>{" "}
+                        {activeSale?.user_name ?? "—"}
+                      </Typography>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Typography level="body-sm">
+                          <strong>Sales Invoice No.:</strong>
+                        </Typography>
+                        <Chip
+                          size="sm"
+                          variant="soft"
+                          color={
+                            activeSale?.sales_invoice ? "primary" : "neutral"
+                          }
+                        >
+                          {activeSale?.sales_invoice?.trim()
+                            ? activeSale.sales_invoice
+                            : "—"}
+                        </Chip>
+                      </Stack>
+
+                      <Typography
+                        level="body-sm"
+                        sx={{ whiteSpace: "pre-wrap" }}
+                      >
+                        <strong>Remarks:</strong>{" "}
+                        {activeSale?.remarks?.trim() ? activeSale.remarks : "—"}
+                      </Typography>
+
+                      {/* --- Sales Amounts --- */}
+                      {(() => {
+                        const basic = Number(activeSale?.basic_sales);
+                        const gst = Number(activeSale?.gst_on_sales);
+                        const billBasic = Number(
+                          activeSale?.bill_basic_value ||
+                            activeSale?.bill_basic ||
+                            0
+                        );
+
+                        const hasBasic = Number.isFinite(basic);
+                        const hasGst = Number.isFinite(gst);
+                        const total =
+                          (hasBasic ? basic : 0) + (hasGst ? gst : 0);
+
+                        const exceeds = basic > billBasic && billBasic > 0;
+
+                        const fmt = (n) =>
+                          Number.isFinite(n) ? n.toLocaleString("en-IN") : "—";
+
+                        return (
+                          <Sheet
+                            variant="soft"
+                            sx={{
+                              p: 1,
+                              borderRadius: "md",
+                              display: "grid",
+                              gridTemplateColumns: "1fr 1fr 1fr",
+                              gap: 1,
+                              backgroundColor: exceeds
+                                ? "#FFF3E0"
+                                : "neutral.softBg",
+                              border: exceeds ? "1px solid #F57C00" : "none",
+                            }}
+                          >
+                            <Box>
+                              <Typography level="body-xs" color="neutral">
+                                Basic Sales
+                              </Typography>
+                              <Typography
+                                level="title-sm"
+                                sx={{
+                                  color: exceeds
+                                    ? "danger.solidBg"
+                                    : "text.primary",
+                                  fontWeight: exceeds ? 700 : 500,
+                                }}
+                              >
+                                {fmt(basic)}
+                              </Typography>
+                              {exceeds && (
+                                <Typography
+                                  level="body-xs"
+                                  color="danger"
+                                  sx={{ mt: 0.25, fontStyle: "italic" }}
+                                >
+                                  Cannot exceed Bill Basic ({fmt(billBasic)})
+                                </Typography>
+                              )}
+                            </Box>
+
+                            <Box>
+                              <Typography level="body-xs" color="neutral">
+                                GST on Sales
+                              </Typography>
+                              <Typography level="title-sm">
+                                {fmt(gst)}
+                              </Typography>
+                            </Box>
+
+                            <Box sx={{ textAlign: "right" }}>
+                              <Typography level="body-xs" color="neutral">
+                                Entry Total
+                              </Typography>
+                              <Typography
+                                level="title-sm"
+                                sx={{ fontWeight: 600 }}
+                              >
+                                {fmt(total)}
+                              </Typography>
+                            </Box>
+                          </Sheet>
+                        );
+                      })()}
+
+                      {/* --- Attachments --- */}
+                      <Box>
+                        <Typography level="body-sm" sx={{ mb: 0.5 }}>
+                          <strong>Attachments</strong>
+                        </Typography>
+                        <Sheet
+                          variant="soft"
+                          sx={{
+                            p: 1,
+                            borderRadius: "md",
+                            maxHeight: 220,
+                            overflow: "auto",
                           }}
                         >
-                          <td colSpan={6} style={{ textAlign: "right" }}>
-                            Total:
-                          </td>
-                          <td className="money">
-                            ₹ {adjustment?.totalCredit?.toLocaleString("en-IN")}
-                          </td>
-                          <td className="money">
-                            ₹ {adjustment?.totalDebit?.toLocaleString("en-IN")}
-                          </td>
-                          <td />
-                        </tr>
-                      </tfoot>
-                    )}
-                  </Table>
-                </Sheet>
+                          <Stack spacing={0.75}>
+                            {normalizeAttachments(activeSale?.attachments)
+                              .length ? (
+                              normalizeAttachments(activeSale?.attachments).map(
+                                (a, i) => (
+                                  <Box
+                                    key={a.url || `file-${i}`}
+                                    sx={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "space-between",
+                                      gap: 1,
+                                      px: 1,
+                                      py: 0.75,
+                                      borderRadius: "sm",
+                                      "&:hover": {
+                                        backgroundColor: "neutral.plainHoverBg",
+                                      },
+                                    }}
+                                  >
+                                    <Stack
+                                      direction="row"
+                                      spacing={1}
+                                      alignItems="center"
+                                    >
+                                      <InsertDriveFileRounded fontSize="small" />
+                                      <Link
+                                        href={a.url}
+                                        target="_blank"
+                                        rel="noopener"
+                                        underline="hover"
+                                      >
+                                        {a.name}
+                                      </Link>
+                                    </Stack>
+                                  </Box>
+                                )
+                              )
+                            ) : (
+                              <Typography level="body-xs" sx={{ opacity: 0.7 }}>
+                                No attachments
+                              </Typography>
+                            )}
+                          </Stack>
+                        </Sheet>
+                      </Box>
+
+                      {/* --- Footer --- */}
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        justifyContent="flex-end"
+                        sx={{ mt: 1 }}
+                      >
+                        <Button variant="plain" onClick={closeSaleDetail}>
+                          Close
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  </DialogContent>
+                </ModalDialog>
+              </Modal>
+            </Box>
+          </TabPanel>
+
+          {/* ====================== ADJUSTMENT ====================== */}
+          <TabPanel value="adjustment" sx={{ p: 0 }}>
+            <Box mt={4}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexDirection: { md: "row", xs: "column" },
+                }}
+                mb={2}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    flexDirection: { md: "row", xs: "column" },
+                  }}
+                >
+                  <Input
+                    placeholder="Search here"
+                    value={searchAdjustment}
+                    onChange={(e) => setSearchAdjustment(e.target.value)}
+                    style={{ width: "250px" }}
+                  />
+                </Box>
+                {(user?.name === "IT Team" ||
+                  user?.name === "Guddu Rani Dubey" ||
+                  user?.name === "Varun Mishra" ||
+                  user?.name === "Prachi Singh" ||
+                  user?.name === "admin") && (
+                  <Box>
+                    <IconButton
+                      color="danger"
+                      disabled={selectedAdjust.length === 0}
+                      onClick={handleDeleteAdjust}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
+                )}
               </Box>
 
-              {/* Balance Summary and Amount Available Section */}
-              <Card variant="outlined" sx={{ borderRadius: "lg", p: 2 }}>
-                <Balance_Summary />
-              </Card>
-
-              <Box
-                position="fixed"
-                bottom={16}
-                right={16}
-                zIndex={1300}
-                display="flex"
-                gap={2}
+              <Sheet
+                variant="outlined"
                 sx={{
-                  "@media print": {
-                    display: "none",
+                  borderRadius: "12px",
+                  overflowX: "auto",
+                  overflowY: "hidden",
+                  p: 2,
+                  boxShadow: "md",
+                  maxWidth: "100%",
+                }}
+              >
+                <Table
+                  borderAxis="both"
+                  stickyHeader
+                  sx={{
+                    minWidth: "100%",
+                    tableLayout: "fixed",
+                    "& th, & td": {
+                      textAlign: "left",
+                      px: 2,
+                      py: 1.5,
+                      verticalAlign: "middle",
+                    },
+                    "& th.dateCell, & td.dateCell": { minWidth: 120 },
+                    "& th.typeCell, & td.typeCell": {
+                      minWidth: 120,
+                      whiteSpace: "normal",
+                    },
+                    "& th.reasonCell, & td.reasonCell, & th.descCell, & td.descCell":
+                      {
+                        maxWidth: { xs: 180, sm: 240, md: 320 },
+                        whiteSpace: { xs: "normal", md: "nowrap" },
+                        overflow: { md: "hidden" },
+                        textOverflow: { md: "ellipsis" },
+                        overflowWrap: "anywhere",
+                      },
+                    "& th.poCell, & td.poCell, & th.paidForCell, & td.paidForCell":
+                      {
+                        whiteSpace: "normal",
+                        overflowWrap: "anywhere",
+                        wordBreak: "break-word",
+                        minWidth: 120,
+                      },
+                    "& th.money, & td.money": { textAlign: "right" },
+                  }}
+                >
+                  <thead>
+                    <tr>
+                      <th className="dateCell">Adjust Date</th>
+                      <th className="typeCell">Adjustment Type</th>
+                      <th className="reasonCell">Reason</th>
+                      <th className="poCell">PO Number</th>
+                      <th className="paidForCell">Paid For</th>
+                      <th className="descCell">Description</th>
+                      <th className="money">Credit Adjustment</th>
+                      <th className="money">Debit Adjustment</th>
+                      <th style={{ textAlign: "center" }}>
+                        <Checkbox
+                          onChange={(e) => {
+                            if (e.target.checked)
+                              setSelectedAdjust(
+                                AdjustmentSummary.map((a) => a._id)
+                              );
+                            else setSelectedAdjust([]);
+                          }}
+                          checked={
+                            selectedAdjust.length ===
+                              AdjustmentSummary.length &&
+                            AdjustmentSummary.length > 0
+                          }
+                        />
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {isLoading ? (
+                      <tr>
+                        <td
+                          colSpan={9}
+                          style={{ textAlign: "center", padding: 20 }}
+                        >
+                          <Typography
+                            level="body-md"
+                            sx={{ fontStyle: "italic" }}
+                          >
+                            Loading adjustment history...
+                          </Typography>
+                        </td>
+                      </tr>
+                    ) : AdjustmentSummary.length > 0 ? (
+                      AdjustmentSummary.map((row) => (
+                        <tr key={row._id || row.id}>
+                          <td className="dateCell">
+                            {formatDateTime(row.adj_date)}
+                          </td>
+                          <td className="typeCell">{row.pay_type}</td>
+                          <td
+                            className="reasonCell"
+                            title={row.description || "-"}
+                          >
+                            {row.description || "-"}
+                          </td>
+                          <td className="poCell">{row.po_number || "-"}</td>
+                          <td className="paidForCell">{row.paid_for || "-"}</td>
+                          <td className="descCell" title={row.comment || "-"}>
+                            {row.comment || "-"}
+                          </td>
+                          <td className="money">
+                            {row.adj_type === "Add" ? (
+                              <RupeeValue
+                                value={parseFloat(row.adj_amount || 0)}
+                              />
+                            ) : (
+                              "-"
+                            )}
+                          </td>
+                          <td className="money">
+                            {row.adj_type === "Subtract" ? (
+                              <RupeeValue
+                                value={parseFloat(row.adj_amount || 0)}
+                              />
+                            ) : (
+                              "-"
+                            )}
+                          </td>
+                          <td style={{ textAlign: "center" }}>
+                            <Checkbox
+                              color="primary"
+                              checked={selectedAdjust.includes(row._id)}
+                              onChange={() =>
+                                setSelectedAdjust((prev) =>
+                                  prev.includes(row._id)
+                                    ? prev.filter((id) => id !== row._id)
+                                    : [...prev, row._id]
+                                )
+                              }
+                            />
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={9}
+                          style={{ textAlign: "center", padding: 20 }}
+                        >
+                          <Typography level="body-md">
+                            No adjustment history available
+                          </Typography>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+
+                  {!isLoading && AdjustmentSummary.length > 0 && (
+                    <tfoot>
+                      <tr
+                        style={{
+                          fontWeight: "bold",
+                          backgroundColor: "#f5f5f5",
+                        }}
+                      >
+                        <td colSpan={6} style={{ textAlign: "right" }}>
+                          Total:
+                        </td>
+                        <td className="money">
+                          <RupeeValue value={adjustment?.totalCredit || 0} />
+                        </td>
+                        <td className="money">
+                          <RupeeValue value={adjustment?.totalDebit || 0} />
+                        </td>
+                        <td />
+                      </tr>
+                    </tfoot>
+                  )}
+                </Table>
+
+                {/* pagination for ADJUSTMENT */}
+                {/* <Divider sx={{ my: 1 }} />
+                <PaginationFooter /> */}
+              </Sheet>
+            </Box>
+          </TabPanel>
+        </Tabs>
+
+        {/* ====================== Balance Summary (simple) ====================== */}
+        <Divider sx={{ my: 3 }} />
+        <Typography level="h5" mb={1}>
+          Balance Summary
+        </Typography>
+        <Card variant="outlined" sx={{ borderRadius: "lg", p: 2 }}>
+          <Balance_Summary />
+        </Card>
+
+        {/* Floating actions */}
+        <Box
+          position="fixed"
+          bottom={16}
+          right={16}
+          zIndex={1300}
+          display="flex"
+          gap={2}
+          sx={{ "@media print": { display: "none" } }}
+        >
+          <Button
+            variant="soft"
+            color="primary"
+            startDecorator={<ArrowBackIcon />}
+            onClick={() => navigate("/project-balance")}
+          >
+            Back
+          </Button>
+
+          <Button
+            variant="solid"
+            color="danger"
+            onClick={handlePrint}
+            startDecorator={<PrintIcon />}
+            loading={isPrinting}
+          >
+            Print
+          </Button>
+
+          <Button
+            variant="solid"
+            color="success"
+            onClick={handleExportAll}
+            startDecorator={<FileDownloadIcon />}
+            loading={isExporting}
+          >
+            CSV
+          </Button>
+        </Box>
+      </Card>
+
+      <Modal open={confirmCloseOpen} onClose={() => setConfirmCloseOpen(false)}>
+        <ModalDialog sx={{ width: 420 }}>
+          <DialogTitle>
+            Close selected PO{selectedClients.length > 1 ? "s" : ""}?
+          </DialogTitle>
+
+          <DialogContent>
+            Are you sure you want to close {selectedClients.length} PO
+            {selectedClients.length > 1 ? "s" : ""}? This will convert them to
+            Sales.
+          </DialogContent>
+
+          <Stack direction="row" spacing={1} justifyContent="flex-end">
+            <Button variant="plain" onClick={() => setConfirmCloseOpen(false)}>
+              No
+            </Button>
+
+            <Button
+              variant="solid"
+              color="danger"
+              onClick={() => {
+                setConfirmCloseOpen(false);
+
+                if (!selectedClients.length) {
+                  toast.error("Select at least 1 PO for Sales Conversion.");
+                  return;
+                }
+
+                // ✅ Get the full PO data from ClientSummary
+                const selectedPOsData = ClientSummary.filter((po) =>
+                  selectedClients.includes(po._id)
+                );
+
+                if (!selectedPOsData.length) {
+                  toast.error("Selected PO(s) not found in current list.");
+                  return;
+                }
+
+                // ✅ Filter only those with total_billed_value > 0
+                const validPOs = selectedPOsData.filter(
+                  (po) => Number(po.total_billed_value || 0) > 0
+                );
+
+                // ✅ Handle cases
+                if (validPOs.length === 0) {
+                  toast.error(
+                    "Only POs with billed value greater than 0 can be converted."
+                  );
+                  return;
+                }
+
+                // if (validPOs.length < selectedPOsData.length) {
+                //   const skipped = selectedPOsData
+                //     .filter((po) => Number(po.total_billed_value || 0) <= 0)
+                //     .map((p) => p.po_number)
+                //     .join(", ");
+                //   toast.warning(
+                //     // `Skipped PO(s) without billed value: ${skipped}`
+                //   );
+                // }
+
+                // ✅ Proceed with valid ones only
+                setSelectedPO(validPOs);
+                setSalesAmounts(
+                  validPOs.reduce((acc, po) => {
+                    acc[po._id] = { basic: "", gst: "" };
+                    return acc;
+                  }, {})
+                );
+
+                setSalesOpen(true);
+              }}
+            >
+              Yes, continue
+            </Button>
+          </Stack>
+        </ModalDialog>
+      </Modal>
+
+      {/* ================= Sales Conversion Modal ================= */}
+      <Modal open={salesOpen} onClose={() => setSalesOpen(false)}>
+        <ModalDialog
+          aria-labelledby="sales-convert-title"
+          sx={{
+            width: 720,
+            borderRadius: "lg",
+            boxShadow: "xl",
+            p: 3,
+            background: "linear-gradient(180deg, #fff 0%, #f9f9f9 100%)",
+          }}
+        >
+          <DialogTitle id="sales-convert-title" sx={{ fontWeight: 700, mb: 1 }}>
+            Sales Conversion
+          </DialogTitle>
+
+          <DialogContent>
+            <Stack spacing={2.5}>
+              {/* ---- PO Table ---- */}
+              <Sheet
+                variant="outlined"
+                sx={{
+                  borderRadius: "md",
+                  overflow: "auto",
+                  maxHeight: 280,
+                  borderColor: "neutral.outlinedBorder",
+                }}
+              >
+                {/* Header Row */}
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr",
+                    gap: 1,
+                    px: 1.5,
+                    py: 1,
+                    backgroundColor: "neutral.softBg",
+                    position: "sticky",
+                    top: 0,
+                    borderBottom: "1px solid",
+                    borderColor: "neutral.outlinedBorder",
+                    fontWeight: 600,
+                    zIndex: 2,
+                  }}
+                >
+                  {[
+                    { label: "PO No.", align: "left" },
+                    { label: "PO Value", align: "right" },
+                    { label: "Bill Basic", align: "right" },
+                    { label: "Advance Paid", align: "right" },
+                    { label: "Basic Sales", align: "right" },
+                    { label: "GST on Sales", align: "right" },
+                  ].map((col) => (
+                    <Typography
+                      key={col.label}
+                      level="body-sm"
+                      textAlign={col.align}
+                      sx={{ fontWeight: 700 }}
+                    >
+                      {col.label}
+                    </Typography>
+                  ))}
+                </Box>
+
+                {/* Data Rows */}
+                {(selectedPO || [])
+                  .filter((po) => Number(po.bill_basic) > 0)
+                  .map((po, idx) => {
+                    const id = po._id;
+                    const poValue = Number(po.po_value || 0);
+                    const billBasic = Number(po.bill_basic || 0);
+                    const totalAdvance = Number(po.advance_paid || 0);
+                    const basic = Number(salesAmounts[id]?.basic || 0);
+                    const gst = Number(salesAmounts[id]?.gst || 0);
+
+                    const basicExceeds = basic > billBasic;
+                    const showInfo = billBasic > totalAdvance;
+                    const infoText = `Bill Basic (${billBasic.toLocaleString()}) exceeds advance paid (${totalAdvance.toLocaleString()})`;
+
+                    return (
+                      <Box
+                        key={id}
+                        sx={{
+                          display: "grid",
+                          gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr",
+                          gap: 1,
+                          px: 1.5,
+                          py: 0.9,
+                          alignItems: "center",
+                          borderBottom: "1px dashed",
+                          borderColor: "neutral.outlinedBorder",
+                          backgroundColor:
+                            idx % 2 === 0
+                              ? "background.body"
+                              : "neutral.softBg",
+                          "&:hover": {
+                            backgroundColor: "neutral.plainHoverBg",
+                          },
+                        }}
+                      >
+                        {/* PO No + Info Icon */}
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 0.75,
+                            justifyContent: "flex-start",
+                          }}
+                        >
+                          {/* {showInfo && (
+                      <Tooltip title={infoText} placement="top-start">
+                        <InfoOutlined
+                          sx={{
+                            color: "danger.solidBg",
+                            fontSize: 18,
+                            cursor: "pointer",
+                            flexShrink: 0,
+                          }}
+                        />
+                      </Tooltip>
+                    )} */}
+                          <Typography level="body-sm" sx={{ fontWeight: 600 }}>
+                            {po.po_number}
+                          </Typography>
+                        </Box>
+
+                        {/* PO Value */}
+                        <Typography level="body-sm" textAlign="right">
+                          {poValue.toLocaleString()}
+                        </Typography>
+
+                        {/* Bill Basic */}
+                        <Typography level="body-sm" textAlign="right">
+                          {billBasic.toLocaleString()}
+                        </Typography>
+
+                        {/* Advance Paid */}
+                        <Typography
+                          level="body-sm"
+                          textAlign="right"
+                          color={showInfo ? "danger.plainColor" : "neutral"}
+                        >
+                          {totalAdvance.toLocaleString()}
+                        </Typography>
+
+                        {/* Basic Sales */}
+                        <Input
+                          size="sm"
+                          type="number"
+                          value={salesAmounts[id]?.basic ?? ""}
+                          placeholder="Basic"
+                          onChange={(e) =>
+                            setSalesAmounts((prev) => ({
+                              ...prev,
+                              [id]: { ...prev[id], basic: e.target.value },
+                            }))
+                          }
+                          sx={{
+                            width: 100,
+                            ml: "auto",
+                            borderColor: basicExceeds
+                              ? "danger.solidBg"
+                              : undefined,
+                          }}
+                        />
+
+                        {/* GST on Sales (always editable) */}
+                        <Input
+                          size="sm"
+                          type="number"
+                          value={salesAmounts[id]?.gst ?? ""}
+                          placeholder="GST"
+                          onChange={(e) =>
+                            setSalesAmounts((prev) => ({
+                              ...prev,
+                              [id]: { ...prev[id], gst: e.target.value },
+                            }))
+                          }
+                          sx={{
+                            width: 100,
+                            ml: "auto",
+                          }}
+                        />
+                      </Box>
+                    );
+                  })}
+              </Sheet>
+
+              {/* ---- File Upload ---- */}
+              <Sheet
+                variant="soft"
+                onClick={() => fileInputRef.current?.click()}
+                onDrop={onDrop}
+                onDragOver={onDragOver}
+                onDragLeave={onDragLeave}
+                sx={{
+                  border: "2px dashed",
+                  borderColor: isDragging
+                    ? "primary.solidBg"
+                    : "neutral.outlinedBorder",
+                  borderRadius: "lg",
+                  p: 3,
+                  textAlign: "center",
+                  cursor: "pointer",
+                  transition: "all .2s ease-in-out",
+                  "&:hover": {
+                    borderColor: "primary.solidBg",
+                    backgroundColor: "neutral.softBg",
                   },
                 }}
               >
-                <Button
-                  variant="soft"
-                  color="primary"
-                  startDecorator={<ArrowBackIcon />}
-                  onClick={() => navigate("/project-balance")}
-                >
-                  Back
-                </Button>
-
-                <Button
-                  variant="solid"
-                  color="danger"
-                  onClick={handlePrint}
-                  startDecorator={<PrintIcon />}
-                  loading={isPrinting}
-                >
-                  Print
-                </Button>
-
-                <Button
-                  variant="solid"
-                  color="success"
-                  onClick={handleExportAll}
-                  startDecorator={<FileDownloadIcon />}
-                  loading={isExporting}
-                >
-                  CSV
-                </Button>
-              </Box>
-            </Stack>
-          </Card>
-        </Box>
-        {/* Confirm first */}
-        <Modal
-          open={confirmCloseOpen}
-          onClose={() => setConfirmCloseOpen(false)}
-        >
-          <ModalDialog sx={{ width: 420 }}>
-            <DialogTitle>
-              Close selected PO{selectedClients.length > 1 ? "s" : ""}?
-            </DialogTitle>
-            <DialogContent>
-              Are you sure you want to close {selectedClients.length} PO
-              {selectedClients.length > 1 ? "s" : ""}? This will convert them to
-              Sales.
-            </DialogContent>
-            <Stack direction="row" spacing={1} justifyContent="flex-end">
-              <Button
-                variant="plain"
-                onClick={() => setConfirmCloseOpen(false)}
-              >
-                No
-              </Button>
-              <Button
-                variant="solid"
-                color="danger"
-                onClick={() => {
-                  setConfirmCloseOpen(false);
-                  setSalesOpen(true);
-                }}
-              >
-                Yes, continue
-              </Button>
-            </Stack>
-          </ModalDialog>
-        </Modal>
-
-        {/* Sales Conversion modal */}
-        <Modal open={salesOpen} onClose={() => setSalesOpen(false)}>
-          <ModalDialog
-            aria-labelledby="sales-convert-title"
-            sx={{ width: 520, borderRadius: "md", boxShadow: "lg", p: 3 }}
-          >
-            <DialogTitle id="sales-convert-title">Sales Conversion</DialogTitle>
-            <DialogContent>
-              <Stack spacing={2}>
-                {/* Dotted dropzone */}
-                <Box
-                  onClick={() => fileInputRef.current?.click()}
-                  onDrop={onDrop}
-                  onDragOver={onDragOver}
-                  onDragLeave={onDragLeave}
-                  sx={{
-                    border: "2px dashed",
-                    borderColor: isDragging
-                      ? "primary.solidBg"
-                      : "neutral.outlinedBorder",
-                    backgroundColor: isDragging
-                      ? "neutral.softBg"
-                      : "transparent",
-                    borderRadius: "md",
-                    p: 3,
-                    textAlign: "center",
-                    cursor: "pointer",
-                    transition: "all .15s ease",
-                    "&:hover": {
-                      borderColor: "primary.solidBg",
-                      backgroundColor: "neutral.softBg",
-                    },
-                  }}
-                >
-                  <Typography level="title-sm" sx={{ mb: 0.5 }}>
-                    Drop files here or <u>browse</u>
-                  </Typography>
-                  <Typography level="body-xs" color="neutral">
-                    You can select multiple files. (PNG/JPG/PDF)
-                  </Typography>
-
-                  {/* Hidden native input */}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    name="file"
-                    multiple
-                    accept="image/*,application/pdf"
-                    onChange={(e) => onFileInputChange(e)}
-                    style={{ display: "none" }}
-                  />
-
-                  <Typography level="body-sm" sx={{ mt: 1.25 }}>
-                    {salesFiles.length
-                      ? `${salesFiles.length} file(s) selected`
-                      : "No files selected"}
-                  </Typography>
-                </Box>
-
-                {/* Preview + editable attachment_name */}
-                {salesFiles.length > 0 && (
-                  <Sheet
-                    variant="soft"
-                    sx={{
-                      p: 1,
-                      borderRadius: "md",
-                      maxHeight: 240,
-                      overflow: "auto",
-                    }}
-                  >
-                    <Stack spacing={0.75}>
-                      {salesFiles.map((f, idx) => {
-                        const key = `${f.file.name}-${f.file.size}-${f.file.lastModified}`;
-                        return (
-                          <Box
-                            key={key}
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "space-between",
-                              gap: 1,
-                              px: 1,
-                              py: 0.75,
-                              borderRadius: "sm",
-                              "&:hover": {
-                                backgroundColor: "neutral.plainHoverBg",
-                              },
-                            }}
-                          >
-                            <Box
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 1,
-                                flexGrow: 1,
-                              }}
-                            >
-                              <InsertDriveFileRounded fontSize="small" />
-                              <Box sx={{ flexGrow: 1 }}>
-                                <Typography
-                                  level="body-sm"
-                                  sx={{ lineHeight: 1.1 }}
-                                >
-                                  {f.file.name}
-                                </Typography>
-                                <Typography level="body-xs" color="neutral">
-                                  {formatBytes(f.file.size)}
-                                </Typography>
-
-                                <Input
-                                  size="sm"
-                                  placeholder="Attachment name"
-                                  value={f.attachment_name}
-                                  onChange={(e) => {
-                                    const newName = e.target.value;
-                                    setSalesFiles((prev) =>
-                                      prev.map((item, i) =>
-                                        i === idx
-                                          ? {
-                                              ...item,
-                                              attachment_name: newName,
-                                            }
-                                          : item
-                                      )
-                                    );
-                                  }}
-                                  sx={{ mt: 0.5 }}
-                                />
-                              </Box>
-                            </Box>
-
-                            <IconButton
-                              size="sm"
-                              variant="plain"
-                              color="danger"
-                              onClick={() => removeFile(f.file)}
-                              aria-label={`Remove ${f.file.name}`}
-                            >
-                              <CloseRounded />
-                            </IconButton>
-                          </Box>
-                        );
-                      })}
-                      <Box sx={{ textAlign: "right", mt: 0.5 }}>
-                        <Button
-                          size="sm"
-                          variant="plain"
-                          color="neutral"
-                          onClick={clearAllFiles}
-                        >
-                          Clear all
-                        </Button>
-                      </Box>
-                    </Stack>
-                  </Sheet>
-                )}
-
-                {/* Remarks */}
-                <Textarea
-                  minRows={3}
-                  placeholder="Enter remarks..."
-                  variant="soft"
-                  value={salesRemarks}
-                  onChange={(e) => setSalesRemarks(e.target.value)}
+                <Typography level="title-sm">
+                  <strong>Drop files here</strong> or <u>browse</u>
+                </Typography>
+                <Typography level="body-xs" color="neutral">
+                  Supports multiple files (.PNG, .JPG, .PDF)
+                </Typography>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*,application/pdf"
+                  onChange={onFileInputChange}
+                  style={{ display: "none" }}
                 />
+                <Typography level="body-sm" sx={{ mt: 1 }}>
+                  {salesFiles.length
+                    ? `${salesFiles.length} file(s) selected`
+                    : "No files selected"}
+                </Typography>
+              </Sheet>
 
-                {/* Actions */}
-                <Stack direction="row" spacing={1.5} justifyContent="flex-end">
-                  <Button
-                    variant="plain"
-                    color="neutral"
-                    onClick={() => setSalesOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="solid"
-                    color="primary"
-                    loading={isConverting}
-                    disabled={!salesRemarks.trim()}
-                    onClick={handleSalesConvert}
-                  >
-                    Convert
-                  </Button>
-                </Stack>
+              {/* ---- Invoice ---- */}
+              <FormControl>
+                <FormLabel sx={{ fontWeight: 600 }}>
+                  Sales Invoice No.
+                </FormLabel>
+                <Input
+                  size="md"
+                  variant="outlined"
+                  placeholder="Enter Sales Invoice Number"
+                  value={salesInvoice}
+                  onChange={(e) => setSalesInvoice(e.target.value)}
+                  sx={{
+                    borderRadius: "md",
+                    backgroundColor: "background.body",
+                  }}
+                />
+              </FormControl>
+
+              {/* ---- Remarks ---- */}
+              <Textarea
+                minRows={3}
+                placeholder="Enter remarks..."
+                variant="soft"
+                value={salesRemarks}
+                onChange={(e) => setSalesRemarks(e.target.value)}
+                sx={{
+                  fontSize: "sm",
+                  borderRadius: "md",
+                  backgroundColor: "background.body",
+                }}
+              />
+
+              {/* ---- Actions ---- */}
+              <Stack direction="row" spacing={1.5} justifyContent="flex-end">
+                <Button
+                  variant="plain"
+                  color="neutral"
+                  onClick={() => setSalesOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="solid"
+                  color="primary"
+                  loading={isConverting}
+                  disabled={
+                    !salesRemarks.trim() ||
+                    selectedPO.some((po) => {
+                      const id = po._id;
+                      const billBasic = Number(po.bill_basic || 0);
+                      const basic = Number(salesAmounts[id]?.basic || 0);
+                      return basic < 0 || basic > billBasic;
+                    })
+                  }
+                  onClick={handleSalesConvert}
+                >
+                  Convert
+                </Button>
               </Stack>
-            </DialogContent>
-          </ModalDialog>
-        </Modal>
-      </Box>
+            </Stack>
+          </DialogContent>
+        </ModalDialog>
+      </Modal>
     </Box>
   );
-};
-
-export default Customer_Payment_Summary;
+}
