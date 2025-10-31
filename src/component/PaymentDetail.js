@@ -1,4 +1,10 @@
-import React, { forwardRef, useEffect, useMemo, useState, Fragment } from "react";
+import React, {
+  forwardRef,
+  useEffect,
+  useMemo,
+  useState,
+  Fragment,
+} from "react";
 import {
   Box,
   Button,
@@ -92,7 +98,9 @@ const PaymentDetail = forwardRef((props, ref) => {
       setPages(Number(resp?.pages || 1));
 
       // prune selections that are no longer on this page
-      setSelectedRows((prev) => prev.filter((id) => rows.some((r) => r.id === id)));
+      setSelectedRows((prev) =>
+        prev.filter((id) => rows.some((r) => r.id === id))
+      );
     } catch (err) {
       setError("Failed to fetch data. Please try again later.");
     } finally {
@@ -117,8 +125,12 @@ const PaymentDetail = forwardRef((props, ref) => {
     () => data.filter((r) => r.status === "Not-paid").map((r) => r.id),
     [data]
   );
-  const allSelectedOnPage = allSelectableIds.length > 0 && allSelectableIds.every((id) => selectedRows.includes(id));
-  const someSelectedOnPage = allSelectableIds.some((id) => selectedRows.includes(id));
+  const allSelectedOnPage =
+    allSelectableIds.length > 0 &&
+    allSelectableIds.every((id) => selectedRows.includes(id));
+  const someSelectedOnPage = allSelectableIds.some((id) =>
+    selectedRows.includes(id)
+  );
 
   const toggleSelectAllPage = () => {
     setSelectedRows((prev) => {
@@ -132,13 +144,13 @@ const PaymentDetail = forwardRef((props, ref) => {
     });
   };
 
-const escapeValue = (value, isAccountNumber = false) => {
-  if (value === null || value === undefined || value === "") return "-";
-  const s = String(value).replace(/"/g, '""');
-  return isAccountNumber ? `'${s}` : s;
-};
+  const escapeValue = (value, isAccountNumber = false) => {
+    if (value === null || value === undefined || value === "") return "-";
+    const s = String(value).replace(/"/g, '""');
+    return isAccountNumber ? `'${s}` : s;
+  };
 
-const downloadSelectedRows = async () => {
+  const downloadSelectedRows = async () => {
     setError("");
     setSuccess("");
 
@@ -225,7 +237,9 @@ const downloadSelectedRows = async () => {
       link.click();
 
       // Optimistic UI: remove updated rows from current page
-      const pageAfterRemoval = data.filter((row) => !selectedRows.includes(row.id));
+      const pageAfterRemoval = data.filter(
+        (row) => !selectedRows.includes(row.id)
+      );
       setData(pageAfterRemoval);
       setSelectedRows([]);
 
@@ -242,15 +256,24 @@ const downloadSelectedRows = async () => {
     }
   };
 
-  const selectedCount = selectedRows.filter((id) => data.some((r) => r.id === id && r.status === "Not-paid")).length;
+  const selectedCount = selectedRows.filter((id) =>
+    data.some((r) => r.id === id && r.status === "Not-paid")
+  ).length;
 
   if (loading) {
     return (
       <Sheet
         variant="soft"
-        sx={{ mx: { xl: "15%", lg: "18%" }, maxWidth: { lg: "85%", sm: "100%" }, p: 2, borderRadius: "lg" }}
+        sx={{
+          mx: { xl: "15%", lg: "18%" },
+          maxWidth: { lg: "85%", sm: "100%" },
+          p: 2,
+          borderRadius: "lg",
+        }}
       >
-        <Typography level="title-md" mb={1}>Loading payments…</Typography>
+        <Typography level="title-md" mb={1}>
+          Loading payments…
+        </Typography>
         <LinearProgress size="sm" />
       </Sheet>
     );
@@ -259,24 +282,46 @@ const downloadSelectedRows = async () => {
   if (error) {
     return (
       <Sheet
-        variant="soft" color="danger"
-        sx={{ mx: { xl: "15%", lg: "18%" }, maxWidth: { lg: "85%", sm: "100%" }, p: 2, borderRadius: "lg" }}
+        variant="soft"
+        color="danger"
+        sx={{
+          mx: { xl: "15%", lg: "18%" },
+          maxWidth: { lg: "85%", sm: "100%" },
+          p: 2,
+          borderRadius: "lg",
+        }}
       >
-        <Alert color="danger" variant="soft">{error}</Alert>
+        <Alert color="danger" variant="soft">
+          {error}
+        </Alert>
       </Sheet>
     );
   }
 
   return (
-    <Box sx={{ marginLeft: { xl: "15%", lg: "18%" }, maxWidth: { lg: "85%", sm: "100%" } }} ref={ref}>
+    <Box
+      sx={{
+        marginLeft: { xl: "15%", lg: "18%" },
+        maxWidth: { lg: "85%", sm: "100%" },
+      }}
+      ref={ref}
+    >
       {/* Top toolbar */}
       <Sheet
         variant="outlined"
         sx={{
-          p: 1.5, mb: 1, borderRadius: "lg",
-          display: "grid", gridTemplateColumns: "1fr auto auto", alignItems: "center", gap: 1,
-          position: "sticky", top: 0, zIndex: 10,
-          backdropFilter: "saturate(180%) blur(6px)", bgcolor: "background.body",
+          p: 1.5,
+          mb: 1,
+          borderRadius: "lg",
+          display: "grid",
+          gridTemplateColumns: "1fr auto auto",
+          alignItems: "center",
+          gap: 1,
+          position: "sticky",
+          top: 0,
+          zIndex: 10,
+          backdropFilter: "saturate(180%) blur(6px)",
+          bgcolor: "background.body",
         }}
       >
         <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
@@ -284,21 +329,40 @@ const downloadSelectedRows = async () => {
           <Chip variant="soft" color="neutral" size="sm" sx={{ mr: 0.5 }}>
             Not-paid: {total}
           </Chip>
-          <Chip variant="soft" color={selectedCount > 0 ? "primary" : "neutral"} size="sm">
+          <Chip
+            variant="soft"
+            color={selectedCount > 0 ? "primary" : "neutral"}
+            size="sm"
+          >
             Selected: {selectedCount}
           </Chip>
         </Stack>
 
-        <Stack direction="row" spacing={1} alignItems="center" justifyContent="flex-end">
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          justifyContent="flex-end"
+        >
           <Input
             size="sm"
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             placeholder="Search vendor / PO / IFSC / UTR…"
             sx={{ minWidth: 260 }}
             endDecorator={
               search ? (
-                <IconButton size="sm" variant="plain" onClick={() => { setSearch(""); setPage(1); }}>
+                <IconButton
+                  size="sm"
+                  variant="plain"
+                  onClick={() => {
+                    setSearch("");
+                    setPage(1);
+                  }}
+                >
                   <ClearRoundedIcon />
                 </IconButton>
               ) : null
@@ -307,7 +371,10 @@ const downloadSelectedRows = async () => {
           <Select
             size="sm"
             value={String(limit)}
-            onChange={(_, v) => { setLimit(Number(v)); setPage(1); }}
+            onChange={(_, v) => {
+              setLimit(Number(v));
+              setPage(1);
+            }}
             sx={{ minWidth: 120 }}
           >
             <Option value="50">Rows: 50</Option>
@@ -338,12 +405,27 @@ const downloadSelectedRows = async () => {
 
       {/* Success / Info banners */}
       <Box sx={{ display: "grid", gap: 1, mb: 1 }}>
-        {success ? <Alert color="success" variant="soft">{success}</Alert> : null}
-        {payments ? <Alert color="neutral" variant="soft">{payments}</Alert> : null}
+        {success ? (
+          <Alert color="success" variant="soft">
+            {success}
+          </Alert>
+        ) : null}
+        {payments ? (
+          <Alert color="neutral" variant="soft">
+            {payments}
+          </Alert>
+        ) : null}
       </Box>
 
       {/* Table */}
-      <Sheet variant="outlined" sx={{ borderRadius: "lg", overflow: "auto", "--Table-headerUnderlineThickness": "1px" }}>
+      <Sheet
+        variant="outlined"
+        sx={{
+          borderRadius: "lg",
+          overflow: "auto",
+          "--Table-headerUnderlineThickness": "1px",
+        }}
+      >
         <Box
           component="table"
           sx={{
@@ -398,7 +480,8 @@ const downloadSelectedRows = async () => {
 
               const Cell = ({ children }) => (
                 <td>
-                  {typeof children === "string" || typeof children === "number" ? (
+                  {typeof children === "string" ||
+                  typeof children === "number" ? (
                     <Tooltip
                       title={String(children || "").trim() || "-"}
                       placement="top"
@@ -416,7 +499,10 @@ const downloadSelectedRows = async () => {
                 <tr
                   key={row.id}
                   style={{
-                    backgroundColor: index % 2 === 0 ? "var(--joy-palette-background-level1)" : "transparent",
+                    backgroundColor:
+                      index % 2 === 0
+                        ? "var(--joy-palette-background-level1)"
+                        : "transparent",
                   }}
                 >
                   <td>
@@ -437,7 +523,11 @@ const downloadSelectedRows = async () => {
                     </Chip>
                   </Cell>
                   <Cell>
-                    <Chip size="sm" variant="soft" color={row.pay_mod === "R" ? "warning" : "success"}>
+                    <Chip
+                      size="sm"
+                      variant="soft"
+                      color={row.pay_mod === "R" ? "warning" : "success"}
+                    >
                       {row.pay_mod}
                     </Chip>
                   </Cell>
@@ -475,11 +565,21 @@ const downloadSelectedRows = async () => {
                         },
                       }}
                     >
-                      <Box sx={{ display: "flex", alignItems: "center", minHeight: 32 }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          minHeight: 32,
+                        }}
+                      >
                         <Typography
                           level="body-sm"
                           noWrap
-                          sx={{ maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis" }}
+                          sx={{
+                            maxWidth: 220,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
                         >
                           {row.comment || "-"}
                         </Typography>
@@ -497,7 +597,8 @@ const downloadSelectedRows = async () => {
       <Sheet
         variant="soft"
         sx={{
-          mt: 1, p: 1,
+          mt: 1,
+          p: 1,
           borderRadius: "lg",
           display: "flex",
           alignItems: "center",

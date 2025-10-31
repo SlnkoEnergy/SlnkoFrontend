@@ -1,19 +1,34 @@
-import { CssVarsProvider } from "@mui/joy/styles";
-import CssBaseline from "@mui/joy/CssBaseline";
 import Box from "@mui/joy/Box";
+import CssBaseline from "@mui/joy/CssBaseline";
+import { CssVarsProvider } from "@mui/joy/styles";
+import { useEffect, useState } from "react";
 import Sidebar from "../../component/Partials/Sidebar";
-import { useNavigate } from "react-router-dom";
-import Purchase_Request_Form from "../../component/Forms/Purchase_Request_Form";
-import SubHeader from "../../component/Partials/SubHeader";
 import MainHeader from "../../component/Partials/MainHeader";
 import { Button } from "@mui/joy";
+import { useNavigate } from "react-router-dom";
+import SubHeader from "../../component/Partials/SubHeader";
+import LoanOverview from "../../component/ViewLoan";
 
-const PurchaseRequestForm = () => {
+function ViewLoan() {
+  const [user, setUser] = useState(null);
+  const [selected, setSelected] = useState([]);
   const navigate = useNavigate();
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
-      <Box sx={{ display: "flex", minHeight: "100%" }}>
+      <Box sx={{ display: "flex", minHeight: "100dvh" }}>
         <Sidebar />
         <MainHeader title="CAM" sticky>
           <Box display="flex" gap={1}>
@@ -29,7 +44,9 @@ const PurchaseRequestForm = () => {
                 borderRadius: "6px",
                 px: 1.5,
                 py: 0.5,
-                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+                "&:hover": {
+                  bgcolor: "rgba(255,255,255,0.15)",
+                },
               }}
             >
               Handover
@@ -46,7 +63,9 @@ const PurchaseRequestForm = () => {
                 borderRadius: "6px",
                 px: 1.5,
                 py: 0.5,
-                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+                "&:hover": {
+                  bgcolor: "rgba(255,255,255,0.15)",
+                },
               }}
             >
               Project Scope
@@ -82,19 +101,16 @@ const PurchaseRequestForm = () => {
                 borderRadius: "6px",
                 px: 1.5,
                 py: 0.5,
-                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+                "&:hover": {
+                  bgcolor: "rgba(255,255,255,0.15)",
+                },
               }}
             >
               Purchase Request
             </Button>
           </Box>
         </MainHeader>
-
-        <SubHeader
-          title="Purchase Request Form"
-          isBackEnabled={false}
-          sticky
-        ></SubHeader>
+        <SubHeader title="View Loan" isBackEnabled={false} sticky></SubHeader>
         <Box
           component="main"
           className="MainContent"
@@ -108,22 +124,10 @@ const PurchaseRequestForm = () => {
             px: "24px",
           }}
         >
-          <Box
-            sx={{
-              display: "flex",
-              mb: 1,
-              gap: 1,
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: { xs: "start", sm: "center" },
-              flexWrap: "wrap",
-              justifyContent: "space-between",
-            }}
-          >
-            <Purchase_Request_Form />
-          </Box>
+          <LoanOverview selected={selected} setSelected={setSelected} />
         </Box>
       </Box>
     </CssVarsProvider>
   );
-};
-export default PurchaseRequestForm;
+}
+export default ViewLoan;

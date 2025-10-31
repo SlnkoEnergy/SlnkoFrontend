@@ -1,20 +1,77 @@
-import { CssVarsProvider } from "@mui/joy/styles";
-import CssBaseline from "@mui/joy/CssBaseline";
 import Box from "@mui/joy/Box";
+import CssBaseline from "@mui/joy/CssBaseline";
+import { CssVarsProvider } from "@mui/joy/styles";
+import { useEffect, useMemo, useState } from "react";
 import Sidebar from "../../component/Partials/Sidebar";
-import { useNavigate } from "react-router-dom";
-import Purchase_Request_Form from "../../component/Forms/Purchase_Request_Form";
-import SubHeader from "../../component/Partials/SubHeader";
+import PurchaseReqSummary from "../../component/PurchaseReqSummary";
 import MainHeader from "../../component/Partials/MainHeader";
+import SubHeader from "../../component/Partials/SubHeader";
 import { Button } from "@mui/joy";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
-const PurchaseRequestForm = () => {
+import { useGetCategoriesNameSearchQuery } from "../../redux/productsSlice";
+
+function PurchaseRequestSheet() {
+  const [user, setUser] = useState(null);
+  const [open, setOpen] = useState(false);
+
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  // ---- helpers ----
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) return JSON.parse(userData);
+    return null;
+  };
+
+  useEffect(() => {
+    setUser(getUserData());
+  }, []);
+
+  const page = Number(searchParams.get("page") || 1);
+  const limit = Number(searchParams.get("limit") || 10);
+  const projectId = searchParams.get("projectId") || "";
+
+  const search = searchParams.get("search") || "";
+  const itemSearch = searchParams.get("itemSearch") || "";
+  const statusSearch = searchParams.get("statusSearch") || "";
+  const poValueSearch = searchParams.get("poValueSearch") || "";
+
+  const createdFrom = searchParams.get("from") || "";
+  const createdTo = searchParams.get("to") || "";
+  const deadlineFrom = searchParams.get("deadlineFrom") || "";
+  const deadlineTo = searchParams.get("deadlineTo") || "";
+
+  const createdDateRange = [createdFrom, createdTo];
+  const etdDateRange = [deadlineFrom, deadlineTo];
+
+
+  const { data: catInitialData } = useGetCategoriesNameSearchQuery({
+    page: 1,
+    search: "",
+    pr: false,
+    projectId: projectId || "",
+  });
+
+  const categoryOptions = useMemo(() => {
+    const rows = (catInitialData?.data || []).map((r) => {
+      const name = r?.name ?? r?.category ?? r?.make ?? "";
+      return { label: name, value: name };
+    });
+
+    if (itemSearch && !rows.some((o) => o.value === itemSearch)) {
+      rows.unshift({ label: itemSearch, value: itemSearch });
+    }
+    return rows;
+  }, [catInitialData?.data, itemSearch]);
+
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
-      <Box sx={{ display: "flex", minHeight: "100%" }}>
+      <Box sx={{ display: "flex", minHeight: "100dvh" }}>
         <Sidebar />
+
         <MainHeader title="CAM" sticky>
           <Box display="flex" gap={1}>
             <Button
@@ -46,7 +103,9 @@ const PurchaseRequestForm = () => {
                 borderRadius: "6px",
                 px: 1.5,
                 py: 0.5,
-                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+                "&:hover": {
+                  bgcolor: "rgba(255,255,255,0.15)",
+                },
               }}
             >
               Project Scope
@@ -91,10 +150,11 @@ const PurchaseRequestForm = () => {
         </MainHeader>
 
         <SubHeader
-          title="Purchase Request Form"
+          title="Add Loan"
           isBackEnabled={false}
           sticky
-        ></SubHeader>
+        />
+
         <Box
           component="main"
           className="MainContent"
@@ -108,22 +168,16 @@ const PurchaseRequestForm = () => {
             px: "24px",
           }}
         >
-          <Box
-            sx={{
-              display: "flex",
-              mb: 1,
-              gap: 1,
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: { xs: "start", sm: "center" },
-              flexWrap: "wrap",
-              justifyContent: "space-between",
-            }}
-          >
-            <Purchase_Request_Form />
-          </Box>
+          <PurchaseReqSummary
+            // pass down only what you asked for
+            itemSearch={itemSearch}
+            etdDateRange={etdDateRange}
+            createdDateRange={createdDateRange}
+          />
         </Box>
       </Box>
     </CssVarsProvider>
   );
-};
-export default PurchaseRequestForm;
+}
+
+export default PurchaseRequestSheet;
