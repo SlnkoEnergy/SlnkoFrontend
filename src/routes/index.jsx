@@ -90,6 +90,8 @@ import Vendors from "../pages/SCM/Vendors";
 import ViewVendors from "../pages/SCM/ViewVendor";
 import Email from "../pages/Emails/Email";
 import Template from "../pages/Emails/Template";
+import Loan from "../pages/CAM/Loan";
+import ViewLoan from "../pages/CAM/ViewLoan";
 
 function index() {
   return (
@@ -425,6 +427,22 @@ function index() {
         element={
           <PrivateRoute>
             <PurchaseRequestForm />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/loan"
+        element={
+          <PrivateRoute>
+            <Loan />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/view_loan"
+        element={
+          <PrivateRoute>
+            <ViewLoan />
           </PrivateRoute>
         }
       />

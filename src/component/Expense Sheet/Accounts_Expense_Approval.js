@@ -33,6 +33,9 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedExpenses, setSelectedExpenses] = useState([]);
+  const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
+  const [perPage, setPerPage] = useState(initialPageSize);
+
 
 
   // ---- helper: merge update to URL params (preserve others) ----
@@ -78,13 +81,14 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
   const queryArgs = useMemo(
     () => ({
       page: currentPage,
+      limit: perPage,
       department: selectedDepartment,
       search: searchParam,
       status: selectedStatus,
       from,
       to,
     }),
-    [currentPage, selectedDepartment, searchParam, selectedStatus, from, to]
+    [currentPage, selectedDepartment, searchParam, selectedStatus, from, to, perPage]
   );
 
   const { data: getExpense = [], isLoading } = useGetAllExpenseQuery(queryArgs);
@@ -236,6 +240,10 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
               <Box
                 component="th"
                 sx={{
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 3,
+                  backgroundColor: "neutral.softBg",
                   borderBottom: "1px solid #ddd",
                   padding: "8px",
                   textAlign: "left",
@@ -274,6 +282,11 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
                   component="th"
                   key={index}
                   sx={{
+                    position: "sticky",
+                    zIndex: 3,
+                    top: 0,
+                    borderBottom: "1px solid #ddd",
+                    backgroundColor: "neutral.softBg",
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
                     textAlign: "left",
@@ -601,6 +614,28 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
             )
           )}
         </Box>
+
+        <FormControl size="sm" sx={{ minWidth: 80 }}>
+          <Select
+            value={perPage}
+            onChange={(_e, newValue) => {
+              setPerPage(newValue);
+              setCurrentPage(1);
+              setSearchParams((prev) => {
+                const next = new URLSearchParams(prev);
+                next.set("page", "1");
+                next.set("pageSize", String(newValue));
+                return next;
+              });
+            }}
+          >
+            {[10, 30, 60, 100, 500, 1000].map((num) => (
+              <Option key={num} value={num}>
+                {num}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
 
         <Button
           size="sm"

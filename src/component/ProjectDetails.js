@@ -35,6 +35,9 @@ import CamHandoverSheetForm from "./Lead Stage/Handover/CAMHandover";
 import PurchaseRequestCard from "./PurchaseRequestCard";
 import ScopeDetail from "./Scope";
 import Posts from "./Posts";
+import Documents from "./Document";
+import ReportProblemRoundedIcon from "@mui/icons-material/ReportProblemRounded";
+import { Alert } from "@mui/joy";
 
 /* ---------------- helpers ---------------- */
 const getUserData = () => {
@@ -46,13 +49,21 @@ const getUserData = () => {
   }
 };
 
-const VALID_TABS = new Set(["notes", "handover", "scope", "po", "eng"]);
+const VALID_TABS = new Set([
+  "notes",
+  "documents",
+  "handover",
+  "scope",
+  "po",
+  "eng",
+]);
 const NUM_TO_KEY = {
   0: "notes",
-  1: "handover",
-  2: "scope",
-  3: "po",
-  4: "eng",
+  1: "documents",
+  2: "handover",
+  3: "scope",
+  4: "po",
+  5: "eng",
 };
 
 const sanitizeTabFromQuery = (raw) => {
@@ -83,7 +94,7 @@ const canUserSeeHandover = (user) => {
   return privileged || dept !== "SCM";
 };
 
-/* ------------ Remaining Days helpers (project-only) ------------- */
+/* ------------ Date helpers ------------- */
 function toDMY(date) {
   try {
     const d = new Date(date);
@@ -95,6 +106,17 @@ function toDMY(date) {
   } catch {
     return "-";
   }
+}
+
+function fmtLocalDate(v) {
+  const d = v ? new Date(v) : null;
+  return d && !Number.isNaN(d.getTime())
+    ? d.toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+      })
+    : "-";
 }
 
 /** Pick preferred upcoming target among project dates. */
@@ -129,19 +151,36 @@ function pickCountdownTargetFromProject(project) {
   if (futures.length) {
     const soonest = futures.reduce((a, b) => (a.date < b.date ? a : b));
     return { target: soonest.date, usedKey: soonest.key };
-  }
 
-  // else latest past (already expired)
-  const latestPast = candidates.reduce((a, b) => (a.date > b.date ? a : b));
-  return { target: latestPast.date, usedKey: latestPast.key };
+    const latestPast = candidates.reduce((a, b) => (a.date > b.date ? a : b));
+    return { target: latestPast.date, usedKey: latestPast.key };
+  }
 }
 
-/** Live countdown chip */
-function RemainingDaysChip({ target, usedKey }) {
+function RemainingDaysChip({ days, target, usedKey }) {
   const [text, setText] = useState("—");
   const [color, setColor] = useState("neutral");
 
+  // API days mode (preferred if available)
   useEffect(() => {
+    if (typeof days === "number" && Number.isFinite(days)) {
+      if (days < 0) {
+        setText(`Expired ${Math.abs(days)}d`);
+        setColor("danger");
+      } else if (days === 0) {
+        setText("Today");
+        setColor("warning");
+      } else {
+        setText(`${days}d`);
+        setColor(days < 10 ? "danger" : days < 30 ? "warning" : "success");
+      }
+    }
+  }, [days]);
+
+  // Fallback: live countdown when API days not present
+  useEffect(() => {
+    if (typeof days === "number" && Number.isFinite(days)) return; // already handled
+
     if (!target) {
       setText("—");
       setColor("neutral");
@@ -184,7 +223,7 @@ function RemainingDaysChip({ target, usedKey }) {
       cancelled = true;
       clearInterval(id);
     };
-  }, [target]);
+  }, [days, target]);
 
   const label =
     usedKey === "project_completion_date"
@@ -197,7 +236,13 @@ function RemainingDaysChip({ target, usedKey }) {
 
   return (
     <Tooltip
-      title={target ? `${label}: ${toDMY(target)}` : "No target date"}
+      title={
+        typeof days === "number" && Number.isFinite(days)
+          ? label
+          : target
+          ? `${label}: ${toDMY(target)}`
+          : "No target date"
+      }
       arrow
     >
       <Chip variant="soft" color={color} size="sm" sx={{ fontWeight: 600 }}>
@@ -315,21 +360,24 @@ export default function Project_Detail() {
   const headerOffset = 72;
   const p_id = projectDetails?.p_id;
 
+  // Prefer API remaining_days; fallback to computed countdown target
+  const apiRemainingDays = useMemo(() => {
+    const n = Number(projectDetails?.remaining_days);
+    return Number.isFinite(n) ? n : null;
+  }, [projectDetails?.remaining_days]);
+
   const { target: countdownTarget, usedKey: countdownKey } = useMemo(
     () => pickCountdownTargetFromProject(projectDetails),
     [projectDetails]
   );
 
-  const fmtLocalDate = (v) => {
-    const d = v ? new Date(v) : null;
-    return d && !Number.isNaN(d.getTime())
-      ? d.toLocaleDateString(undefined, {
-          year: "numeric",
-          month: "short",
-          day: "2-digit",
-        })
-      : "-";
-  };
+  const isLoanDocPending = (loanVal) =>
+    /document[_\s]?pending/i.test(String(loanVal || ""));
+
+  const pendingDocNames = (arr) =>
+    (Array.isArray(arr) ? arr : [])
+      .map((d) => String(d?.filename || "").trim())
+      .filter(Boolean);
 
   return (
     <Box
@@ -385,7 +433,9 @@ export default function Project_Detail() {
               <Typography level="body-sm" sx={{ color: "text.secondary" }}>
                 Remaining:
               </Typography>
+
               <RemainingDaysChip
+                days={apiRemainingDays}
                 target={countdownTarget}
                 usedKey={countdownKey}
               />
@@ -451,6 +501,47 @@ export default function Project_Detail() {
 
             <Divider sx={{ my: 1 }} />
 
+            {/* 🔴 Document Pending Alert */}
+            {isLoanDocPending(projectDetails?.loan) && (
+              <Box sx={{ mb: 1 }}>
+                <Tooltip
+                  arrow
+                  title={
+                    <Box sx={{ maxWidth: 320 }}>
+                      <Typography level="title-sm" sx={{ mb: 0.5 }}>
+                        Missing Documents
+                      </Typography>
+                      {pendingDocNames(projectDetails?.documents_pending).length
+                        ? pendingDocNames(
+                            projectDetails?.documents_pending
+                          ).map((n, i) => (
+                            <Typography
+                              key={`${n}-${i}`}
+                              level="body-xs"
+                              sx={{ display: "block" }}
+                            >
+                              • {n}
+                            </Typography>
+                          ))
+                        : "No list available."}
+                    </Box>
+                  }
+                >
+                  <Chip
+                    size="sm"
+                    variant="solid"
+                    color="danger"
+                    startDecorator={
+                      <ReportProblemRoundedIcon fontSize="small" />
+                    }
+                    sx={{ fontWeight: 700 }}
+                  >
+                    Loan Document Pending
+                  </Chip>
+                </Tooltip>
+              </Box>
+            )}
+
             <Stack spacing={1}>
               <Stack direction="row" spacing={1} alignItems="center">
                 <Typography level="body-sm">Project Id:</Typography>
@@ -502,6 +593,7 @@ export default function Project_Detail() {
               <Typography level="body-sm">
                 <b>Tariff:</b> {projectDetails?.tarrif}
               </Typography>
+
               <Typography level="body-sm">
                 <b>PPA Expiry Date:</b>{" "}
                 {fmtLocalDate(projectDetails?.ppa_expiry_date)}
@@ -512,8 +604,9 @@ export default function Project_Detail() {
               </Typography>
               <Typography level="body-sm">
                 <b>Project Completion Date:</b>{" "}
-                {fmtLocalDate(projectDetails?.bd_commitment_date)}
+                {fmtLocalDate(projectDetails?.project_completion_date)}
               </Typography>
+
               {currentUser?.department !== "Engineering" &&
                 currentUser?.department !== "SCM" && (
                   <>
@@ -550,6 +643,7 @@ export default function Project_Detail() {
             >
               <TabList>
                 <Tab value="notes">Notes</Tab>
+                <Tab value="documents">Documents</Tab>
                 {allowedHandover && <Tab value="handover">Handover Sheet</Tab>}
                 <Tab value="scope">Material Status</Tab>
                 {allowedPO && <Tab value="po">Purchase Order</Tab>}
@@ -564,6 +658,16 @@ export default function Project_Detail() {
                 }}
               >
                 <Posts projectId={project_id} />
+              </TabPanel>
+              <TabPanel
+                value="documents"
+                sx={{
+                  p: { xs: 1, md: 1.5 },
+                  height: { xs: "auto", md: `100%` },
+                  overflowY: { md: "auto" },
+                }}
+              >
+                <Documents projectId={project_id} />
               </TabPanel>
               {allowedHandover && (
                 <TabPanel
