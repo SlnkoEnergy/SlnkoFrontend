@@ -168,6 +168,25 @@ function Dashboard() {
             </Button>
             <Button
               size="sm"
+              onClick={() => navigate(`/loan`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": {
+                  bgcolor: "rgba(255,255,255,0.15)",
+                },
+              }}
+            >
+              Loan
+            </Button>
+            <Button
+              size="sm"
               onClick={() => navigate(`/purchase_request`)}
               sx={{
                 color: "white",

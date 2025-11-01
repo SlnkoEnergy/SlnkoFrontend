@@ -1,5 +1,26 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
+const makeQuery = (obj = {}) => {
+  const params = new URLSearchParams();
+  Object.entries(obj).forEach(([k, v]) => {
+    if (v === undefined || v === null) return;
+    if (typeof v === "string") {
+      const trimmed = v.trim();
+      if (!trimmed) return;
+      params.set(k, trimmed);
+      return;
+    }
+    if (Array.isArray(v)) {
+      if (v.length === 0) return;
+      params.set(k, v.join(","));
+      return;
+    }
+    params.set(k, String(v));
+  });
+  const q = params.toString();
+  return q ? `?${q}` : "";
+};
+
 export const projectsApi = createApi({
   reducerPath: "projectsApi",
   baseQuery: fetchBaseQuery({
@@ -62,6 +83,58 @@ export const projectsApi = createApi({
     getAllProjects: builder.query({
       query: ({ page, limit, search, status, sort }) =>
         `projects?page=${page}&limit=${limit}&search=${search}&status=${status}&sort=${sort}`,
+      providesTags: ["Project"],
+    }),
+    getAllProjectsForLoan: builder.query({
+      query: (args = {}) => {
+        const {
+          page,
+          limit,
+          search,
+          status,
+          sort,
+
+          loan_status,
+          bank_state,
+
+          expected_disbursement_from,
+          expected_disbursement_to,
+
+          expected_sanction_from,
+          expected_sanction_to,
+
+          actual_disbursement_from,
+          actual_disbursement_to,
+
+          actual_sanction_from,
+          actual_sanction_to,
+        } = args;
+
+        const qs = makeQuery({
+          page,
+          limit,
+          search,
+          status,
+          sort,
+
+          loan_status,
+          bank_state,
+
+          expected_disbursement_from,
+          expected_disbursement_to,
+
+          expected_sanction_from,
+          expected_sanction_to,
+
+          actual_disbursement_from,
+          actual_disbursement_to,
+
+          actual_sanction_from,
+          actual_sanction_to,
+        });
+
+        return `project-loan${qs}`;
+      },
       providesTags: ["Project"],
     }),
     updateProjectStatus: builder.mutation({
@@ -188,9 +261,9 @@ export const projectsApi = createApi({
       providesTags: (result) =>
         result?.items
           ? [
-            ...result.items.map((a) => ({ type: "Activity", id: a._id })),
-            { type: "Activity", id: "LIST" },
-          ]
+              ...result.items.map((a) => ({ type: "Activity", id: a._id })),
+              { type: "Activity", id: "LIST" },
+            ]
           : [{ type: "Activity", id: "LIST" }],
     }),
 
@@ -217,9 +290,9 @@ export const projectsApi = createApi({
       providesTags: (result) =>
         result?.data
           ? [
-            ...result.data.map((m) => ({ type: "Module", id: m._id })),
-            { type: "Module", id: "LIST" },
-          ]
+              ...result.data.map((m) => ({ type: "Module", id: m._id })),
+              { type: "Module", id: "LIST" },
+            ]
           : [{ type: "Module", id: "LIST" }],
     }),
 
@@ -265,12 +338,12 @@ export const projectsApi = createApi({
       providesTags: (result) =>
         result?.data
           ? [
-            ...result.data.map((m) => ({
-              type: "MaterialCategory",
-              id: m._id,
-            })),
-            { type: "MaterialCategory", id: "LIST" },
-          ]
+              ...result.data.map((m) => ({
+                type: "MaterialCategory",
+                id: m._id,
+              })),
+              { type: "MaterialCategory", id: "LIST" },
+            ]
           : [{ type: "MaterialCategory", id: "LIST" }],
     }),
 
@@ -422,8 +495,8 @@ export const projectsApi = createApi({
           url: `/projectactivity/get-project-pdf?projectId=${projectId}&type=${type}&timeline=${timeline}`,
           method: "GET",
           responseHandler: (response) => response.blob(),
-        }
-      }
+        };
+      },
     }),
     updateReorderfromActivity: builder.mutation({
       query: ({ projectId }) => ({
@@ -441,6 +514,7 @@ export const {
   useAddProjectMutation,
   useUpdateProjectMutation,
   useGetAllProjectsQuery,
+  useGetAllProjectsForLoanQuery,
   useGetProjectDropdownForDashboardQuery,
   useUpdateProjectStatusMutation,
   useGetProjectByPIdQuery,
@@ -489,5 +563,5 @@ export const {
   useExportProjectScheduleMutation,
   useExportProjectSchedulePdfQuery,
   useLazyExportProjectSchedulePdfQuery,
-  useUpdateReorderfromActivityMutation
+  useUpdateReorderfromActivityMutation,
 } = projectsApi;
