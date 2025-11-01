@@ -44,7 +44,7 @@ import {
   useUploadExistingDocumentMutation,
 } from "../redux/loanSlice";
 
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 
 // ---- helpers ----
@@ -120,6 +120,7 @@ const goToProfile = (user) => {
 
 export default function LoanOverview() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const project_id = searchParams.get("project_id");
   const [uploadExistingDocument, { isLoading: uploading, error: uploadErr }] =
     useUploadExistingDocumentMutation();
@@ -391,7 +392,7 @@ export default function LoanOverview() {
                   flexWrap: "wrap",
                 }}
               >
-                <Chip size="sm" variant="soft" color="primary">
+                <Chip sx={{cursor:'pointer'}} onClick={()=> navigate(`/project_detail?project_id=${loanResp?.data?.project_id?._id}`)} size="sm" variant="soft" color="primary">
                   {loanResp?.data?.project_id?.code || "—"}
                 </Chip>
 
