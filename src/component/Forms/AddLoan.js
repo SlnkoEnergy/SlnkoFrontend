@@ -335,7 +335,7 @@ function DocTitleCell({ value, onChange, onPickExisting, projectId }) {
   const pick = (doc) => {
     const filename = (doc?.filename || "").trim();
     onChange?.(filename);
-    onPickExisting?.(filename);
+    onPickExisting?.(doc);
     setOpen(false);
   };
 
@@ -420,12 +420,13 @@ function DocTitleCell({ value, onChange, onPickExisting, projectId }) {
 function DocPresenceCell({
   projectId,
   title,
-  source, // 'existing' | 'uploaded' | null
-  file, // File | null
+  source,
+  file,
   onChangePresence,
   onChangeSource,
   onFilePicked,
   onMaybeSetTitle,
+  fileurl,
 }) {
   const [openUpload, setOpenUpload] = React.useState(false);
   const debouncedTitle = useDebounce(title || "", 400);
@@ -436,7 +437,7 @@ function DocPresenceCell({
   );
 
   const hits = data?.data || [];
-  const firstUrl = hits[0]?.fileurl;
+  const firstUrl = fileurl || hits[0]?.fileurl;
 
   const isExisting = source === "existing" && !!firstUrl;
   const isUploaded = source === "uploaded";
@@ -609,7 +610,7 @@ export default function AddLoan() {
   });
 
   const [docs, setDocs] = React.useState([
-    { title: "", file: null, present: false, source: null },
+    { title: "", file: null, present: false, source: null, fileurl: "" },
   ]);
 
   const [banks, setBanks] = React.useState([
@@ -647,22 +648,6 @@ export default function AddLoan() {
       b.map((row, i) => (i === idx ? { ...row, [key]: value } : row))
     );
 
-  const onBankNameChange = (idx) => (e) => {
-    const val = e.target.value || "";
-    updateBank(idx, "name", val);
-
-    const lower = val.trim().toLowerCase();
-    const match = uniqueBanks.find(
-      (ub) => (ub?.name || "").toString().trim().toLowerCase() === lower
-    );
-    if (match) {
-      updateBank(idx, "branch", match.branch || "");
-      updateBank(idx, "ifsc_code", match.ifsc_code || "");
-      if (match.state) updateBank(idx, "state", match.state || "");
-    } else {
-    }
-  };
-
   const submit = async (e) => {
     e.preventDefault();
 
@@ -684,6 +669,25 @@ export default function AddLoan() {
         }
       });
 
+      // Build links for existing docs (url + nice name)
+      const links = docs
+        .filter((d) => d?.source === "existing" && d?.fileurl)
+        .map((d) => ({
+          url: d.fileurl,
+          name:
+            d.title ||
+            (() => {
+              try {
+                const seg = decodeURIComponent(
+                  new URL(d.fileurl).pathname.split("/").pop() || ""
+                );
+                return seg || "document";
+              } catch {
+                return "document";
+              }
+            })(),
+        }));
+
       const data = {
         expectedSanctionDate: header.expectedSanctionDate || "",
         expectedDisbursementDate: header.expectedDisbursementDate || "",
@@ -703,7 +707,7 @@ export default function AddLoan() {
         projectId: header.project_id,
         data,
         files,
-        links: [],
+        links,
       }).unwrap();
 
       toast.success("Loan created successfully.");
@@ -890,18 +894,28 @@ export default function AddLoan() {
                             updateDoc(idx, "present", false);
                             updateDoc(idx, "file", null);
                             updateDoc(idx, "source", null);
+                            updateDoc(idx, "fileurl", "");
                           } else {
                             updateDoc(idx, "present", false);
                             if (row.source === "existing") {
                               updateDoc(idx, "source", null);
+                              updateDoc(idx, "fileurl", "");
                             }
                           }
                         }}
-                        onPickExisting={(pickedName) => {
+                        onPickExisting={(doc) => {
+                          const pickedName =
+                            (doc?.filename || doc?.name || "").trim() ||
+                            (doc?.fileurl
+                              ? decodeURIComponent(
+                                  doc.fileurl.split("/").pop() || ""
+                                )
+                              : "");
                           updateDoc(idx, "title", pickedName);
                           updateDoc(idx, "present", true);
                           updateDoc(idx, "source", "existing");
                           updateDoc(idx, "file", null);
+                          updateDoc(idx, "fileurl", doc?.fileurl || "");
                         }}
                       />
                     </td>
@@ -912,6 +926,7 @@ export default function AddLoan() {
                         title={row.title}
                         source={row.source}
                         file={row.file}
+                        fileurl={row.fileurl}
                         onChangePresence={(p) => updateDoc(idx, "present", p)}
                         onChangeSource={(s) => updateDoc(idx, "source", s)}
                         onFilePicked={(file) => updateDoc(idx, "file", file)}
