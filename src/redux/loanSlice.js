@@ -167,6 +167,7 @@ export const loanApi = createApi({
       },
       invalidatesTags: (_r, _e, { project_id }) => [{ type: "Loan", id: "LIST" }],
     }),
+    
   }),
 });
 
