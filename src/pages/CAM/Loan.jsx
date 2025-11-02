@@ -4,13 +4,29 @@ import { CssVarsProvider } from "@mui/joy/styles";
 import { useEffect, useState } from "react";
 import Sidebar from "../../component/Partials/Sidebar";
 import MainHeader from "../../component/Partials/MainHeader";
-import { Button, ModalClose, Modal, ModalDialog, Typography } from "@mui/joy";
+import {
+  Button,
+  ModalClose,
+  Modal,
+  ModalDialog,
+  Typography,
+  Dropdown,
+  MenuButton,
+  Menu,
+  MenuItem,
+  ListDivider,
+} from "@mui/joy";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import SubHeader from "../../component/Partials/SubHeader";
 import { Add } from "@mui/icons-material";
 import AllLoan from "../../component/AllLoan";
 import AddLoan from "../../component/Forms/AddLoan";
 import Filter from "../../component/Partials/Filter";
+import DownloadIcon from "@mui/icons-material/Download";
+import DoneAllIcon from "@mui/icons-material/DoneAll";
+import SelectAllIcon from "@mui/icons-material/SelectAll";
+import { useExportLoanMutation } from "../../redux/projectsSlice";
+import { toast } from "react-toastify";
 
 function Loan() {
   const [user, setUser] = useState(null);
@@ -35,6 +51,18 @@ function Loan() {
     const userData = getUserData();
     setUser(userData);
   }, []);
+
+  const [exportLoan] = useExportLoanMutation();
+  const downloadBlob = (blob, filename = "loans_export.csv") => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  };
 
   const indianStates = [
     { label: "Andhra Pradesh", value: "andhra pradesh" },
@@ -149,6 +177,56 @@ function Loan() {
     },
   ];
 
+  // ---- For Selected Projects ----
+  const handleExportSelected = async () => {
+    try {
+      if (!selected?.length) {
+        toast.error("No rows selected to export.");
+        return;
+      }
+
+      const payload = {
+        type: "selected",
+        project_ids: selected, 
+      };
+
+      const blob = await exportLoan(payload).unwrap();
+      downloadBlob(blob, "loan_selected_export.csv");
+    } catch (err) {
+      console.error("Export (selected) failed:", err);
+      toast.error("Failed to export selected loan projects.");
+    }
+  };
+
+  const buildAllExportParams = () => {
+    const params = Object.fromEntries(searchParams.entries());
+    return {
+      type: "all",
+      loan_status: params.loan_status || "",
+      bank_state: params.bank_state || "",
+      expected_disbursement_from: params.expected_disbursement_from || "",
+      expected_disbursement_to: params.expected_disbursement_to || "",
+      expected_sanction_from: params.expected_sanction_from || "",
+      expected_sanction_to: params.expected_sanction_to || "",
+      actual_disbursement_from: params.actual_disbursement_from || "",
+      actual_disbursement_to: params.actual_disbursement_to || "",
+      actual_sanction_from: params.actual_sanction_from || "",
+      actual_sanction_to: params.actual_sanction_to || "",
+    };
+  };
+
+  // ---- For All Projects (with filters) ----
+  const handleExportAll = async () => {
+    try {
+      const payload = buildAllExportParams();
+      const blob = await exportLoan(payload).unwrap();
+      downloadBlob(blob, "loan_all_export.csv");
+    } catch (err) {
+      console.error("Export (all) failed:", err);
+      toast.error("Failed to export all loan projects.");
+    }
+  };
+
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -240,6 +318,46 @@ function Loan() {
           sticky
           rightSlot={
             <>
+              {selected?.length > 0 && (
+                <Dropdown>
+                  <MenuButton
+                    variant="outlined"
+                    size="sm"
+                    startDecorator={<DownloadIcon />}
+                    sx={{
+                      color: "#3366a3",
+                      borderColor: "#3366a3",
+                      backgroundColor: "transparent",
+                      "--Button-hoverBg": "#e0e0e0",
+                      "--Button-hoverBorderColor": "#3366a3",
+                      "&:hover": { color: "#3366a3" },
+                      height: "28px",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
+                    Export
+                  </MenuButton>
+                  <Menu placement="bottom-end" sx={{ minWidth: 220 }}>
+                    <MenuItem
+                      onClick={handleExportSelected}
+                      disabled={!selected?.length}
+                      sx={{ display: "flex", gap: 1, alignItems: "center" }}
+                    >
+                      <DoneAllIcon fontSize="small" />
+                      Selected ({selected?.length || 0})
+                    </MenuItem>
+                    <ListDivider />
+                    <MenuItem
+                      onClick={handleExportAll}
+                      sx={{ display: "flex", gap: 1, alignItems: "center" }}
+                    >
+                      <SelectAllIcon fontSize="small" />
+                      All (use current filters)
+                    </MenuItem>
+                  </Menu>
+                </Dropdown>
+              )}
               <Button
                 variant="solid"
                 size="sm"

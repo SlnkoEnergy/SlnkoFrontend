@@ -1,3 +1,4 @@
+// pages/AllLoan.jsx
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import SearchIcon from "@mui/icons-material/Search";
@@ -21,6 +22,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
 import { useGetAllProjectsForLoanQuery } from "../redux/projectsSlice";
+import DOMPurify from "dompurify";
 
 /* ------------ small helpers ------------ */
 function relTime(iso) {
@@ -81,6 +83,47 @@ function statusColor(s) {
   }
 }
 
+/** Sanitizes and renders limited HTML safely */
+function SafeHtml({ html, clamp = 2 }) {
+  const safe = useMemo(
+    () =>
+      DOMPurify.sanitize(String(html || ""), {
+        ALLOWED_TAGS: ["b", "strong", "i", "em", "u", "br", "ul", "ol", "li"],
+        ALLOWED_ATTR: [],
+      }),
+    [html]
+  );
+
+  if (!safe) {
+    return (
+      <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
+        —
+      </Typography>
+    );
+  }
+
+  // Use a Box with line-clamp that still supports inner HTML
+  return (
+    <Box
+      sx={{
+        display: "-webkit-box",
+        WebkitLineClamp: clamp,
+        WebkitBoxOrient: "vertical",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        lineHeight: 1.4,
+        wordBreak: "break-word",
+        mt: 0.25,
+        "& ul, & ol": {
+          margin: 0,
+          paddingLeft: "1rem",
+        },
+      }}
+      dangerouslySetInnerHTML={{ __html: safe }}
+    />
+  );
+}
+
 function CommentPill({ c }) {
   const name = c?.createdBy?.name || "User";
   const avatar = c?.createdBy?.attachment_url || "";
@@ -121,20 +164,9 @@ function CommentPill({ c }) {
             {when}
           </Typography>
         </Stack>
-        <Typography
-          level="body-sm"
-          sx={{
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            lineHeight: 1.4,
-            mt: 0.25,
-          }}
-        >
-          {text || "—"}
-        </Typography>
+
+        {/* Render sanitized HTML (lists/bold/etc.) with clamp */}
+        <SafeHtml html={text} clamp={2} />
       </Box>
     </Sheet>
   );
@@ -227,7 +259,7 @@ function AllLoan({ selected, setSelected }) {
     "State",
     "Capacity(AC)",
     "Loan Status",
-    "Comments", // 👈 new column
+    "Comments",
   ];
   const totalCols = 1 + baseHeaders.length;
 
@@ -453,8 +485,8 @@ function AllLoan({ selected, setSelected }) {
                         </Typography>
                       ) : (
                         <Stack direction="column" gap={0.75}>
-                          {comments.map((c) => (
-                            <CommentPill key={c?._id} c={c} />
+                          {comments.map((c, idx) => (
+                            <CommentPill key={c?._id || idx} c={c} />
                           ))}
                         </Stack>
                       )}

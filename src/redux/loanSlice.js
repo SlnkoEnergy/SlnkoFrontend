@@ -153,6 +153,21 @@ export const loanApi = createApi({
       },
       invalidatesTags: [{ type: "Loan", id: "LIST" }],
     }),
+
+     addLoanDocument: builder.mutation({
+      query: ({ project_id, filename, file }) => {
+        const form = new FormData();
+        if (filename) form.append("filename", filename);
+        if (file) form.append("file", file);
+        return {
+          url: `/document?project_id=${encodeURIComponent(project_id)}`,
+          method: "PATCH",
+          body: form,
+        };
+      },
+      invalidatesTags: (_r, _e, { project_id }) => [{ type: "Loan", id: "LIST" }],
+    }),
+    
   }),
 });
 
@@ -163,5 +178,6 @@ export const {
   useGetLoanByIdQuery,
   useUpdateLoanStatusMutation,
   useAddCommentMutation,
-  useUploadExistingDocumentMutation
+  useUploadExistingDocumentMutation,
+  useAddLoanDocumentMutation
 } = loanApi;

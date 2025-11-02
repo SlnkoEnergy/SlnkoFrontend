@@ -1,5 +1,4 @@
 // LeadProfile.jsx (responsive + sticky tabs/panel)
-
 import {
   Box,
   Avatar,
@@ -37,7 +36,6 @@ import ScopeDetail from "./Scope";
 import Posts from "./Posts";
 import Documents from "./Document";
 import ReportProblemRoundedIcon from "@mui/icons-material/ReportProblemRounded";
-import { Alert } from "@mui/joy";
 
 /* ---------------- helpers ---------------- */
 const getUserData = () => {
@@ -83,6 +81,17 @@ const canUserSeePO = (user) => {
   const special = user.emp_id === "SE-013";
   const privileged = special || role === "admin" || role === "superadmin";
   return privileged || dept !== "Engineering";
+};
+
+const canUserSeeDocument = (user) => {
+  if (!user) return false;
+
+  const role = String(user.role || "").toLowerCase();
+  const dept = user.department || "";
+  const name = String(user.name || "").trim();
+  const special = user.emp_id === "SE-013";
+  const privileged = special || role === "admin" || role === "superadmin";
+  return privileged || dept !== "SCM";
 };
 
 const canUserSeeHandover = (user) => {
@@ -161,7 +170,6 @@ function RemainingDaysChip({ days, target, usedKey }) {
   const [text, setText] = useState("—");
   const [color, setColor] = useState("neutral");
 
-  // API days mode (preferred if available)
   useEffect(() => {
     if (typeof days === "number" && Number.isFinite(days)) {
       if (days < 0) {
@@ -177,9 +185,8 @@ function RemainingDaysChip({ days, target, usedKey }) {
     }
   }, [days]);
 
-  // Fallback: live countdown when API days not present
   useEffect(() => {
-    if (typeof days === "number" && Number.isFinite(days)) return; // already handled
+    if (typeof days === "number" && Number.isFinite(days)) return;
 
     if (!target) {
       setText("—");
@@ -267,10 +274,10 @@ export default function Project_Detail() {
     [currentUser]
   );
 
-  // ---- tabs (string keys) ----
   const initialTab = sanitizeTabFromQuery(searchParams.get("tab"));
   const [tabValue, setTabValue] = useState(initialTab);
   const allowedPO = canUserSeePO(currentUser);
+  const allowedDocument = canUserSeeDocument(currentUser);
   const allowedHandover = canUserSeeHandover(currentUser);
 
   useEffect(() => {
@@ -295,7 +302,6 @@ export default function Project_Detail() {
     setSearchParams(params);
   };
 
-  // ---- follow/unfollow state ----
   const [isFollowing, setIsFollowing] = useState(false);
   const [follow, { isLoading: isFollowingCall }] = useFollowMutation();
   const [unfollow, { isLoading: isUnfollowingCall }] = useUnfollowMutation();
@@ -360,7 +366,6 @@ export default function Project_Detail() {
   const headerOffset = 72;
   const p_id = projectDetails?.p_id;
 
-  // Prefer API remaining_days; fallback to computed countdown target
   const apiRemainingDays = useMemo(() => {
     const n = Number(projectDetails?.remaining_days);
     return Number.isFinite(n) ? n : null;
@@ -383,7 +388,7 @@ export default function Project_Detail() {
     <Box
       sx={{
         ml: { lg: "var(--Sidebar-width)" },
-        px: { xs: 1, md: 2 },
+        px: { xs: 1, md: 0 },
         width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
       }}
     >
@@ -501,13 +506,15 @@ export default function Project_Detail() {
 
             <Divider sx={{ my: 1 }} />
 
-            {/* 🔴 Document Pending Alert */}
             {isLoanDocPending(projectDetails?.loan) && (
               <Box sx={{ mb: 1 }}>
                 <Tooltip
                   arrow
+                  sx={{
+                    backgroundColor: "#fff",
+                  }}
                   title={
-                    <Box sx={{ maxWidth: 320 }}>
+                    <Box sx={{ maxWidth: 360 }}>
                       <Typography level="title-sm" sx={{ mb: 0.5 }}>
                         Missing Documents
                       </Typography>
@@ -534,7 +541,7 @@ export default function Project_Detail() {
                     startDecorator={
                       <ReportProblemRoundedIcon fontSize="small" />
                     }
-                    sx={{ fontWeight: 700 }}
+                    sx={{ fontWeight: 700, cursor: "pointer" }}
                   >
                     Loan Document Pending
                   </Chip>
@@ -643,7 +650,7 @@ export default function Project_Detail() {
             >
               <TabList>
                 <Tab value="notes">Notes</Tab>
-                <Tab value="documents">Documents</Tab>
+                {allowedDocument && <Tab value="documents">Documents</Tab>}
                 {allowedHandover && <Tab value="handover">Handover Sheet</Tab>}
                 <Tab value="scope">Material Status</Tab>
                 {allowedPO && <Tab value="po">Purchase Order</Tab>}
@@ -659,16 +666,18 @@ export default function Project_Detail() {
               >
                 <Posts projectId={project_id} />
               </TabPanel>
-              <TabPanel
-                value="documents"
-                sx={{
-                  p: { xs: 1, md: 1.5 },
-                  height: { xs: "auto", md: `100%` },
-                  overflowY: { md: "auto" },
-                }}
-              >
-                <Documents projectId={project_id} />
-              </TabPanel>
+              {allowedDocument && (
+                <TabPanel
+                  value="documents"
+                  sx={{
+                    p: { xs: 1, md: 1.5 },
+                    height: { xs: "auto", md: `100%` },
+                    overflowY: { md: "auto" },
+                  }}
+                >
+                  <Documents projectId={project_id} />
+                </TabPanel>
+              )}
               {allowedHandover && (
                 <TabPanel
                   value="handover"

@@ -29,6 +29,7 @@ import {
   Avatar,
   Stack,
   IconButton,
+  Input,
 } from "@mui/joy";
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 import TimelineRoundedIcon from "@mui/icons-material/TimelineRounded";
@@ -42,6 +43,7 @@ import {
   useUpdateLoanStatusMutation,
   useAddCommentMutation,
   useUploadExistingDocumentMutation,
+  useAddLoanDocumentMutation,
 } from "../redux/loanSlice";
 
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -129,6 +131,67 @@ export default function LoanOverview() {
   const [uploadDoc, setUploadDoc] = React.useState(null);
   const [uploadFile, setUploadFile] = React.useState(null);
   const [uploadFilename, setUploadFilename] = React.useState("");
+
+  // ----- Add Document (new doc) -----
+  const [addDocOpen, setAddDocOpen] = React.useState(false);
+  const [addDocFile, setAddDocFile] = React.useState(null);
+  const [addDocName, setAddDocName] = React.useState("");
+
+  const [addLoanDocument, { isLoading: addingDoc, error: addDocErr }] =
+    useAddLoanDocumentMutation();
+
+  const openAddDoc = () => {
+    setAddDocName("");
+    setAddDocFile(null);
+    setAddDocOpen(true);
+  };
+  const closeAddDoc = () => {
+    setAddDocOpen(false);
+    setAddDocName("");
+    setAddDocFile(null);
+  };
+
+  const onAddDocPick = (e) => {
+    const f = e?.target?.files?.[0];
+    if (f) {
+      setAddDocFile(f);
+      if (!addDocName) {
+        const base = f.name.replace(/\.[^/.]+$/, "");
+        setAddDocName(base);
+      }
+    }
+  };
+  const onAddDocDrop = (e) => {
+    e.preventDefault();
+    const f = e?.dataTransfer?.files?.[0];
+    if (f) {
+      setAddDocFile(f);
+      if (!addDocName) {
+        const base = f.name.replace(/\.[^/.]+$/, "");
+        setAddDocName(base);
+      }
+    }
+  };
+  const onAddDocDragOver = (e) => e.preventDefault();
+
+  const submitAddDoc = async () => {
+    if (!project_id || !addDocName.trim()) {
+      toast.error("Filename is required");
+      return;
+    }
+    try {
+      await addLoanDocument({
+        project_id,
+        filename: addDocName.trim(),
+        file: addDocFile || undefined,
+      }).unwrap();
+      toast.success("Document added");
+      closeAddDoc();
+      refetch();
+    } catch (e) {
+      toast.error(e?.data?.message || e?.error || "Failed to add document");
+    }
+  };
 
   const openUploadModal = (doc) => {
     setUploadDoc(doc || null);
@@ -249,7 +312,6 @@ export default function LoanOverview() {
   const [commentText, setCommentText] = React.useState("");
   const [attachments, setAttachments] = React.useState([]);
 
-  // 👇 Add Comment mutation
   const [addComment, { isLoading: isSaving, error: addCommentErr }] =
     useAddCommentMutation();
 
@@ -271,7 +333,6 @@ export default function LoanOverview() {
   const activity = React.useMemo(() => {
     const items = [];
 
-    // ✅ Status updates
     (status_history || []).forEach((s) => {
       items.push({
         _id: s?._id,
@@ -279,25 +340,23 @@ export default function LoanOverview() {
         status: s.status,
         remarks: s.remarks || "",
         user: s.user_id || {},
-        at: s.at || s.updatedAt || s.createdAt,
+        at: s.updatedAt,
       });
     });
 
-    // ✅ Comments
     (comments || []).forEach((c) => {
       items.push({
         _id: c?._id,
         _type: "comment",
-        html: c.html || "",
-        user: c.user_id || {},
-        at: c.at || c.updatedAt || c.createdAt,
+        html: c.remarks || "",
+        user: c.createdBy || {},
+        at: c.updatedAt,
       });
     });
 
-    // ✅ Files — only include those with valid fileurl
     (documents || []).forEach((f) => {
       const url = f?.url || f?.fileurl || "";
-      if (!url || url.trim() === "") return; // skip docs without fileurl
+      if (!url || url.trim() === "") return;
 
       items.push({
         _id: f?._id,
@@ -307,12 +366,9 @@ export default function LoanOverview() {
         at: f.updatedAt || f.createdAt,
       });
     });
-
-    // ✅ Sort newest first
     return items.sort((a, b) => new Date(b.at || 0) - new Date(a.at || 0));
   }, [status_history, comments, documents]);
 
-  // Submit ONLY comment text (no attachments in request)
   const handleSubmitComment = async () => {
     const text = String(commentText || "").trim();
     if (!project_id || !text) return;
@@ -392,7 +448,17 @@ export default function LoanOverview() {
                   flexWrap: "wrap",
                 }}
               >
-                <Chip sx={{cursor:'pointer'}} onClick={()=> navigate(`/project_detail?project_id=${loanResp?.data?.project_id?._id}`)} size="sm" variant="soft" color="primary">
+                <Chip
+                  sx={{ cursor: "pointer" }}
+                  onClick={() =>
+                    navigate(
+                      `/project_detail?project_id=${loanResp?.data?.project_id?._id}`
+                    )
+                  }
+                  size="sm"
+                  variant="soft"
+                  color="primary"
+                >
                   {loanResp?.data?.project_id?.code || "—"}
                 </Chip>
 
@@ -523,7 +589,7 @@ export default function LoanOverview() {
           <Card variant="soft" sx={{ borderRadius: "lg", height: "100%" }}>
             <CardContent
               sx={{
-                maxHeight: { xs: 520, md: 600 }, // scroll when long
+                maxHeight: { xs: 520, md: 600 },
                 overflow: "auto",
               }}
             >
@@ -613,7 +679,7 @@ export default function LoanOverview() {
                 onAttachClick={() => setOpenAttachModal(true)}
                 attachments={attachments}
                 onRemoveAttachment={handleRemoveAttachment}
-                isSubmitting={isSaving} // 👈 hooked to addComment state
+                isSubmitting={isSaving}
                 editorMinHeight={30}
               />
 
@@ -765,123 +831,136 @@ export default function LoanOverview() {
                   No documents yet.
                 </Typography>
               ) : (
-                <Sheet variant="soft" sx={{ borderRadius: "md", p: 1 }}>
+                <>
                   <Box
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 160px 210px 80px",
-                      gap: 12,
-                      px: 1,
-                      py: 1,
-                      borderBottom: "1px solid",
-                      borderColor: "neutral.outlinedBorder",
-                      fontWeight: 600,
-                    }}
+                    sx={{ display: "flex", justifyContent: "flex-end", mb: 1 }}
                   >
-                    <Typography level="body-sm">Name</Typography>
-                    <Typography level="body-sm">Type/Size</Typography>
-                    <Typography level="body-sm">Uploaded By / When</Typography>
-                    <Typography level="body-sm" sx={{ textAlign: "right" }} />
+                    <Button size="sm" variant="soft" onClick={openAddDoc}>
+                      Add Document
+                    </Button>
                   </Box>
+                  <Sheet variant="soft" sx={{ borderRadius: "md", p: 1 }}>
+                    <Box
+                      sx={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 160px 210px 80px",
+                        gap: 12,
+                        px: 1,
+                        py: 1,
+                        borderBottom: "1px solid",
+                        borderColor: "neutral.outlinedBorder",
+                        fontWeight: 600,
+                      }}
+                    >
+                      <Typography level="body-sm">Name</Typography>
+                      <Typography level="body-sm">Type/Size</Typography>
+                      <Typography level="body-sm">
+                        Uploaded By / When
+                      </Typography>
+                      <Typography level="body-sm" sx={{ textAlign: "right" }} />
+                    </Box>
 
-                  {documents.map((a, i) => {
-                    const name = a?.name || "Attachment";
-                    const url = safeUrl(a?.url || "");
-                    const typeOrExt = a?.type || fileExt(name).toUpperCase();
-                    const size = a?.size ? formatBytes(a.size) : "";
-                    const who = a?.user_id?.name || "—";
-                    const when =
-                      a?.updatedAt || a?.createdAt
-                        ? new Date(a.updatedAt || a.createdAt).toLocaleString()
-                        : "";
+                    {documents.map((a, i) => {
+                      const name = a?.name || "Attachment";
+                      const url = safeUrl(a?.url || "");
+                      const typeOrExt = a?.type || fileExt(name).toUpperCase();
+                      const size = a?.size ? formatBytes(a.size) : "";
+                      const who = a?.user_id?.name || "—";
+                      const when =
+                        a?.updatedAt || a?.createdAt
+                          ? new Date(
+                              a.updatedAt || a.createdAt
+                            ).toLocaleString()
+                          : "";
 
-                    return (
-                      <Box
-                        key={a?._id || `${url}-${i}`}
-                        sx={{
-                          display: "grid",
-                          gridTemplateColumns: "1fr 160px 210px 80px",
-                          gap: 12,
-                          alignItems: "center",
-                          px: 1,
-                          py: 1,
-                          borderBottom:
-                            i === documents.length - 1 ? "none" : "1px solid",
-                          borderColor: "neutral.outlinedBorder",
-                        }}
-                      >
-                        <Stack direction="row" alignItems="center" gap={1}>
-                          <Box sx={{ fontSize: 22, opacity: 0.75 }}>
-                            {iconFor(name, a?.type)}
-                          </Box>
-                          <Tooltip title={name}>
-                            <Typography
-                              level="body-sm"
-                              sx={{
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                maxWidth: 420,
-                                fontWeight: 600,
-                              }}
-                            >
-                              {name}
-                            </Typography>
-                          </Tooltip>
-                        </Stack>
-
-                        <Typography
-                          level="body-sm"
-                          sx={{ color: "text.tertiary" }}
+                      return (
+                        <Box
+                          key={a?._id || `${url}-${i}`}
+                          sx={{
+                            display: "grid",
+                            gridTemplateColumns: "1fr 160px 210px 80px",
+                            gap: 12,
+                            alignItems: "center",
+                            px: 1,
+                            py: 1,
+                            borderBottom:
+                              i === documents.length - 1 ? "none" : "1px solid",
+                            borderColor: "neutral.outlinedBorder",
+                          }}
                         >
-                          {typeOrExt}
-                          {size ? ` • ${size}` : ""}
-                        </Typography>
-
-                        <Typography
-                          level="body-sm"
-                          sx={{ color: "text.tertiary" }}
-                        >
-                          {who}
-                          {when ? ` • ${when}` : ""}
-                        </Typography>
-
-                        <Box sx={{ textAlign: "right" }}>
-                          {url ? (
-                            <Tooltip title="Download">
-                              <IconButton
-                                className="dl"
-                                size="sm"
-                                variant="solid"
+                          <Stack direction="row" alignItems="center" gap={1}>
+                            <Box sx={{ fontSize: 22, opacity: 0.75 }}>
+                              {iconFor(name, a?.type)}
+                            </Box>
+                            <Tooltip title={name}>
+                              <Typography
+                                level="body-sm"
                                 sx={{
-                                  "--Icon-color": "#3366a3",
-                                  opacity: 1,
-                                  backgroundColor: "#eaf1fa",
-                                  "&:hover": { backgroundColor: "#d0e2f7" },
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  maxWidth: 420,
+                                  fontWeight: 600,
                                 }}
-                                component="a"
-                                href={url}
-                                download={name}
                               >
-                                <DownloadRoundedIcon />
-                              </IconButton>
+                                {name}
+                              </Typography>
                             </Tooltip>
-                          ) : (
-                            <Tooltip title="Upload">
-                              <Button
-                                size="sm"
-                                variant="soft"
-                                onClick={() => openUploadModal(a)} // pass the doc row
-                              >
-                                Upload
-                              </Button>
-                            </Tooltip>
-                          )}
+                          </Stack>
+
+                          <Typography
+                            level="body-sm"
+                            sx={{ color: "text.tertiary" }}
+                          >
+                            {typeOrExt}
+                            {size ? ` • ${size}` : ""}
+                          </Typography>
+
+                          <Typography
+                            level="body-sm"
+                            sx={{ color: "text.tertiary" }}
+                          >
+                            {who}
+                            {when ? ` • ${when}` : ""}
+                          </Typography>
+
+                          <Box sx={{ textAlign: "right" }}>
+                            {url ? (
+                              <Tooltip title="Download">
+                                <IconButton
+                                  className="dl"
+                                  size="sm"
+                                  variant="solid"
+                                  sx={{
+                                    "--Icon-color": "#3366a3",
+                                    opacity: 1,
+                                    backgroundColor: "#eaf1fa",
+                                    "&:hover": { backgroundColor: "#d0e2f7" },
+                                  }}
+                                  component="a"
+                                  href={url}
+                                  download={name}
+                                >
+                                  <DownloadRoundedIcon />
+                                </IconButton>
+                              </Tooltip>
+                            ) : (
+                              <Tooltip title="Upload">
+                                <Button
+                                  size="sm"
+                                  variant="soft"
+                                  onClick={() => openUploadModal(a)} // pass the doc row
+                                >
+                                  Upload
+                                </Button>
+                              </Tooltip>
+                            )}
+                          </Box>
                         </Box>
-                      </Box>
-                    );
-                  })}
-                </Sheet>
+                      );
+                    })}
+                  </Sheet>
+                </>
               )}
             </TabPanel>
           </Tabs>
@@ -1018,6 +1097,89 @@ export default function LoanOverview() {
               onClick={saveStatus}
               loading={updating}
               disabled={!project_id || !nextStatus}
+            >
+              Save
+            </Button>
+          </DialogActions>
+        </ModalDialog>
+      </Modal>
+
+      {/* ---------- Add Document Modal (new entry) ---------- */}
+      <Modal open={addDocOpen} onClose={closeAddDoc}>
+        <ModalDialog
+          variant="outlined"
+          sx={{ borderRadius: "lg", minWidth: 520, maxWidth: "92vw" }}
+        >
+          <ModalClose />
+          <DialogTitle>Add Document</DialogTitle>
+          <DialogContent>
+            Provide a filename and optionally upload a file.
+          </DialogContent>
+
+          <Box sx={{ display: "grid", gap: 1.25 }}>
+            <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
+              Filename (required)
+            </Typography>
+            <Input
+              value={addDocName}
+              onChange={(e) => setAddDocName(e.target.value)}
+              placeholder="e.g. Sanction_Letter"
+            />
+
+            <Box
+              onDrop={onAddDocDrop}
+              onDragOver={onAddDocDragOver}
+              sx={{
+                mt: 1,
+                p: 2.5,
+                border: "2px dashed",
+                borderColor: "neutral.outlinedBorder",
+                borderRadius: "md",
+                textAlign: "center",
+                bgcolor: "background.level1",
+                cursor: "pointer",
+              }}
+              onClick={() =>
+                document.getElementById("add-doc-file-input")?.click()
+              }
+            >
+              <Typography level="body-sm">
+                Drag & drop files here, or <b>click to browse</b>
+              </Typography>
+              <input
+                id="add-doc-file-input"
+                type="file"
+                style={{ display: "none" }}
+                onChange={onAddDocPick}
+              />
+              {addDocFile ? (
+                <Typography
+                  level="body-xs"
+                  sx={{ mt: 1, color: "text.tertiary" }}
+                >
+                  Selected: {addDocFile.name} (
+                  {Math.round(addDocFile.size / 1024)} KB)
+                </Typography>
+              ) : null}
+            </Box>
+
+            {addDocErr ? (
+              <Alert color="danger" variant="soft">
+                {addDocErr?.data?.message ||
+                  addDocErr?.error ||
+                  "Failed to add document."}
+              </Alert>
+            ) : null}
+          </Box>
+
+          <DialogActions>
+            <Button variant="plain" onClick={closeAddDoc}>
+              Cancel
+            </Button>
+            <Button
+              onClick={submitAddDoc}
+              loading={addingDoc}
+              disabled={!addDocName.trim()}
             >
               Save
             </Button>
