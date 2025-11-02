@@ -203,7 +203,7 @@ function Loan() {
     return {
       type: "all",
       loan_status: params.loan_status || "",
-      bank_state: params.bank_state || "",
+      bank_state: params.state || "",
       expected_disbursement_from: params.expected_disbursement_from || "",
       expected_disbursement_to: params.expected_disbursement_to || "",
       expected_sanction_from: params.expected_sanction_from || "",
