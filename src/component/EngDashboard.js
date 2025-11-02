@@ -13,7 +13,15 @@ import Tooltip from "@mui/joy/Tooltip";
 import Typography from "@mui/joy/Typography";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { CircularProgress, Option, Select, Tab, TabList, Tabs } from "@mui/joy";
+import {
+  Chip,
+  CircularProgress,
+  Option,
+  Select,
+  Tab,
+  TabList,
+  Tabs,
+} from "@mui/joy";
 import NoData from "../assets/alert-bell.svg";
 import { useGetHandOverQuery } from "../redux/camsSlice";
 import { useTheme } from "@emotion/react";
@@ -94,7 +102,9 @@ function Dash_eng() {
             navigate(`/project_detail?page=${page}&project_id=${project_id}`);
           }}
         >
-          {code || "-"}
+          <Chip variant="outlined" color="primary">
+            {code || "-"}
+          </Chip>
         </span>
       </>
     );
