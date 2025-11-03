@@ -17,14 +17,14 @@ import Typography from "@mui/joy/Typography";
 import { useSnackbar } from "notistack";
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useExportBillsMutation, useGetAllBillsQuery } from "../redux/billsSlice";
+import {useExportBillsMutation, useGetAllBillsQuery } from "../redux/billsSlice";
 import Axios from "../utils/Axios";
 import dayjs from "dayjs";
 
 
 const VendorBillSummary = forwardRef((props, ref) => {
-
-  const { onSelectionChange } = props;
+  
+  const { onSelectionChange, setSelected } = props;
   useImperativeHandle(ref, () => ({
     handleExport,
     selectedIds,
@@ -32,7 +32,6 @@ const VendorBillSummary = forwardRef((props, ref) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // search text & pagination
   const [searchQuery, setSearchQuery] = useState("");
   const initialPage = parseInt(searchParams.get("page")) || 1;
   const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
@@ -43,10 +42,8 @@ const VendorBillSummary = forwardRef((props, ref) => {
   const dateFilterEnd = searchParams.get("to") || "";
   const dateFilterFrom = searchParams.get("from") || "";
   const selectStatus = searchParams.get("status") || "";
-  // selection
   const [selectedIds, setSelectedIds] = useState([]);
 
-  // Optional user data (kept)
   const [user, setUser] = useState(null);
   useEffect(() => {
     const userData = localStorage.getItem("userDetails");
@@ -100,8 +97,10 @@ const VendorBillSummary = forwardRef((props, ref) => {
     }
   };
 
+
   useEffect(() => {
     setSelectedIds([]);
+    setSelected([]);
   }, [bills, currentPage, perPage]);
 
   useEffect(() => {
@@ -162,12 +161,20 @@ const VendorBillSummary = forwardRef((props, ref) => {
   const isIndeterminate = selectedIds.length > 0 && !isAllSelected;
 
   const toggleSelectAll = (checked) => {
-    if (checked) setSelectedIds(allIdsOnPage);
-    else setSelectedIds([]);
+    if (checked) {
+      setSelectedIds(allIdsOnPage)
+      setSelected(allIdsOnPage)
+    }
+    else {
+      setSelectedIds([])
+      setSelected([])
+    };
   };
-
   const toggleRow = (id) => {
     setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+    setSelected((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
