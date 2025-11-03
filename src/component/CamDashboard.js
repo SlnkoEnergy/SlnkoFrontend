@@ -162,7 +162,13 @@ function Dash_cam({selected, setSelected}) {
             navigate(`/project_detail?page=${page}&project_id=${project_id}`);
           }}
         >
+          <Chip
+          variant="outlined"
+          color="primary"
+          >
+
           {code || "-"}
+          </Chip>
         </span>
       </>
     );

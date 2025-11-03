@@ -25,10 +25,13 @@ import {
 import Delete from "@mui/icons-material/Delete";
 import Add from "@mui/icons-material/Add";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
-
+import DownloadIcon from "@mui/icons-material/Download";
 import SearchPickerModal from "../../component/SearchPickerModal";
 import { useLazyGetProjectSearchDropdownQuery } from "../../redux/projectsSlice";
-import { useGetDocumentByNameQuery } from "../../redux/documentSlice";
+import {
+  useGetDocumentByNameQuery,
+  useLazyGetDocumentByNameQuery,
+} from "../../redux/documentSlice";
 
 import {
   useGetUniqueBanksQuery,
@@ -308,114 +311,30 @@ function SearchableSelect({
 }
 
 /* ---------------- Doc title cell ---------------- */
-function DocTitleCell({ value, onChange, onPickExisting, projectId }) {
-  const [input, setInput] = React.useState(value || "");
-  const [open, setOpen] = React.useState(false);
-  const rootRef = React.useRef(null);
-
-  const debounced = useDebounce(input, 350);
-  const skip = !projectId || !debounced?.trim();
-  const { data } = useGetDocumentByNameQuery(
-    { projectId, name: debounced },
-    { skip }
-  );
-  const rows = React.useMemo(() => data?.data || [], [data]);
-
-  React.useEffect(() => setInput(value || ""), [value]);
-
-  React.useEffect(() => {
-    const onClick = (e) => {
-      if (!rootRef.current) return;
-      if (!rootRef.current.contains(e.target)) setOpen(false);
-    };
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
-  }, []);
-
-  const pick = (doc) => {
-    const filename = (doc?.filename || "").trim();
-    onChange?.(filename);
-    onPickExisting?.(doc);
-    setOpen(false);
-  };
-
+function DocTitleCell({ value, onChange }) {
   return (
-    <Box ref={rootRef} sx={{ position: "relative" }}>
-      <Input
-        placeholder="Document title (e.g., LOI)"
-        value={input}
-        onChange={(e) => {
-          const v = e.target.value;
-          setInput(v);
-          onChange?.(v);
-        }}
-        onFocus={() => setOpen(true)}
-        variant="plain"
-        sx={{
-          fontSize: 16,
-          fontWeight: 400,
-          width: "100%",
-          borderRadius: 0,
-          borderBottom: `2px solid ${ACCENT}`,
-          "--Input-focusedThickness": "0px",
-          px: 0,
-          backgroundColor: "transparent",
-          "&:hover": { borderBottomColor: "#3363a3" },
-          "& input": { paddingBottom: "0px" },
-        }}
-      />
-
-      {open && rows.length > 0 && (
-        <Sheet
-          variant="outlined"
-          sx={{
-            position: "absolute",
-            zIndex: 8,
-            left: 0,
-            right: 0,
-            mt: 0.5,
-            borderRadius: "sm",
-            overflow: "hidden",
-            bgcolor: "#fff",
-            borderColor: "neutral.outlinedBorder",
-            boxShadow:
-              "0px 8px 24px rgba(0,0,0,0.12), 0 1px 0 0 rgba(255,255,255,0.06) inset",
-          }}
-        >
-          <Box
-            sx={{
-              maxHeight: 220,
-              overflowY: "auto",
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            {rows.map((doc, idx) => (
-              <Box
-                key={doc?._id || `${doc?.filename || "doc"}-${idx}`}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => pick(doc)}
-                sx={{
-                  px: 1.25,
-                  py: 1,
-                  cursor: "pointer",
-                  borderBottom: "1px solid var(--joy-palette-neutral-200)",
-                  "&:last-of-type": { borderBottom: "none" },
-                  "&:hover": { backgroundColor: "neutral.softBg" },
-                }}
-              >
-                <Typography level="body-sm">
-                  {(doc?.filename || "").trim()}
-                </Typography>
-              </Box>
-            ))}
-          </Box>
-        </Sheet>
-      )}
-    </Box>
+    <Input
+      placeholder="Document title (e.g., LOI)"
+      value={value || ""}
+      onChange={(e) => onChange?.(e.target.value)}
+      variant="plain"
+      sx={{
+        fontSize: 16,
+        fontWeight: 400,
+        width: "100%",
+        borderRadius: 0,
+        borderBottom: "2px solid #3363a3",
+        "--Input-focusedThickness": "0px",
+        px: 0,
+        backgroundColor: "transparent",
+        "&:hover": { borderBottomColor: "#3363a3" },
+        "& input": { paddingBottom: "0px" },
+      }}
+    />
   );
 }
 
+/* --------------- Presence/Upload cell ---------------- */
 /* --------------- Presence/Upload cell ---------------- */
 function DocPresenceCell({
   projectId,
@@ -443,12 +362,8 @@ function DocPresenceCell({
   const isUploaded = source === "uploaded";
 
   const handleChipClick = () => {
-    if (isExisting) {
-      window.open(firstUrl, "_blank", "noopener,noreferrer");
-      onChangePresence?.(true);
-    } else {
-      setOpenUpload(true);
-    }
+    // Chip should not trigger download — only mark presence or open upload modal
+    if (!isExisting) setOpenUpload(true);
   };
 
   const handlePick = (picked) => {
@@ -459,19 +374,59 @@ function DocPresenceCell({
     setOpenUpload(false);
   };
 
+  const handleDownload = (e) => {
+    e.stopPropagation();
+    if (!firstUrl) return;
+    const link = document.createElement("a");
+    link.href = firstUrl;
+    link.download = title || "document";
+    link.target = "_blank";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+        }}
+      >
+        {/* Presence Chip */}
         <Chip
           size="sm"
           color={isExisting ? "success" : "neutral"}
           variant="soft"
           onClick={handleChipClick}
-          sx={{ cursor: "pointer", userSelect: "none" }}
+          sx={{
+            cursor: isExisting ? "default" : "pointer",
+            userSelect: "none",
+          }}
         >
           {isExisting ? "Present" : "Not Present"}
         </Chip>
 
+        {/* Download Button beside Present */}
+        {isExisting && (
+          <IconButton
+            size="sm"
+            variant="outlined"
+            color="primary"
+            onClick={handleDownload}
+            sx={{
+              borderRadius: "md",
+              p: 0.6,
+              "&:hover": { backgroundColor: "primary.softBg" },
+            }}
+          >
+            <DownloadIcon fontSize="small" />
+          </IconButton>
+        )}
+
+        {/* Uploaded File Name */}
         {!isExisting && isUploaded && file?.name && (
           <Typography level="body-sm" sx={{ color: "neutral.700" }}>
             {file.name}
@@ -479,6 +434,7 @@ function DocPresenceCell({
         )}
       </Box>
 
+      {/* Upload Modal */}
       <UploadModal
         open={openUpload}
         onClose={() => setOpenUpload(false)}
@@ -487,6 +443,7 @@ function DocPresenceCell({
     </>
   );
 }
+
 
 /* ----------- Bank Name with server suggestions ----------- */
 function BankNameCell({ value, onPick, accent = "#3363a3" }) {
@@ -765,13 +722,35 @@ export default function AddLoan() {
     loadInitialProjects();
   }, [loadInitialProjects]);
 
-  const onPickProject = (row) => {
+  const [triggerDocumentFetch] = useLazyGetDocumentByNameQuery();
+
+  const onPickProject = async (row) => {
     if (!row) return;
     setHeader((h) => ({
       ...h,
       project_id: String(row._id || ""),
       project: labelFromRow(row),
     }));
+
+    try {
+      const res = await triggerDocumentFetch({ projectId: row._id, name: "" });
+      const docsData = res?.data?.data || [];
+      const mappedDocs = docsData.map((d) => ({
+        title: d.filename || "",
+        file: null,
+        present: true,
+        source: "existing",
+        fileurl: d.fileurl || "",
+      }));
+      setDocs(
+        mappedDocs.length
+          ? mappedDocs
+          : [{ title: "", file: null, present: false, source: null }]
+      );
+    } catch (err) {
+      console.error("Failed to fetch documents:", err);
+      setDocs([{ title: "", file: null, present: false, source: null }]);
+    }
   };
 
   const lineInputSx = {
@@ -967,7 +946,6 @@ export default function AddLoan() {
                 <tr>
                   <th>Bank Name</th>
                   <th style={{ width: 200 }}>Branch</th>
-                  <th style={{ width: 200 }}>IFSC Code</th>
                   <th style={{ width: 220 }}>State</th>
                   {/* 👈 new column */}
                   <th style={{ width: 40 }} />
@@ -1005,19 +983,6 @@ export default function AddLoan() {
                         sx={lineInputSx}
                       />
                     </td>
-
-                    <td>
-                      <Input
-                        placeholder="IFSC"
-                        value={row.ifsc_code || ""}
-                        onChange={(e) =>
-                          updateBank(idx, "ifsc_code", e.target.value)
-                        }
-                        variant="plain"
-                        sx={lineInputSx}
-                      />
-                    </td>
-
                     <td>
                       <Select
                         placeholder="Select State"
@@ -1085,7 +1050,6 @@ export default function AddLoan() {
               Add Banks
             </Button>
 
-            {/* suggestions list (only rendered if we have data) */}
             {uniqueBanks.length > 0 && (
               <datalist id="bank-suggestions">
                 {uniqueBanks.map((b, i) => (

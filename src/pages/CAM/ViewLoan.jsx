@@ -110,7 +110,7 @@ function ViewLoan() {
             </Button>
           </Box>
         </MainHeader>
-        <SubHeader title="View Loan" isBackEnabled={false} sticky></SubHeader>
+        <SubHeader title="View Loan" isBackEnabled={true} sticky></SubHeader>
         <Box
           component="main"
           className="MainContent"

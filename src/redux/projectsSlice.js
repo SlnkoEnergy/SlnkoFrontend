@@ -85,6 +85,7 @@ export const projectsApi = createApi({
         `projects?page=${page}&limit=${limit}&search=${search}&status=${status}&sort=${sort}`,
       providesTags: ["Project"],
     }),
+
     getAllProjectsForLoan: builder.query({
       query: (args = {}) => {
         const {
@@ -136,6 +137,31 @@ export const projectsApi = createApi({
         return `project-loan${qs}`;
       },
       providesTags: ["Project"],
+    }),
+     exportLoan: builder.mutation({
+      query: ({
+        project_ids,
+        type,
+          loan_status,
+          bank_state,
+
+          expected_disbursement_from,
+          expected_disbursement_to,
+
+          expected_sanction_from,
+          expected_sanction_to,
+
+          actual_disbursement_from,
+          actual_disbursement_to,
+
+          actual_sanction_from,
+          actual_sanction_to,
+      }) => ({
+        url: `/export-loan?type=${type}&loan_status=${loan_status}&bank_state=${bank_state}&expected_disbursement_from=${expected_disbursement_from}&expected_disbursement_to=${expected_disbursement_to}&expected_sanction_from=${expected_sanction_from}&expected_sanction_to=${expected_sanction_to}&actual_disbursement_from=${actual_disbursement_from}&actual_sanction_from=${actual_sanction_from}&actual_sanction_to=${actual_sanction_to}&actual_disbursement_to=${actual_disbursement_to}`,
+        method: "POST",
+        body: { project_ids },
+        responseHandler: (response) => response.blob(),
+      }),
     }),
     updateProjectStatus: builder.mutation({
       query: ({ projectId, status, remarks }) => ({
@@ -515,6 +541,7 @@ export const {
   useUpdateProjectMutation,
   useGetAllProjectsQuery,
   useGetAllProjectsForLoanQuery,
+  useExportLoanMutation,
   useGetProjectDropdownForDashboardQuery,
   useUpdateProjectStatusMutation,
   useGetProjectByPIdQuery,

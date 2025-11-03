@@ -23,6 +23,7 @@ import { useExportScopesMutation } from "../../redux/camsSlice";
 import DownloadIcon from "@mui/icons-material/Download";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
 import SelectAllIcon from "@mui/icons-material/SelectAll";
+import { toast } from "react-toastify";
 
 function ProjectScope() {
   const [user, setUser] = useState(null);
@@ -272,7 +273,7 @@ function ProjectScope() {
   const handleExportSelected = async () => {
     try {
       if (!selected?.length) {
-        alert("No rows selected to export.");
+        toast.error("No rows selected to export.");
         return;
       }
 
@@ -300,7 +301,7 @@ function ProjectScope() {
       downloadBlob(blob, "scopes_selected_export.csv");
     } catch (err) {
       console.error("Export (selected) failed:", err);
-      alert("Failed to export selected scopes.");
+      toast.error("Failed to export selected scopes.");
     }
   };
 
@@ -311,7 +312,7 @@ function ProjectScope() {
       downloadBlob(blob, "scopes_all_export.csv");
     } catch (err) {
       console.error("Export (all) failed:", err);
-      alert("Failed to export all scopes.");
+      toast.error("Failed to export all scopes.");
     }
   };
 
