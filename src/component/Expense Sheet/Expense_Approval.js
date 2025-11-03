@@ -66,23 +66,31 @@ const ExpenseApproval = forwardRef(() => {
     }
   }, []);
 
-  const {
-    data: getExpense = [],
-    isLoading,
-    error,
-  } = useGetAllExpenseQuery(
-    department
-      ? {
+const isSpecialUser =
+  user?.name === "Sushant Ranjan Dubey" || user?.name === "Sanjiv Kumar";
+
+const {
+  data: getExpense = [],
+  isLoading,
+  error,
+} = useGetAllExpenseQuery(
+  department || isSpecialUser
+    ? {
         page: currentPage,
         limit: perPage,
-        department: department === "admin" ? "" : department,
+        department:
+          department === "admin"
+            ? ""
+            : isSpecialUser
+            ? "Projects,CAM"
+            : department,
         search: searchQuery,
         status: selectedstatus,
         from,
         to,
       }
-      : skipToken
-  );
+    : skipToken
+);
 
   const renderFilters = () => {
     const statuses = [
