@@ -51,17 +51,18 @@ import { toast } from "react-toastify";
 
 // ---- helpers ----
 const STATUS_OPTIONS = [
-  "document pending",
-  "under process bank",
+  "documents pending",
+  "documents submitted",
+  "under banking process",
   "sanctioned",
   "disbursed",
 ];
 
 const statusColor = (s) => {
   switch (String(s || "").toLowerCase()) {
-    case "document pending":
+    case "documents pending":
       return "danger";
-    case "under process bank":
+    case "under banking process":
       return "warning";
     case "sanctioned":
       return "primary";
@@ -114,7 +115,6 @@ const formatBytes = (bytes = 0, dp = 1) => {
 };
 const iconFor = () => "📄";
 
-// if you have router navigation, replace with navigate/router.push etc.
 const goToProfile = (user) => {
   if (!user?._id) return;
   window.open(`/user_profile?id=${user._id}`, "_blank");
@@ -1075,7 +1075,7 @@ export default function LoanOverview() {
 
             <Textarea
               minRows={3}
-              placeholder="Remarks (optional)"
+              placeholder="Remarks"
               value={remarks}
               onChange={(e) => setRemarks(e.target.value)}
             />
@@ -1241,9 +1241,6 @@ function BankList({ banks = [] }) {
             <Grid container spacing={1.5}>
               <Grid xs={12} sm={6}>
                 <LabelValue label="Branch" value={b?.branch || "—"} />
-              </Grid>
-              <Grid xs={12} sm={6}>
-                <LabelValue label="IFSC" value={b?.ifsc_code || "—"} />
               </Grid>
               <Grid xs={12} sm={6}>
                 <LabelValue label="State" value={b?.state || "—"} />
