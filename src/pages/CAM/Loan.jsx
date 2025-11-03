@@ -129,19 +129,6 @@ function Loan() {
         ? indianStates
         : [{ label: "No states found", value: "" }],
     },
-    // {
-    //   key: "cam",
-    //   label: "Filter by CAM",
-    //   type: "select",
-    //   options: camLoading
-    //     ? [{ label: "Loading…", value: "" }]
-    //     : camError
-    //     ? [{ label: "Failed to load CAM users", value: "" }]
-    //     : camOptions.length
-    //     ? camOptions
-    //     : [{ label: "No CAM users found", value: "" }],
-    // },
-
     {
       key: "loan_status",
       label: "Filter by Loan Status",
@@ -149,8 +136,9 @@ function Loan() {
       options: [
         { label: "Not Submitted", value: "not submitted" },
         { label: "Submitted", value: "submitted" },
-        { label: "Document Pending", value: "document pending" },
-        { label: "Under process bank", value: "under process bank" },
+        { label: "Documents Pending", value: "documents pending" },
+        { label: "Documents Submitted", value: "documents submitted" },
+        { label: "Under Banking Process", value: "under banking process" },
         { label: "Sanctioned", value: "sanctioned" },
         { label: "Disbursed", value: "disbursed" },
       ],
@@ -187,7 +175,7 @@ function Loan() {
 
       const payload = {
         type: "selected",
-        project_ids: selected, 
+        project_ids: selected,
       };
 
       const blob = await exportLoan(payload).unwrap();
