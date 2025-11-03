@@ -88,4 +88,5 @@ export const {
   useUploadProjectDocumentsMutation,
   useDeleteDocumentMutation,
   useGetDocumentByNameQuery,
+  useLazyGetDocumentByNameQuery
 } = documentApi;

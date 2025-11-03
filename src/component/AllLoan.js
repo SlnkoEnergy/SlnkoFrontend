@@ -1,13 +1,22 @@
+// pages/AllLoan.jsx
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import SearchIcon from "@mui/icons-material/Search";
 import {
+  Alert,
   Avatar,
   Chip,
   CircularProgress,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Modal,
+  ModalClose,
+  ModalDialog,
   Option,
   Select,
   Sheet,
+  Textarea,
 } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
@@ -21,6 +30,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
 import { useGetAllProjectsForLoanQuery } from "../redux/projectsSlice";
+import DOMPurify from "dompurify";
+import { useUpdateLoanStatusMutation } from "../redux/loanSlice";
 
 /* ------------ small helpers ------------ */
 function relTime(iso) {
@@ -68,9 +79,9 @@ function latestPerUser(comments = [], limit = 2) {
 
 function statusColor(s) {
   switch (String(s || "").toLowerCase()) {
-    case "document pending":
+    case "documents pending":
       return "danger";
-    case "under process bank":
+    case "under banking process":
       return "warning";
     case "sanctioned":
       return "primary";
@@ -79,6 +90,47 @@ function statusColor(s) {
     default:
       return "neutral";
   }
+}
+
+/** Sanitizes and renders limited HTML safely */
+function SafeHtml({ html, clamp = 2 }) {
+  const safe = useMemo(
+    () =>
+      DOMPurify.sanitize(String(html || ""), {
+        ALLOWED_TAGS: ["b", "strong", "i", "em", "u", "br", "ul", "ol", "li"],
+        ALLOWED_ATTR: [],
+      }),
+    [html]
+  );
+
+  if (!safe) {
+    return (
+      <Typography level="body-sm" sx={{ color: "text.tertiary" }}>
+        —
+      </Typography>
+    );
+  }
+
+  // Use a Box with line-clamp that still supports inner HTML
+  return (
+    <Box
+      sx={{
+        display: "-webkit-box",
+        WebkitLineClamp: clamp,
+        WebkitBoxOrient: "vertical",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        lineHeight: 1.4,
+        wordBreak: "break-word",
+        mt: 0.25,
+        "& ul, & ol": {
+          margin: 0,
+          paddingLeft: "1rem",
+        },
+      }}
+      dangerouslySetInnerHTML={{ __html: safe }}
+    />
+  );
 }
 
 function CommentPill({ c }) {
@@ -121,20 +173,9 @@ function CommentPill({ c }) {
             {when}
           </Typography>
         </Stack>
-        <Typography
-          level="body-sm"
-          sx={{
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            lineHeight: 1.4,
-            mt: 0.25,
-          }}
-        >
-          {text || "—"}
-        </Typography>
+
+        {/* Render sanitized HTML (lists/bold/etc.) with clamp */}
+        <SafeHtml html={text} clamp={2} />
       </Box>
     </Sheet>
   );
@@ -167,7 +208,11 @@ function AllLoan({ selected, setSelected }) {
   const actual_disbursement_to =
     searchParams.get("actual_disbursement_to") || "";
 
-  const { data: getLoan = {}, isLoading } = useGetAllProjectsForLoanQuery({
+  const {
+    data: getLoan = {},
+    isLoading,
+    refetch,
+  } = useGetAllProjectsForLoanQuery({
     page: currentPage,
     search: searchQuery,
     status: project_status,
@@ -184,6 +229,56 @@ function AllLoan({ selected, setSelected }) {
     actual_disbursement_to: actual_disbursement_to,
     sort: "-createdAt",
   });
+
+  const STATUS_OPTIONS = [
+    "documents pending",
+    "documents submitted",
+    "under banking process",
+    "sanctioned",
+    "disbursed",
+  ];
+
+  const cap = (s) =>
+    String(s || "")
+      .split(" ")
+      .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : ""))
+      .join(" ");
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [selectedLoan, setSelectedLoan] = useState(null);
+  const [nextStatus, setNextStatus] = useState("");
+  const [remarks, setRemarks] = useState("");
+
+  const [updateLoanStatus, { isLoading: updating, error: updateErr }] =
+    useUpdateLoanStatusMutation();
+
+  const openStatusModal = (loan) => {
+    setSelectedLoan(loan);
+    setNextStatus(loan?.loan_current_status?.status || "");
+    setRemarks("");
+    setStatusModalOpen(true);
+  };
+
+  const closeStatusModal = () => {
+    setStatusModalOpen(false);
+    setSelectedLoan(null);
+    setNextStatus("");
+    setRemarks("");
+  };
+
+  const saveStatus = async () => {
+    if (!selectedLoan?._id || !nextStatus) return;
+    try {
+      await updateLoanStatus({
+        project_id: selectedLoan._id,
+        status: nextStatus,
+        remarks,
+      }).unwrap();
+      closeStatusModal();
+      refetch();
+    } catch (err) {
+      console.error("Failed to update status:", err);
+    }
+  };
 
   const loanData = getLoan?.data || [];
   const loanPagination = getLoan?.pagination || {};
@@ -227,7 +322,7 @@ function AllLoan({ selected, setSelected }) {
     "State",
     "Capacity(AC)",
     "Loan Status",
-    "Comments", // 👈 new column
+    "Comments",
   ];
   const totalCols = 1 + baseHeaders.length;
 
@@ -434,9 +529,20 @@ function AllLoan({ selected, setSelected }) {
                         size="sm"
                         variant="soft"
                         color={statusColor(loan?.loan_current_status?.status)}
-                        sx={{ textTransform: "capitalize", fontWeight: 500 }}
+                        sx={{
+                          textTransform: "capitalize",
+                          fontWeight: 500,
+                          cursor: "pointer",
+                          "&:hover": { boxShadow: "sm" },
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openStatusModal(loan);
+                        }}
                       >
-                        {loan?.loan_current_status?.status || "Not Submitted"}
+                        {loan?.loan_current_status?.status
+                          ? cap(loan.loan_current_status.status)
+                          : "Not Submitted"}
                       </Chip>
                     </td>
 
@@ -453,8 +559,8 @@ function AllLoan({ selected, setSelected }) {
                         </Typography>
                       ) : (
                         <Stack direction="column" gap={0.75}>
-                          {comments.map((c) => (
-                            <CommentPill key={c?._id} c={c} />
+                          {comments.map((c, idx) => (
+                            <CommentPill key={c?._id || idx} c={c} />
                           ))}
                         </Stack>
                       )}
@@ -589,6 +695,64 @@ function AllLoan({ selected, setSelected }) {
           Next
         </Button>
       </Box>
+
+      {/* ---------- Status Update Modal ---------- */}
+      <Modal open={statusModalOpen} onClose={closeStatusModal}>
+        <ModalDialog
+          aria-labelledby="loan-status-title"
+          variant="outlined"
+          sx={{ borderRadius: "lg", minWidth: 420, maxWidth: "90vw" }}
+        >
+          <ModalClose />
+          <DialogTitle id="loan-status-title">Change Loan Status</DialogTitle>
+          <DialogContent>
+            Select a status and optionally add remarks. This will be recorded in
+            the loan status.
+          </DialogContent>
+
+          <Box sx={{ display: "grid", gap: 1.5 }}>
+            <Select
+              value={nextStatus || ""}
+              onChange={(_, v) => setNextStatus(v || "")}
+              placeholder="Select status"
+            >
+              {STATUS_OPTIONS.map((s) => (
+                <Option key={s} value={s}>
+                  {cap(s)}
+                </Option>
+              ))}
+            </Select>
+
+            <Textarea
+              minRows={3}
+              placeholder="Remarks"
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+            />
+
+            {updateErr ? (
+              <Alert color="danger" variant="soft">
+                {updateErr?.data?.message ||
+                  updateErr?.error ||
+                  "Failed to update status."}
+              </Alert>
+            ) : null}
+          </Box>
+
+          <DialogActions>
+            <Button variant="plain" onClick={closeStatusModal}>
+              Cancel
+            </Button>
+            <Button
+              onClick={saveStatus}
+              loading={updating}
+              disabled={!selectedLoan || !nextStatus}
+            >
+              Save
+            </Button>
+          </DialogActions>
+        </ModalDialog>
+      </Modal>
     </Box>
   );
 }
