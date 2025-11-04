@@ -1,5 +1,4 @@
 // LeadProfile.jsx (responsive + sticky tabs/panel)
-
 import {
   Box,
   Avatar,
@@ -22,6 +21,7 @@ import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import Timelapse from "@mui/icons-material/Timelapse";
+import ReportProblemRoundedIcon from "@mui/icons-material/ReportProblemRounded";
 import { useGetProjectByIdQuery } from "../redux/projectsSlice";
 import {
   useGetPostsQuery,
@@ -35,6 +35,7 @@ import CamHandoverSheetForm from "./Lead Stage/Handover/CAMHandover";
 import PurchaseRequestCard from "./PurchaseRequestCard";
 import ScopeDetail from "./Scope";
 import Posts from "./Posts";
+import Documents from "./Document";
 
 /* ---------------- helpers ---------------- */
 const getUserData = () => {
@@ -46,13 +47,21 @@ const getUserData = () => {
   }
 };
 
-const VALID_TABS = new Set(["notes", "handover", "scope", "po", "eng"]);
+const VALID_TABS = new Set([
+  "notes",
+  "documents",
+  "handover",
+  "scope",
+  "po",
+  "eng",
+]);
 const NUM_TO_KEY = {
   0: "notes",
-  1: "handover",
-  2: "scope",
-  3: "po",
-  4: "eng",
+  1: "documents",
+  2: "handover",
+  3: "scope",
+  4: "po",
+  5: "eng",
 };
 
 const sanitizeTabFromQuery = (raw) => {
@@ -64,7 +73,6 @@ const sanitizeTabFromQuery = (raw) => {
 
 const canUserSeePO = (user) => {
   if (!user) return false;
-
   const role = String(user.role || "").toLowerCase();
   const dept = user.department || "";
   const name = String(user.name || "").trim();
@@ -72,6 +80,16 @@ const canUserSeePO = (user) => {
   const special = user.emp_id === "SE-013";
   const privileged = special || role === "admin" || role === "superadmin";
   return privileged || dept !== "Engineering";
+};
+
+const canUserSeeDocument = (user) => {
+  if (!user) return false;
+  const role = String(user.role || "").toLowerCase();
+  const dept = user.department || "";
+  const name = String(user.name || "").trim();
+  const special = user.emp_id === "SE-013";
+  const privileged = special || role === "admin" || role === "superadmin";
+  return privileged || dept !== "SCM";
 };
 
 const canUserSeeHandover = (user) => {
@@ -83,7 +101,7 @@ const canUserSeeHandover = (user) => {
   return privileged || dept !== "SCM";
 };
 
-/* ------------ Remaining Days helpers (project-only) ------------- */
+/* ------------ Date helpers ------------- */
 function toDMY(date) {
   try {
     const d = new Date(date);
@@ -96,6 +114,33 @@ function toDMY(date) {
     return "-";
   }
 }
+
+function fmtLocalDate(v) {
+  const d = v ? new Date(v) : null;
+  return d && !Number.isNaN(d.getTime())
+    ? d.toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+      })
+    : "-";
+}
+
+/* ------------ Loan status color helper ------------- */
+const statusColor = (s) => {
+  switch (String(s || "").toLowerCase()) {
+    case "documents pending":
+      return "danger";
+    case "under banking process":
+      return "warning";
+    case "sanctioned":
+      return "primary";
+    case "disbursed":
+      return "success";
+    default:
+      return "neutral";
+  }
+};
 
 /** Pick preferred upcoming target among project dates. */
 function pickCountdownTargetFromProject(project) {
@@ -118,30 +163,49 @@ function pickCountdownTargetFromProject(project) {
   ];
   const now = Date.now();
 
-  // try preferred keys that are in the future
   for (const k of prefOrder) {
     const hit = candidates.find((c) => c.key === k && c.date.getTime() > now);
     if (hit) return { target: hit.date, usedKey: hit.key };
   }
 
-  // else earliest future
   const futures = candidates.filter((c) => c.date.getTime() > now);
   if (futures.length) {
     const soonest = futures.reduce((a, b) => (a.date < b.date ? a : b));
     return { target: soonest.date, usedKey: soonest.key };
   }
 
-  // else latest past (already expired)
   const latestPast = candidates.reduce((a, b) => (a.date > b.date ? a : b));
   return { target: latestPast.date, usedKey: latestPast.key };
 }
+const formatStatusText = (s) =>
+  String(s || "")
+    .toLowerCase()
+    .split(" ")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 
-/** Live countdown chip */
-function RemainingDaysChip({ target, usedKey }) {
+function RemainingDaysChip({ days, target, usedKey }) {
   const [text, setText] = useState("—");
   const [color, setColor] = useState("neutral");
 
   useEffect(() => {
+    if (typeof days === "number" && Number.isFinite(days)) {
+      if (days < 0) {
+        setText(`Expired ${Math.abs(days)}d`);
+        setColor("danger");
+      } else if (days === 0) {
+        setText("Today");
+        setColor("warning");
+      } else {
+        setText(`${days}d`);
+        setColor(days < 10 ? "danger" : days < 30 ? "warning" : "success");
+      }
+    }
+  }, [days]);
+
+  useEffect(() => {
+    if (typeof days === "number" && Number.isFinite(days)) return;
+
     if (!target) {
       setText("—");
       setColor("neutral");
@@ -184,7 +248,7 @@ function RemainingDaysChip({ target, usedKey }) {
       cancelled = true;
       clearInterval(id);
     };
-  }, [target]);
+  }, [days, target]);
 
   const label =
     usedKey === "project_completion_date"
@@ -197,7 +261,13 @@ function RemainingDaysChip({ target, usedKey }) {
 
   return (
     <Tooltip
-      title={target ? `${label}: ${toDMY(target)}` : "No target date"}
+      title={
+        typeof days === "number" && Number.isFinite(days)
+          ? label
+          : target
+          ? `${label}: ${toDMY(target)}`
+          : "No target date"
+      }
       arrow
     >
       <Chip variant="soft" color={color} size="sm" sx={{ fontWeight: 600 }}>
@@ -206,6 +276,12 @@ function RemainingDaysChip({ target, usedKey }) {
     </Tooltip>
   );
 }
+
+/* ----------- Utility for pending doc names ----------- */
+const pendingDocNames = (arr) =>
+  (Array.isArray(arr) ? arr : [])
+    .map((d) => String(d?.filename || "").trim())
+    .filter(Boolean);
 
 export default function Project_Detail() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -222,10 +298,10 @@ export default function Project_Detail() {
     [currentUser]
   );
 
-  // ---- tabs (string keys) ----
   const initialTab = sanitizeTabFromQuery(searchParams.get("tab"));
   const [tabValue, setTabValue] = useState(initialTab);
   const allowedPO = canUserSeePO(currentUser);
+  const allowedDocument = canUserSeeDocument(currentUser);
   const allowedHandover = canUserSeeHandover(currentUser);
 
   useEffect(() => {
@@ -250,7 +326,6 @@ export default function Project_Detail() {
     setSearchParams(params);
   };
 
-  // ---- follow/unfollow state ----
   const [isFollowing, setIsFollowing] = useState(false);
   const [follow, { isLoading: isFollowingCall }] = useFollowMutation();
   const [unfollow, { isLoading: isUnfollowingCall }] = useUnfollowMutation();
@@ -315,31 +390,24 @@ export default function Project_Detail() {
   const headerOffset = 72;
   const p_id = projectDetails?.p_id;
 
+  const apiRemainingDays = useMemo(() => {
+    const n = Number(projectDetails?.remaining_days);
+    return Number.isFinite(n) ? n : null;
+  }, [projectDetails?.remaining_days]);
+
   const { target: countdownTarget, usedKey: countdownKey } = useMemo(
     () => pickCountdownTargetFromProject(projectDetails),
     [projectDetails]
   );
 
-  const fmtLocalDate = (v) => {
-    const d = v ? new Date(v) : null;
-    return d && !Number.isNaN(d.getTime())
-      ? d.toLocaleDateString(undefined, {
-          year: "numeric",
-          month: "short",
-          day: "2-digit",
-        })
-      : "-";
-  };
-
   return (
     <Box
       sx={{
         ml: { lg: "var(--Sidebar-width)" },
-        px: { xs: 1, md: 2 },
+        px: { xs: 1, md: 0 },
         width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
       }}
     >
-      {/* Centered container with max width for large screens */}
       <Box
         sx={{
           maxWidth: { xs: "100%", lg: 1400, xl: 1600 },
@@ -347,14 +415,10 @@ export default function Project_Detail() {
           width: "100%",
         }}
       >
-        {/* Responsive grid: stacked on mobile, two columns on md+ */}
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: {
-              xs: "1fr",
-              md: "300px 1fr",
-            },
+            gridTemplateColumns: { xs: "1fr", md: "300px 1fr" },
             gap: { xs: 1.5, md: 2 },
             alignItems: "start",
           }}
@@ -374,33 +438,23 @@ export default function Project_Detail() {
           >
             {/* Remaining row ABOVE avatar */}
             <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1.25,
-                mb: 1,
-              }}
+              sx={{ display: "flex", alignItems: "center", gap: 1.25, mb: 1 }}
             >
               <Timelapse fontSize="small" color="primary" />
               <Typography level="body-sm" sx={{ color: "text.secondary" }}>
                 Remaining:
               </Typography>
               <RemainingDaysChip
+                days={apiRemainingDays}
                 target={countdownTarget}
                 usedKey={countdownKey}
               />
             </Box>
 
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "flex-start",
-                justifyContent: "space-between",
-              }}
-            >
-              {/* Left side → Profile details */}
+            {/* Customer Info */}
+            <Box sx={{ display: "flex", justifyContent: "space-between" }}>
               <Box>
-                <Stack spacing={1} alignItems="flex-start">
+                <Stack spacing={1}>
                   <Avatar
                     src="/path-to-profile-pic.jpg"
                     alt={projectDetails?.customer || "Customer"}
@@ -427,7 +481,6 @@ export default function Project_Detail() {
                 </Stack>
               </Box>
 
-              {/* Follow button */}
               <Box>
                 <Tooltip
                   title={isFollowing ? "Unfollow Project" : "Follow Project"}
@@ -451,6 +504,68 @@ export default function Project_Detail() {
 
             <Divider sx={{ my: 1 }} />
 
+            <Box display={"flex"} gap={1} alignItems={"center"}>
+              <Typography level="body-sm">
+                <b>Loan Status:</b>
+              </Typography>
+              {projectDetails?.loan_status && (
+                <Box>
+                  {String(projectDetails?.loan_status).toLowerCase() ===
+                  "documents pending" ? (
+                    <Tooltip
+                      arrow
+                      sx={{
+                        backgroundColor: "#fff",
+                      }}
+                      title={
+                        <Box sx={{ maxWidth: 360 }}>
+                          <Typography level="title-sm" sx={{ mb: 0.5 }}>
+                            Missing Documents
+                          </Typography>
+                          {pendingDocNames(projectDetails?.documents_pending)
+                            .length
+                            ? pendingDocNames(
+                                projectDetails?.documents_pending
+                              ).map((n, i) => (
+                                <Typography
+                                  key={`${n}-${i}`}
+                                  level="body-xs"
+                                  sx={{ display: "block" }}
+                                >
+                                  • {n}
+                                </Typography>
+                              ))
+                            : "No list available."}
+                        </Box>
+                      }
+                    >
+                      <Chip
+                        size="sm"
+                        variant="solid"
+                        color={statusColor(projectDetails?.loan_status)}
+                        startDecorator={
+                          <ReportProblemRoundedIcon fontSize="small" />
+                        }
+                        sx={{ fontWeight: 700, cursor: "pointer" }}
+                      >
+                        {formatStatusText(projectDetails?.loan_status)}
+                      </Chip>
+                    </Tooltip>
+                  ) : (
+                    <Chip
+                      size="sm"
+                      variant="solid"
+                      color={statusColor(projectDetails?.loan_status)}
+                      sx={{ fontWeight: 700 }}
+                    >
+                      {formatStatusText(projectDetails?.loan_status)}
+                    </Chip>
+                  )}
+                </Box>
+              )}
+            </Box>
+
+            {/* Project Details */}
             <Stack spacing={1}>
               <Stack direction="row" spacing={1} alignItems="center">
                 <Typography level="body-sm">Project Id:</Typography>
@@ -476,13 +591,13 @@ export default function Project_Detail() {
               </Stack>
 
               <Typography level="body-sm">
-                <b>Project Group:</b> {projectDetails?.p_group}
+                <b>Project Group:</b> {projectDetails?.p_group || "-"}
               </Typography>
               <Typography level="body-sm">
-                <b>Capacity:</b> {projectDetails?.project_kwp}
+                <b>Capacity:</b> {projectDetails?.project_kwp || "-"}
               </Typography>
               <Typography level="body-sm">
-                <b>Substation Distance:</b> {projectDetails?.distance}
+                <b>Substation Distance:</b> {projectDetails?.distance || "-"}
               </Typography>
               <Typography level="body-sm">
                 <b>Land Available:</b>{" "}
@@ -500,8 +615,9 @@ export default function Project_Detail() {
               </Typography>
 
               <Typography level="body-sm">
-                <b>Tariff:</b> {projectDetails?.tarrif}
+                <b>Tariff:</b> {projectDetails?.tarrif || "-"}
               </Typography>
+
               <Typography level="body-sm">
                 <b>PPA Expiry Date:</b>{" "}
                 {fmtLocalDate(projectDetails?.ppa_expiry_date)}
@@ -512,21 +628,23 @@ export default function Project_Detail() {
               </Typography>
               <Typography level="body-sm">
                 <b>Project Completion Date:</b>{" "}
-                {fmtLocalDate(projectDetails?.bd_commitment_date)}
+                {fmtLocalDate(projectDetails?.project_completion_date)}
               </Typography>
+
               {currentUser?.department !== "Engineering" &&
                 currentUser?.department !== "SCM" && (
                   <>
                     <Divider sx={{ my: 1 }} />
                     <Typography level="body-sm">
-                      <b>Slnko Service Charges:</b> ₹ {projectDetails?.service}
+                      <b>Slnko Service Charges:</b> ₹{" "}
+                      {projectDetails?.service || "-"}
                     </Typography>
                   </>
                 )}
             </Stack>
           </Card>
 
-          {/* Right Column — Tabs in a card; sticky TabList; scrollable panels */}
+          {/* Right Column — Tabs */}
           <Card
             sx={{
               borderRadius: "lg",
@@ -550,27 +668,46 @@ export default function Project_Detail() {
             >
               <TabList>
                 <Tab value="notes">Notes</Tab>
+                {allowedDocument && <Tab value="documents">Documents</Tab>}
                 {allowedHandover && <Tab value="handover">Handover Sheet</Tab>}
                 <Tab value="scope">Material Status</Tab>
                 {allowedPO && <Tab value="po">Purchase Order</Tab>}
                 <Tab value="eng">Engineering</Tab>
               </TabList>
+
+              {/* Notes */}
               <TabPanel
                 value="notes"
                 sx={{
                   p: { xs: 1, md: 1.5 },
-                  height: { xs: "auto", md: `100%` },
+                  height: { xs: "auto", md: "100%" },
                   overflowY: { md: "auto" },
                 }}
               >
                 <Posts projectId={project_id} />
               </TabPanel>
+
+              {/* Documents */}
+              {allowedDocument && (
+                <TabPanel
+                  value="documents"
+                  sx={{
+                    p: { xs: 1, md: 1.5 },
+                    height: { xs: "auto", md: "100%" },
+                    overflowY: { md: "auto" },
+                  }}
+                >
+                  <Documents projectId={project_id} />
+                </TabPanel>
+              )}
+
+              {/* Handover Sheet */}
               {allowedHandover && (
                 <TabPanel
                   value="handover"
                   sx={{
                     p: { xs: 1, md: 1.5 },
-                    height: { xs: "auto", md: `100%` },
+                    height: { xs: "auto", md: "100%" },
                     overflowY: { md: "auto" },
                   }}
                 >
@@ -586,11 +723,13 @@ export default function Project_Detail() {
                   </Box>
                 </TabPanel>
               )}
+
+              {/* Material Status */}
               <TabPanel
                 value="scope"
                 sx={{
                   p: { xs: 1, md: 1.5 },
-                  height: { xs: "auto", md: `100%` },
+                  height: { xs: "auto", md: "100%" },
                   overflowY: { md: "auto" },
                 }}
               >
@@ -600,12 +739,13 @@ export default function Project_Detail() {
                 />
               </TabPanel>
 
+              {/* Purchase Orders */}
               {allowedPO && (
                 <TabPanel
                   value="po"
                   sx={{
                     p: { xs: 1, md: 1.5 },
-                    height: { xs: "auto", md: `100%` },
+                    height: { xs: "auto", md: "100%" },
                     overflowY: { md: "auto" },
                   }}
                 >
@@ -615,11 +755,12 @@ export default function Project_Detail() {
                 </TabPanel>
               )}
 
+              {/* Engineering */}
               <TabPanel
                 value="eng"
                 sx={{
                   p: { xs: 1, md: 1.5 },
-                  height: { xs: "auto", md: `100%` },
+                  height: { xs: "auto", md: "100%" },
                   overflowY: { md: "auto" },
                 }}
               >
@@ -632,7 +773,7 @@ export default function Project_Detail() {
         </Box>
       </Box>
 
-      {/* Toast */}
+      {/* Snackbar Toast */}
       <Snackbar
         open={toast.open}
         variant="soft"

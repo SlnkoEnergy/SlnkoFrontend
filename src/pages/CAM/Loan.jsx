@@ -1,94 +1,68 @@
 import Box from "@mui/joy/Box";
 import CssBaseline from "@mui/joy/CssBaseline";
 import { CssVarsProvider } from "@mui/joy/styles";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "../../component/Partials/Sidebar";
 import MainHeader from "../../component/Partials/MainHeader";
 import {
   Button,
+  ModalClose,
+  Modal,
+  ModalDialog,
+  Typography,
   Dropdown,
-  ListDivider,
-  Menu,
   MenuButton,
+  Menu,
   MenuItem,
+  ListDivider,
 } from "@mui/joy";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import SubHeader from "../../component/Partials/SubHeader";
-import Project_Scope from "../../component/ProjectScope";
+import { Add } from "@mui/icons-material";
+import AllLoan from "../../component/AllLoan";
+import AddLoan from "../../component/Forms/AddLoan";
 import Filter from "../../component/Partials/Filter";
-import { useGetAllUserQuery } from "../../redux/globalTaskSlice";
-import { useGetProjectDropdownQuery } from "../../redux/projectsSlice";
-import { useGetAllMaterialsPOQuery } from "../../redux/productsSlice";
-import { useExportScopesMutation } from "../../redux/camsSlice";
 import DownloadIcon from "@mui/icons-material/Download";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
 import SelectAllIcon from "@mui/icons-material/SelectAll";
+import { useExportLoanMutation } from "../../redux/projectsSlice";
 import { toast } from "react-toastify";
 
-function ProjectScope() {
+function Loan() {
   const [user, setUser] = useState(null);
   const [selected, setSelected] = useState([]);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [open, setOpen] = useState();
   const [snack, setSnack] = useState({ open: false, msg: "" });
+  const [open, setOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const safeMsg = String(snack?.msg ?? "");
   const isError = /^(failed|invalid|error|server)/i.test(safeMsg);
-  const [exportScopes] = useExportScopesMutation();
+  const [loanModalOpen, setLoanModalOpen] = useState(false);
 
   const getUserData = () => {
     const userData = localStorage.getItem("userDetails");
-    if (userData) return JSON.parse(userData);
+    if (userData) {
+      return JSON.parse(userData);
+    }
     return null;
   };
-
   useEffect(() => {
     const userData = getUserData();
     setUser(userData);
   }, []);
 
-  const {
-    data: camUsersResp,
-    isFetching: camLoading,
-    isError: camError,
-  } = useGetAllUserQuery({ department: "CAM" });
-
-  const camOptions = useMemo(() => {
-    const arr = camUsersResp?.data ?? camUsersResp ?? [];
-    return (Array.isArray(arr) ? arr : []).map((u) => ({
-      label: u?.name || u?.fullName || u?.email || u?.emp_name || "Unknown",
-      value: u?._id || u?.id || u?.emp_id || u?.email || "",
-    }));
-  }, [camUsersResp]);
-
-  const {
-    data: projectResp,
-    isFetching: projectLoading,
-    isError: projectError,
-  } = useGetProjectDropdownQuery();
-
-  const projectOptions = useMemo(() => {
-    const arr = projectResp?.data ?? projectResp ?? [];
-    return (Array.isArray(arr) ? arr : []).map((p) => ({
-      label: p?.code || p?.project_code || p?.name || "Unnamed Project",
-      value: p?._id || "",
-    }));
-  }, [projectResp]);
-
-  const {
-    data: materialsPOResp,
-    isFetching: materialsPOLoading,
-    isError: materialsPOError,
-  } = useGetAllMaterialsPOQuery({ page: 1, limit: 100, search: "" });
-
-  const categoryOptions = useMemo(() => {
-    const arr = materialsPOResp?.data ?? materialsPOResp ?? [];
-    return (Array.isArray(arr) ? arr : []).map((category) => ({
-      label: category?.name || "Unnamed Category",
-      value: category?._id || "",
-    }));
-  }, [materialsPOResp]);
+  const [exportLoan] = useExportLoanMutation();
+  const downloadBlob = (blob, filename = "loans_export.csv") => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  };
 
   const indianStates = [
     { label: "Andhra Pradesh", value: "andhra pradesh" },
@@ -135,18 +109,6 @@ function ProjectScope() {
 
   const fields = [
     {
-      key: "project_id",
-      label: "Filter By Project",
-      type: "select",
-      options: projectLoading
-        ? [{ label: "Loading…", value: "" }]
-        : projectError
-        ? [{ label: "Failed to load projects", value: "" }]
-        : projectOptions.length
-        ? projectOptions
-        : [{ label: "No projects found", value: "" }],
-    },
-    {
       key: "project_status",
       label: "Filter by Project Status",
       type: "select",
@@ -161,115 +123,49 @@ function ProjectScope() {
     },
     {
       key: "state",
-      label: "Filter by State",
+      label: "Filter by Bank State",
       type: "select",
       options: indianStates.length
         ? indianStates
         : [{ label: "No states found", value: "" }],
     },
     {
-      key: "cam",
-      label: "Filter by CAM",
-      type: "select",
-      options: camLoading
-        ? [{ label: "Loading…", value: "" }]
-        : camError
-        ? [{ label: "Failed to load CAM users", value: "" }]
-        : camOptions.length
-        ? camOptions
-        : [{ label: "No CAM users found", value: "" }],
-    },
-    {
-      key: "category",
-      label: "Filter by Category",
-      type: "select",
-      options: materialsPOLoading
-        ? [{ label: "Loading…", value: "" }]
-        : materialsPOError
-        ? [{ label: "Failed to load categories", value: "" }]
-        : categoryOptions.length
-        ? categoryOptions
-        : [{ label: "No categories found", value: "" }],
-    },
-    {
-      key: "scope",
-      label: "Filter by Scope",
+      key: "loan_status",
+      label: "Filter by Loan Status",
       type: "select",
       options: [
-        { label: "SLnko", value: "slnko" },
-        { label: "Client", value: "client" },
+        { label: "Not Submitted", value: "not submitted" },
+        { label: "Submitted", value: "submitted" },
+        { label: "Documents Pending", value: "documents pending" },
+        { label: "Documents Submitted", value: "documents submitted" },
+        { label: "Under Banking Process", value: "under banking process" },
+        { label: "Sanctioned", value: "sanctioned" },
+        { label: "Disbursed", value: "disbursed" },
       ],
     },
     {
-      key: "po_status",
-      label: "Filter by PO Status",
-      type: "select",
-      options: [
-        { label: "Pending", value: "pending" },
-        { label: "Approval Pending", value: "approval_pending" },
-        { label: "Approval Done", value: "approval_done" },
-        { label: "PO Created", value: "po_created" },
-        { label: "Out for delivery Pending", value: "out_for_delivery" },
-        {
-          label: "Partially Out for delivery",
-          value: "partially_out_for_delivery",
-        },
-        { label: "Ready to Dispatch", value: "ready_to_dispatch" },
-        { label: "Material Ready", value: "material_ready" },
-        { label: "Delivered", value: "delivered" },
-        { label: "Short Quantity", value: "short_quantity" },
-        { label: "Partially Delivered", value: "partially_delivered" },
-      ],
-    },
-    {
-      key: "commitment_date",
-      label: "Filter by Commitment Date",
+      key: "expected_sanction",
+      label: "Filter by Expected Sanction Date",
       type: "daterange",
     },
-    { key: "po_date", label: "Filter by PO Date", type: "daterange" },
-    { key: "etd", label: "Filter by ETD Date", type: "daterange" },
     {
-      key: "delivered_date",
-      label: "Filter by Delivery Date",
+      key: "expected_disbursement",
+      label: "Filter by Expected disbursement Date",
+      type: "daterange",
+    },
+    {
+      key: "actual_sanction",
+      label: "Filter by Actual Sanction Date",
+      type: "daterange",
+    },
+    {
+      key: "actual_disbursement",
+      label: "Filter by Actual Disbursement Date",
       type: "daterange",
     },
   ];
 
-  // Map UI searchParams -> API query keys
-  const buildAllExportParams = () => {
-    const params = Object.fromEntries(searchParams.entries());
-    return {
-      type: "all",
-      selected: [],
-      project_id: params.project_id || "",
-      state: params.state || "",
-      cam_person: params.cam || "",
-      po_status: params.po_status || "",
-      item_name: params.category || "",
-      scope: params.scope || "",
-      delivered_from: params.from || "",
-      delivered_to: params.to || "",
-      etd_from: params.etdFrom || "",
-      etd_to: params.etdTo || "",
-      po_date_from: params.poDateFrom || "",
-      po_date_to: params.poDateTo || "",
-      project_status: params.project_status || "",
-      current_commitment_date_from: params.commitment_date_from || "",
-      current_commitment_date_to: params.commitment_date_to || "",
-    };
-  };
-
-  const downloadBlob = (blob, filename = "scopes_export.csv") => {
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(url);
-  };
-
+  // ---- For Selected Projects ----
   const handleExportSelected = async () => {
     try {
       if (!selected?.length) {
@@ -279,40 +175,43 @@ function ProjectScope() {
 
       const payload = {
         type: "selected",
-        selected,
-        project_id: "",
-        state: "",
-        cam_person: "",
-        po_status: "",
-        item_name: "",
-        scope: "",
-        etd_from: "",
-        etd_to: "",
-        delivered_from: "",
-        delivered_to: "",
-        po_date_from: "",
-        po_date_to: "",
-        project_status: "",
-        current_commitment_date_from: "",
-        current_commitment_date_to: "",
+        project_ids: selected,
       };
 
-      const blob = await exportScopes(payload).unwrap();
-      downloadBlob(blob, "scopes_selected_export.csv");
+      const blob = await exportLoan(payload).unwrap();
+      downloadBlob(blob, "loan_selected_export.csv");
     } catch (err) {
       console.error("Export (selected) failed:", err);
-      toast.error("Failed to export selected scopes.");
+      toast.error("Failed to export selected loan projects.");
     }
   };
 
+  const buildAllExportParams = () => {
+    const params = Object.fromEntries(searchParams.entries());
+    return {
+      type: "all",
+      loan_status: params.loan_status || "",
+      bank_state: params.state || "",
+      expected_disbursement_from: params.expected_disbursement_from || "",
+      expected_disbursement_to: params.expected_disbursement_to || "",
+      expected_sanction_from: params.expected_sanction_from || "",
+      expected_sanction_to: params.expected_sanction_to || "",
+      actual_disbursement_from: params.actual_disbursement_from || "",
+      actual_disbursement_to: params.actual_disbursement_to || "",
+      actual_sanction_from: params.actual_sanction_from || "",
+      actual_sanction_to: params.actual_sanction_to || "",
+    };
+  };
+
+  // ---- For All Projects (with filters) ----
   const handleExportAll = async () => {
     try {
       const payload = buildAllExportParams();
-      const blob = await exportScopes(payload).unwrap();
-      downloadBlob(blob, "scopes_all_export.csv");
+      const blob = await exportLoan(payload).unwrap();
+      downloadBlob(blob, "loan_all_export.csv");
     } catch (err) {
       console.error("Export (all) failed:", err);
-      toast.error("Failed to export all scopes.");
+      toast.error("Failed to export all loan projects.");
     }
   };
 
@@ -335,7 +234,9 @@ function ProjectScope() {
                 borderRadius: "6px",
                 px: 1.5,
                 py: 0.5,
-                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+                "&:hover": {
+                  bgcolor: "rgba(255,255,255,0.15)",
+                },
               }}
             >
               Handover
@@ -352,7 +253,9 @@ function ProjectScope() {
                 borderRadius: "6px",
                 px: 1.5,
                 py: 0.5,
-                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+                "&:hover": {
+                  bgcolor: "rgba(255,255,255,0.15)",
+                },
               }}
             >
               Project Scope
@@ -388,16 +291,17 @@ function ProjectScope() {
                 borderRadius: "6px",
                 px: 1.5,
                 py: 0.5,
-                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+                "&:hover": {
+                  bgcolor: "rgba(255,255,255,0.15)",
+                },
               }}
             >
               Purchase Request
             </Button>
           </Box>
         </MainHeader>
-
         <SubHeader
-          title="Project Scope"
+          title="Loan"
           isBackEnabled={false}
           sticky
           rightSlot={
@@ -442,6 +346,20 @@ function ProjectScope() {
                   </Menu>
                 </Dropdown>
               )}
+              <Button
+                variant="solid"
+                size="sm"
+                startDecorator={<Add />}
+                onClick={() => setLoanModalOpen(true)}
+                sx={{
+                  backgroundColor: "#3366a3",
+                  color: "#fff",
+                  "&:hover": { backgroundColor: "#285680" },
+                  height: "8px",
+                }}
+              >
+                Add Loan
+              </Button>
               <Filter
                 open={open}
                 onOpenChange={setOpen}
@@ -449,24 +367,21 @@ function ProjectScope() {
                 title="Filters"
                 onApply={(values) => {
                   setSearchParams((prev) => {
-                    const merged = Object.fromEntries(prev.entries());
+                    const merged = Object.fromEntries(prev?.entries());
 
-                    delete merged.from;
-                    delete merged.to;
-                    delete merged.etdFrom;
-                    delete merged.etdTo;
+                    delete merged.actual_disbursement_from;
+                    delete merged.actual_disbursement_to;
+                    delete merged.actual_sanction_from;
+                    delete merged.actual_sanction_to;
                     delete merged.matchMode;
                     delete merged.state;
                     delete merged.cam;
-                    delete merged.project_id;
-                    delete merged.category;
-                    delete merged.scope;
-                    delete merged.po_status;
-                    delete merged.poDateFrom;
-                    delete merged.poDateTo;
+                    delete merged.loan_status;
+                    delete merged.expected_disbursement_from;
+                    delete merged.expected_disbursement_to;
                     delete merged.project_status;
-                    delete merged.commitment_date_from;
-                    delete merged.commitment_date_to;
+                    delete merged.expected_sanction_from;
+                    delete merged.expected_sanction_to;
 
                     const next = {
                       ...merged,
@@ -480,8 +395,8 @@ function ProjectScope() {
                         category: String(values.category),
                       }),
                       ...(values.scope && { scope: String(values.scope) }),
-                      ...(values.po_status && {
-                        po_status: String(values.po_status),
+                      ...(values.loan_status && {
+                        loan_status: String(values.loan_status),
                       }),
                       ...(values.project_status && {
                         project_status: String(values.project_status),
@@ -492,27 +407,40 @@ function ProjectScope() {
                       next.matchMode = values.matcher === "OR" ? "any" : "all";
                     }
 
-                    if (values.delivered_date?.from)
-                      next.from = String(values.delivered_date.from);
-                    if (values.delivered_date?.to)
-                      next.to = String(values.delivered_date.to);
-
-                    if (values.etd?.from)
-                      next.etdFrom = String(values.etd.from);
-                    if (values.etd?.to) next.etdTo = String(values.etd.to);
-
-                    if (values.po_date?.from)
-                      next.poDateFrom = String(values.po_date.from);
-                    if (values.po_date?.to)
-                      next.poDateTo = String(values.po_date.to);
-
-                    if (values.commitment_date?.from)
-                      next.commitment_date_from = String(
-                        values.commitment_date.from
+                    if (values.actual_disbursement?.from)
+                      next.actual_disbursement_from = String(
+                        values.actual_disbursement.from
                       );
-                    if (values.commitment_date?.to)
-                      next.commitment_date_to = String(
-                        values.commitment_date.to
+                    if (values.actual_disbursement?.to)
+                      next.actual_disbursement_to = String(
+                        values.actual_disbursement.to
+                      );
+
+                    if (values.actual_sanction?.from)
+                      next.actual_sanction_from = String(
+                        values.actual_sanction.from
+                      );
+                    if (values.actual_sanction?.to)
+                      next.actual_sanction_to = String(
+                        values.actual_sanction.to
+                      );
+
+                    if (values.expected_disbursement?.from)
+                      next.expected_disbursement_from = String(
+                        values.expected_disbursement.from
+                      );
+                    if (values.expected_disbursement?.to)
+                      next.expected_disbursement_to = String(
+                        values.expected_disbursement.to
+                      );
+
+                    if (values.expected_sanction?.from)
+                      next.expected_sanction_from = String(
+                        values.expected_sanction.from
+                      );
+                    if (values.expected_sanction?.to)
+                      next.expected_sanction_to = String(
+                        values.expected_sanction.to
                       );
                     return next;
                   });
@@ -521,26 +449,19 @@ function ProjectScope() {
                 onReset={() => {
                   setSearchParams((prev) => {
                     const merged = Object.fromEntries(prev.entries());
-                    delete merged.priorityFilter;
-                    delete merged.status;
-                    delete merged.department;
-                    delete merged.assigned_to;
-                    delete merged.createdBy;
-                    delete merged.from;
-                    delete merged.to;
-                    delete merged.etdFrom;
-                    delete merged.etdTo;
+                    delete merged.project_status;
+                    delete merged.actual_disbursement_from;
+                    delete merged.actual_disbursement_to;
+                    delete merged.actual_sanction_from;
+                    delete merged.actual_sanction_to;
                     delete merged.matchMode;
                     delete merged.state;
                     delete merged.cam;
-                    delete merged.project_id;
-                    delete merged.category;
-                    delete merged.scope;
-                    delete merged.po_status;
-                    delete merged.poDateFrom;
-                    delete merged.poDateTo;
-                    delete merged.commitment_date_from;
-                    delete merged.commitment_date_to;
+                    delete merged.loan_status;
+                    delete merged.expected_disbursement_from;
+                    delete merged.expected_disbursement_to;
+                    delete merged.expected_sanction_from;
+                    delete merged.expected_sanction_to;
 
                     return { ...merged, page: "1" };
                   });
@@ -549,7 +470,6 @@ function ProjectScope() {
             </>
           }
         ></SubHeader>
-
         <Box
           component="main"
           className="MainContent"
@@ -563,11 +483,51 @@ function ProjectScope() {
             px: "24px",
           }}
         >
-          <Project_Scope selected={selected} setSelected={setSelected} />
+          <AllLoan selected={selected} setSelected={setSelected} />
         </Box>
       </Box>
+      <Modal
+        open={loanModalOpen}
+        onClose={() => setLoanModalOpen(false)}
+        sx={{ backdropFilter: "blur(2px)" }}
+      >
+        <ModalDialog
+          layout="center"
+          size="lg"
+          sx={{
+            p: 0,
+            borderRadius: "md",
+            overflow: "hidden",
+            bgcolor: "#fff",
+            border: "1px solid var(--joy-palette-neutral-200)",
+            width: { xs: "95vw", sm: "95vw", md: "60vw" },
+            maxHeight: "90vh",
+          }}
+        >
+          <Box
+            sx={{
+              px: 2,
+              py: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              borderBottom: "1px solid var(--joy-palette-neutral-200)",
+              bgcolor: "background.body",
+            }}
+          >
+            <Typography level="title-lg" fontWeight={700}>
+              Create Loan
+            </Typography>
+            <ModalClose variant="plain" />
+          </Box>
+
+          {/* Content: render your AddLoan form */}
+          <Box sx={{ p: 2, overflow: "auto" }}>
+            <AddLoan />
+          </Box>
+        </ModalDialog>
+      </Modal>
     </CssVarsProvider>
   );
 }
-
-export default ProjectScope;
+export default Loan;

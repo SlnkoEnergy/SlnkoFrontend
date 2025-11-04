@@ -1,7 +1,7 @@
 import Box from "@mui/joy/Box";
 import CssBaseline from "@mui/joy/CssBaseline";
 import { CssVarsProvider } from "@mui/joy/styles";
-import  { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Breadcrumbs from "@mui/joy/Breadcrumbs";
 import Link from "@mui/joy/Link";
 import Typography from "@mui/joy/Typography";
@@ -103,9 +103,7 @@ function PurchaseReqDetails() {
                 flexWrap: "wrap",
                 justifyContent: "center",
               }}
-            >
-              
-            </Box>
+            ></Box>
           </Box>
           <PurchaseReqDetail />
         </Box>

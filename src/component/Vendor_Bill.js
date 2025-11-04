@@ -15,18 +15,23 @@ import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Typography from "@mui/joy/Typography";
 import { useSnackbar } from "notistack";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useGetAllBillsQuery } from "../redux/billsSlice";
+import {useExportBillsMutation, useGetAllBillsQuery } from "../redux/billsSlice";
 import Axios from "../utils/Axios";
 import dayjs from "dayjs";
 
 
-function VendorBillSummary() {
+const VendorBillSummary = forwardRef((props, ref) => {
+  
+  const { onSelectionChange, setSelected } = props;
+  useImperativeHandle(ref, () => ({
+    handleExport,
+    selectedIds,
+  }))
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // search text & pagination
   const [searchQuery, setSearchQuery] = useState("");
   const initialPage = parseInt(searchParams.get("page")) || 1;
   const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
@@ -37,10 +42,8 @@ function VendorBillSummary() {
   const dateFilterEnd = searchParams.get("to") || "";
   const dateFilterFrom = searchParams.get("from") || "";
   const selectStatus = searchParams.get("status") || "";
-  // selection
   const [selectedIds, setSelectedIds] = useState([]);
 
-  // Optional user data (kept)
   const [user, setUser] = useState(null);
   useEffect(() => {
     const userData = localStorage.getItem("userDetails");
@@ -57,6 +60,11 @@ function VendorBillSummary() {
     status: selectStatus,
   });
 
+  useEffect(() => {
+    onSelectionChange?.(selectedIds.length, selectedIds);
+  }, [selectedIds, onSelectionChange]);
+
+
   const {
     data: billsData = [],
     total = 0,
@@ -71,14 +79,28 @@ function VendorBillSummary() {
     [getBill]
   );
 
-  // const po_number = bills.map(b=>b?.po_no);
+  const [exportBills, { isLoading: isExporting }] = useExportBillsMutation();
 
-  // console.log("All Bills are",bills);
+  const handleExport = async (isExportAll) => {
+    try {
+      const res = await exportBills({ Ids: selectedIds }).unwrap();
 
-  // console.log("PO Numbers:", po_number);
+      const url = URL.createObjectURL(res);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "bills_export.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Export failed", err);
+      alert("Failed to export bills");
+    }
+  };
+
 
   useEffect(() => {
     setSelectedIds([]);
+    setSelected([]);
   }, [bills, currentPage, perPage]);
 
   useEffect(() => {
@@ -139,12 +161,20 @@ function VendorBillSummary() {
   const isIndeterminate = selectedIds.length > 0 && !isAllSelected;
 
   const toggleSelectAll = (checked) => {
-    if (checked) setSelectedIds(allIdsOnPage);
-    else setSelectedIds([]);
+    if (checked) {
+      setSelectedIds(allIdsOnPage)
+      setSelected(allIdsOnPage)
+    }
+    else {
+      setSelectedIds([])
+      setSelected([])
+    };
   };
-
   const toggleRow = (id) => {
     setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+    setSelected((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
@@ -720,6 +750,6 @@ function VendorBillSummary() {
       </Box>
     </Box>
   );
-}
+})
 
 export default VendorBillSummary;

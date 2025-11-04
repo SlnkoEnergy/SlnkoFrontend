@@ -1,5 +1,26 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
+const makeQuery = (obj = {}) => {
+  const params = new URLSearchParams();
+  Object.entries(obj).forEach(([k, v]) => {
+    if (v === undefined || v === null) return;
+    if (typeof v === "string") {
+      const trimmed = v.trim();
+      if (!trimmed) return;
+      params.set(k, trimmed);
+      return;
+    }
+    if (Array.isArray(v)) {
+      if (v.length === 0) return;
+      params.set(k, v.join(","));
+      return;
+    }
+    params.set(k, String(v));
+  });
+  const q = params.toString();
+  return q ? `?${q}` : "";
+};
+
 export const projectsApi = createApi({
   reducerPath: "projectsApi",
   baseQuery: fetchBaseQuery({
@@ -63,6 +84,84 @@ export const projectsApi = createApi({
       query: ({ page, limit, search, status, sort }) =>
         `projects?page=${page}&limit=${limit}&search=${search}&status=${status}&sort=${sort}`,
       providesTags: ["Project"],
+    }),
+
+    getAllProjectsForLoan: builder.query({
+      query: (args = {}) => {
+        const {
+          page,
+          limit,
+          search,
+          status,
+          sort,
+
+          loan_status,
+          bank_state,
+
+          expected_disbursement_from,
+          expected_disbursement_to,
+
+          expected_sanction_from,
+          expected_sanction_to,
+
+          actual_disbursement_from,
+          actual_disbursement_to,
+
+          actual_sanction_from,
+          actual_sanction_to,
+        } = args;
+
+        const qs = makeQuery({
+          page,
+          limit,
+          search,
+          status,
+          sort,
+
+          loan_status,
+          bank_state,
+
+          expected_disbursement_from,
+          expected_disbursement_to,
+
+          expected_sanction_from,
+          expected_sanction_to,
+
+          actual_disbursement_from,
+          actual_disbursement_to,
+
+          actual_sanction_from,
+          actual_sanction_to,
+        });
+
+        return `project-loan${qs}`;
+      },
+      providesTags: ["Project"],
+    }),
+     exportLoan: builder.mutation({
+      query: ({
+        project_ids,
+        type,
+          loan_status,
+          bank_state,
+
+          expected_disbursement_from,
+          expected_disbursement_to,
+
+          expected_sanction_from,
+          expected_sanction_to,
+
+          actual_disbursement_from,
+          actual_disbursement_to,
+
+          actual_sanction_from,
+          actual_sanction_to,
+      }) => ({
+        url: `/export-loan?type=${type}&loan_status=${loan_status}&bank_state=${bank_state}&expected_disbursement_from=${expected_disbursement_from}&expected_disbursement_to=${expected_disbursement_to}&expected_sanction_from=${expected_sanction_from}&expected_sanction_to=${expected_sanction_to}&actual_disbursement_from=${actual_disbursement_from}&actual_sanction_from=${actual_sanction_from}&actual_sanction_to=${actual_sanction_to}&actual_disbursement_to=${actual_disbursement_to}`,
+        method: "POST",
+        body: { project_ids },
+        responseHandler: (response) => response.blob(),
+      }),
     }),
     updateProjectStatus: builder.mutation({
       query: ({ projectId, status, remarks }) => ({
@@ -446,6 +545,8 @@ export const {
   useAddProjectMutation,
   useUpdateProjectMutation,
   useGetAllProjectsQuery,
+  useGetAllProjectsForLoanQuery,
+  useExportLoanMutation,
   useGetProjectDropdownForDashboardQuery,
   useUpdateProjectStatusMutation,
   useGetProjectByPIdQuery,

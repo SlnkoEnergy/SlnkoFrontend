@@ -80,10 +80,6 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const [nextStatus, setNextStatus] = useState("");
   const [remarks, setRemarks] = useState("");
   const [perPage, setPerPage] = useState(initialPageSize);
-
-
-
-
   const projectId = project_code || "";
 
   // Top 7 categories for the compact Select
@@ -398,7 +394,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
         {p_id ? (
           <Tooltip title={p_id} arrow placement="top">
             <Chip
-              variant="solid"
+              variant="outlined"
               color="primary"
               size="md"
               sx={{
