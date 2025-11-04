@@ -1573,6 +1573,21 @@ function Sidebar() {
                   </ListItem>
                 </>
               )}
+              {(user?.emp_id === "SE-235" ||
+                user?.emp_id === "SE-353" ||
+                user?.emp_id === "SE-255" ||
+                user?.emp_id === "SE-284") && (
+                <>
+                  <ListItem sx={{ mt: 0.5 }}>
+                    <ListItemButton onClick={() => navigate("/cam_dash")}>
+                      <MiscellaneousServicesIcon />
+                      <ListItemContent>
+                        <Typography level="title-sm">CAM</Typography>
+                      </ListItemContent>
+                    </ListItemButton>
+                  </ListItem>
+                </>
+              )}
             </List>
           </>
         ) : user?.department === "Engineering" ? (
