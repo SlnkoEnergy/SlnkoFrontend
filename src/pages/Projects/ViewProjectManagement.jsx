@@ -17,7 +17,7 @@ import {
   Checkbox,
   CircularProgress,
 } from "@mui/joy";
-import { Save, ContentPasteGo } from "@mui/icons-material";
+import { Save, ContentPasteGo, PersonAdd } from "@mui/icons-material";
 import Sidebar from "../../component/Partials/Sidebar";
 import SubHeader from "../../component/Partials/SubHeader";
 import MainHeader from "../../component/Partials/MainHeader";
@@ -35,22 +35,27 @@ import {
   useUpdateStatusOfPlanMutation,
   useUpdateReorderfromActivityMutation,
 } from "../../redux/projectsSlice";
+import { useLazyGetAllUserWithPaginationQuery } from "../../redux/globalTaskSlice";
 import AppSnackbar from "../../component/AppSnackbar";
 import { ArrowDownUp } from "lucide-react";
 
 function ViewProjectManagement() {
+  const [selectionCount, setSelectionCount] = useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
   const projectId = searchParams.get("project_id") || "";
   const selectedView = searchParams.get("view") || "week";
   const [snack, setSnack] = useState({ open: false, msg: "" });
   const ganttRef = useRef(null);
-
+  const [assignOpen, setAssignOpen] = useState(false);
   const timeline = searchParams.get("timeline");
   const type = searchParams.get("type");
   const [loading, setLoading] = useState(false);
   const [planStatus, setPlanStatus] = useState(null);
   const [updatePlanStatus, { isLoading: isUpdatingPlanStatus }] =
     useUpdateStatusOfPlanMutation();
+
+  // NEW: track if any row is selected in child
+  const [hasSelection, setHasSelection] = useState(false);
 
   const handlePlanStatusFromChild = useCallback((statusObj) => {
     const s = (statusObj?.status || "").toLowerCase();
@@ -190,9 +195,9 @@ function ViewProjectManagement() {
     return {
       rows: Array.isArray(rows)
         ? rows.map((r, i) => ({
-          _id: r._id || r.id || String(i),
-          ...r,
-        }))
+            _id: r._id || r.id || String(i),
+            ...r,
+          }))
         : [],
       total,
     };
@@ -231,7 +236,8 @@ function ViewProjectManagement() {
     ? { variant: "solid", color: "danger" }
     : { variant: "outlined", color: "success" };
 
-  const [triggerExport, { loading: isExporting }] = useExportProjectScheduleMutation();
+  const [triggerExport, { loading: isExporting }] =
+    useExportProjectScheduleMutation();
 
   const handleExportCsv = async () => {
     try {
@@ -247,14 +253,13 @@ function ViewProjectManagement() {
       console.log("Export Failed", error);
       alert("Failed to export Project Schedule");
     }
-  }
+  };
 
   const [fetchPdf, { isFetching: isExportingPdf, isLoading, error, data }] =
     useLazyExportProjectSchedulePdfQuery();
 
   const handleExportPdf = async () => {
     try {
-
       const blob = await fetchPdf({ projectId, type, timeline }).unwrap();
 
       const url = URL.createObjectURL(blob);
@@ -267,7 +272,67 @@ function ViewProjectManagement() {
       console.log("Export Failed", error);
       alert("Failed to Export Project Schedule");
     }
-  }
+  };
+
+  // ====== Assign To (SearchPickerModal) ======
+  const assignColumns = useMemo(
+    () => [
+      { key: "name", label: "Name", width: "55%" },
+      {
+        key: "emp_id",
+        label: "Emp ID",
+        width: "45%",
+        render: (r) => r.emp_id || r.employee_id || r.empId || "—",
+      },
+    ],
+    []
+  );
+
+  const [triggerGetUsers] = useLazyGetAllUserWithPaginationQuery();
+
+  const fetchAssignPage = useCallback(
+    async ({ search = "", page = 1, pageSize = 7 }) => {
+      const res = await triggerGetUsers(
+        {
+          search,
+          page,
+          pageSize,
+          department: "Projects", // only Projects department
+        },
+        true
+      );
+
+      const payload = res?.data || {};
+      const rows =
+        payload?.rows ||
+        payload?.data ||
+        payload?.users ||
+        (Array.isArray(payload) ? payload : []);
+      const total =
+        payload?.total ||
+        payload?.pagination?.total ||
+        (Array.isArray(rows) ? rows.length : 0);
+
+      const safeRows = Array.isArray(rows)
+        ? rows.map((u, i) => ({
+            _id: u._id || u.id || String(i),
+            ...u,
+          }))
+        : [];
+
+      return { rows: safeRows, total };
+    },
+    [triggerGetUsers]
+  );
+
+  const handlePickAssignee = useCallback((row) => {
+    setAssignOpen(false);
+    setSnack({
+      open: true,
+      msg: `Picked: ${row?.name || row?.emp_id || row?._id || "—"}`,
+    });
+    // TODO: integrate assign API here (projectId + row._id)
+  }, []);
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -283,7 +348,6 @@ function ViewProjectManagement() {
           sticky
           rightSlot={
             <>
-              {/* Freeze / Unfreeze button */}
               <Button
                 size="sm"
                 color="danger"
@@ -307,12 +371,7 @@ function ViewProjectManagement() {
                 color="primary"
                 onClick={handleReorderFromActivity}
                 disabled={isReordering || !projectId}
-                sx={{
-                  width: 36,
-                  height: 36,
-                  p: 0,
-                  minWidth: 36,
-                }}
+                sx={{ width: 36, height: 36, p: 0, minWidth: 36 }}
                 title={
                   isReordering
                     ? "Reordering…"
@@ -336,11 +395,11 @@ function ViewProjectManagement() {
                   height: "8px",
                   ...(freezeBtnProps.variant === "outlined"
                     ? {
-                      borderColor: "success.outlinedBorder",
-                      color: "success.plainColor",
-                      "--Button-hoverBorderColor":
-                        "success.outlinedHoverBorder",
-                    }
+                        borderColor: "success.outlinedBorder",
+                        color: "success.plainColor",
+                        "--Button-hoverBorderColor":
+                          "success.outlinedHoverBorder",
+                      }
                     : {}),
                 }}
               >
@@ -379,6 +438,23 @@ function ViewProjectManagement() {
               >
                 Fetch From Template
               </Button>
+
+              {/* Assign to (only when any checkbox is ticked) */}
+              {hasSelection && (
+                <Button
+                  variant="solid"
+                  color="primary"
+                  size="sm"
+                  startDecorator={<PersonAdd />}
+                  onClick={() => setAssignOpen(true)}
+                  sx={{ height: "8px" }}
+                  title={
+                    selectionCount ? `${selectionCount} row(s) selected` : ""
+                  }
+                >
+                  Assign to
+                </Button>
+              )}
 
               <Filter
                 open={open}
@@ -426,6 +502,11 @@ function ViewProjectManagement() {
             ref={ganttRef}
             viewModeParam={selectedView}
             onPlanStatus={handlePlanStatusFromChild}
+            // 🔑 Child must call this with true/false when its checkbox selection changes
+            onSelectionChange={({ any, count }) => {
+              setHasSelection(!!any);
+              setSelectionCount(Number(count || 0));
+            }}
           />
         </Box>
       </Box>
@@ -636,6 +717,20 @@ function ViewProjectManagement() {
           </DialogActions>
         </ModalDialog>
       </Modal>
+
+      {/* Assign To — Search Picker (Projects dept users) */}
+      <SearchPickerModal
+        open={assignOpen}
+        onClose={() => setAssignOpen(false)}
+        onPick={handlePickAssignee}
+        title="Assign to"
+        columns={assignColumns}
+        fetchPage={fetchAssignPage}
+        searchKey="name, emp_id"
+        pageSize={7}
+        rowKey="_id"
+        backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
+      />
 
       <AppSnackbar
         color={isError ? "danger" : "success"}

@@ -569,7 +569,7 @@ function ResourceRow({ row, onChange, onRemove, disabled = false }) {
 
 /* ---------------- main component ---------------- */
 const View_Project_Management = forwardRef(
-  ({ viewModeParam = "week", onPlanStatus }, ref) => {
+  ({ viewModeParam = "week", onPlanStatus, onSelectionChange }, ref) => {
     const ganttContainer = useRef(null);
     const [viewMode, setViewMode] = useState(viewModeParam);
 
@@ -711,6 +711,21 @@ const View_Project_Management = forwardRef(
 
     const initialStatusRef = useRef("");
     const fetchedRemarksRef = useRef("");
+
+    // 👇 add this
+    const masterCheckIdRef = useRef(
+      `gantt-master-${Math.random().toString(36).slice(2)}`
+    );
+
+    const notifySelection = () => {
+   try {
+     let count = 0;
+     gantt.eachTask((t) => {
+       if (t?.checked) count++;
+     });
+     onSelectionChange?.({ any: count > 0, count });
+   } catch {}
+ };
 
     // Local flag for frozen state
     const planStatus =
@@ -1555,88 +1570,26 @@ const View_Project_Management = forwardRef(
       gantt.config.min_column_width = 60;
       gantt.config.grid_width = 420;
 
-      // ---------- S.No helper
-      const rowIndex = (t) => {
-        try {
-          return gantt.getTaskIndex(t.id) + 1;
-        } catch {
-          return "";
-        }
-      };
-
-      // initial columns (with S.No)
+      // === columns (no custom header content here; we'll inject manually)
       gantt.config.columns = [
+        {
+          name: "check",
+          label: "", // header checkbox will be injected manually
+          width: 40,
+          align: "center",
+          template: (task) =>
+            `<input type="checkbox" class="gantt-row-checkbox" data-id="${
+              task.id
+            }" ${task.checked ? "checked" : ""}/>`,
+        },
         {
           name: "sno",
           label: "S.No",
           width: 60,
           align: "center",
-          template: (t) => String(rowIndex(t)),
+          template: (t) => String(gantt.getTaskIndex(t.id) + 1),
         },
-        {
-          name: "text",
-          label: "Activity",
-          tree: true,
-          width: 260,
-          resize: true,
-        },
-        {
-          name: "duration",
-          label: timelineMode === "actual" ? "A. Duration" : "Duration",
-          width: 90,
-          align: "center",
-          resize: true,
-          template: durationTemplate,
-        },
-        {
-          name: "resources",
-          label: "Res.",
-          width: 60,
-          align: "center",
-          resize: true,
-          template: (t) =>
-            Number(t._resources_total) > 0 ? String(t._resources_total) : "",
-        },
-        {
-          name: "start",
-          label: "B.Start",
-          width: 100,
-          align: "center",
-          resize: true,
-          template: startCellTemplate,
-        },
-        {
-          name: "end",
-          label: "B.End",
-          width: 100,
-          align: "center",
-          resize: true,
-          template: endCellTemplate,
-        },
-        {
-          name: "a_start",
-          label: "A.Start",
-          width: 100,
-          align: "center",
-          resize: true,
-          template: (t) => t._a_start_dm || "-",
-        },
-        {
-          name: "a_end",
-          label: "A.End",
-          width: 100,
-          align: "center",
-          resize: true,
-          template: (t) => t._a_end_dm || "-",
-        },
-        {
-          name: "pred",
-          label: "Pred.",
-          width: 120,
-          align: "center",
-          resize: true,
-          template: predecessorTemplate,
-        },
+        // ... keep your other columns here ...
       ];
 
       // templates / events
@@ -1648,22 +1601,175 @@ const View_Project_Management = forwardRef(
         return false;
       });
 
+      // ---------- init FIRST ----------
       if (ganttContainer.current) {
         gantt.init(ganttContainer.current);
       }
 
+      // ---------- helper: sync header checkbox state ----------
+      const syncMasterCheckbox = () => {
+        const input = document.getElementById(masterCheckIdRef.current);
+        if (!input) return;
+        let total = 0,
+          checked = 0;
+        gantt.eachTask((t) => {
+          total += 1;
+          if (t.checked) checked += 1;
+        });
+        if (!total) {
+          input.checked = false;
+          input.indeterminate = false;
+          notifySelection();
+          return;
+        }
+        input.checked = checked === total;
+        input.indeterminate = checked > 0 && checked < total;
+        notifySelection();
+      };
+
+      // ---------- inject header checkbox into the 'check' column head ----------
+      const injectMasterHeader = () => {
+        const container = gantt.$container;
+        if (!container) return;
+
+        // find the header cell for the "check" column
+        const headCells = container.querySelectorAll(".gantt_grid_head_cell");
+        let checkHeadCell = null;
+        headCells.forEach((cell) => {
+          // cell has a data-column-name attribute in newer builds; fallback to matching first narrow cell
+          const colName = cell.getAttribute("data-column-name");
+          if (colName === "check") checkHeadCell = cell;
+        });
+
+        // Fallback if data attribute not present: take the first head cell (since our "check" is first)
+        if (!checkHeadCell && headCells.length) checkHeadCell = headCells[0];
+
+        if (!checkHeadCell) return;
+
+        // If already injected, skip
+        if (checkHeadCell.querySelector(`#${masterCheckIdRef.current}`)) {
+          syncMasterCheckbox();
+          return;
+        }
+
+        // Inject the checkbox
+        checkHeadCell.innerHTML = `<input type="checkbox" id="${masterCheckIdRef.current}" />`;
+
+        // Wire handler (use capturing on the exact element to avoid delegation races)
+        const master = checkHeadCell.querySelector(
+          `#${masterCheckIdRef.current}`
+        );
+        if (master) {
+          master.addEventListener("change", onMasterToggle);
+        }
+
+        // Make sure state is correct after injection
+        setTimeout(syncMasterCheckbox, 0);
+      };
+
+      // ---------- master toggle (no gantt.render here) ----------
+      const onMasterToggle = (e) => {
+        const allChecked = !!e.target.checked;
+        gantt.batchUpdate(() => {
+          gantt.eachTask((t) => {
+            t.checked = allChecked;
+            if (gantt.isTaskVisible(t.id)) gantt.refreshTask(t.id);
+          });
+          gantt.refreshData(); // light refresh; header DOM kept
+        });
+        syncMasterCheckbox();
+        notifySelection();
+      };
+
+      // ---------- row checkbox handling via event delegation ----------
+      const onChange = (e) => {
+        const target = e?.target;
+        if (!target) return;
+
+        if (target.classList.contains("gantt-row-checkbox")) {
+          const id = target.getAttribute("data-id");
+          if (id) {
+            const task = gantt.getTask(id);
+            task.checked = !!target.checked;
+            gantt.updateTask(id); // refresh just this row
+            syncMasterCheckbox();
+            notifySelection();
+          }
+        }
+      };
+
+      // Wire listeners once container exists
+      const container = gantt.$container;
+      if (container) container.addEventListener("change", onChange);
+
+      // Inject header checkbox after every possible header rebuild
+      const readyId = gantt.attachEvent("onGanttReady", () =>
+        setTimeout(injectMasterHeader, 0)
+      );
+      const onParseId = gantt.attachEvent("onParse", () =>
+        setTimeout(injectMasterHeader, 0)
+      );
+      const onScaleId = gantt.attachEvent("onScaleAdjusted", () =>
+        setTimeout(injectMasterHeader, 0)
+      );
+      const onColResize = gantt.attachEvent("onColumnResizeEnd", () =>
+        setTimeout(injectMasterHeader, 0)
+      );
+      const onColReorder = gantt.attachEvent("onColumnReorder", () =>
+        setTimeout(injectMasterHeader, 0)
+      );
+
+      // Keep header checkbox state in sync when tasks change
+      const onAfterAddId = gantt.attachEvent("onAfterTaskAdd", () =>
+        setTimeout(syncMasterCheckbox, 0)
+      );
+      const onAfterUpdId = gantt.attachEvent("onAfterTaskUpdate", () =>
+        setTimeout(syncMasterCheckbox, 0)
+      );
+      const onAfterDelId = gantt.attachEvent("onAfterTaskDelete", () =>
+        setTimeout(syncMasterCheckbox, 0)
+      );
+      const onAfterDragId = gantt.attachEvent("onAfterTaskDrag", () =>
+        setTimeout(syncMasterCheckbox, 0)
+      );
+
+      // initial inject + sync
+      setTimeout(() => {
+        injectMasterHeader();
+        syncMasterCheckbox();
+      }, 0);
+
+      // ---------- resize ----------
       const handleResize = () => {
         const host = gantt.$container;
         if (!host) return;
         const w = host.clientWidth || 1000;
         gantt.config.grid_width = Math.max(220, Math.floor(w * 0.4));
         gantt.render();
+        // header may be rebuilt → re-inject + resync
+        setTimeout(() => {
+          injectMasterHeader();
+          syncMasterCheckbox();
+        }, 0);
       };
       window.addEventListener("resize", handleResize);
       handleResize();
 
+      // ---------- cleanup ----------
       return () => {
         window.removeEventListener("resize", handleResize);
+        try {
+          gantt.$container?.removeEventListener("change", onChange);
+        } catch {}
+        gantt.detachEvent(readyId);
+        gantt.detachEvent(onParseId);
+        gantt.detachEvent(onScaleId);
+        gantt.detachEvent(onColResize);
+        gantt.detachEvent(onColReorder);
+        gantt.detachEvent(onAfterAddId);
+        gantt.detachEvent(onAfterUpdId);
+        gantt.detachEvent(onAfterDelId);
+        gantt.detachEvent(onAfterDragId);
         gantt.clearAll();
       };
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1679,6 +1785,18 @@ const View_Project_Management = forwardRef(
     };
 
     const buildColumns = (mode) => [
+      {
+        name: "check",
+        label: "",
+        width: 40,
+        align: "center",
+        template: (task) =>
+          `<input type="checkbox" class="gantt-row-checkbox" data-id="${
+            task.id
+          }" ${task.checked ? "checked" : ""}/>`,
+        
+      },
+
       {
         name: "sno",
         label: "S.No",
@@ -1891,6 +2009,14 @@ const View_Project_Management = forwardRef(
 
       gantt.clearAll();
       parseSafe({ data: dataArr, links: linksArr });
+      const container = gantt.$container;
+      if (container) {
+        const master = container.querySelector(`#${masterCheckIdRef.current}`);
+        if (master) {
+          master.indeterminate = false; // reset transitional state
+        }
+        notifySelection();
+      }
     }, [ganttData, ganttLinks, timelineMode]);
 
     /* ---------- reset selection when switching tabs ---------- */
