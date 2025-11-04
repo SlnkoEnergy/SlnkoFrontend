@@ -77,9 +77,32 @@ const canUserSeePO = (user) => {
   const dept = user.department || "";
   const name = String(user.name || "").trim();
   if (name === "Ranvijay Singh" || name === "Rishav Mahato") return true;
+  if (
+    user?.emp_id === "SE-235" ||
+    user?.emp_id === "SE-353" ||
+    user?.emp_id === "SE-255" ||
+    user?.emp_id === "SE-284"
+  )
+    return false;
   const special = user.emp_id === "SE-013";
   const privileged = special || role === "admin" || role === "superadmin";
   return privileged || dept !== "Engineering";
+};
+
+const canUserSeeEngineering = (user) => {
+  if (!user) return false;
+  const role = String(user.role || "").toLowerCase();
+  const dept = user.department || "";
+  if (
+    user?.emp_id === "SE-235" ||
+    user?.emp_id === "SE-353" ||
+    user?.emp_id === "SE-255" ||
+    user?.emp_id === "SE-284"
+  )
+    return false;
+  const special = user.emp_id === "SE-013";
+  const privileged = special || role === "admin" || role === "superadmin";
+  return privileged || dept !== "Loan";
 };
 
 const canUserSeeDocument = (user) => {
@@ -96,6 +119,13 @@ const canUserSeeHandover = (user) => {
   if (!user) return false;
   const role = String(user.role || "").toLowerCase();
   const dept = user.department || "";
+  if (
+    user?.emp_id === "SE-235" ||
+    user?.emp_id === "SE-353" ||
+    user?.emp_id === "SE-255" ||
+    user?.emp_id === "SE-284"
+  )
+    return false;
   const special = user.emp_id === "SE-013";
   const privileged = special || role === "admin" || role === "superadmin";
   return privileged || dept !== "SCM";
@@ -303,7 +333,7 @@ export default function Project_Detail() {
   const allowedPO = canUserSeePO(currentUser);
   const allowedDocument = canUserSeeDocument(currentUser);
   const allowedHandover = canUserSeeHandover(currentUser);
-
+  const allowedEngineering = canUserSeeEngineering(currentUser);
   useEffect(() => {
     const requested = sanitizeTabFromQuery(searchParams.get("tab"));
     const isPORequested = requested === "po";
@@ -617,7 +647,11 @@ export default function Project_Detail() {
               </Typography>
 
               {currentUser?.department !== "Engineering" &&
-                currentUser?.department !== "SCM" && (
+                currentUser?.department !== "SCM" &&
+                currentUser?.emp_id !== "SE-235" &&
+                currentUser?.emp_id !== "SE-353" &&
+                currentUser?.emp_id !== "SE-255" &&
+                currentUser?.emp_id !== "SE-284" && (
                   <>
                     <Divider sx={{ my: 1 }} />
                     <Typography level="body-sm">
@@ -657,7 +691,7 @@ export default function Project_Detail() {
                 {allowedHandover && <Tab value="handover">Handover Sheet</Tab>}
                 <Tab value="scope">Material Status</Tab>
                 {allowedPO && <Tab value="po">Purchase Order</Tab>}
-                <Tab value="eng">Engineering</Tab>
+                {allowedEngineering && <Tab value="eng">Engineering</Tab>}
               </TabList>
 
               {/* Notes */}
@@ -741,18 +775,20 @@ export default function Project_Detail() {
               )}
 
               {/* Engineering */}
-              <TabPanel
-                value="eng"
-                sx={{
-                  p: { xs: 1, md: 1.5 },
-                  height: { xs: "auto", md: "100%" },
-                  overflowY: { md: "auto" },
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "flex-start" }}>
-                  <Overview />
-                </Box>
-              </TabPanel>
+              {allowedEngineering && (
+                <TabPanel
+                  value="eng"
+                  sx={{
+                    p: { xs: 1, md: 1.5 },
+                    height: { xs: "auto", md: "100%" },
+                    overflowY: { md: "auto" },
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "flex-start" }}>
+                    <Overview />
+                  </Box>
+                </TabPanel>
+              )}
             </Tabs>
           </Card>
         </Box>

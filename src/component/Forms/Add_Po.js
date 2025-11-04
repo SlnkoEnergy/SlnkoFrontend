@@ -199,11 +199,14 @@ const AddPurchaseOrder = ({
   const [openRefuse, setOpenRefuse] = useState(false);
   const [remarks, setRemarks] = useState("");
   const isRowLocked = (l) => !!l.isShow;
-  /* Vendors */
+
   const [vendorSearch, setVendorSearch] = useState("");
   const [vendorPage, setVendorPage] = useState(1);
   const [vendorModalOpen, setVendorModalOpen] = useState(false);
   const [billModalOpen, setBillModalOpen] = useState(false);
+
+  const [etdModalOpen, setEtdModalOpen] = useState(false);
+  const [etd, setEtd] = useState("");
 
   const { data: categoryResponse } = useGetAllCategoriesQuery({
     page: 1,
@@ -1132,6 +1135,12 @@ const AddPurchaseOrder = ({
       }
     }
 
+    // Require ETD before confirm
+    if (action === "confirm_order" && !etd) {
+      setEtdModalOpen(true);
+      return;
+    }
+
     if (action === "confirm_order" && !fromModal) {
       if (!canConfirm)
         return toast.error("Confirm is available only after approval is done.");
@@ -1147,6 +1156,7 @@ const AddPurchaseOrder = ({
             status: "po_created",
             remarks: "",
             new_po_number: formData.po_number,
+            etd,
           },
           { headers: { "x-auth-token": token } }
         );
@@ -2997,6 +3007,58 @@ const AddPurchaseOrder = ({
           />
         </Box>
       )}
+
+      {/* ===== ETD Modal (required for Confirm Order) ===== */}
+      <Modal
+        open={etdModalOpen}
+        onClose={() => {
+          setEtd("");
+          setEtdModalOpen(false);
+        }}
+      >
+        <ModalDialog sx={{ maxWidth: 420, width: "95vw" }}>
+          <Typography level="h5" fontWeight="lg" mb={1}>
+            Expected Delivery Date (ETD)
+          </Typography>
+          <Typography level="body-sm" sx={{ color: "text.secondary", mb: 1 }}>
+            Please select the ETD to proceed with confirmation.
+          </Typography>
+          <Input
+            type="date"
+            value={etd}
+            onChange={(e) => setEtd(e.target.value)}
+            sx={{ "--Input-minHeight": "40px" }}
+          />
+          <Box mt={2} display="flex" justifyContent="flex-end" gap={1}>
+            <Button
+              variant="plain"
+              onClick={() => {
+                setEtd("");
+                setEtdModalOpen(false);
+              }}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              onClick={() => {
+                if (!etd) {
+                  toast.error("Please select ETD to continue.");
+                  return;
+                }
+                setEtdModalOpen(false);
+
+                const btn = document.querySelector(
+                  'button[form="po-form"][name="action"][value="confirm_order"]'
+                );
+                if (btn) btn.click();
+              }}
+            >
+              Save & Continue
+            </Button>
+          </Box>
+        </ModalDialog>
+      </Modal>
     </Box>
   );
 };

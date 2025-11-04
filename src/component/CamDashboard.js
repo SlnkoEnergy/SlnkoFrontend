@@ -44,7 +44,7 @@ import {
 } from "../redux/camsSlice";
 import { toast } from "react-toastify";
 
-function Dash_cam({selected, setSelected}) {
+function Dash_cam({ selected, setSelected }) {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
@@ -162,12 +162,8 @@ function Dash_cam({selected, setSelected}) {
             navigate(`/project_detail?page=${page}&project_id=${project_id}`);
           }}
         >
-          <Chip
-          variant="outlined"
-          color="primary"
-          >
-
-          {code || "-"}
+          <Chip variant="outlined" color="primary">
+            {code || "-"}
           </Chip>
         </span>
       </>
@@ -365,7 +361,17 @@ function Dash_cam({selected, setSelected}) {
   const cannotSeePR =
     user?.department === "CAM" ||
     user?.name === "Sushant Ranjan Dubey" ||
-    user?.name === "Sanjiv Kumar";
+    user?.name === "Sanjiv Kumar" ||
+    user?.emp_id === "SE-235" ||
+    user?.emp_id === "SE-353" ||
+    user?.emp_id === "SE-255" ||
+    user?.emp_id === "SE-284";
+
+  const cannotSeeHandover =
+    user?.emp_id === "SE-235" ||
+    user?.emp_id === "SE-353" ||
+    user?.emp_id === "SE-255" ||
+    user?.emp_id === "SE-284";
 
   const baseHeaders = [
     "Project Id",
@@ -374,11 +380,14 @@ function Dash_cam({selected, setSelected}) {
     "State",
     "Type",
     "Capacity(AC/DC)",
-    "Slnko Service Charges (with GST)",
-    "Handover",
-    "Action",
   ];
+  if (!cannotSeeHandover) {
+    baseHeaders.push("Slnko Service Charges (with GST)");
+    baseHeaders.push("Handover");
+    baseHeaders.push("Action");
+  }
   if (!cannotSeePR) baseHeaders.push("Purchsase Request");
+  
 
   const totalCols = 1 + baseHeaders.length;
 
@@ -400,49 +409,47 @@ function Dash_cam({selected, setSelected}) {
           width={"100%"}
           alignItems={"center"}
         >
-       
-            <Tabs
-              value={selectedTab}
-              onChange={(event, newValue) => {
-                setSelectedTab(newValue);
-                setSearchParams((prev) => {
-                  const newParams = new URLSearchParams(prev);
-                  newParams.set("tab", newValue);
-                  newParams.set("page", 1);
-                  return newParams;
-                });
-              }}
-              indicatorPlacement="none"
-              sx={{
-                bgcolor: "background.level1",
-                borderRadius: 9999,
-                boxShadow: "sm",
-                width: "fit-content",
-              }}
-            >
-              <TabList sx={{ gap: 1 }}>
-                {["All", "Handover Pending", "Scope Pending", "Scope Open"].map(
-                  (label, index) => (
-                    <Tab
-                      key={index}
-                      value={label}
-                      disableIndicator
-                      sx={{
-                        borderRadius: 9999,
-                        fontWeight: "md",
-                        "&.Mui-selected": {
-                          bgcolor: "background.surface",
-                          boxShadow: "sm",
-                        },
-                      }}
-                    >
-                      {label}
-                    </Tab>
-                  )
-                )}
-              </TabList>
-            </Tabs>
-         
+          <Tabs
+            value={selectedTab}
+            onChange={(event, newValue) => {
+              setSelectedTab(newValue);
+              setSearchParams((prev) => {
+                const newParams = new URLSearchParams(prev);
+                newParams.set("tab", newValue);
+                newParams.set("page", 1);
+                return newParams;
+              });
+            }}
+            indicatorPlacement="none"
+            sx={{
+              bgcolor: "background.level1",
+              borderRadius: 9999,
+              boxShadow: "sm",
+              width: "fit-content",
+            }}
+          >
+            <TabList sx={{ gap: 1 }}>
+              {["All", "Handover Pending", "Scope Pending", "Scope Open"].map(
+                (label, index) => (
+                  <Tab
+                    key={index}
+                    value={label}
+                    disableIndicator
+                    sx={{
+                      borderRadius: 9999,
+                      fontWeight: "md",
+                      "&.Mui-selected": {
+                        bgcolor: "background.surface",
+                        boxShadow: "sm",
+                      },
+                    }}
+                  >
+                    {label}
+                  </Tab>
+                )
+              )}
+            </TabList>
+          </Tabs>
         </Box>
         <Box
           className="SearchAndFilters-tabletUp"
@@ -662,47 +669,51 @@ function Dash_cam({selected, setSelected}) {
                   </td>
 
                   {/* Slnko Service Charges (with GST) */}
-                  <td
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    {project.total_gst || "-"}
-                  </td>
+                  {!cannotSeeHandover && (
+                    <>
+                      <td
+                        style={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "left",
+                        }}
+                      >
+                        {project.total_gst || "-"}
+                      </td>
 
-                  {/* Handover */}
-                  <td
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    <StatusChip
-                      status={project.status_of_handoversheet}
-                      is_locked={project.is_locked}
-                      _id={project._id}
-                      user={user}
-                      refetch={refetch}
-                    />
-                  </td>
+                      {/* Handover */}
+                      <td
+                        style={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "left",
+                        }}
+                      >
+                        <StatusChip
+                          status={project.status_of_handoversheet}
+                          is_locked={project.is_locked}
+                          _id={project._id}
+                          user={user}
+                          refetch={refetch}
+                        />
+                      </td>
 
-                  {/* Action */}
-                  <td
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    <RowMenu
-                      currentPage={currentPage}
-                      id={project.id}
-                      _id={project._id}
-                    />
-                  </td>
+                      {/* Action */}
+                      <td
+                        style={{
+                          borderBottom: "1px solid #ddd",
+                          padding: "8px",
+                          textAlign: "left",
+                        }}
+                      >
+                        <RowMenu
+                          currentPage={currentPage}
+                          id={project.id}
+                          _id={project._id}
+                        />
+                      </td>
+                    </>
+                  )}
                   {/* Purchase Request (only if allowed) */}
                   {!cannotSeePR && (
                     <td

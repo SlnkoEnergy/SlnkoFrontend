@@ -121,6 +121,12 @@ function Dashboard() {
     }
   };
 
+   const cannotSeeHandover =
+    user?.emp_id === "SE-235" ||
+    user?.emp_id === "SE-353" ||
+    user?.emp_id === "SE-255" ||
+    user?.emp_id === "SE-284";
+
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -147,7 +153,9 @@ function Dashboard() {
             >
               Handover
             </Button>
-            <Button
+            {!cannotSeeHandover && (
+              <>
+              <Button
               size="sm"
               onClick={() => navigate(`/project_scope`)}
               sx={{
@@ -204,6 +212,8 @@ function Dashboard() {
             >
               Purchase Request
             </Button>
+            </>
+            )}
           </Box>
         </MainHeader>
         <SubHeader
