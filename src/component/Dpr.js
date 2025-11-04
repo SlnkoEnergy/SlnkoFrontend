@@ -16,6 +16,7 @@ import {
   Tooltip,
   Typography,
   Chip,
+  LinearProgress,
 } from "@mui/joy";
 import { iconButtonClasses } from "@mui/joy/IconButton";
 import { useEffect, useMemo, useState } from "react";
@@ -26,29 +27,50 @@ import NoData from "../assets/alert-bell.svg";
 const MOCK_ROWS = [
   {
     _id: "u1-a1",
-    engineer_name: "Rahul Verma",
+    project_code: "PRJ/code",
+    project_name: "ramlal",
     activity_name: "Module Mounting Structure",
-    work_completion: { value: 120, unit: "m" },
+    reporting_tl: { _id: "a1", name: "ganshyam" },
+    work_completion: { value: "52", unit: "M" },      // total
+    current_work: { value: "23", unit: "M" },       // completed
+    milestones: [13, 26, 39],                         // 25%, 50%, 75% of total (52M)
+    deadline: "242025-10-29T12:40:11.956+00:00",
   },
   {
     _id: "u2-a1",
-    engineer_name: "Priya Singh",
-    activity_name: "DC Cabling",
-    work_completion: { value: 45, unit: "percentage" },
+    project_code: "PRJ/code",
+    project_name: "ramlal",
+    activity_name: "Module Mounting Structure",
+    reporting_tl: { _id: "a1", name: "ganshyam" },
+    work_completion: { value: "45", unit: "percentage" }, // total (denom = 45 here)
+    current_work: { value: "23", unit: "percentage" },  // completed
+    milestones: [11.25, 22.5, 33.75],                     // 25%, 50%, 75% of 45
+    deadline: "242025-10-29T12:40:11.956+00:00",
   },
   {
     _id: "u3-a1",
-    engineer_name: "Aman Gupta",
-    activity_name: "Inverter Installation",
-    work_completion: { value: 3, unit: "number" },
+    project_code: "PRJ/code",
+    project_name: "ramlal",
+    activity_name: "Module Mounting Structure",
+    reporting_tl: { _id: "a1", name: "ganshyam" },
+    work_completion: { value: "45", unit: "Number" },  // total
+    current_work: { value: "23", unit: "Number" },   // completed
+    milestones: [11, 22, 34],                          // ~25%, 50%, 75% of 45
+    deadline: "242025-10-29T12:40:11.956+00:00",
   },
   {
     _id: "u4-a1",
-    engineer_name: "Neha Sharma",
-    activity_name: "Earthing",
-    work_completion: { value: 600, unit: "kg" },
+    project_code: "PRJ/code",
+    project_name: "ramlal",
+    activity_name: "Module Mounting Structure",
+    reporting_tl: { _id: "a1", name: "ganshyam" },
+    work_completion: { value: "45", unit: "Kg" },      // total
+    current_work: { value: "23", unit: "Kg" },       // completed
+    milestones: [11, 22, 34],                          // ~25%, 50%, 75% of 45
+    deadline: "242025-10-29T12:40:11.956+00:00",
   },
 ];
+
 
 function DPRTable() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -155,6 +177,204 @@ function DPRTable() {
     );
   };
 
+
+  const clamp01 = (x) => (Number.isFinite(x) ? Math.max(0, Math.min(1, x)) : 0);
+
+  const diffInDays = (deadline) => {
+    if (!deadline) return null;
+    const d = new Date(deadline);
+    if (isNaN(d)) return null;
+    const now = new Date();
+    // ceil so partial days show as 1d
+    return Math.ceil((d.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+  };
+
+  const renderWorkPercent = (wc, tw, deadline, milestones = [], showPercentLabel = true) => {
+    if (!wc || wc.value == null || !tw || tw.value == null) return "-";
+
+    const unit = (tw.unit || wc.unit || "").toString();
+    const total = Number(tw.value);
+    const completed = Number(wc.value);
+
+    if (!Number.isFinite(total) || total <= 0) {
+      return (
+        <Chip size="sm" variant="soft" color="neutral" sx={{ fontWeight: 700 }}>
+          {completed} {unit || ""}
+        </Chip>
+      );
+    }
+
+    const pct = clamp01(completed / total);
+    const pct100 = Math.round(pct * 100);
+
+    // Days info (optional)
+    const days = diffInDays(deadline);
+    const daysText =
+      days == null
+        ? "No deadline"
+        : days > 0
+          ? `${days} day${days === 1 ? "" : "s"} left`
+          : days === 0
+            ? "Due today"
+            : `Overdue by ${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"}`;
+
+    // Tooltip content
+    const tooltip = (
+      <Box sx={{ p: 0.5 }}>
+        <Typography level="title-sm" sx={{ fontWeight: 700, mb: 0.5 }}>
+          Progress: {pct100}%
+        </Typography>
+        <Typography level="body-sm">
+          {completed} / {total} {unit || ""}
+        </Typography>
+        <Typography level="body-sm">{daysText}</Typography>
+      </Box>
+    );
+
+    // Milestone dots -> convert absolute values to % positions
+    const dotPositions = (Array.isArray(milestones) ? milestones : [])
+      .map((m) => Number(m))
+      .filter((m) => Number.isFinite(m) && m >= 0 && m <= total)
+      .map((m) => Math.round((m / total) * 100));
+
+    return (
+      <Tooltip title={tooltip} arrow variant="soft">
+        <Box sx={{ position: "relative", minWidth: 220, pr: showPercentLabel ? 6 : 0 }}>
+          <LinearProgress
+            determinate
+            value={pct100}
+            sx={{
+              height: 10,
+              borderRadius: 999,
+              "--LinearProgress-radius": "999px",
+              "--LinearProgress-thickness": "10px",
+            }}
+          />
+          {/* Milestone dots */}
+          {dotPositions.map((leftPct, idx) => (
+            <Box
+              key={idx}
+              sx={{
+                position: "absolute",
+                top: "50%",
+                left: `calc(${leftPct}% - 4px)`,
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                bgcolor: "neutral.outlinedBorder",
+                boxShadow: "0 0 0 2px var(--joy-palette-background-body)",
+                transform: "translateY(-50%)",
+                pointerEvents: "none",
+              }}
+            />
+          ))}
+          {/* Optional tiny % label on the right */}
+          {showPercentLabel && (
+            <Typography
+              level="body-xs"
+              sx={{
+                position: "absolute",
+                right: 0,
+                top: "50%",
+                transform: "translateY(-50%)",
+                fontWeight: 700,
+                color: "neutral.plainColor",
+                minWidth: 36,
+                textAlign: "right",
+              }}
+            >
+              {pct100}%
+            </Typography>
+          )}
+        </Box>
+      </Tooltip>
+    );
+  };
+
+  const repairDeadlineString = (raw) => {
+    if (!raw) return null;
+    const s = String(raw).trim();
+
+    // Your bad pattern looks like: "242025-10-29..."
+    // We just DROP the leading "24" if it's followed by a 4-digit year + '-' (→ "2025-10-29...")
+    if (/^24(?=\d{4}-\d{2}-\d{2}T)/.test(s)) {
+      return s.replace(/^24(?=\d{4}-\d{2}-\d{2}T)/, "");
+    }
+
+    return s;
+  };
+
+  const parseSafeDate = (raw) => {
+    const repaired = repairDeadlineString(raw);
+    if (!repaired) return null;
+    const d = new Date(repaired);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
+  const fmtAbs = (d) =>
+    d.toLocaleString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+  const humanCountdown = (msDiff) => {
+    const abs = Math.abs(msDiff);
+    const min = 60 * 1000;
+    const hr = 60 * min;
+    const day = 24 * hr;
+
+    const d = Math.floor(abs / day);
+    const h = Math.floor((abs % day) / hr);
+    const m = Math.floor((abs % hr) / min);
+
+    if (msDiff > 0) {
+      if (d >= 2) return { label: `Due in ${d}d`, color: "primary" };
+      if (d === 1) return { label: "Due in 1d", color: "warning" };
+      if (h >= 2) return { label: `Due in ${h}h ${m}m`, color: "warning" };
+      if (h >= 1) return { label: `Due in ${h}h ${m}m`, color: "danger" };
+      return { label: `Due in ${m}m`, color: "danger" };
+    } else if (msDiff < 0) {
+      if (d >= 1) return { label: `Overdue by ${d}d`, color: "danger" };
+      if (h >= 1) return { label: `Overdue by ${h}h ${m}m`, color: "danger" };
+      return { label: `Overdue by ${m}m`, color: "danger" };
+    }
+    return { label: "Due now", color: "warning" };
+  };
+
+  const DeadlineChip = ({ deadline, tickMs = 30000 }) => {
+    const [now, setNow] = useState(() => Date.now());
+
+    useEffect(() => {
+      const id = setInterval(() => setNow(Date.now()), tickMs);
+      return () => clearInterval(id);
+    }, [tickMs]);
+
+    const parsed = useMemo(() => parseSafeDate(deadline), [deadline]);
+
+    if (!parsed) {
+      return (
+        <Chip size="sm" variant="soft" color="neutral" sx={{ fontWeight: 700 }}>
+          -
+        </Chip>
+      );
+    }
+
+    const diff = parsed.getTime() - now;
+    const { label, color } = humanCountdown(diff);
+
+    return (
+      <Tooltip arrow title={fmtAbs(parsed)}>
+        <Chip size="sm" variant="soft" color={color} sx={{ fontWeight: 700 }}>
+          {label}
+        </Chip>
+      </Tooltip>
+    );
+  };
+
+
   return (
     <Box
       sx={{
@@ -165,14 +385,14 @@ function DPRTable() {
     >
       {/* Header row (Search only; no tabs) */}
       <Box
-              display="flex"
-              justifyContent="flex-end"
-              alignItems="center"
-              pt={2}
-              pb={0.5}
-              flexWrap="wrap"
-              gap={1}
-            >
+        display="flex"
+        justifyContent="flex-end"
+        alignItems="center"
+        pt={2}
+        pb={0.5}
+        flexWrap="wrap"
+        gap={1}
+      >
         <Box
           sx={{
             py: 1,
@@ -241,7 +461,7 @@ function DPRTable() {
                   }
                 />
               </th>
-              {["Engineer Name", "Activity Name", "Work Completion"].map(
+              {["Project Code", "Activity", "Reporting(TL)", "Work Detail", "Deadline"].map(
                 (header) => (
                   <th
                     key={header}
@@ -298,16 +518,33 @@ function DPRTable() {
                     />
                   </td>
                   <td style={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
-                    <Tooltip title="Engineer" arrow>
-                      <span style={{ fontWeight: 600 }}>{row.engineer_name}</span>
+                    <Tooltip title={`${row.project_code || ""} — ${row.project_name || ""}`} arrow>
+                      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "left", gap: 1, flexWrap: "wrap" }}>
+                        <Chip size="sm" variant="soft" color="neutral" sx={{ fontWeight: 700 }}>
+                          {row.project_code || "-"}
+                        </Chip>
+                        <Typography level="body-sm" sx={{ fontWeight: 600, pl: "4px" }}>
+                          {row.project_name || "-"}
+                        </Typography>
+                      </Box>
                     </Tooltip>
                   </td>
                   <td style={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
                     {row.activity_name || "-"}
                   </td>
                   <td style={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
-                    {renderWorkCompletion(row.work_completion)}
+                    {row.reporting_tl?.name}
                   </td>
+
+                  <td style={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
+                    {renderWorkPercent(row.current_work, row.work_completion)}
+                  </td>
+
+                  <td style={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
+                    {DeadlineChip(row.deadline)}
+                  </td>
+
+
                 </tr>
               ))
             ) : (
@@ -338,10 +575,10 @@ function DPRTable() {
             )}
           </tbody>
         </Box>
-      </Sheet>
+      </Sheet >
 
       {/* Pagination */}
-      <Box
+      < Box
         className="Pagination-laptopUp"
         sx={{
           pt: 0.5,
@@ -350,7 +587,8 @@ function DPRTable() {
           display: "flex",
           flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
-        }}
+        }
+        }
       >
         <Button
           size="sm"
@@ -381,7 +619,7 @@ function DPRTable() {
             {currentPage}
           </IconButton>
 
-        {currentPage + 1 <= totalPages && (
+          {currentPage + 1 <= totalPages && (
             <IconButton
               size="sm"
               variant="outlined"
@@ -432,8 +670,8 @@ function DPRTable() {
         >
           Next
         </Button>
-      </Box>
-    </Box>
+      </Box >
+    </Box >
   );
 }
 

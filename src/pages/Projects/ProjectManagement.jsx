@@ -32,8 +32,8 @@ function ProjectManagement() {
     const dependencies = Array.isArray(payload.dependencies)
       ? payload.dependencies
       : Array.isArray(payload.dependency)
-      ? payload.dependency
-      : [];
+        ? payload.dependency
+        : [];
 
     // use predecessors only if provided; do NOT synthesize from payload.type
     const predecessors = Array.isArray(payload.predecessors)
@@ -144,8 +144,8 @@ function ProjectManagement() {
     } catch (err) {
       toast.error(
         err?.data?.message ||
-          err?.error ||
-          "Something went wrong. Please try again."
+        err?.error ||
+        "Something went wrong. Please try again."
       );
     }
   };
@@ -211,6 +211,24 @@ function ProjectManagement() {
               }}
             >
               Templates
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => navigate(`/dpr_management`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              Site DPR
             </Button>
           </Box>
         </MainHeader>
