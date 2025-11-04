@@ -600,21 +600,6 @@ export default function Project_Detail() {
                 <b>Substation Distance:</b> {projectDetails?.distance || "-"}
               </Typography>
               <Typography level="body-sm">
-                <b>Land Available:</b>{" "}
-                {(() => {
-                  try {
-                    const parsed = JSON.parse(projectDetails?.land);
-                    const { acres, type } = parsed || {};
-                    if (acres || type)
-                      return `${acres || ""} ${type || ""}`.trim();
-                    return null;
-                  } catch {
-                    return projectDetails?.land || "N/A";
-                  }
-                })()}
-              </Typography>
-
-              <Typography level="body-sm">
                 <b>Tariff:</b> {projectDetails?.tarrif || "-"}
               </Typography>
 
