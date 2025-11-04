@@ -334,6 +334,18 @@ function ViewProjectManagement() {
     // TODO: integrate assign API here (projectId + row._id)
   }, []);
 
+  // NEW: submit handler for multi-select mode
+  const handleSubmitAssignees = useCallback(({ ids, rows }) => {
+    // TODO: integrate your POST here with: projectId, ids
+    // e.g., await assignUsers({ projectId, userIds: ids })
+
+    setAssignOpen(false);
+    setSnack({
+      open: true,
+      msg: `Selected ${ids?.length || 0} assignee(s)`,
+    });
+  }, []);
+
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -722,6 +734,7 @@ function ViewProjectManagement() {
       <SearchPickerModal
         open={assignOpen}
         onClose={() => setAssignOpen(false)}
+        // keep onPick for single-click behavior if you ever turn off multi
         onPick={handlePickAssignee}
         title="Assign to"
         columns={assignColumns}
@@ -730,6 +743,11 @@ function ViewProjectManagement() {
         pageSize={7}
         rowKey="_id"
         backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
+        // NEW: enable multi-select with a Submit button
+        multi
+        showSubmit
+        submitLabel="Assign Selected"
+        onSubmit={handleSubmitAssignees}
       />
 
       <AppSnackbar
