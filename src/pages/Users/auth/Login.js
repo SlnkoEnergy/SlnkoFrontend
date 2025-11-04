@@ -12,7 +12,7 @@ import "slick-carousel/slick/slick-theme.css";
 import "slick-carousel/slick/slick.css";
 import * as Yup from "yup";
 import Img1 from "../../../assets/New_Solar3.png";
-import Img5 from "../../../assets/Protrac_blue.png";
+import Img5 from "../../../assets/protrac_logo.png";
 import ImgX from "../../../assets/slnko_white_logo.png";
 import axios from "axios";
 import { useAddLoginsMutation } from "../../../redux/loginSlice";
@@ -37,33 +37,29 @@ const Login = () => {
   const handleTogglePassword = () => setShowPassword((prev) => !prev);
 
   useEffect(() => {
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const latitude = position.coords.latitude;
-        const longitude = position.coords.longitude;
-
-        let fullAddress = "";
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`
-          );
-          const data = await res.json();
-          fullAddress = data.display_name || "";
-        } catch (err) {
-          toast.error("Reverse geocoding failed");
-        }
-
-        setGeoInfo({ latitude, longitude, fullAddress });
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      const latitude = position.coords.latitude;
+      const longitude = position.coords.longitude;
+      let fullAddress = "";
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`
+        );
+        const data = await res.json();
+        fullAddress = data.display_name || "";
+      } catch (err) {
+        console.log("Reverse geocoding failed");
       }
-    );
+      setGeoInfo({ latitude, longitude, fullAddress });
+    });
   }, []);
-
   const handleLogin = async (values) => {
-    if (!geoInfo.latitude || !geoInfo.longitude || !geoInfo.fullAddress) {
-      toast.error("Location is required to login. Please enable location access.");
+    if (!geoInfo.latitude || !geoInfo.longitude) {
+      toast.error(
+        "Location is required to login. Please enable location access."
+      );
       return;
     }
-
     setIsSubmitting(true);
     try {
       const loginPayload = {
@@ -88,7 +84,7 @@ const Login = () => {
         `${process.env.REACT_APP_API_URL}/get-all-useR-IT`,
         {
           headers: { "x-auth-token": user.token },
-          withCredentials: true
+          withCredentials: true,
         }
       );
 
@@ -109,6 +105,9 @@ const Login = () => {
         role: matchedUser.role,
         department: matchedUser.department || "",
         userID: matchedUser._id || "",
+        location: matchedUser.location || "",
+        about: matchedUser.about || "",
+        attacchment_url: matchedUser.attacchment_url || "",
       };
 
       localStorage.setItem("userDetails", JSON.stringify(userDetails));
@@ -120,7 +119,8 @@ const Login = () => {
         error?.data?.message ||
         error?.message ||
         "Login failed.";
-      const email = error?.response?.data?.email || error?.data?.email || error?.email;
+      const email =
+        error?.response?.data?.email || error?.data?.email || error?.email;
       if (
         message === "Unrecognized device. OTP has been sent for verification."
       ) {
@@ -161,9 +161,8 @@ const Login = () => {
     autoplaySpeed: 3000,
     arrows: false,
   };
-  
 
-   const submitButtonStyle = {
+  const submitButtonStyle = {
     padding: "12px",
     margin: "20px 0",
     borderRadius: 15,
@@ -356,20 +355,19 @@ const Login = () => {
             </form>
           </Paper>
         </Grid>
-     
-<Modal open={otpDialogOpen} onClose={() => setOtpDialogOpen(false)}>
-  <ModalDialog>
-    <Typography level="h4" component="h2">
-      OTP Verification
-    </Typography>
 
-    <OtpVerification
-      email={emailForOtp}
-      onSuccess={() => setOtpDialogOpen(false)}
-    />
-  </ModalDialog>
-</Modal>
+        <Modal open={otpDialogOpen} onClose={() => setOtpDialogOpen(false)}>
+          <ModalDialog>
+            <Typography level="h4" component="h2">
+              OTP Verification
+            </Typography>
 
+            <OtpVerification
+              email={emailForOtp}
+              onSuccess={() => setOtpDialogOpen(false)}
+            />
+          </ModalDialog>
+        </Modal>
       </Grid>
     </Box>
   );

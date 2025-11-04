@@ -77,7 +77,7 @@ const [
 ] = await Promise.all([
   Axios.get("/get-all-projecT-IT", config),
   Axios.get("/get-all-pO-IT", config),
-  Axios.get("/get-all-vendoR-IT", config),
+  Axios.get("/vendor", config),
   Axios.get("/get-pay-summarY-IT", config),
 ]);
 

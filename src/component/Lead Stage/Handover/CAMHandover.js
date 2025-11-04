@@ -15,8 +15,8 @@ import {
   Tooltip,
   Typography,
 } from "@mui/joy";
-import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import * as Yup from "yup";
 import Img1 from "../../../assets/HandOverSheet_Icon.jpeg";
@@ -25,15 +25,15 @@ import {
   useUpdateHandOverMutation,
   useUpdateStatusHandOverMutation,
 } from "../../../redux/camsSlice";
-import {
-  useGetMasterInverterQuery,
-  useGetModuleMasterQuery,
-} from "../../../redux/leadsSlice";
+import { useGetModuleMasterQuery } from "../../../redux/leadsSlice";
 
-const CamHandoverSheetForm = ({ onBack }) => {
+const CamHandoverSheetForm = ({ onBack, p_id }) => {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(null);
   const [showVillage, setShowVillage] = useState(false);
+  const [existingDocs, setExistingDocs] = useState([]);
+  const [attachments, setAttachments] = useState([]);
+  const strictOnce = useRef(false);
   const states = [
     "Andhra Pradesh",
     "Arunachal Pradesh",
@@ -121,7 +121,6 @@ const CamHandoverSheetForm = ({ onBack }) => {
       proposed_dc_capacity: "",
       distance: "",
       tarrif: "",
-      // substation_name: "",
       overloading: "",
       project_kwp: "",
       land: { type: "", acres: "" },
@@ -129,6 +128,8 @@ const CamHandoverSheetForm = ({ onBack }) => {
       project_component: "",
       project_component_other: "",
       transmission_scope: "",
+      ppa_expiry_date: "",
+      bd_commitment_date: "",
       loan_scope: "",
     },
 
@@ -154,10 +155,8 @@ const CamHandoverSheetForm = ({ onBack }) => {
       invoicing_GST_no: "",
       invoicing_GST_status: "",
       invoicing_address: "",
-
       msme_reg: "",
     },
-    submitted_by: "",
     status_of_handoversheet: "submitted",
     is_locked: "locked",
   });
@@ -188,16 +187,6 @@ const CamHandoverSheetForm = ({ onBack }) => {
     [getModuleMaster?.data]
   );
 
-  console.log(ModuleMaster);
-
-  const { data: getMasterInverter = [] } = useGetMasterInverterQuery();
-  const MasterInverter = useMemo(
-    () => getMasterInverter?.data ?? [],
-    [getMasterInverter?.data]
-  );
-
-  console.log(MasterInverter);
-
   useEffect(() => {
     if (ModuleMaster.length > 0) {
       setModuleMakeOptions([
@@ -213,30 +202,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
         ...new Set(ModuleMaster.map((item) => item.power).filter(Boolean)),
       ]);
     }
-
-    if (MasterInverter.length > 0) {
-      setInverterMakeOptions([
-        ...new Set(
-          MasterInverter.map((item) => item.inveter_make).filter(Boolean)
-        ),
-      ]);
-      setInverterSizeOptions([
-        ...new Set(
-          MasterInverter.map((item) => item.inveter_size).filter(Boolean)
-        ),
-      ]);
-      setInverterModelOptions([
-        ...new Set(
-          MasterInverter.map((item) => item.inveter_model).filter(Boolean)
-        ),
-      ]);
-      setInverterTypeOptions([
-        ...new Set(
-          MasterInverter.map((item) => item.inveter_type).filter(Boolean)
-        ),
-      ]);
-    }
-  }, [ModuleMaster, MasterInverter]);
+  }, [ModuleMaster]);
 
   const handleExpand = (panel) => {
     setExpanded(expanded === panel ? null : panel);
@@ -269,9 +235,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
         ...prev,
         other_details: {
           ...prev.other_details,
-          submitted_by_BD: userData.name,
         },
-        submitted_by: userData.name,
       }));
     }
     setUser(userData);
@@ -282,35 +246,56 @@ const CamHandoverSheetForm = ({ onBack }) => {
     return userData ? JSON.parse(userData) : null;
   };
 
+  const [searchParams] = useSearchParams();
   const LeadId = sessionStorage.getItem("submitInfo");
+  const id = searchParams.get("id");
+  const onPickFiles = (e) => {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    if (!files.length) return;
 
-  // console.log("LeadId:", LeadId);
+    const MAX = 15 * 1024 * 1024;
+    const accepted = files.filter((f) => f.size <= MAX);
+    const rejected = files.filter((f) => f.size > MAX);
+    if (rejected.length) {
+      toast.warn(`Skipped (>15MB): ${rejected.map((f) => f.name).join(", ")}`);
+    }
 
-  console.log("Fetching handover sheet with:", { id: LeadId });
+    setAttachments((prev) => {
+      const seen = new Set(prev.map((o) => `${o.file.name}|${o.file.size}`));
+      const add = [];
+      for (const f of accepted) {
+        const key = `${f.name}|${f.size}`;
+        if (!seen.has(key)) {
+          // default filename (editable): without extension by default
+          const base = f.name.replace(/\.[^.]+$/, "");
+          add.push({ file: f, filename: base });
+        }
+      }
+      return add.length ? [...prev, ...add] : prev;
+    });
 
+    e.currentTarget.value = "";
+  };
+  const updatePickedFilename = (idx, name) => {
+    setAttachments((prev) =>
+      prev.map((o, i) => (i === idx ? { ...o, filename: name } : o))
+    );
+  };
+  const removePicked = (idx) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== idx));
+  };
   const {
     data: getHandOverSheet,
     isLoading,
     isError,
     error,
   } = useGetHandOverByIdQuery(
-    { id: LeadId },
+    { id: id, p_id: p_id },
     {
-      skip: !LeadId,
+      skip: !id && !p_id,
     }
   );
-
   const handoverData = getHandOverSheet?.data ?? null;
-
-  console.log("Handover Data:", handoverData);
-
-  useEffect(() => {
-    if (!handoverData && !isLoading && !error) {
-      console.warn("No matching handover data found.");
-    } else if (handoverData) {
-      console.log("Fetched handover data:", handoverData);
-    }
-  }, [handoverData, isLoading, error]);
 
   useEffect(() => {
     if (handoverData) {
@@ -344,7 +329,18 @@ const CamHandoverSheetForm = ({ onBack }) => {
         },
       }));
     }
+
+    const docs = Array.isArray(handoverData?.documents)
+      ? handoverData?.documents.map((d) => ({
+          filename: d?.filename || "document",
+          fileurl: d?.fileurl || d?.url || "",
+        }))
+      : [];
+
+    setExistingDocs(docs.filter((d) => d.fileurl));
   }, [getHandOverSheet]);
+
+  console.log(handoverData?.documents);
 
   const handoverSchema = Yup.object().shape({
     customer_details: Yup.object().shape({
@@ -369,6 +365,22 @@ const CamHandoverSheetForm = ({ onBack }) => {
       purchase_supply_net_meter: Yup.string().required(
         "Purchase supply net metering is required"
       ),
+      project_completion_date: Yup.string()
+        .required("Project Completion Date is required")
+        .test(
+          "max-90-days",
+          "Project Completion Date could not be more than 90 days from today",
+          function (value) {
+            if (!value) return true;
+            const inputDate = new Date(value);
+            if (isNaN(inputDate)) return true;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const diffMs = inputDate - today;
+            const diffDays = diffMs / (1000 * 60 * 60 * 24);
+            return diffDays <= 90;
+          }
+        ),
     }),
     commercial_details: Yup.object().shape({
       type: Yup.string().required("Commercial type is required"),
@@ -396,10 +408,6 @@ const CamHandoverSheetForm = ({ onBack }) => {
         name: handoverData?.customer_details?.name || "",
         customer: handoverData?.customer_details?.customer || "",
         epc_developer: handoverData?.customer_details?.epc_developer || "",
-        // billing_address: handoverData?.customer_details?.billing_address || {
-        //   village_name: "",
-        //   district_name: "",
-        // },
         site_address: handoverData?.customer_details?.site_address || {
           village_name: "",
           district_name: "",
@@ -407,7 +415,6 @@ const CamHandoverSheetForm = ({ onBack }) => {
         site_google_coordinates:
           handoverData?.customer_details?.site_google_coordinates || "",
         number: handoverData?.customer_details?.number || "",
-        // gst_no: handoverData?.customer_details?.gst_no || "",
         gender_of_Loa_holder:
           handoverData?.customer_details?.gender_of_Loa_holder || "",
         email: handoverData?.customer_details?.email || "",
@@ -442,9 +449,6 @@ const CamHandoverSheetForm = ({ onBack }) => {
           handoverData?.project_detail?.inverter_make_capacity || "",
         inverter_make: handoverData?.project_detail?.inverter_make || "",
         inverter_type: handoverData?.project_detail?.inverter_type || "",
-        // inverter_size: handoverData?.project_detail?.inverter_size || "",
-        // inverter_model_no:
-        //   handoverData?.project_detail?.inverter_model_no || "",
         work_by_slnko: handoverData?.project_detail?.work_by_slnko || "",
         topography_survey:
           handoverData?.project_detail?.topography_survey || "",
@@ -510,29 +514,10 @@ const CamHandoverSheetForm = ({ onBack }) => {
 
         msme_reg: handoverData?.invoice_detail?.msme_reg || "",
       },
-      submitted_by: handoverData?.submitted_by || "-",
       status_of_handoversheet: handoverData?.status_of_handoversheet,
       is_locked: handoverData?.is_locked,
     }));
   }, [handoverData]);
-
-  // const calculateDcCapacity = (ac, overloadingPercent) => {
-  //   const acValue = parseFloat(ac);
-  //   const overloadingValue = parseFloat(overloadingPercent) / 100;
-  //   if (!isNaN(acValue) && !isNaN(overloadingValue)) {
-  //     return Math.round(acValue * (1 + overloadingValue));
-  //   }
-  //   return "";
-  // };
-
-  // const calculateSlnkoBasic = (kwp, slnko_basic) => {
-  //   const kwpValue = parseFloat(kwp);
-  //   const serviceValue = parseFloat(slnko_basic);
-  //   if (!isNaN(kwpValue) && !isNaN(serviceValue)) {
-  //     return (kwpValue * serviceValue * 1000).toFixed(0);
-  //   }
-  //   return "";
-  // };
 
   const calculateDcCapacity = (ac, overloadingPercent) => {
     const acValue = parseFloat(ac);
@@ -575,25 +560,6 @@ const CamHandoverSheetForm = ({ onBack }) => {
         service: calculated,
       },
     }));
-    //    if (!isNaN(serviceAmount)) {
-    //   let gstPercentage = 0;
-    //   if (billingType === "Composite") {
-    //     gstPercentage = 13.8;
-    //   } else if (billingType === "Individual") {
-    //     gstPercentage = 18;
-    //   }
-
-    //   if (gstPercentage > 0) {
-    //     const totalGST = Math.round(serviceAmount * (1 + gstPercentage / 100));
-    //     setFormData((prev) => ({
-    //       ...prev,
-    //       other_details: {
-    //         ...prev.other_details,
-    //         total_gst: totalGST,
-    //       },
-    //     }));
-    //   }
-    // }
 
     if (!isNaN(serviceAmount)) {
       let gstPercentage = 0;
@@ -665,7 +631,6 @@ const CamHandoverSheetForm = ({ onBack }) => {
         invoice_detail: { ...formData.invoice_detail },
         // status_of_handoversheet: "Approved",
         is_locked: "locked",
-        submitted_by: user?.name,
       };
 
       const statusPayload = {
@@ -673,7 +638,15 @@ const CamHandoverSheetForm = ({ onBack }) => {
         status_of_handoversheet: "Approved",
       };
 
-      await updateHandOver(updatedFormData).unwrap();
+      const fd = new FormData();
+      fd.append("data", JSON.stringify(updatedFormData));
+
+      attachments.forEach(({ file, filename }) => {
+        fd.append("files", file);
+        fd.append("names", (filename || "").trim());
+      });
+
+      await updateHandOver({ _id: formData._id, formData: fd }).unwrap();
       toast.success("Project updated successfully.");
 
       await updateStatusHandOver(statusPayload).unwrap();
@@ -721,14 +694,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
       </Typography>
 
       <Accordion>
-        <AccordionSummary
-          expandIcon={<ExpandMoreIcon />}
-          sx={{
-            backgroundColor: "#e0e0e0",
-            padding: 1.5,
-            marginBottom: "1.5rem",
-          }}
-        >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={summarySx}>
           <Typography level="h4">CAM</Typography>
         </AccordionSummary>
         <AccordionDetails>
@@ -1122,12 +1088,6 @@ const CamHandoverSheetForm = ({ onBack }) => {
                       }
                     }}
                   >
-                    {/* {moduleMakeOptions.length > 0 &&
-                      moduleMakeOptions.map((make, index) => (
-                        <Option key={index} value={make}>
-                          {make}
-                        </Option>
-                      ))} */}
                     <Option value="SUNGROW">SUNGROW</Option>
                     <Option value="WATTPOWER">WATTPOWER</Option>
                     <Option value="HITACHI">HITACHI</Option>
@@ -1304,14 +1264,23 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 level="body1"
                 sx={{ fontWeight: "bold", marginBottom: 0.5 }}
               >
-                Project Completion Date(As per PPA)
+                Project Completion Date (Slnko){" "}
+                <span style={{ color: "red" }}>*</span>
               </Typography>
               <Input
                 fullWidth
                 type="date"
-                value={
-                  formData["project_detail"]?.["project_completion_date"] || ""
-                }
+                value={(() => {
+                  const val = formData.project_detail.project_completion_date;
+                  if (!val) return "";
+                  if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+                  const d = new Date(val);
+                  if (isNaN(d)) return "";
+                  const year = d.getFullYear();
+                  const month = String(d.getMonth() + 1).padStart(2, "0");
+                  const day = String(d.getDate()).padStart(2, "0");
+                  return `${year}-${month}-${day}`;
+                })()}
                 onChange={(e) =>
                   handleChange(
                     "project_detail",
@@ -1321,44 +1290,8 @@ const CamHandoverSheetForm = ({ onBack }) => {
                 }
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
-              <Typography
-                level="body1"
-                sx={{ fontWeight: "bold", marginBottom: 0.5 }}
-              >
-                LOA/PPA Date
-              </Typography>
-              <Input
-                fullWidth
-                type="date"
-                value={formData["project_detail"]?.["agreement_date"] || ""}
-                onChange={(e) =>
-                  handleChange(
-                    "project_detail",
-                    "agreement_date",
-                    e.target.value
-                  )
-                }
-              />
-            </Grid>
 
-            <Grid item xs={12} sm={6}>
-              <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
-                CAM Member Name
-              </Typography>
-              <Input
-                value={formData.other_details.cam_member_name}
-                placeholder="CAM Member Name"
-                onChange={(e) =>
-                  handleChange(
-                    "other_details",
-                    "cam_member_name",
-                    e.target.value
-                  )
-                }
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={6} mb={1}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 LOA Number
               </Typography>
@@ -1388,15 +1321,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
       </Accordion>
 
       <Accordion>
-        <AccordionSummary
-          expandIcon={<ExpandMoreIcon />}
-          sx={{
-            backgroundColor: "#e0e0e0",
-            padding: 1.5,
-            marginBottom: "1.5rem",
-            marginTop: "1.0rem",
-          }}
-        >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={summarySx}>
           <Typography level="h4">Internal Ops</Typography>
         </AccordionSummary>
 
@@ -1478,13 +1403,13 @@ const CamHandoverSheetForm = ({ onBack }) => {
               </Select>
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={6} mb={1}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 {formData?.other_details?.billing_type === "Composite"
                   ? "Total Slnko Service Charge(with GST)"
                   : formData?.other_details?.billing_type === "Individual"
-                    ? "Total Slnko Service Charge (with GST)"
-                    : "Total Slnko Service Charge(with GST)"}
+                  ? "Total Slnko Service Charge (with GST)"
+                  : "Total Slnko Service Charge(with GST)"}
               </Typography>
               <Input
                 fullWidth
@@ -1500,15 +1425,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
       </Accordion>
 
       <Accordion>
-        <AccordionSummary
-          expandIcon={<ExpandMoreIcon />}
-          sx={{
-            backgroundColor: "#e0e0e0",
-            padding: 1.5,
-            marginTop: "1.0rem",
-            marginBottom: "1.5rem",
-          }}
-        >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={summarySx}>
           <Typography level="h4">BD</Typography>
         </AccordionSummary>
         <AccordionDetails>
@@ -2087,6 +2004,48 @@ const CamHandoverSheetForm = ({ onBack }) => {
 
             <Grid item xs={12} sm={6}>
               <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                PPA Expiry Date
+                <span style={{ color: "red" }}>*</span>
+              </Typography>
+              <Input
+                value={(() => {
+                  const val = formData.project_detail.ppa_expiry_date;
+                  if (!val) return "";
+                  const d = new Date(val);
+                  if (isNaN(d)) return val;
+                  const day = String(d.getDate()).padStart(2, "0");
+                  const month = String(d.getMonth() + 1).padStart(2, "0");
+                  const year = d.getFullYear();
+                  return `${day}-${month}-${year}`;
+                })()}
+                placeholder="PPA Expiry Date"
+                readOnly
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                BD Commitment Date
+                <span style={{ color: "red" }}>*</span>
+              </Typography>
+              <Input
+                value={(() => {
+                  const val = formData.project_detail.bd_commitment_date;
+                  if (!val) return "";
+                  const d = new Date(val);
+                  if (isNaN(d)) return val;
+                  const day = String(d.getDate()).padStart(2, "0");
+                  const month = String(d.getMonth() + 1).padStart(2, "0");
+                  const year = d.getFullYear();
+                  return `${day}-${month}-${year}`;
+                })()}
+                placeholder="BD Commitment Date"
+                readOnly
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                 Slnko Service Charges (Without GST)/W{" "}
                 <span style={{ color: "red" }}>*</span>
               </Typography>
@@ -2111,7 +2070,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
             </Grid>
 
             <Grid xs={12}>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} mb={1}>
                 <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                   Remarks for Slnko Service Charge{" "}
                   <span style={{ color: "red" }}>*</span>
@@ -2132,7 +2091,7 @@ const CamHandoverSheetForm = ({ onBack }) => {
                   required
                 />
               </Grid>
-              <Grid item xs={12} sm={6} mt={1}>
+              <Grid item xs={12} sm={6} mb={1}>
                 <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
                   Remarks (Any Other Commitments to Client){" "}
                   <span style={{ color: "red" }}>*</span>
@@ -2153,27 +2112,192 @@ const CamHandoverSheetForm = ({ onBack }) => {
           </Grid>
         </AccordionDetails>
       </Accordion>
+      <Accordion
+        expanded={expanded === "attachments"}
+        onChange={() => handleExpand("attachments")}
+      >
+        <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={summarySx}>
+          <Typography>Attachments</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <Typography level="body1" sx={{ fontWeight: "bold", mb: 0.5 }}>
+                Existing Documents
+              </Typography>
 
-      {!isCAMDash && (
-        <Grid container spacing={2} sx={{ marginTop: 2 }}>
-          <Grid item xs={6}>
-            <Button
-              onClick={() => navigate("/cam_dash")}
-              variant="solid"
-              color="neutral"
-              fullWidth
-              sx={{ padding: 1.5, fontSize: "1rem", fontWeight: "bold" }}
-            >
-              Back
-            </Button>
+              {existingDocs.length === 0 ? (
+                <Typography level="body2" sx={{ color: "text.secondary" }}>
+                  No attachments found.
+                </Typography>
+              ) : (
+                <div
+                  style={{
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 8,
+                    padding: 12,
+                  }}
+                >
+                  {existingDocs.map((doc, idx) => (
+                    <div
+                      key={`${doc.fileurl}-${idx}`}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        fontSize: 14,
+                        padding: "6px 0",
+                        borderBottom:
+                          idx === existingDocs.length - 1
+                            ? "none"
+                            : "1px dashed #eee",
+                      }}
+                    >
+                      <span
+                        style={{
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {doc.filename}
+                      </span>
+                      <a
+                        href={doc.fileurl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          color: "#1f487c",
+                          textDecoration: "underline",
+                          marginLeft: 12,
+                        }}
+                      >
+                        Download
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Grid>
+
+            <Grid item xs={12} mt={1}>
+              <Typography level="body1" sx={{ fontWeight: "bold", mb: 0.5 }}>
+                Add More Files (optional)
+              </Typography>
+              <Input
+                type="file"
+                multiple
+                onChange={onPickFiles}
+                slotProps={{
+                  input: {
+                    accept:
+                      ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.csv,.txt",
+                  },
+                }}
+              />
+
+              {attachments.length > 0 && (
+                <div
+                  style={{
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 8,
+                    padding: 12,
+                    marginTop: 10,
+                  }}
+                >
+                  <Typography level="body2" sx={{ mb: 1, fontWeight: "bold" }}>
+                    Selected Files ({attachments.length})
+                  </Typography>
+
+                  {attachments.map((o, idx) => (
+                    <div
+                      key={`${o.file.name}-${o.file.size}-${idx}`}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr auto",
+                        gap: 12,
+                        padding: "10px 0",
+                        borderBottom:
+                          idx === attachments.length - 1
+                            ? "none"
+                            : "1px dashed #eee",
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: 14, marginBottom: 6 }}>
+                          <strong>Original:</strong>{" "}
+                          <span style={{ wordBreak: "break-all" }}>
+                            {o.file.name}
+                          </span>{" "}
+                          <span style={{ color: "#6b7280" }}>
+                            ({(o.file.size / (1024 * 1024)).toFixed(2)} MB)
+                          </span>
+                        </div>
+
+                        {/* Editable filename to save in DB */}
+                        <Typography level="body2" sx={{ mb: 0.5 }}>
+                          File name to save in DB
+                        </Typography>
+                        <Input
+                          placeholder="e.g. PPA_Agreement_V1"
+                          value={o.filename}
+                          onChange={(e) =>
+                            updatePickedFilename(idx, e.target.value)
+                          }
+                          sx={{ maxWidth: 480 }}
+                        />
+                      </div>
+
+                      <div
+                        style={{ display: "flex", alignItems: "flex-start" }}
+                      >
+                        <Button
+                          size="sm"
+                          variant="outlined"
+                          color="neutral"
+                          onClick={() => removePicked(idx)}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <Typography
+                level="body3"
+                sx={{ color: "text.tertiary", mt: 0.5 }}
+              >
+                Max 15MB per file.
+              </Typography>
+            </Grid>
           </Grid>
-          <Grid item xs={6}>
+        </AccordionDetails>
+      </Accordion>
+      {!isCAMDash && (
+        <Grid
+          container
+          justifyContent={"flex-end"}
+          display={"flex"}
+          spacing={2}
+          sx={{ marginTop: 2 }}
+        >
+          <Grid item xs={3} display={"flex"} justifyContent={"flex-end"}>
             <Button
               onClick={handleSubmit}
               variant="solid"
-              color="primary"
+              sx={{
+                backgroundColor: "#3366a3",
+                color: "#fff",
+                "&:hover": { backgroundColor: "#285680" },
+                height: "8px",
+                p: 1.5,
+                fontSize: "1rem",
+                fontWeight: "bold",
+              }}
+              disabled={isLoading}
               fullWidth
-              sx={{ padding: 1.5, fontSize: "1rem", fontWeight: "bold" }}
             >
               Submit
             </Button>
@@ -2182,6 +2306,20 @@ const CamHandoverSheetForm = ({ onBack }) => {
       )}
     </Sheet>
   );
+};
+
+const summarySx = {
+  color: "white",
+  fontWeight: "bold",
+  borderTopLeftRadius: 8,
+  borderTopRightRadius: 8,
+  py: 1.5,
+  px: 2,
+  "& .MuiTypography-root": { fontWeight: "bold", fontSize: "1.3rem" },
+  "& .MuiAccordionSummary-expandIconWrapper": { color: "white" },
+  backgroundColor: "#e0e0e0",
+  padding: 1.5,
+  marginBottom: "1.5rem",
 };
 
 export default CamHandoverSheetForm;

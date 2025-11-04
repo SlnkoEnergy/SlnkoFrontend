@@ -8,27 +8,25 @@ import {
   Option,
   Select,
   Tooltip,
+  Tabs,
+  TabList,
+  Tab,
 } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
 import FormControl from "@mui/joy/FormControl";
-import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Sheet from "@mui/joy/Sheet";
 import Typography from "@mui/joy/Typography";
-import { Calendar, Handshake, PackageCheck, Truck, TruckIcon, User } from "lucide-react";
+import { Calendar, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-
 import "react-toastify/dist/ReactToastify.css";
-
-import {
-  useGetAllPurchaseRequestQuery,
-  useGetMaterialCategoryQuery,
-} from "../redux/camsSlice";
-import { Money } from "@mui/icons-material";
+import { useGetAllPurchaseRequestQuery } from "../redux/camsSlice";
+import { useLazyGetCategoriesNameSearchQuery } from "../redux/productsSlice";
+import SearchPickerModal from "../component/SearchPickerModal";
 
 function PurchaseReqSummary() {
   const [selected, setSelected] = useState([]);
@@ -38,30 +36,61 @@ function PurchaseReqSummary() {
   const [selectedstatus, setSelectedstatus] = useState("");
   const [selectedpovalue, setSelectedpovalue] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const page = parseInt(searchParams.get("page")) || 1;
+
+  // URL params
+  const page = parseInt(searchParams.get("page") || "1", 10) || 1;
   const search = searchParams.get("search") || "";
   const itemSearch = searchParams.get("itemSearch") || "";
   const poValueSearch = searchParams.get("poValueSearch") || "";
   const statusSearch = searchParams.get("statusSearch") || "";
-  const [createdDateRange, setCreatedDateRange] = useState([null, null]); // [from, to]
-  const [etdDateRange, setEtdDateRange] = useState([null, null]); // [from, to]
-  const formatDate = (date) => {
-    return date ? new Date(date).toISOString().split("T")[0] : "";
+  const createdFromParam = searchParams.get("from") || "";
+  const createdToParam = searchParams.get("to") || "";
+  const etdFromParam = searchParams.get("deadlineFrom") || "";
+  const etdToParam = searchParams.get("deadlineTo") || "";
+  const tab = searchParams.get("tab") || "all";
+  const openPR = tab === "open";
+  const limit = parseInt(searchParams.get("limit") || "10", 10) || 10;
+  const projectId = searchParams.get("projectId") || "";
+
+  // Category UI state
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [categorySelectOpen, setCategorySelectOpen] = useState(false);
+
+  const updateParams = (patch) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      Object.entries(patch).forEach(([k, v]) => {
+        if (v === "" || v == null) next.delete(k);
+        else next.set(k, String(v));
+      });
+      return next;
+    });
   };
 
-  const navigate = useNavigate();
+  // Main PR list query
+  const { data, isLoading } = useGetAllPurchaseRequestQuery(
+    {
+      page,
+      search,
+      itemSearch,
+      poValueSearch,
+      statusSearch,
+      etdFrom: etdFromParam || "",
+      etdTo: etdToParam || "",
+      createdFrom: createdFromParam || "",
+      createdTo: createdToParam || "",
+      open_pr: tab === "open",
+      limit,
+    },
+    {
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: false,
+      refetchOnReconnect: false,
+    }
+  );
 
-  const { data, isLoading } = useGetAllPurchaseRequestQuery({
-    page,
-    search,
-    itemSearch,
-    poValueSearch,
-    statusSearch,
-    etdFrom: etdDateRange[0] || "",
-    etdTo: etdDateRange[1] || "",
-    createdFrom: createdDateRange[0] || "",
-    createdTo: createdDateRange[1] || "",
-  });
+  // Lazy search for categories (modal paging & searching)
+  const [triggerCategorySearch] = useLazyGetCategoriesNameSearchQuery();
 
   useEffect(() => {
     setCurrentPage(page);
@@ -82,17 +111,16 @@ function PurchaseReqSummary() {
 
   const handleSearch = (query) => {
     setSearchQuery(query);
-    setSearchParams({ page: 1, search: query });
+    updateParams({ page: 1, search: query });
   };
 
-  const allItemIds = purchaseRequests?.data?.item;
+  // Select all item ids (guard)
+  const allItemIds =
+    (purchaseRequests || []).map((r) => r?.item?._id).filter(Boolean) || [];
 
   const handleSelectAll = (event) => {
-    if (event.target.checked) {
-      setSelected(allItemIds);
-    } else {
-      setSelected([]);
-    }
+    if (event.target.checked) setSelected(allItemIds);
+    else setSelected([]);
   };
 
   const handleRowSelect = (itemId) => {
@@ -105,207 +133,72 @@ function PurchaseReqSummary() {
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
-      setSearchParams({ page: newPage, search: searchQuery });
+      updateParams({ page: newPage, search: searchQuery, limit });
     }
   };
 
   const getPaginationRange = () => {
     const siblings = 1;
     const pages = [];
-
     if (totalPages <= 5 + siblings * 2) {
       for (let i = 1; i <= totalPages; i++) pages.push(i);
     } else {
       const left = Math.max(currentPage - siblings, 2);
       const right = Math.min(currentPage + siblings, totalPages - 1);
-
       pages.push(1);
       if (left > 2) pages.push("...");
-
       for (let i = left; i <= right; i++) pages.push(i);
-
       if (right < totalPages - 1) pages.push("...");
       pages.push(totalPages);
     }
-
     return pages;
   };
 
-  const { data: materialCategories, isLoading: isMaterialLoading } =
-    useGetMaterialCategoryQuery();
+  const fetchCategoriesPage = async ({ page, search }) => {
+    try {
+      const res = await triggerCategorySearch(
+        {
+          page: page || 1,
+          search: search || "",
+          limit: 7,
+          pr: openPR,
+          projectId: projectId || "",
+        },
+        true
+      ).unwrap();
 
-const renderFilters = () => {
-  const pr_status = [
-  
-    { value: "ready_to_dispatch", label: "Ready to Dispatch" },
-    { value: "out_for_delivery", label: "Out For Delivery" },
-    { value: "delivered", label: "Delivered" },
-  ];
+      const rows = (res?.data || []).map((r) => ({
+        ...r,
+        name: r?.name ?? r?.category ?? r?.make ?? "",
+      }));
 
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        flexWrap: "wrap",
-        gap: 2,
-        alignItems: "center",
-        mb: 2,
-      }}
-    >
-      <FormControl sx={{ flex: 1 }} size="sm">
-        <FormLabel>PR Status</FormLabel>
-        <Select
-          value={selectedstatus}
-          onChange={(e, newValue) => {
-            setSelectedstatus(newValue);
-            setCurrentPage(1);
-            setSearchParams({
-              page: 1,
-              search: searchQuery,
-              statusSearch: newValue || "",
-              itemSearch: selecteditem,
-              poValueSearch: selectedpovalue,
-            });
-          }}
-          size="sm"
-          placeholder="Select Status"
-        >
-          <Option value="">All status</Option>
-          {pr_status.map((status) => (
-            <Option key={status.value} value={status.value}>
-              {status.label}
-            </Option>
-          ))}
-        </Select>
-      </FormControl>
+      const total =
+        res?.pagination?.total ?? res?.total ?? res?.totalCount ?? rows.length;
 
-      <FormControl sx={{ flex: 1 }} size="sm">
-        <FormLabel>Item Queue</FormLabel>
-        <Select
-          value={selecteditem}
-          onChange={(e, newValue) => {
-            setSelecteditem(newValue);
-            setCurrentPage(1);
-            setSearchParams({
-              page: 1,
-              search: searchQuery,
-              itemSearch: newValue || "",
-              statusSearch: selectedstatus,
-              poValueSearch: selectedpovalue,
-            });
-          }}
-          size="sm"
-          placeholder="Select Item"
-        >
-          <Option value="">All Items</Option>
-          {materialCategories?.data?.map((item) => (
-            <Option key={item.name} value={item.name}>
-              {item.name}
-            </Option>
-          ))}
-        </Select>
-      </FormControl>
+      return { rows, total };
+    } catch (e) {
+      return { rows: [], total: 0 };
+    }
+  };
 
-      <FormControl sx={{ flex: 1 }} size="sm">
-        <FormLabel>Created At</FormLabel>
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <Input
-            type="date"
-            size="sm"
-            value={createdDateRange[0] || ""}
-            onChange={(e) => {
-              const from = e.target.value;
-              const to = createdDateRange[1];
-              setCreatedDateRange([from, to]);
-              setSearchParams({
-                page: 1,
-                search: searchQuery,
-                itemSearch: selecteditem,
-                statusSearch: selectedstatus,
-                poValueSearch: selectedpovalue,
-                createdFrom: from,
-                createdTo: to,
-              });
-            }}
-          />
-          <Input
-            type="date"
-            size="sm"
-            value={createdDateRange[1] || ""}
-            onChange={(e) => {
-              const from = createdDateRange[0];
-              const to = e.target.value;
-              setCreatedDateRange([from, to]);
-              setSearchParams({
-                page: 1,
-                search: searchQuery,
-                itemSearch: selecteditem,
-                statusSearch: selectedstatus,
-                poValueSearch: selectedpovalue,
-                createdFrom: from,
-                createdTo: to,
-              });
-            }}
-          />
-        </Box>
-      </FormControl>
+  const onPickCategory = (row) => {
+    const pickedName = row?.name ?? row?.category ?? row?.make ?? "";
+    setSelecteditem(pickedName);
+    setCurrentPage(1);
+    updateParams({
+      page: 1,
+      search: searchQuery,
+      itemSearch: pickedName || "",
+      statusSearch: selectedstatus,
+      poValueSearch: selectedpovalue,
+    });
+    setCategoryModalOpen(false);
+  };
 
-      <FormControl sx={{ flex: 1 }} size="sm">
-        <FormLabel>ETD Date</FormLabel>
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <Input
-            type="date"
-            size="sm"
-            value={etdDateRange[0] || ""}
-            onChange={(e) => {
-              const from = e.target.value;
-              const to = etdDateRange[1];
-              setEtdDateRange([from, to]);
-              setSearchParams({
-                page: 1,
-                search: searchQuery,
-                itemSearch: selecteditem,
-                statusSearch: selectedstatus,
-                poValueSearch: selectedpovalue,
-                etdFrom: from,
-                etdTo: to,
-              });
-            }}
-          />
-          <Input
-            type="date"
-            size="sm"
-            value={etdDateRange[1] || ""}
-            onChange={(e) => {
-              const from = etdDateRange[0];
-              const to = e.target.value;
-              setEtdDateRange([from, to]);
-              setSearchParams({
-                page: 1,
-                search: searchQuery,
-                itemSearch: selecteditem,
-                statusSearch: selectedstatus,
-                poValueSearch: selectedpovalue,
-                etdFrom: from,
-                etdTo: to,
-              });
-            }}
-          />
-        </Box>
-      </FormControl>
-    </Box>
-  );
-};
+  // ---------- Render helpers ----------
+  const RenderPRNo = ({ pr_no, createdAt, createdBy, pr_id }) => {
+    const navigate = useNavigate();
 
-
-  const RenderPRNo = ({
-    pr_no,
-    createdAt,
-    createdBy,
-    project_id,
-    item_id,
-    pr_id,
-  }) => {
     const formattedDate = createdAt
       ? new Date(createdAt).toLocaleDateString("en-IN", {
           day: "2-digit",
@@ -313,133 +206,286 @@ const renderFilters = () => {
           year: "numeric",
         })
       : "N/A";
+
+    const isClickable = Boolean(pr_no && pr_id);
+
+    const handleOpen = () => {
+      if (isClickable) navigate(`/pr_form?mode=view&id=${pr_id}`);
+    };
+
     return (
       <>
         <Box>
-          <span
-            style={{ cursor: "pointer", fontWeight: 500 }}
-            onClick={() =>
-              navigate(
-                `/purchase_detail?project_id=${project_id}&item_id=${item_id}&pr_id=${pr_id}`
-              )
-            }
+          <Tooltip
+            title={isClickable ? "Open PR" : ""}
+            placement="bottom"
+            arrow
           >
-            {pr_no || "-"}
-          </span>
+            <Chip
+              size="sm"
+              variant="solid"
+              color={isClickable ? "primary" : "neutral"}
+              onClick={handleOpen}
+              component={isClickable ? "button" : "div"}
+              role={isClickable ? "link" : undefined}
+              tabIndex={isClickable ? 0 : -1}
+              onKeyDown={(e) => {
+                if (isClickable && (e.key === "Enter" || e.key === " ")) {
+                  e.preventDefault();
+                  handleOpen();
+                }
+              }}
+              sx={{
+                "--Chip-radius": "9999px",
+                "--Chip-borderWidth": 0,
+                "--Chip-paddingInline": "10px",
+                "--Chip-minHeight": "22px",
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+                cursor: isClickable ? "pointer" : "default",
+                border: "none",
+                userSelect: "none",
+              }}
+            >
+              {pr_no || "-"}
+            </Chip>
+          </Tooltip>
         </Box>
-        <Box display="flex" alignItems="center">
+
+        <Box display="flex" alignItems="center" mt={0.5} gap={0.5}>
           <Calendar size={12} />
-          &nbsp;
           <span style={{ fontSize: 12, fontWeight: 600 }}>
-            Created At:{" "}
-          </span>{" "}
-          &nbsp;
+            Created At:&nbsp;
+          </span>
           <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
             {formattedDate}
           </Typography>
         </Box>
-        <Box display="flex" alignItems="center">
+
+        <Box display="flex" alignItems="center" gap={0.5}>
           <User size={12} />
-          &nbsp;
           <span style={{ fontSize: 12, fontWeight: 600 }}>
-            Created By:{" "}
-          </span>{" "}
-          &nbsp;
+            Created By:&nbsp;
+          </span>
           <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-            {createdBy}
+            {createdBy || "-"}
           </Typography>
         </Box>
       </>
     );
   };
 
-const RenderItemCell = (item) => {
-    const name = item?.item_id?.name;
+  const getItemName = (it) =>
+    it?.item_id?.name || it?.other_item_name || it?.name || "(Unnamed item)";
+  const norm = (s) => (s == null ? "" : String(s).trim().toLowerCase());
+  const uniqueByName = (items) => {
+    const seen = new Set();
+    const out = [];
+    const arr = Array.isArray(items)
+      ? items.filter(Boolean)
+      : [items].filter(Boolean);
+    for (const it of arr) {
+      const name = getItemName(it);
+      const key = norm(name);
+      if (!seen.has(key)) {
+        seen.add(key);
+        out.push({ item: it, name });
+      }
+    }
+    return out;
+  };
+
+  const getName = (it) =>
+    it?.item_id?.name ?? it?.name ?? it?.other_item_name ?? "-";
+
+  const getProductData = (it) =>
+    it?.product_data ??
+    it?.item_id?.product_data ??
+    it?.item_id?.product_Data ??
+    "-";
+
+  const RenderItemCell = (item) => {
+    const name = getName(item);
     const isOthers = name === "Others";
+    const pData = getProductData(item);
+
+    const othersTooltip = (
+      <Box
+        sx={{
+          bgcolor: "primary.softBg",
+          color: "primary.solidColor",
+          p: 1,
+          borderRadius: "sm",
+          minWidth: "150px",
+        }}
+      >
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.25 }}>
+          <Typography fontWeight="lg" sx={{ color: "black" }}>
+            Other's Product Name
+          </Typography>
+          {Array.isArray(pData) ? (
+            pData.map((pd, i) => (
+              <Typography key={i} level="body-xs">
+                {pd ?? "-"}
+              </Typography>
+            ))
+          ) : (
+            <Typography level="body-xs">{pData ?? "-"}</Typography>
+          )}
+        </Box>
+      </Box>
+    );
+
     return (
       <Box>
-        <Typography>{name || "-"}</Typography>
-        {isOthers && (
-          <Box sx={{ fontSize: 12, color: "gray" }}>
-            <div>
-              <b> <TruckIcon size={13} /> Other Item Name:</b> {item?.other_item_name || "-"}
-            </div>
-            <div>
-              <b><Money /> Amount:</b> ₹{item?.amount || "0"}
-            </div>
-          </Box>
-        )}
+        <Typography>
+          {isOthers ? (
+            <Tooltip arrow placement="top" title={othersTooltip}>
+              {/* make the hover target obvious but unobtrusive */}
+              <span style={{ cursor: "help" }}>{name}</span>
+            </Tooltip>
+          ) : (
+            name
+          )}
+        </Typography>
       </Box>
     );
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "ready_to_dispatch":
-        return <PackageCheck size={18} style={{ marginRight: 6 }} />;
-      case "out_for_delivery":
-        return <Truck size={18} style={{ marginRight: 6 }} />;
-      case "delivered":
-        return <Handshake size={18} style={{ marginRight: 6 }} />;
-      default:
-        return null;
-    }
-  };
+  const ItemsCell = ({ items }) => {
+    const uniq = uniqueByName(items);
+    if (!uniq?.length) return <span>-</span>;
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "ready_to_dispatch":
-        return "red";
-      case "out_for_delivery":
-        return "orange";
-      case "delivered":
-        return "green";
-      default:
-        return "error";
+    if (uniq.length === 1) {
+      return <>{RenderItemCell(uniq[0].item)}</>;
     }
-  };
 
-  return (
-    <>
-      {/* Search Bar */}
-      <Box
-        sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          borderRadius: "sm",
-          py: 2,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1.5,
-          "& > *": {
-            minWidth: { xs: "120px", md: "160px" },
-          },
-        }}
-      >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search</FormLabel>
-          <Input
-            size="sm"
-            placeholder="Search by Project Code, Project Name, PR No., Status"
-            startDecorator={<SearchIcon />}
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-        </FormControl>
-        {renderFilters()}
+    const tooltipContent = (
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, py: 0.5 }}>
+        {uniq.slice(1).map(({ item }, i) => {
+          const nm = getName(item);
+          return (
+            <Typography level="body-sm" key={`${nm}-${i}`}>
+              {nm}
+            </Typography>
+          );
+        })}
       </Box>
+    );
 
+    return (
+      <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+        <span>{RenderItemCell(uniq[0].item)}</span>
+        <Tooltip title={tooltipContent} variant="soft" arrow placement="bottom">
+          <Chip
+            size="sm"
+            variant="solid"
+            sx={{
+              bgcolor: "#214b7b",
+              color: "#fff",
+              cursor: "pointer",
+              "&:hover": { bgcolor: "#1d416b" },
+            }}
+          >
+            +{uniq.length - 1}
+          </Chip>
+        </Tooltip>
+      </Box>
+    );
+  };
+  const TABS = [
+    { value: "all", label: "All" },
+    { value: "open", label: "Open PR" },
+  ];
+  return (
+    <Box
+      sx={{
+        ml: {
+          lg: "var(--Sidebar-width)",
+        },
+        px: "0px",
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+      }}
+    >
+      <Box display={"flex"} justifyContent={"space-between"} pb={0.5}>
+        <Box
+          display={"flex"}
+          justifyContent={"space-between"}
+          width={"100%"}
+          alignItems={"center"}
+        >
+          {/* Tabs */}
+
+          <Tabs
+            value={tab}
+            onChange={(_e, newValue) => {
+              updateParams({ tab: newValue, page: 1, limit });
+            }}
+            indicatorPlacement="none"
+            sx={{
+              bgcolor: "background.level1",
+              borderRadius: 9999,
+              boxShadow: "sm",
+              width: "fit-content",
+            }}
+          >
+            <TabList sx={{ gap: 1 }}>
+              {TABS.map((t) => (
+                <Tab
+                  key={t.value}
+                  value={t.value}
+                  disableIndicator
+                  sx={{
+                    borderRadius: 9999,
+                    fontWeight: "md",
+                    textTransform: "none",
+                    "&.Mui-selected": {
+                      bgcolor: "background.surface",
+                      boxShadow: "sm",
+                    },
+                  }}
+                >
+                  {t.label}
+                </Tab>
+              ))}
+            </TabList>
+          </Tabs>
+        </Box>
+        <Box
+          className="SearchAndFilters-tabletUp"
+          sx={{
+            borderRadius: "sm",
+            py: 1,
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 1,
+            width: { lg: "100%" },
+          }}
+        >
+          {/* Search */}
+          <FormControl sx={{ flex: 1, minWidth: 300 }} size="sm">
+            <Input
+              size="sm"
+              placeholder="Search by ProjectId, Customer, Type, or State"
+              startDecorator={<SearchIcon />}
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+          </FormControl>
+        </Box>
+
+        {/* Tabs + Rows-per-page */}
+      </Box>
       {/* Table */}
       <Sheet
+        className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: { xs: "none", sm: "initial" },
+          display: { xs: "none", sm: "block" },
           width: "100%",
           borderRadius: "sm",
-          flexShrink: 1,
-          overflow: "auto",
-          minHeight: 0,
-          marginLeft: { lg: "18%", xl: "15%" },
-          maxWidth: { lg: "85%", sm: "100%" },
+          maxHeight: "66vh",
+          overflowY: "auto",
         }}
       >
         <Box
@@ -450,33 +496,43 @@ const RenderItemCell = (item) => {
             <tr>
               <th
                 style={{
+                  position: "sticky",
+                  top: 0,
+                  background: "#e0e0e0",
+                  zIndex: 2,
                   borderBottom: "1px solid #ddd",
                   padding: "8px",
                   textAlign: "left",
+                  fontWeight: "bold",
                 }}
               >
                 <Checkbox
                   size="sm"
                   checked={
-                    selected.length > 0 && selected.length === allItemIds.length
+                    selected?.length > 0 &&
+                    selected.length === allItemIds?.length
                   }
                   onChange={handleSelectAll}
                   indeterminate={
-                    selected.length > 0 && selected.length < allItemIds.length
+                    selected?.length > 0 &&
+                    selected?.length < (allItemIds?.length || 0)
                   }
                 />
               </th>
               {[
                 "PR No.",
                 "Project Code",
-                "Item Name",
-                "Status",
+                "Category Name",
                 "PO Number",
                 "PO Value",
               ].map((header, index) => (
                 <th
                   key={index}
                   style={{
+                    position: "sticky",
+                    top: 0,
+                    background: "#e0e0e0",
+                    zIndex: 2,
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
                     textAlign: "left",
@@ -501,7 +557,6 @@ const RenderItemCell = (item) => {
             ) : purchaseRequests.length > 0 ? (
               purchaseRequests.map((row) => {
                 const item = row.item;
-
                 return (
                   <tr key={item?._id}>
                     <td
@@ -528,8 +583,6 @@ const RenderItemCell = (item) => {
                       <RenderPRNo
                         pr_no={row.pr_no}
                         createdAt={row.createdAt}
-                        project_id={row?.project_id?._id}
-                        item_id={item?.item_id?._id}
                         pr_id={row?._id}
                         createdBy={row?.created_by?.name}
                       />
@@ -554,38 +607,14 @@ const RenderItemCell = (item) => {
                       </Box>
                     </td>
 
-                   <td
-  style={{
-    borderBottom: "1px solid #ddd",
-    textAlign: "left",
-    padding: "8px",
-  }}
->
-  {RenderItemCell(item)}
-</td>
-
-
                     <td
                       style={{
                         borderBottom: "1px solid #ddd",
                         textAlign: "left",
+                        padding: "8px",
                       }}
                     >
-                      <Box
-                        sx={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          py: 0.5,
-                          borderRadius: "16px",
-                          color: getStatusColor(row?.item?.status),
-                          fontWeight: 600,
-                          fontSize: "1rem",
-                          textTransform: "capitalize",
-                        }}
-                      >
-                        {getStatusIcon(row?.item?.status)}
-                        {row?.item?.status?.replace(/_/g, " ")}
-                      </Box>
+                      <ItemsCell items={row.items ?? item} />
                     </td>
 
                     <td
@@ -594,69 +623,110 @@ const RenderItemCell = (item) => {
                         textAlign: "left",
                       }}
                     >
-                      {row.po_numbers?.length > 0 ? (
-                        <Tooltip
-                          arrow
-                          placement="top"
-                          title={
-                            <Box
-                              sx={{
-                                bgcolor: "primary.softBg",
-                                color: "primary.solidColor",
-                                p: 1,
-                                borderRadius: "sm",
-                                minWidth: "150px",
-                              }}
-                            >
-                              <Typography level="body-sm" fontWeight="md">
-                                PO Numbers:
-                              </Typography>
-                              {row.po_numbers.map((po, idx) => (
-                                <Typography key={idx} level="body-xs">
-                                  • {po}
-                                </Typography>
-                              ))}
-                            </Box>
+                      {Array.isArray(row.po_numbers) &&
+                      row.po_numbers.length > 0 ? (
+                        (() => {
+                          const cleaned = row.po_numbers.map((s) =>
+                            (s ?? "").trim()
+                          );
+                          const allEmpty = cleaned.every((s) => s === "");
+                          if (allEmpty) {
+                            return (
+                              <Chip
+                                size="sm"
+                                variant="soft"
+                                color="warning"
+                                sx={{ fontWeight: 600 }}
+                              >
+                                Coming Soon
+                              </Chip>
+                            );
                           }
-                        >
-                          <Box>
-                            <Chip
-                              size="sm"
-                              variant="soft"
-                              sx={{
-                                position: "relative",
-                                display: "inline-flex",
-                                alignItems: "center",
-                                paddingRight:
-                                  row.po_numbers.length > 1 ? "24px" : "12px",
-                                maxWidth: "200px",
-                                cursor: "pointer",
-                              }}
-                            >
-                              {row.po_numbers[0]}
-                              {row.po_numbers.length > 1 && (
-                                <Avatar
-                                  size="xs"
-                                  variant="solid"
-                                  color="primary"
+                          const numbers = cleaned.filter(Boolean);
+                          if (numbers.length === 0) {
+                            return (
+                              <Chip
+                                size="sm"
+                                variant="soft"
+                                color="warning"
+                                sx={{ fontWeight: 600 }}
+                              >
+                                Coming Soon
+                              </Chip>
+                            );
+                          }
+                          return (
+                            <Tooltip
+                              arrow
+                              placement="top"
+                              title={
+                                <Box
                                   sx={{
-                                    position: "absolute",
-                                    right: 2,
-                                    top: -2,
-                                    fontSize: "10px",
-                                    height: 18,
-                                    width: 20,
-                                    zIndex: 1,
+                                    bgcolor: "primary.softBg",
+                                    color: "primary.solidColor",
+                                    p: 1,
+                                    borderRadius: "sm",
+                                    minWidth: "150px",
                                   }}
                                 >
-                                  +{row.po_numbers.length - 1}
-                                </Avatar>
-                              )}
-                            </Chip>
-                          </Box>
-                        </Tooltip>
+                                  <Typography level="body-sm" fontWeight="md">
+                                    PO Numbers:
+                                  </Typography>
+                                  {numbers.map((po, idx) => (
+                                    <Typography key={idx} level="body-xs">
+                                      • {po}
+                                    </Typography>
+                                  ))}
+                                </Box>
+                              }
+                            >
+                              <Box>
+                                <Chip
+                                  size="sm"
+                                  variant="soft"
+                                  color="primary"
+                                  sx={{
+                                    position: "relative",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    paddingRight:
+                                      numbers.length > 1 ? "24px" : "12px",
+                                    maxWidth: "200px",
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  {numbers[0]}
+                                  {numbers.length > 1 && (
+                                    <Avatar
+                                      size="xs"
+                                      variant="solid"
+                                      color="primary"
+                                      sx={{
+                                        position: "absolute",
+                                        right: 2,
+                                        top: -2,
+                                        fontSize: "10px",
+                                        height: 18,
+                                        width: 20,
+                                      }}
+                                    >
+                                      +{numbers.length - 1}
+                                    </Avatar>
+                                  )}
+                                </Chip>
+                              </Box>
+                            </Tooltip>
+                          );
+                        })()
                       ) : (
-                        "-"
+                        <Chip
+                          size="sm"
+                          variant="soft"
+                          color="neutral"
+                          sx={{ fontWeight: 600 }}
+                        >
+                          PO yet to be raised
+                        </Chip>
                       )}
                     </td>
 
@@ -666,7 +736,7 @@ const RenderItemCell = (item) => {
                         textAlign: "left",
                       }}
                     >
-                      {row.po_value || "-"}
+                      ₹ {(Number(row?.po_value) || 0).toFixed(2)}
                     </td>
                   </tr>
                 );
@@ -689,13 +759,12 @@ const RenderItemCell = (item) => {
       <Box
         className="Pagination-laptopUp"
         sx={{
-          pt: 2,
+          pt: 0.5,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: "flex",
           alignItems: "center",
           flexDirection: { xs: "column", md: "row" },
-          marginLeft: { xl: "15%", lg: "18%" },
         }}
       >
         <Button
@@ -716,25 +785,64 @@ const RenderItemCell = (item) => {
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
-          {getPaginationRange().map((page, idx) =>
-            page === "..." ? (
+          {getPaginationRange().map((p, idx) =>
+            p === "..." ? (
               <Box key={`ellipsis-${idx}`} sx={{ px: 1 }}>
                 ...
               </Box>
             ) : (
               <IconButton
-                key={page}
+                key={p}
                 size="sm"
-                variant={page === currentPage ? "contained" : "outlined"}
+                variant={p === currentPage ? "contained" : "outlined"}
                 color="neutral"
-                onClick={() => handlePageChange(page)}
+                onClick={() => handlePageChange(p)}
               >
-                {page}
+                {p}
               </IconButton>
             )
           )}
         </Box>
-
+        {/* Rows per page */}
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={1}
+          sx={{ padding: "8px 16px" }}
+        >
+          <Select
+            value={String(limit)}
+            onChange={(_e, newValue) => {
+              const newLimit = parseInt(newValue || "10", 10) || 10;
+              updateParams({
+                limit: String(newLimit),
+                page: 1,
+                tab,
+                search: searchQuery || undefined,
+                itemSearch: selecteditem || undefined,
+                statusSearch: selectedstatus || undefined,
+                poValueSearch: selectedpovalue || undefined,
+                createdFrom: createdFromParam || undefined,
+                createdTo: createdToParam || undefined,
+                etdFrom: etdFromParam || undefined,
+                etdTo: etdToParam || undefined,
+              });
+            }}
+            sx={{
+              minWidth: 80,
+              borderRadius: "md",
+              boxShadow: "sm",
+            }}
+            size="sm"
+            placeholder="Rows"
+          >
+            {[5, 10, 20, 50, 100].map((n) => (
+              <Option key={n} value={String(n)}>
+                {n}
+              </Option>
+            ))}
+          </Select>
+        </Box>
         <Button
           size="sm"
           variant="outlined"
@@ -746,7 +854,20 @@ const RenderItemCell = (item) => {
           Next
         </Button>
       </Box>
-    </>
+
+      {/* Category Search Modal */}
+      <SearchPickerModal
+        open={categoryModalOpen}
+        onClose={() => setCategoryModalOpen(false)}
+        onPick={onPickCategory}
+        title="Select Category"
+        columns={[{ key: "name", label: "Category", width: 320 }]}
+        fetchPage={fetchCategoriesPage}
+        searchKey="name"
+        pageSize={7}
+        backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
+      />
+    </Box>
   );
 }
 

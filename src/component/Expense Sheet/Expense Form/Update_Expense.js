@@ -1,17 +1,17 @@
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import DownloadIcon from "@mui/icons-material/Download";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { IconButton, Stack, Textarea, Tooltip } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Input from "@mui/joy/Input";
 import Modal from "@mui/joy/Modal";
 import ModalDialog from "@mui/joy/ModalDialog";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import Sheet from "@mui/joy/Sheet";
 import Table from "@mui/joy/Table";
 import Typography from "@mui/joy/Typography";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
@@ -19,9 +19,16 @@ import {
   useGetExpenseByIdQuery,
   useUpdateExpenseSheetMutation,
   useUpdateExpenseStatusOverallMutation,
-} from "../../../redux/Expense/expenseSlice";
+} from "../../../redux/expenseSlice";
 import PieChartByCategory from "./Expense_Chart";
-const UpdateExpense = () => {
+
+const UpdateExpense = ({
+  showRejectAllDialog,
+  approveConfirmOpen,
+  setShowRejectAllDialog,
+  setApproveConfirmOpen,
+  onDisabledChange, // <-- NEW: report disabled state to parent
+}) => {
   const navigate = useNavigate();
   const [rows, setRows] = useState([
     {
@@ -37,7 +44,6 @@ const UpdateExpense = () => {
             invoice_number: "",
             invoice_amount: "",
           },
-
           item_status_history: [
             {
               status: "",
@@ -48,9 +54,9 @@ const UpdateExpense = () => {
           approved_amount: "",
           remarks: "",
           item_current_status: {
-            user_id:"",
-            remarks:"",
-            status:""
+            user_id: "",
+            remarks: "",
+            status: "",
           },
         },
       ],
@@ -65,16 +71,13 @@ const UpdateExpense = () => {
           user_id: "",
         },
       ],
-
       total_requested_amount: "",
       total_approved_amount: "",
       disbursement_date: "",
     },
   ]);
 
-  const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
   const [sharedRejectionComment, setSharedRejectionComment] = useState("");
-  const [showRejectAllDialog, setShowRejectAllDialog] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
 
   const [commentDialog, setCommentDialog] = useState({
@@ -96,6 +99,30 @@ const UpdateExpense = () => {
     }
     return null;
   };
+
+  // ✅ Compute disabled state here and report to parent
+  const computedDisabled = useMemo(() => {
+    return rows.every((row) => {
+      const status =
+        typeof row.current_status === "string"
+          ? row.current_status
+          : row.current_status?.status;
+
+      return [
+        "rejected",
+        "hold",
+        "hr approval",
+        "manager approval",
+        "final approval",
+      ].includes(status);
+    });
+  }, [rows]);
+
+  useEffect(() => {
+    if (typeof onDisabledChange === "function") {
+      onDisabledChange(computedDisabled);
+    }
+  }, [computedDisabled, onDisabledChange]);
 
   const categoryOptions = [
     "Site Meal Per-diem Allowance",
@@ -319,8 +346,6 @@ const UpdateExpense = () => {
         ],
       };
 
-      console.log("payload:", payload);
-
       await updateExpense({
         _id: expenseSheetId,
         ...payload,
@@ -465,14 +490,6 @@ const UpdateExpense = () => {
     }
   };
 
-  const handleRejectAll = () => {
-    setShowRejectAllDialog(true);
-  };
-
-  const handleApproveAll = () => {
-    setApproveConfirmOpen(true);
-  };
-
   const applyApproveAll = async () => {
     try {
       const userID = JSON.parse(localStorage.getItem("userDetails"))?.userID;
@@ -482,7 +499,6 @@ const UpdateExpense = () => {
         return;
       }
 
-      // Send approval requests to backend
       const requests = rows.map((row) => {
         const approved_items = row.items.map((item) => ({
           _id: item._id,
@@ -493,13 +509,12 @@ const UpdateExpense = () => {
           _id: row._id,
           approved_items,
           remarks: "approved",
-          status:"manager approval" 
+          status: "manager approval",
         }).unwrap();
       });
 
       await Promise.all(requests);
 
-      // Locally update rows without setting status manually
       const updatedRows = rows.map((row) => {
         const updatedItems = row.items.map((item) => {
           const approvedAmount = Number(item.invoice?.invoice_amount) || 0;
@@ -543,9 +558,9 @@ const UpdateExpense = () => {
     "Invoice Number",
     "Approved Amount",
     ...(user?.role === "manager" ||
-    user?.department === "admin" ||
-    user?.role === "visitor" ||
-    user?.name === "IT Team"
+      user?.department === "admin" ||
+      user?.role === "visitor" ||
+      user?.name === "IT Team"
       ? ["Approval"]
       : []),
   ];
@@ -566,8 +581,6 @@ const UpdateExpense = () => {
       >
         <Box
           sx={{
-            // px: { xs: 2, md: 2 },
-            // py: 3,
             marginLeft: { lg: "20%", md: "0%", xl: "15%" },
             maxWidth: "100%",
           }}
@@ -578,111 +591,70 @@ const UpdateExpense = () => {
             display="flex"
             justifyContent="space-between"
             flexWrap="wrap"
-            alignItems="center"
+            alignItems="end"
             gap={2}
           >
-            {/* Expense Term (from-to) */}
-            <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
-              <Typography level="body-md" fontWeight="lg">
-                Select Expense Term:
-              </Typography>
-              <Input
-                type="date"
-                size="sm"
-                value={rows[0].expense_term?.from.slice(0, 10) || ""}
-                onChange={(e) =>
-                  handleRowChange(0, "expense_term", {
-                    ...rows[0].expense_term,
-                    from: e.target.value,
-                  })
-                }
-              />
-              <Typography level="body-sm">to</Typography>
-              <Input
-                type="date"
-                size="sm"
-                value={rows[0].expense_term?.to.slice(0, 10) || ""}
-                onChange={(e) =>
-                  handleRowChange(0, "expense_term", {
-                    ...rows[0].expense_term,
-                    to: e.target.value,
-                  })
-                }
-              />
-              <Typography level="body-md" fontWeight="lg">
-                Employee Name:
-              </Typography>
-              <Input
-                type="text"
-                size="sm"
-                value={rows[0].emp_name || "NA"}
-                onChange={(e) => handleRowChange(0, "emp_name", e.target.value)}
-                placeholder="Enter employee name"
-              />
-            </Box>
+            {/* Employee + Expense Term display on right */}
+            <Box
+              display="flex"
+              alignItems="center"
+              gap={3}
+              flexWrap="wrap"
+              sx={{ ml: "auto" }}
+            >
+              <Sheet
+                variant="outlined"
+                sx={{
+                  borderRadius: "10px",
+                  p: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: 2,
+                  backgroundColor: "neutral.softBg",
+                }}
+              >
+                {/* Employee Name */}
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Typography level="body-md" fontWeight="lg">
+                    Employee Name:
+                  </Typography>
+                  <Typography level="body-md">
+                    {rows[0]?.emp_name || "NA"}
+                  </Typography>
+                </Box>
 
-            {/* Right: Bulk Actions */}
-            <Box display="flex" gap={2}>
-              {(([
-                "Engineering",
-                "BD",
-                "Projects",
-                "Infra",
-                "Loan",
-                "CAM",
-                "Accounts",
-                "HR",
-              ].includes(user?.department) &&
-                user?.role === "manager") ||
-                user?.role === "visitor" ||
-                user?.name === "IT Team" ||
-                user?.department === "admin") && (
-                <>
-                  <Button
-                    color="danger"
-                    size="sm"
-                    onClick={handleRejectAll}
-                    disabled={rows.every((row) => {
-                      const status =
-                        typeof row.current_status === "string"
-                          ? row.current_status
-                          : row.current_status?.status;
-
-                      return [
-                        "rejected",
-                        "hold",
-                        "hr approval",
-                        "manager approval",
-                        "final approval",
-                      ].includes(status);
-                    })}
-                  >
-                    Reject All
-                  </Button>
-
-                  <Button
-                    color="success"
-                    size="sm"
-                    onClick={handleApproveAll}
-                    disabled={rows.every((row) => {
-                      const status =
-                        typeof row.current_status === "string"
-                          ? row.current_status
-                          : row.current_status?.status;
-
-                      return [
-                        "rejected",
-                        "hold",
-                        "hr approval",
-                        "manager approval",
-                        "final approval",
-                      ].includes(status);
-                    })}
-                  >
-                    Approve All
-                  </Button>
-                </>
-              )}
+                {/* Expense Term */}
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Typography level="body-md" fontWeight="lg">
+                    Expense Term:
+                  </Typography>
+                  <Typography level="body-md">
+                    {rows[0]?.expense_term?.from
+                      ? new Date(rows[0].expense_term.from).toLocaleDateString(
+                        "en-GB",
+                        {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        }
+                      )
+                      : "NA"}{" "}
+                    to{" "}
+                    {rows[0]?.expense_term?.to
+                      ? new Date(rows[0].expense_term.to).toLocaleDateString(
+                        "en-GB",
+                        {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        }
+                      )
+                      : "NA"}
+                  </Typography>
+                </Box>
+              </Sheet>
             </Box>
           </Box>
 
@@ -711,7 +683,6 @@ const UpdateExpense = () => {
                 stickyHeader
                 hoverRow
                 sx={{
-                  // minWidth: 900,
                   "& thead th": {
                     backgroundColor: "neutral.softBg",
                     fontWeight: "md",
@@ -737,35 +708,11 @@ const UpdateExpense = () => {
                         <td>
                           {item.expense_date
                             ? new Date(item.expense_date)
-                                .toISOString()
-                                .split("T")[0]
+                              .toISOString()
+                              .split("T")[0]
                             : ""}
                         </td>
                         <td>{item.invoice?.invoice_amount}</td>
-                        {/* <td>
-                          {item.attachment_url ? (
-                            <Button
-                              component="a"
-                              href={item.attachment_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              download
-                              variant="soft"
-                              color="primary"
-                              startDecorator={<DownloadIcon />}
-                              size="sm"
-                              sx={{ textTransform: "none" }}
-                            >
-                              Download
-                            </Button>
-                          ) : (
-                            <span
-                              style={{ color: "#999", fontStyle: "italic" }}
-                            >
-                              No Attachment
-                            </span>
-                          )}
-                        </td> */}
 
                         <td>
                           {item.attachment_url ? (
@@ -774,18 +721,18 @@ const UpdateExpense = () => {
                               {/\.(jpg|jpeg|png|webp|gif|pdf)$/i.test(
                                 item.attachment_url
                               ) && (
-                                <Button
-                                  variant="soft"
-                                  color="neutral"
-                                  size="sm"
-                                  onClick={() =>
-                                    setPreviewImage(item.attachment_url)
-                                  }
-                                  sx={{ textTransform: "none" }}
-                                >
-                                  👁️ View
-                                </Button>
-                              )}
+                                  <Button
+                                    variant="soft"
+                                    color="neutral"
+                                    size="sm"
+                                    onClick={() =>
+                                      setPreviewImage(item.attachment_url)
+                                    }
+                                    sx={{ textTransform: "none" }}
+                                  >
+                                    👁️ View
+                                  </Button>
+                                )}
 
                               {/* ⬇️ Download Button */}
                               <Button
@@ -804,9 +751,7 @@ const UpdateExpense = () => {
                               </Button>
                             </Stack>
                           ) : (
-                            <span
-                              style={{ color: "#999", fontStyle: "italic" }}
-                            >
+                            <span style={{ color: "#999", fontStyle: "italic" }}>
                               No Attachment
                             </span>
                           )}
@@ -820,10 +765,10 @@ const UpdateExpense = () => {
                               <Box sx={{ textAlign: "center" }}>
                                 {/* If image file */}
                                 {/\.(jpg|jpeg|png|webp|gif)$/i.test(
-                                  previewImage
+                                  previewImage || ""
                                 ) ? (
                                   <img
-                                    src={previewImage}
+                                    src={previewImage || ""}
                                     alt="Preview"
                                     style={{
                                       maxWidth: "100%",
@@ -831,11 +776,11 @@ const UpdateExpense = () => {
                                       borderRadius: 8,
                                     }}
                                   />
-                                ) : previewImage?.endsWith(".pdf") ? (
+                                ) : (previewImage || "").endsWith(".pdf") ? (
                                   <iframe
                                     src={`https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(
-                                        previewImage
-                                      )}`}
+                                      previewImage || ""
+                                    )}`}
                                     title="PDF Preview"
                                     style={{
                                       width: "100%",
@@ -867,7 +812,6 @@ const UpdateExpense = () => {
                         <td></td>
 
                         <td>{item.invoice?.invoice_number || "NA"}</td>
-                        {/* <td>{item.approved_amount || "-"}</td> */}
 
                         <td>
                           <Input
@@ -876,7 +820,7 @@ const UpdateExpense = () => {
                             type="number"
                             value={
                               item.approved_amount !== undefined &&
-                              item.approved_amount !== null
+                                item.approved_amount !== null
                                 ? item.approved_amount
                                 : item.invoice?.invoice_amount || ""
                             }
@@ -909,7 +853,7 @@ const UpdateExpense = () => {
                                   size="sm"
                                   variant={
                                     item.item_current_status ===
-                                    "manager approval"
+                                      "manager approval"
                                       ? "solid"
                                       : "outlined"
                                   }
@@ -986,6 +930,8 @@ const UpdateExpense = () => {
                 </tbody>
               </Table>
             </Box>
+
+            {/* Mobile Card View */}
             <Box
               sx={{
                 display: {
@@ -1024,8 +970,8 @@ const UpdateExpense = () => {
                       <b>Expense Date:</b>{" "}
                       {item.expense_date
                         ? new Date(item.expense_date)
-                            .toISOString()
-                            .split("T")[0]
+                          .toISOString()
+                          .split("T")[0]
                         : "N/A"}
                     </span>
                     <span>
@@ -1036,28 +982,34 @@ const UpdateExpense = () => {
                       {item.invoice?.invoice_number || "NA"}
                     </span>
 
-                    {(typeof item.item_current_status === "string"
-                      ? item.item_current_status
-                      : item.item_current_status?.status) === "rejected" &&
-                      item.remarks && (
-                        <Sheet
-                          variant="soft"
-                          sx={{
-                            mt: 1,
-                            p: 1,
-                            borderRadius: "md",
-                            maxWidth: 400,
-                            fontSize: "0.875rem",
-                            bgcolor: "#fdecea",
-                            color: "#b71c1c",
-                            borderLeft: "4px solid #d32f2f",
-                          }}
-                        >
-                          <b>Rejection Reason:</b> {item.remarks}
-                        </Sheet>
-                      )}
+                    {(() => {
+                      const status =
+                        typeof item.item_current_status === "string"
+                          ? item.item_current_status
+                          : item.item_current_status?.status;
+                      const showReason = status === "rejected" && item.remarks;
 
-                    <Box></Box>
+                      return (
+                        showReason && (
+                          <Sheet
+                            variant="soft"
+                            sx={{
+                              mt: 1,
+                              p: 1,
+                              borderRadius: "md",
+                              maxWidth: 400,
+                              fontSize: "0.875rem",
+                              bgcolor: "#fdecea",
+                              color: "#b71c1c",
+                              borderLeft: "4px solid #d32f2f",
+                            }}
+                          >
+                            <b>Rejection Reason:</b> {item.remarks}
+                          </Sheet>
+                        )
+                      );
+                    })()}
+
                     <Box>
                       <b>Approved Amount:</b>
                       <Input
@@ -1066,7 +1018,8 @@ const UpdateExpense = () => {
                         type="number"
                         value={
                           (
-                            item.approved_amount ?? item.invoice?.invoice_amount
+                            item.approved_amount ??
+                            item.invoice?.invoice_amount
                           )?.toString() || ""
                         }
                         placeholder="₹"
@@ -1170,12 +1123,7 @@ const UpdateExpense = () => {
             <CloseIcon />
           </IconButton>
 
-          <Typography
-            id="rejection-remarks-title"
-            level="h6"
-            mb={1}
-            fontWeight={600}
-          >
+          <Typography id="rejection-remarks-title" level="h6" mb={1} fontWeight={600}>
             Enter Rejection Remarks:
           </Typography>
 
@@ -1218,10 +1166,7 @@ const UpdateExpense = () => {
       </Modal>
 
       {/* Approve All Confirmation Modal */}
-      <Modal
-        open={approveConfirmOpen}
-        onClose={() => setApproveConfirmOpen(false)}
-      >
+      <Modal open={approveConfirmOpen} onClose={() => setApproveConfirmOpen(false)}>
         <ModalDialog
           layout="center"
           sx={{
@@ -1238,11 +1183,7 @@ const UpdateExpense = () => {
           </Typography>
 
           <Box display="flex" justifyContent="center" gap={1} mt={3}>
-            <Button
-              variant="outlined"
-              size="sm"
-              onClick={() => setApproveConfirmOpen(false)}
-            >
+            <Button variant="outlined" size="sm" onClick={() => setApproveConfirmOpen(false)}>
               Cancel
             </Button>
             <Button
@@ -1260,15 +1201,10 @@ const UpdateExpense = () => {
       </Modal>
 
       {/* Reject All Confirmation Modal */}
-      <Modal
-        open={showRejectAllDialog}
-        onClose={() => setShowRejectAllDialog(false)}
-      >
+      <Modal open={showRejectAllDialog} onClose={() => setShowRejectAllDialog(false)}>
         <ModalDialog sx={{ minWidth: 320 }}>
           <Typography level="h6">Reject All Items</Typography>
-          <Typography level="body-sm">
-            Provide remarks for rejection:
-          </Typography>
+          <Typography level="body-sm">Provide remarks for rejection:</Typography>
 
           <Textarea
             minRows={2}
@@ -1279,11 +1215,7 @@ const UpdateExpense = () => {
           />
 
           <Box display="flex" justifyContent="flex-end" gap={1} mt={2}>
-            <Button
-              variant="outlined"
-              onClick={() => setShowRejectAllDialog(false)}
-              size="sm"
-            >
+            <Button variant="outlined" onClick={() => setShowRejectAllDialog(false)} size="sm">
               Cancel
             </Button>
             <Button color="danger" onClick={handleRejectAllSubmit} size="sm">
@@ -1341,17 +1273,17 @@ const UpdateExpense = () => {
               </thead>
               <tbody>
                 {(user?.role === "manager" ||
-                user?.role === "visitor" ||
-                user?.department === "admin" ||
-                user?.department === "HR" ||
-                user?.name === "IT Team"
+                  user?.role === "visitor" ||
+                  user?.department === "admin" ||
+                  user?.department === "HR" ||
+                  user?.name === "IT Team"
                   ? [
-                      ...new Set([
-                        ...categoryOptions,
-                        ...bdAndSalesCategoryOptions,
-                        ...officeAdminCategoryOptions,
-                      ]),
-                    ]
+                    ...new Set([
+                      ...categoryOptions,
+                      ...bdAndSalesCategoryOptions,
+                      ...officeAdminCategoryOptions,
+                    ]),
+                  ]
                   : getCategoryOptionsByDepartment(user?.department)
                 ).map((category, idx) => {
                   let total = 0;
@@ -1369,10 +1301,7 @@ const UpdateExpense = () => {
                           ? row.current_status
                           : row.current_status?.status;
 
-                      if (
-                        item.category === category &&
-                        itemStatus !== "rejected"
-                      ) {
+                      if (item.category === category && itemStatus !== "rejected") {
                         total += Number(item.invoice?.invoice_amount || 0);
 
                         if (
@@ -1422,9 +1351,7 @@ const UpdateExpense = () => {
                         </Tooltip>
                       </td>
                       <td>{total > 0 ? total.toFixed(2) : "-"}</td>
-                      <td>
-                        {approvedTotal > 0 ? approvedTotal.toFixed(2) : "-"}
-                      </td>
+                      <td>{approvedTotal > 0 ? approvedTotal.toFixed(2) : "-"}</td>
                     </tr>
                   );
                 })}
@@ -1490,7 +1417,8 @@ const UpdateExpense = () => {
                 </tr>
               </tfoot>
             </Table>
-            {/* Submit & Back Buttons */}
+
+            {/* Submit Button */}
             <Box display="flex" justifyContent="center" p={2}>
               <Box
                 display="flex"

@@ -26,7 +26,7 @@ import Typography from "@mui/joy/Typography";
 import { Calendar } from "lucide-react";
 import { forwardRef, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useGetAllExpenseQuery } from "../../redux/Expense/expenseSlice";
+import { useGetAllExpenseQuery } from "../../redux/expenseSlice";
 
 const AllExpense = forwardRef((props, ref) => {
   const navigate = useNavigate();
@@ -38,6 +38,9 @@ const AllExpense = forwardRef((props, ref) => {
   const [selectedExpenses, setSelectedExpenses] = useState([]);
   const [expandedCard, setExpandedCard] = useState(null);
   const [selectedDepartment, setSelectedDepartment] = useState("");
+  const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
+  const [perPage, setPerPage] = useState(initialPageSize);
+
 
   const toggleExpand = (id) => {
     setExpandedCard(expandedCard === id ? null : id);
@@ -45,48 +48,12 @@ const AllExpense = forwardRef((props, ref) => {
 
   const { data: getExpense = [], isLoading } = useGetAllExpenseQuery({
     page: currentPage,
+    limit: perPage,
     department: selectedDepartment,
     search: searchQuery,
   });
 
-  console.log(getExpense);
 
-  const renderFilters = () => {
-    const departments = [
-      "Accounts",
-      "HR",
-      "Engineering",
-      "Projects",
-      "Infra",
-      "CAM",
-      "Internal",
-      "SCM",
-      "IT Team",
-      "Loan",
-    ];
-
-    return (
-      <FormControl sx={{ flex: 1 }} size="sm">
-        <FormLabel>Department</FormLabel>
-        <Select
-          value={selectedDepartment}
-          onChange={(e, newValue) => {
-            setSelectedDepartment(newValue);
-            setCurrentPage(1);
-          }}
-          size="sm"
-          placeholder="Select Department"
-        >
-          <Option value="">All Departments</Option>
-          {departments.map((dept) => (
-            <Option key={dept} value={dept}>
-              {dept}
-            </Option>
-          ))}
-        </Select>
-      </FormControl>
-    );
-  };
 
   const total = getExpense?.total || 0;
   const limit = getExpense?.limit || 10;
@@ -156,7 +123,6 @@ const AllExpense = forwardRef((props, ref) => {
     [getExpense]
   );
 
-  // console.log(expenses);
 
   const filteredAndSortedData = expenses.filter((expense) => {
     if (!user || !user.name) return false;
@@ -169,7 +135,6 @@ const AllExpense = forwardRef((props, ref) => {
       (userRole === "HR" && userName !== "Manish Shah");
     const submittedBy = expense.emp_name?.trim() || "";
 
-    console.log(userRole);
 
     const allowedStatuses = [
       "submitted",
@@ -201,23 +166,29 @@ const AllExpense = forwardRef((props, ref) => {
   useEffect(() => {
     const page = parseInt(searchParams.get("page")) || 1;
     setCurrentPage(page);
+    // --- read department from URL search params on load/change ---
+    const dept = searchParams.get("department") || "";
+    setSelectedDepartment(dept);
   }, [searchParams]);
 
   const paginatedExpenses = filteredAndSortedData;
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
-      setSearchParams({ page: String(page) });
+      setSearchParams({
+        page: String(page),
+        ...(selectedDepartment ? { department: selectedDepartment } : {}),
+      });
     }
   };
 
   const ExpenseCode = ({ currentPage, expense_code, createdAt }) => {
     const formattedDate = createdAt
       ? new Date(createdAt).toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        })
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
       : "N/A";
     return (
       <>
@@ -249,51 +220,60 @@ const AllExpense = forwardRef((props, ref) => {
   };
 
   return (
-    <>
+    <Box
+      sx={{
+        ml: { lg: "var(--Sidebar-width)" },
+        px: "0px",
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+      }}
+    >
       <Box
-        className="SearchAndFilters-tabletUp"
-        sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          borderRadius: "sm",
-          py: 2,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1.5,
-          "& > *": {
-            minWidth: { xs: "120px", md: "160px" },
-          },
-        }}
+        display="flex"
+        justifyContent="flex-end"
+        alignItems="center"
+        pb={0.5}
+        flexWrap="wrap"
+        gap={1}
       >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search</FormLabel>
-          <Input
-            size="sm"
-            placeholder="Search by Expense Code, Name or Status"
-            startDecorator={<SearchIcon />}
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-        </FormControl>
+        <Box
+          sx={{
+            py: 1,
+            display: "flex",
+            alignItems: "flex-end",
+            gap: 1.5,
+            width: { xs: "100%", md: "50%" },
+          }}
+        >
+          <FormControl sx={{ flex: 1 }} size="sm">
+            <Input
+              size="sm"
+              placeholder="Search by Expense Code, Name or Status"
+              startDecorator={<SearchIcon />}
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+          </FormControl>
+          {(
+            user?.name === "Shruti Tripathi" ||
+            user?.department === "Accounts" ||
+            user?.department === "admin" ||
+            user?.name === "IT Team"
+          )}
 
-        {user?.name === "Shruti Tripathi" ||
-          user?.department === "Accounts" ||
-          user?.department === "admin" ||
-          (user?.name === "IT Team" && renderFilters())}
+        </Box>
       </Box>
+
 
       {/* Table */}
       <Sheet
         className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: { xs: "none", md: "flex" },
+          display: { xs: "none", sm: "block" },
           width: "100%",
           borderRadius: "sm",
-          flexShrink: 1,
+          maxHeight: { xs: "66vh", xl: "75vh" },
           overflow: "auto",
-          minHeight: 0,
-          marginLeft: { xl: "15%", lg: "18%" },
-          maxWidth: { lg: "85%", sm: "100%" },
         }}
       >
         <Box
@@ -305,10 +285,15 @@ const AllExpense = forwardRef((props, ref) => {
               <Box
                 component="th"
                 sx={{
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 3,
+                  backgroundColor: "neutral.softBg",
                   borderBottom: "1px solid #ddd",
                   padding: "8px",
                   textAlign: "left",
                 }}
+
               >
                 <Checkbox
                   size="sm"
@@ -343,6 +328,11 @@ const AllExpense = forwardRef((props, ref) => {
                   component="th"
                   key={index}
                   sx={{
+                    position: "sticky",
+                    zIndex: 3,
+                    top: 0,
+                    borderBottom: "1px solid #ddd",
+                    backgroundColor: "neutral.softBg",
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
                     textAlign: "left",
@@ -491,8 +481,8 @@ const AllExpense = forwardRef((props, ref) => {
                   >
                     {expense.disbursement_date
                       ? new Date(expense.disbursement_date).toLocaleDateString(
-                          "en-GB"
-                        )
+                        "en-GB"
+                      )
                       : "-"}
                   </Box>
 
@@ -627,7 +617,8 @@ const AllExpense = forwardRef((props, ref) => {
                 ? expense.current_status
                 : expense.current_status?.status || "";
 
-                 const remarks = expense.current_status?.remarks?.trim() || "No remarks provided";
+            const remarks =
+              expense.current_status?.remarks?.trim() || "No remarks provided";
 
             const getStatusChip = () => {
               switch (status) {
@@ -774,13 +765,12 @@ const AllExpense = forwardRef((props, ref) => {
       <Box
         className="Pagination-laptopUp"
         sx={{
-          pt: 2,
+          pt: 1,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
-          flexDirection: { xs: "column", md: "row" },
-          marginLeft: { xl: "15%", lg: "18%" },
         }}
       >
         <Button
@@ -820,6 +810,28 @@ const AllExpense = forwardRef((props, ref) => {
           )}
         </Box>
 
+        <FormControl size="sm" sx={{ minWidth: 80 }}>
+          <Select
+            value={perPage}
+            onChange={(_e, newValue) => {
+              setPerPage(newValue);
+              setCurrentPage(1);
+              setSearchParams((prev) => {
+                const next = new URLSearchParams(prev);
+                next.set("page", "1");
+                next.set("pageSize", String(newValue));
+                return next;
+              });
+            }}
+          >
+            {[10, 30, 60, 100, 500, 1000].map((num) => (
+              <Option key={num} value={num}>
+                {num}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
+
         <Button
           size="sm"
           variant="outlined"
@@ -831,7 +843,7 @@ const AllExpense = forwardRef((props, ref) => {
           Next
         </Button>
       </Box>
-    </>
+    </Box>
   );
 });
 export default AllExpense;

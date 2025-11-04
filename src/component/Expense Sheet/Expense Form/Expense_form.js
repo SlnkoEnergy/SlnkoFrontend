@@ -25,7 +25,7 @@ import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { useAddExpenseMutation } from "../../../redux/Expense/expenseSlice";
+import { useAddExpenseMutation } from "../../../redux/expenseSlice";
 
 const Expense_Form = () => {
   const navigate = useNavigate();
@@ -302,7 +302,7 @@ const Expense_Form = () => {
       // console.log(userRole);
 
       const statusToUse =
-        userRole === "manager" ? "manager approval" : "submitted";
+        userRole === "manager" ? "submitted" : "submitted";
 
       const items = rows.flatMap((row) =>
         (row.items || []).map((item) => ({
@@ -716,7 +716,7 @@ const Expense_Form = () => {
                           inputRef={(el) => (inputRefs.current[rowIndex] = el)}
                           autoComplete="off"
                           sx={{ width: "100%" }}
-                          // disabled={rows[rowIndex]?.items?.[0]?.projectSelected}
+                        // disabled={rows[rowIndex]?.items?.[0]?.projectSelected}
                         />
                       </Box>
                       {dropdownOpenIndex === rowIndex &&
@@ -804,7 +804,7 @@ const Expense_Form = () => {
                             sx: { maxHeight: 160, overflowY: "auto" },
                           },
                         }}
-                        // sx={{ width: "100%" }}
+                      // sx={{ width: "100%" }}
                       >
                         {getCategoryOptionsByDepartment(user?.department).map(
                           (cat, idx) => (

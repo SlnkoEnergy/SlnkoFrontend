@@ -23,20 +23,79 @@ export const AccountsApi = createApi({
       transformResponse: (response) => ({
         data: response.data || [],
         total: response.meta?.total || 0,
-        count: response.meta?.count || 0,
+        count: response.meta?.count || (response.data?.length ?? 0),
         totals: response.totals || {},
       }),
+      providesTags: () => [{ type: "Accounts", id: "ProjectBalance" }],
+      keepUnusedDataFor: 5,
+    }),
+    getPaymentRecord: builder.query({
+      query: ({
+        page = 1,
+        search = "",
+        status = "",
+        pageSize = 10,
+        tab = "",
+      }) =>
+        `get-pay-sumrY-IT?page=${page}&search=${search}&status=${status}&pageSize=${pageSize}&tab=${tab}`,
+
+      transformResponse: (response, meta, arg) => {
+        return {
+          data: Array.isArray(response.data) ? response.data : [],
+          total: response.meta?.total ?? 0,
+          count: response.meta?.count ?? 0,
+          page: response.meta?.page ?? 1,
+          instantTotal: response.meta?.instantTotal ?? 0,
+          creditTotal: response.meta?.creditTotal ?? 0,
+        };
+      },
       providesTags: ["Accounts"],
     }),
 
-    getPaymentApproval: builder.query({
-      query: ({ page = 1, search = "", pageSize = 10 }) =>
-        `accounting/payment-approval?page=${page}&search=${search}&pageSize=${pageSize}`,
-      transformResponse: (response) => ({
-        data: response.data || [],
-        total: response.meta?.total || 0,
-        count: response.meta?.count || 0,
+    getTrashRecord: builder.query({
+      query: ({
+        page = 1,
+        search = "",
+        status = "",
+        pageSize = 10,
+        tab = "",
+      }) => ({
+        url: "hold-pay-summary-IT",
+        params: { page, search, status, pageSize, tab },
       }),
+      transformResponse: (res) => ({
+        data: Array.isArray(res.data) ? res.data : [],
+        total: res.meta?.total ?? 0,
+        count: res.meta?.count ?? 0,
+        page: res.meta?.page ?? 1,
+        instantTotal: res.meta?.instantTotal ?? 0,
+        creditTotal: res.meta?.creditTotal ?? 0,
+      }),
+      providesTags: [{ type: "Accounts", id: "TRASH" }],
+      keepUnusedDataFor: 10,
+    }),
+
+    getPaymentApproval: builder.query({
+      query: ({ page = 1, search = "", pageSize = 10, tab = "", delaydays }) =>
+        `accounting/payment-approval?page=${page}&search=${search}&pageSize=${pageSize}&tab=${tab}&delaydays=${
+          delaydays ?? ""
+        }`,
+
+      transformResponse: (response) => {
+        return {
+          data: response?.data || [],
+          total: response.meta?.total || 0,
+          count: response.meta?.count || 0,
+          page: response.meta?.page || 1,
+          pageSize: response.meta?.pageSize || 10,
+          delaydays: response.meta?.delaydays || undefined,
+          finalApprovalPaymentsCount:
+            response.meta?.finalApprovalPaymentsCount || 0,
+          paymentsCount: response.meta?.paymentsCount || 0,
+          tab: response.meta?.tab || "",
+        };
+      },
+
       providesTags: ["Accounts"],
     }),
 
@@ -51,36 +110,75 @@ export const AccountsApi = createApi({
       providesTags: ["Accounts"],
     }),
 
-    getCustomerSummary: builder.query({
-      query: ({
-        p_id,
-        start,
-        end,
-        searchClient,
-        searchDebit,
-        searchAdjustment,
-      }) => {
-        const params = new URLSearchParams({ p_id });
+ getCustomerSummary: builder.query({
+  query: ({
+    p_id,
+    _id,
+    start,
+    end,
+    searchClient,
+    searchDebit,
+    searchAdjustment,
+    tab,
+    page = 1,
+    pageSize = 20,
+  }) => {
+    const params = new URLSearchParams();
 
-        if (start) params.append("start", start);
-        if (end) params.append("end", end);
-        if (searchClient) params.append("searchClient", searchClient);
-        if (searchDebit) params.append("searchDebit", searchDebit);
-        if (searchAdjustment)
-          params.append("searchAdjustment", searchAdjustment);
+    if (_id) params.append("_id", _id);
+    else if (p_id) params.append("p_id", p_id);
 
-        return `accounting/customer-payment-summary?${params.toString()}`;
+    if (start) params.append("start", start);
+    if (end) params.append("end", end);
+    if (searchClient) params.append("searchClient", searchClient);
+    if (searchDebit) params.append("searchDebit", searchDebit);
+    if (searchAdjustment) params.append("searchAdjustment", searchAdjustment);
+    if (tab) params.append("tab", tab.toLowerCase());
+    params.append("page", page);
+    params.append("pageSize", pageSize);
+
+    return `accounting/customer-payment-summary?${params}`;
+  },
+  transformResponse: (res) => ({
+    adjustment: { history: [], totalCredit: 0, totalDebit: 0, ...(res?.adjustment || {}) },
+    ...res,
+  }),
+  providesTags: ["Accounts"],
+}),
+
+
+    updateSalesPO: builder.mutation({
+      query: ({ id, po_number, remarks, basic_sales, gst_on_sales,sales_invoice, files }) => {
+        const form = new FormData();
+
+        if (remarks) form.append("remarks", remarks);
+        if (basic_sales !== undefined) form.append("basic_sales", basic_sales);
+        if (gst_on_sales !== undefined)
+          form.append("gst_on_sales", gst_on_sales);
+        if (sales_invoice) form.append("sales_invoice", sales_invoice);
+        if (po_number) form.append("po_number", po_number);
+         if (sales_invoice) form.append("sales_invoice", sales_invoice);
+
+        if (Array.isArray(files)) {
+          files.forEach((f) => {
+            if (f?.file) {
+              form.append("file", f.file);
+              form.append("attachment_name", f.attachment_name ?? f.file.name);
+            } else if (f instanceof File) {
+              form.append("file", f);
+              form.append("attachment_name", f.name);
+            }
+          });
+        }
+        const url = id ? `sales-update/${id}` : `sales-update/by-number`;
+
+        return {
+          url,
+          method: "PUT",
+          body: form,
+        };
       },
-      transformResponse: (response) => ({
-        adjustment: {
-          history: [],
-          totalCredit: 0,
-          totalDebit: 0,
-          ...(response?.adjustment || {}),
-        },
-        ...response,
-      }),
-      providesTags: ["Accounts"],
+      invalidatesTags: ["Accounts"],
     }),
 
     getExportPaymentHistory: builder.query({
@@ -125,7 +223,7 @@ export const AccountsApi = createApi({
     }),
     getExportProjectBalance: builder.mutation({
       query: (body) => ({
-        url: "accounting/export-project-balance",
+        url: "/accounting/export-project-balance",
         method: "POST",
         body,
         responseHandler: async (response) => {
@@ -140,6 +238,31 @@ export const AccountsApi = createApi({
         },
       }),
     }),
+
+    updateCreditExtension: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `/credit-extension-by-id/${id}`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["Accounts"],
+    }),
+    updateRequestExtension: builder.mutation({
+      query: ({ id, credit_remarks }) => ({
+        url: `/request-extension-by-id/${id}`,
+        method: "PUT",
+        body: { credit_remarks },
+      }),
+      invalidatesTags: ["Accounts"],
+    }),
+    updateRestoreTrash: builder.mutation({
+      query: ({ id, remarks }) => ({
+        url: `/restore-pay-request/${id}`,
+        method: "PUT",
+        body: { remarks },
+      }),
+      invalidatesTags: ["Accounts"],
+    }),
   }),
 });
 
@@ -147,9 +270,14 @@ export const {
   useGetProjectBalanceQuery,
   useGetPaymentApprovalQuery,
   useGetPaymentHistoryQuery,
-  useGetExportPaymentHistoryQuery,
   useGetCustomerSummaryQuery,
   useGetPaymentApprovedQuery,
   useGetUtrSubmissionQuery,
   useGetExportProjectBalanceMutation,
+  useGetPaymentRecordQuery,
+  useGetTrashRecordQuery,
+  useUpdateCreditExtensionMutation,
+  useUpdateRequestExtensionMutation,
+  useUpdateRestoreTrashMutation,
+  useUpdateSalesPOMutation,
 } = AccountsApi;

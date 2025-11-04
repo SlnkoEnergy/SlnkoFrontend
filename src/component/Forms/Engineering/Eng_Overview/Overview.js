@@ -10,6 +10,8 @@ import {
   Modal,
   ModalDialog,
   IconButton,
+  Select,
+  Option,
 } from "@mui/joy";
 import axios from "axios";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -22,6 +24,10 @@ import {
 } from "../../../../redux/Eng/templatesSlice";
 import { toast } from "react-toastify";
 import { ChevronLeftIcon } from "lucide-react";
+import CloudUpload from "@mui/icons-material/CloudUpload";
+import HistoryRoundedIcon from "@mui/icons-material/HistoryRounded";
+import EditNoteRoundedIcon from "@mui/icons-material/EditNoteRounded";
+import PlaylistAddRoundedIcon from "@mui/icons-material/PlaylistAddRounded";
 
 const Overview = () => {
   const navigate = useNavigate();
@@ -34,7 +40,6 @@ const Overview = () => {
   const [user, setUser] = useState(null);
   const [updateStatus, { isLoading: isUpdating }] =
     useUpdateModuleTemplateStatusMutation();
-
   const [remarks, setRemarks] = useState("");
   const [showRemarksModal, setShowRemarksModal] = useState(false);
   const [activeTemplateId, setActiveTemplateId] = useState(null);
@@ -42,22 +47,27 @@ const Overview = () => {
   const [showHoldModal, setShowHoldModal] = useState(false);
   const [holdRemarks, setHoldRemarks] = useState("");
   const [holdTemplateId, setHoldTemplateId] = useState(null);
-
   const [showAddRemarksModal, setShowAddRemarksModal] = useState(false);
   const [addRemarksText, setAddRemarksText] = useState("");
   const [remarksTemplateId, setRemarksTemplateId] = useState(null);
-
   const [previewFileUrl, setPreviewFileUrl] = useState(null);
-
-  const [previewType, setPreviewType] = useState("");
-  const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
 
+  const [uploadModal, setUploadModal] = useState({
+    open: false,
+    index: null,
+    templateId: null,
+    name: "",
+    max: 0,
+  });
+  const [stagedFiles, setStagedFiles] = useState([]);
+
+  console.log({ logModalData });
   useEffect(() => {
     const storedUser = localStorage.getItem("userDetails");
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
-      console.log("✅ Loaded user details:", parsedUser); // 🔍 Debug log
+      console.log("✅ Loaded user details:", parsedUser);
       setUser(parsedUser);
     } else {
       console.log("⚠️ No userDetails found in localStorage.");
@@ -67,7 +77,6 @@ const Overview = () => {
   const isEngineering = user?.department === "Engineering";
   const isCAM = user?.department === "CAM" || user?.department === "Projects";
 
-  console.log("isCAM →", isCAM);
   const projectId = searchParams.get("project_id");
   const page = searchParams.get("page");
 
@@ -82,6 +91,8 @@ const Overview = () => {
   } = useGetBoqProjectByProjectIdQuery(projectId, {
     skip: !projectId,
   });
+
+  // (kept as-is) your original categoryData block with duplicates
   const categoryData = {
     Electrical: [],
     Mechanical: [],
@@ -90,12 +101,26 @@ const Overview = () => {
     boq: [],
     Equipment: [],
     Mechanical_Inspection: [],
-    Electrcial_Inspection: [],
+    Electrical_Inspection: [],
     summary: [],
     Equipment: [],
-    Mechanical_Inspection: [],
-    Electrcial_Inspection: [],
     summary: [],
+  };
+
+  // 👉 ADDED: Allowed keys for SCM & helpers to filter & clamp selection
+  const SCM_ALLOWED = ["boq", "Equipment"];
+
+  const pickKeys = (obj, keys) =>
+    keys.reduce((acc, k) => {
+      if (obj && Object.prototype.hasOwnProperty.call(obj, k)) {
+        acc[k] = obj[k];
+      }
+      return acc;
+    }, {});
+
+  const clampSelectedCategory = (sel, allowedKeys) => {
+    if (allowedKeys.includes(sel)) return sel;
+    return allowedKeys[0] || sel;
   };
 
   const templates = data?.data || [];
@@ -108,7 +133,7 @@ const Overview = () => {
         : [];
 
       const latestStatus =
-        template.current_status?.status.toLowerCase() || null;
+        template.current_status?.status?.toLowerCase() || null;
       const latestRemarks = template.current_status?.remarks || "";
       if (category && categoryData[category]) {
         categoryData[category].push({
@@ -126,6 +151,22 @@ const Overview = () => {
       }
     });
   }
+
+  // 👉 ADDED: Derive an effective category map based on user department
+  const effectiveCategoryData = categoryData;
+
+  const allowedKeys = Object.keys(effectiveCategoryData);
+
+  useEffect(() => {
+    if (!allowedKeys.length) return;
+    setSelected((prev) => clampSelectedCategory(prev, allowedKeys));
+    setSearchParams((sp) => {
+      const fromUrl = sp.get("category") || initialCategory;
+      const fixed = clampSelectedCategory(fromUrl, allowedKeys);
+      sp.set("category", fixed);
+      return sp;
+    });
+  }, [user, data]);
 
   const handleMultiFileChange = (index, files) => {
     setFileUploads((prev) => ({
@@ -158,7 +199,7 @@ const Overview = () => {
 
     const formData = new FormData();
 
-    const item = categoryData[selected][index];
+    const item = effectiveCategoryData[selected][index];
     const templateId = item.templateId;
 
     const statusHistory = [
@@ -204,6 +245,67 @@ const Overview = () => {
     } catch (error) {
       console.error("❌ Update error:", error.response?.data || error.message);
       toast.error("Failed to submit files for this folder.");
+    }
+  };
+
+  const handleMultipleSubmitFiles = async (submitIndexArray) => {
+    const userId = user?.userID;
+
+    if (!userId) {
+      toast.error("User ID not found. Please log in again.");
+      return;
+    }
+
+    if (!Array.isArray(submitIndexArray) || submitIndexArray.length === 0) {
+      toast.error("No submissions to upload.");
+      return;
+    }
+
+    const formData = new FormData();
+
+    const items = [];
+
+    submitIndexArray.forEach((entry) => {
+      const { template_id, files } = entry;
+
+      if (!files || files.length === 0) return;
+
+      files.forEach((file) => {
+        formData.append("files", file);
+      });
+
+      items.push({
+        template_id,
+        status_history: [
+          {
+            status: "submitted",
+            user_id: userId,
+            timestamp: new Date().toISOString(),
+            remarks: {},
+          },
+        ],
+      });
+    });
+
+    // Attach metadata JSON to formData
+    formData.append("data", JSON.stringify({ items }));
+
+    try {
+      await axios.put(
+        `${process.env.REACT_APP_API_URL}/engineering/update-module-category?projectId=${projectId}`,
+        formData,
+        {
+          headers: {
+            "x-auth-token": localStorage.getItem("authToken"),
+          },
+        }
+      );
+
+      toast.success("All selected files submitted successfully!");
+      window.location.reload();
+    } catch (error) {
+      console.error("❌ Upload Error:", error.response?.data || error.message);
+      toast.error("Failed to submit files.");
     }
   };
 
@@ -348,8 +450,8 @@ const Overview = () => {
 
   const handleStatusChange = (statusType, templateId) => {
     if (statusType === "revised") {
-      setActiveTemplateId(templateId); // save templateId in state
-      setShowRemarksModal(true); // open remarks modal
+      setActiveTemplateId(templateId);
+      setShowRemarksModal(true);
     }
   };
 
@@ -387,7 +489,6 @@ const Overview = () => {
       const department = storedUser?.department || "";
       const userId = storedUser?.userId || "";
 
-      // Send all required fields to updateStatus
       await updateStatus({
         projectId,
         moduleTemplateId: activeTemplateId,
@@ -409,10 +510,9 @@ const Overview = () => {
     }
   };
 
-  console.log("templateId", activeTemplateId);
-
   const handleLogsOpen = (rawUrls) => {
     const grouped = {};
+    console.log({ rawUrls });
     rawUrls.forEach((url) => {
       const match = url.match(/\/(R\d+)\//);
       if (match) {
@@ -435,6 +535,14 @@ const Overview = () => {
     setSearchParams(searchParams);
   };
 
+  // 👉 ADDED: safe onChange that clamps to allowed values without altering your existing handler
+  const handleCategorySelectSafe = (category) => {
+    const next = clampSelectedCategory(category, allowedKeys);
+    setSelected(next);
+    searchParams.set("category", next);
+    setSearchParams(searchParams);
+  };
+
   const handlePreview = async (url) => {
     if (/\.(pdf)$/i.test(url)) {
       try {
@@ -451,64 +559,40 @@ const Overview = () => {
   };
   const location = useLocation();
   const isFromCamDash = location.pathname === "/project_detail";
+  const [submitIndex, setSubmitIndex] = useState([]);
 
   return (
     <Box
       sx={{
         display: "flex",
         flexDirection: "column",
-        height: "100vh",
-        maxHeight: "70vh",
-        width: { xs: "96vw", lg: "75vw", xl: "80vw" },
+        maxHeight: isFromCamDash ? "70vh" : "85vh",
+        width: {
+          xs: "100%",
+          lg: isFromCamDash ? "100%" : "calc(100% - var(--Sidebar-width))",
+        },
         bgcolor: "background.body",
-        marginLeft: isFromCamDash ? "0%" : { xs: "2%", lg: "21%", xl: "18%" },
+        overflowY: isFromCamDash ? "auto" : "auto",
+        overflowX: "auto",
+        ml: {
+          lg: isFromCamDash ? 0 : "var(--Sidebar-width)",
+        },
       }}
     >
-      <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-        {isEngineering && (
-          <IconButton
-            onClick={() => navigate(`/eng_dash?page=${page}`)}
-            variant="soft"
-            color="neutral"
-          >
-            <ChevronLeftIcon />
-          </IconButton>
-        )}
-      </Box>
-
-      <Box sx={{ display: "flex", flexGrow: 1, gap: 3 }}>
-        <Sheet
-          variant="outlined"
-          sx={{
-            width: 240,
-            p: 2,
-            borderRadius: "lg",
-            boxShadow: "sm",
-            bgcolor: "background.surface",
-          }}
-        >
-          <Typography level="h6" fontWeight="lg" sx={{ mb: 2 }}>
-            Categories
-          </Typography>
-          <List>
-            {Object.keys(categoryData).map((category) => (
-              <ListItem key={category} sx={{ mb: 1 }}>
-                <Button
-                  fullWidth
-                  variant={selected === category ? "solid" : "soft"}
-                  color={selected === category ? "primary" : "neutral"}
-                  onClick={() => handleCategorySelect(category)}
-                  sx={{ fontWeight: 600 }}
-                  disabled={isLoading}
-                >
-                  {category
-                    .replace(/_/g, " ")
-                    .replace(/\b\w/g, (char) => char.toUpperCase())}
-                </Button>
-              </ListItem>
-            ))}
-          </List>
-        </Sheet>
+      <Box
+        sx={{ display: "flex", flexDirection: "column", flexGrow: 1, gap: 3 }}
+      >
+        <Box sx={{ display: "flex", gap: 2 }}>
+          {isEngineering && (
+            <IconButton
+              onClick={() => navigate(`/eng_dash?page=${page}`)}
+              variant="soft"
+              color="neutral"
+            >
+              <ChevronLeftIcon />
+            </IconButton>
+          )}
+        </Box>
 
         <Sheet
           variant="outlined"
@@ -519,20 +603,72 @@ const Overview = () => {
             boxShadow: "sm",
             overflowY: "auto",
             bgcolor: "#f9fafb",
-            maxHeight: isFromCamDash ? "70vh" : "100%",
+            maxHeight: isFromCamDash ? "67vh" : "100%",
           }}
         >
-          {!isEngineering && (
-            <Typography
-              level="body-sm"
-              sx={{ mb: 2, color: "warning.700", fontWeight: 500 }}
+          <Box
+            display={"flex"}
+            justifyContent={"space-between"}
+            alignItems={"center"}
+          >
+            {!isEngineering && (
+              <Typography
+                level="body-sm"
+                sx={{ mb: 2, color: "warning.700", fontWeight: 500 }}
+              >
+                🔒 Upload access is restricted. You can only view/download
+                files.
+              </Typography>
+            )}
+            {submitIndex.length > 0 && (
+              <Button onClick={() => handleMultipleSubmitFiles(submitIndex)}>
+                Submit Files
+              </Button>
+            )}
+            <Box
+              sx={{
+                minWidth: 200,
+                maxWidth: 300,
+                bgcolor: "background.level1",
+                borderRadius: "md",
+                boxShadow: "sm",
+              }}
             >
-              🔒 Upload access is restricted. You can only view/download files.
-            </Typography>
-          )}
-          <Divider sx={{ mb: 3 }} />
-
-          <Box sx={{ display: "grid", gap: 3 }}>
+              <Select
+                value={selected}
+                onChange={(event, newValue) =>
+                  handleCategorySelectSafe(newValue)
+                }
+                disabled={isLoading}
+                variant="soft"
+                sx={{
+                  borderRadius: "xl",
+                  fontWeight: 600,
+                  minHeight: 40,
+                  px: 1,
+                }}
+              >
+                {Object.keys(effectiveCategoryData).map((category) => (
+                  <Option key={category} value={category}>
+                    {category
+                      .replace(/_/g, " ")
+                      .replace(/\b\w/g, (char) => char.toUpperCase())}
+                  </Option>
+                ))}
+              </Select>
+            </Box>
+          </Box>
+          <Divider sx={{ mb: 2, mt: 2 }} />
+          <Box
+            sx={{
+              display: "grid",
+              gap: 3,
+              gridTemplateColumns: {
+                xs: "1fr",
+                xl: "1fr 1fr",
+              },
+            }}
+          >
             {selected === "summary" ? (
               boqSummaryData && boqSummaryData.length > 0 ? (
                 boqSummaryData.map((summary, i) => (
@@ -580,8 +716,8 @@ const Overview = () => {
               ) : (
                 <Typography>No summary data found.</Typography>
               )
-            ) : categoryData[selected]?.length > 0 ? (
-              categoryData[selected].map((item, index) => {
+            ) : effectiveCategoryData[selected]?.length > 0 ? (
+              effectiveCategoryData[selected].map((item, index) => {
                 const isUploadDisabled = item.latestStatus === "approved";
                 const isAnyFileSelectedForThis = fileUploads[index]?.length > 0;
 
@@ -594,7 +730,6 @@ const Overview = () => {
                       borderRadius: "lg",
                       boxShadow: "sm",
                       bgcolor: "background.surface",
-                      position: "relative",
                     }}
                   >
                     <Typography level="title-md" sx={{ mb: 1 }}>
@@ -614,28 +749,24 @@ const Overview = () => {
                       isEngineering &&
                       !isUploadDisabled &&
                       item.latestStatus !== "hold" && (
-                        <input
-                          type="file"
-                          multiple
-                          onChange={(e) => {
-                            const selectedFiles = Array.from(e.target.files);
-                            if (selectedFiles.length > item.maxFiles) {
-                              toast.error(
-                                `You can only upload up to ${item.maxFiles} files.`
-                              );
-                              return;
-                            }
-                            handleMultiFileChange(index, selectedFiles);
+                        <IconButton
+                          variant="soft"
+                          color="primary"
+                          sx={{
+                            mt: 2,
                           }}
-                          style={{
-                            padding: "8px",
-                            border: "1px solid #ccc",
-                            borderRadius: "6px",
-                            backgroundColor: "#fff",
-                            width: "100%",
-                            marginTop: "8px",
-                          }}
-                        />
+                          onClick={() =>
+                            setUploadModal({
+                              open: true,
+                              index,
+                              templateId: item.templateId,
+                              name: item.name,
+                              max: item.maxFiles,
+                            })
+                          }
+                        >
+                          <CloudUpload />
+                        </IconButton>
                       )}
 
                     {fileUploads[index]?.length > 0 && (
@@ -699,15 +830,26 @@ const Overview = () => {
                       </ListItem>
                     ))}
 
-                    <Box sx={{ mt: 2 }}>
+                    <Box
+                      sx={{ mt: 2, display: "flex", flexDirection: "column" }}
+                    >
                       <Typography level="body-xs" sx={{ fontWeight: 500 }}>
-                        Current Status:{" "}
+                        🟢 Current Status:{" "}
                         <Typography
                           component="span"
                           level="body-xs"
                           fontWeight="bold"
+                          sx={{
+                            color:
+                              item.latestStatus?.toLowerCase() === "hold"
+                                ? "red"
+                                : "inherit",
+                          }}
                         >
-                          {item.latestStatus || "N/A"}
+                          {(item.latestStatus || "N/A").replace(
+                            /\b\w/g,
+                            (char) => char.toUpperCase()
+                          )}
                         </Typography>
                         {item.latestStatus === "revised" &&
                           Array.isArray(item.latestRemarks) &&
@@ -730,9 +872,6 @@ const Overview = () => {
                           Array.isArray(item.latestRemarks) &&
                           item.latestRemarks.length > 0 && (
                             <>
-                              <Typography sx={{ mt: 1, fontWeight: 500 }}>
-                                Hold Remarks:
-                              </Typography>
                               {item.latestRemarks.map((remark, i) => (
                                 <Typography
                                   key={remark._id || i}
@@ -740,7 +879,7 @@ const Overview = () => {
                                   level="body-xs"
                                   sx={{ display: "block" }}
                                 >
-                                  {remark.department}: {remark.text}
+                                  🚧 {remark.department}: {remark.text}
                                 </Typography>
                               ))}
                             </>
@@ -760,7 +899,7 @@ const Overview = () => {
                     >
                       {item.attachmentUrls?.length > 0 && (
                         <>
-                          <Button
+                          <IconButton
                             variant="outlined"
                             size="sm"
                             onClick={() => handleLogsOpen(item.attachmentUrls)}
@@ -774,22 +913,25 @@ const Overview = () => {
                                   : "auto",
                             }}
                           >
-                            📂 Attachment Logs
-                          </Button>
-                          <Button
-                            size="sm"
+                            <HistoryRoundedIcon />
+                          </IconButton>
+
+                          <IconButton
+                            aria-label="Add remarks"
                             variant="outlined"
+                            size="sm"
                             color="neutral"
                             onClick={() => {
                               setRemarksTemplateId(item.templateId);
                               setShowAddRemarksModal(true);
                             }}
                           >
-                            📝 Add Remarks
-                          </Button>
+                            <EditNoteRoundedIcon />
+                          </IconButton>
 
                           {!isCAM && item?.boqEnabled && (
-                            <Button
+                            <IconButton
+                              aria-label="Add BOQ"
                               variant="soft"
                               size="sm"
                               onClick={() =>
@@ -798,8 +940,8 @@ const Overview = () => {
                                 )
                               }
                             >
-                              Add Boq
-                            </Button>
+                              <PlaylistAddRoundedIcon />
+                            </IconButton>
                           )}
                         </>
                       )}
@@ -832,7 +974,8 @@ const Overview = () => {
 
                       {isEngineering &&
                         (user?.name === "Rishav Mahato" ||
-                          user?.name === "Ranvijay Singh" || user?.name === "Naresh Kumar") &&
+                          user?.name === "Ranvijay Singh" ||
+                          user?.name === "Naresh Kumar") &&
                         item.latestStatus !== "hold" && (
                           <Button
                             size="sm"
@@ -866,7 +1009,10 @@ const Overview = () => {
                         <Button
                           variant="solid"
                           color="primary"
-                          onClick={() => handleSubmit(index)}
+                          onClick={() => {
+                            handleSubmit(index);
+                            setSubmitIndex(index);
+                          }}
                           sx={{
                             px: 3,
                             py: 1,
@@ -1020,100 +1166,253 @@ const Overview = () => {
           </Box>
         </ModalDialog>
       </Modal>
+
       <Modal
-        open={showAddRemarksModal}
-        onClose={() => setShowAddRemarksModal(false)}
+        open={uploadModal.open}
+        onClose={() => {
+          setUploadModal({
+            open: false,
+            index: null,
+            templateId: null,
+            name: "",
+            max: 0,
+          });
+          setStagedFiles([]);
+        }}
       >
-        <ModalDialog sx={{ width: 400, maxHeight: 500 }}>
+        <ModalDialog sx={{ width: 720, p: 2 }}>
           <Typography level="h6" sx={{ mb: 1 }}>
-            Chat - Remarks
+            Upload Document
           </Typography>
 
           <Box
-            sx={{
-              maxHeight: 300,
-              overflowY: "auto",
-              p: 1,
-              mb: 2,
-              bgcolor: "#f5f5f5",
-              borderRadius: "8px",
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              const incoming = Array.from(e.dataTransfer.files || []);
+              if (!incoming.length) return;
+
+              const currentCount = fileUploads[uploadModal.index]?.length || 0;
+              const remaining = Math.max(
+                uploadModal.max - currentCount - stagedFiles.length,
+                0
+              );
+
+              if (remaining <= 0) {
+                toast.error(`You can upload only ${uploadModal.max} file(s).`);
+                return;
+              }
+
+              const accepted = incoming.slice(0, remaining);
+              if (incoming.length > remaining) {
+                toast.error(
+                  `Only ${remaining} more file(s) allowed; extra file(s) ignored.`
+                );
+              }
+              setStagedFiles((prev) => [...prev, ...accepted]);
             }}
+            onClick={() =>
+              document.getElementById("hidden-file-input-multi")?.click()
+            }
+            sx={{
+              mt: 1.5,
+              width: "100%",
+              minHeight: 400,
+              borderRadius: "md",
+              border: "1.5px dashed",
+              borderColor: "neutral.outlinedBorder",
+              bgcolor: "background.level1",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              textAlign: "center",
+              cursor: "pointer",
+              "&:hover": { bgcolor: "background.level2" },
+            }}
+            aria-label="Click or drag files"
+            role="button"
           >
-            {categoryData[selected]?.find(
-              (item) => item.templateId === remarksTemplateId
-            )?.latestRemarks?.length > 0 ? (
-              categoryData[selected]
-                .find((item) => item.templateId === remarksTemplateId)
-                .latestRemarks.map((remark, i) => (
-                  <Box
-                    key={remark._id || i}
-                    sx={{
-                      display: "flex",
-                      justifyContent:
-                        remark.department === "Engineering"
-                          ? "flex-start"
-                          : "flex-end",
-                      mb: 1,
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        maxWidth: "70%",
-                        p: 1.5,
-                        bgcolor:
-                          remark.department === "Engineering"
-                            ? "primary.softBg"
-                            : "success.softBg",
-                        color:
-                          remark.department === "Engineering"
-                            ? "primary.plainColor"
-                            : "success.plainColor",
-                        borderRadius: "12px",
-                        fontSize: "14px",
-                        wordBreak: "break-word",
-                      }}
-                    >
-                      <Typography
-                        level="body-xs"
-                        sx={{ fontWeight: 600, mb: 0.5 }}
-                      >
-                        {remark.department}
-                      </Typography>
-                      {remark.text}
-                    </Box>
-                  </Box>
-                ))
-            ) : (
-              <Typography level="body-sm" sx={{ textAlign: "center", mt: 2 }}>
-                No remarks yet.
-              </Typography>
-            )}
+            <Typography level="body-sm">
+              Drag & drop file(s) here, or click to browse
+            </Typography>
+
+            {/* Hidden input */}
+            <input
+              id="hidden-file-input-multi"
+              type="file"
+              multiple
+              onChange={(e) => {
+                const picked = Array.from(e.target.files || []);
+                if (!picked.length) return;
+
+                const currentCount =
+                  fileUploads[uploadModal.index]?.length || 0;
+                const remaining = Math.max(
+                  uploadModal.max - currentCount - stagedFiles.length,
+                  0
+                );
+
+                if (remaining <= 0) {
+                  toast.error(
+                    `You can upload only ${uploadModal.max} file(s).`
+                  );
+                  e.target.value = "";
+                  return;
+                }
+
+                const accepted = picked.slice(0, remaining);
+                if (picked.length > remaining) {
+                  toast.error(
+                    `Only ${remaining} more file(s) allowed; extra file(s) ignored.`
+                  );
+                }
+                setStagedFiles((prev) => [...prev, ...accepted]);
+                e.target.value = "";
+              }}
+              style={{ display: "none" }}
+            />
           </Box>
 
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <textarea
-              style={{
-                flexGrow: 1,
-                minHeight: "60px",
-                border: "1px solid #ccc",
-                borderRadius: "8px",
-                padding: "8px",
+          {/* Staged files preview (can remove each) */}
+          <Box
+            sx={{
+              mt: 1,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            {stagedFiles.length ? (
+              <List size="sm" sx={{ "--List-gap": "4px" }}>
+                {stagedFiles.map((f, i) => (
+                  <ListItem
+                    key={`${f.name}-${i}`}
+                    sx={{ p: 0, display: "flex", gap: 0.5 }}
+                  >
+                    <Typography level="body-xs">📎 {f.name}</Typography>
+                    <Button
+                      size="sm"
+                      variant="plain"
+                      color="danger"
+                      onClick={() =>
+                        setStagedFiles((prev) =>
+                          prev.filter((_, idx) => idx !== i)
+                        )
+                      }
+                    >
+                      ❌
+                    </Button>
+                  </ListItem>
+                ))}
+              </List>
+            ) : (
+              <Typography level="body-xs" sx={{ textAlign: "center", mt: 1 }}>
+                No file selected
+              </Typography>
+            )}
+
+            <Typography
+              level="body-xs"
+              sx={{ color: "text.tertiary", mt: 0.5 }}
+            >
+              {`Total for this folder (including staged): ${
+                (fileUploads[uploadModal.index]?.length || 0) +
+                stagedFiles.length
+              } / ${uploadModal.max}`}
+            </Typography>
+          </Box>
+
+          {/* Actions */}
+          <Box
+            sx={{
+              mt: 2,
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 1,
+            }}
+          >
+            <Button
+              variant="soft"
+              color="neutral"
+              onClick={() => {
+                setUploadModal({
+                  open: false,
+                  index: null,
+                  templateId: null,
+                  name: "",
+                  max: 0,
+                });
+                setStagedFiles([]);
               }}
-              value={addRemarksText}
-              onChange={(e) => setAddRemarksText(e.target.value)}
-              placeholder="Write a message..."
-            />
+            >
+              Cancel
+            </Button>
             <Button
               variant="solid"
-              color="primary"
-              onClick={handleAddRemarks}
-              disabled={!addRemarksText.trim()}
+              disabled={!stagedFiles.length}
+              onClick={() => {
+                const idx = uploadModal.index;
+                const existing = fileUploads[idx]?.map((o) => o.file) || [];
+                const remaining = Math.max(
+                  uploadModal.max - existing.length,
+                  0
+                );
+
+                if (remaining <= 0) {
+                  toast.error(
+                    `You can upload only ${uploadModal.max} file(s).`
+                  );
+                  return;
+                }
+
+                const toAdd = stagedFiles.slice(0, remaining);
+                const merged = [...existing, ...toAdd];
+
+                // update your existing structures
+                handleMultiFileChange(idx, merged);
+
+                setSubmitIndex((prev) => {
+                  const i = Array.isArray(prev)
+                    ? prev.findIndex(
+                        (p) =>
+                          p?.template_id === uploadModal.templateId &&
+                          p?.index === idx
+                      )
+                    : -1;
+                  if (i >= 0) {
+                    const updated = [...prev];
+                    updated[i] = { ...updated[i], files: merged };
+                    return updated;
+                  }
+                  return [
+                    ...(Array.isArray(prev) ? prev : []),
+                    {
+                      index: idx,
+                      template_id: uploadModal.templateId,
+                      name: uploadModal.name,
+                      files: merged,
+                    },
+                  ];
+                });
+
+                setStagedFiles([]);
+                setUploadModal({
+                  open: false,
+                  index: null,
+                  templateId: null,
+                  name: "",
+                  max: 0,
+                });
+                toast.success("File(s) added.");
+              }}
             >
-              Send
+              Select Files
             </Button>
           </Box>
         </ModalDialog>
       </Modal>
+
       <Modal
         open={!!previewFileUrl}
         onClose={() => {
@@ -1163,7 +1462,9 @@ const Overview = () => {
                   </Typography>
                 )}
                 <iframe
-                  src={`https://docs.google.com/gview?url=${encodeURIComponent(previewFileUrl)}&embedded=true`}
+                  src={`https://docs.google.com/gview?url=${encodeURIComponent(
+                    previewFileUrl
+                  )}&embedded=true`}
                   title="PDF Preview"
                   style={{
                     width: "100%",
@@ -1230,7 +1531,9 @@ const Overview = () => {
                       </Typography>
                     )}
                     <iframe
-                      src={`https://docs.google.com/gview?url=${encodeURIComponent(previewFileUrl)}&embedded=true`}
+                      src={`https://docs.google.com/gview?url=${encodeURIComponent(
+                        previewFileUrl
+                      )}&embedded=true`}
                       title="PDF Preview"
                       style={{
                         width: "100%",

@@ -1,17 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { baseQuery } from "./auth/auth_variable";
 
-// const baseQuery = fetchBaseQuery({
-//   baseUrl: "${process.env.REACT_APP_API_URL}/",
-//   prepareHeaders: (headers) => {
-//     const token = localStorage.getItem("authToken");
-//     // console.log("Token:", token);
-//     if (token) {
-//       headers.set("x-auth-token", token);
-//     }
-//     return headers;
-//   },
-// });
 export const paymentsApi = createApi({
   reducerPath: "paymentsApi",
   baseQuery: fetchBaseQuery({
@@ -34,7 +22,7 @@ export const paymentsApi = createApi({
       providesTags: ["Payment"],
     }),
     getVendors: builder.query({
-      query: () => "get-all-vendoR-IT",
+      query: () => "vendor",
       providesTags: ["Payment"],
     }),
     addPayments: builder.mutation({
@@ -61,6 +49,17 @@ export const paymentsApi = createApi({
       }),
       invalidatesTags: ["Payment"],
     }),
+    getPayRequestByVendor: builder.query({
+      query: ({ vendor, page = 1, limit = 10, search = "" }) => {
+        const params = new URLSearchParams();
+        if (vendor) params.set("vendor", vendor);
+        if (page) params.set("page", page);
+        if (limit) params.set("limit", limit);
+        if (search) params.set("search", search);
+        return `/payrequestvendor?${params.toString()}`;
+      },
+      providesTags: ["Payment"],
+    })
   }),
 });
 
@@ -70,4 +69,5 @@ export const {
   useAddPaymentsMutation,
   useAddHoldPaymentsMutation,
   useAddHoldToPaymentsMutation,
+  useGetPayRequestByVendorQuery
 } = paymentsApi;

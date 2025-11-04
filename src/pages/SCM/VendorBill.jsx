@@ -1,133 +1,322 @@
-import React, { useRef } from 'react';
-import { CssVarsProvider } from '@mui/joy/styles';
-import CssBaseline from '@mui/joy/CssBaseline';
-import Box from '@mui/joy/Box';
-import Button from '@mui/joy/Button';
-import Breadcrumbs from '@mui/joy/Breadcrumbs';
-import Link from '@mui/joy/Link';
-import Typography from '@mui/joy/Typography';
-
-import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
-import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
-import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
-
-import Sidebar from '../../component/Partials/Sidebar';
-// import OrderTable from '../../component/OrderTable';
-// import OrderList from '../../component/OrderList';
-import Header from '../../component/Partials/Header';
-// import BillHistory from '../../component/Bill_History';
+import { CssVarsProvider } from "@mui/joy/styles";
+import CssBaseline from "@mui/joy/CssBaseline";
+import Box from "@mui/joy/Box";
+import Sidebar from "../../component/Partials/Sidebar";
 import VendorBill from "../../component/Vendor_Bill";
+import MainHeader from "../../component/Partials/MainHeader";
+import { Button } from "@mui/joy";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import SubHeader from "../../component/Partials/SubHeader";
+import Filter from "../../component/Partials/Filter";
+import { useEffect, useRef, useState } from "react";
+import { useDeleteBillMutation } from "../../redux/billsSlice";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import { toast } from "react-toastify";
+import DeleteIcon from "@mui/icons-material/Delete";
+import { IconButton, Tooltip } from "@mui/joy";
 
 function Bill_History() {
-     
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [user, setUser] = useState(null);
+  const vendorRef = useRef();
+  const [selectedCount, setSelectedCount] = useState(0);
+  const canExport = selectedCount > 0;
+  const [selected, setSelected] = useState([]);
+
+  const exportData = () => {
+    if (vendorRef.current) {
+      vendorRef.current.handleExport();
+    }
+  };
+
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
+  const [open, setOpen] = useState(false);
+
+  const status = [
+    { label: "All Status", value: "" },
+    { label: "Fully Billed", value: "fully billed" },
+    { label: "Bill Pending", value: "bill pending" },
+  ];
+
+  const fields = [
+    {
+      key: "status",
+      label: "Filter By Bill Status",
+      type: "select",
+      options: status.map((d) => ({
+        label: d.label,
+        value: d.value,
+      })),
+    },
+    {
+      key: "dateFilter",
+      label: "Date Filter",
+      type: "daterange",
+    },
+  ];
+
+  const [selectStatus, setSelectStatus] = useState(
+    searchParams.get("status") || ""
+  );
+
+  const [dateFilterFrom, setDateFilterFrom] = useState(
+    searchParams.get("from") || ""
+  );
+
+  const [dateFilterEnd, setDateFilterEnd] = useState(
+    searchParams.get("to") || ""
+  );
+
+  useEffect(() => {
+    const sp = new URLSearchParams(searchParams);
+
+    if (selectStatus) sp.set("status", selectStatus);
+    else sp.delete("status");
+
+    if (dateFilterFrom) sp.set("from", dateFilterFrom);
+    else sp.delete("from");
+
+    if (dateFilterEnd) sp.set("to", dateFilterEnd);
+    else sp.delete("to");
+
+    if (selectStatus || dateFilterEnd || dateFilterFrom) sp.set("page", 1);
+
+    setSearchParams(sp);
+  }, [selectStatus, dateFilterEnd, dateFilterFrom]);
+
+  const [deleteBill] = useDeleteBillMutation();
+  const handleDelete = async () => {
+    try {
+      const res = await deleteBill({ ids: selected }).unwrap();
+      toast.success("Bills Deleted Successfully");
+    } catch (error) {
+      toast.error("Error in deleting in Bill");
+    }
+  };
+
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
       <Box sx={{ display: "flex", minHeight: "100dvh" }}>
-        <Header />
         <Sidebar />
+        <MainHeader title="SCM" sticky>
+          <Box display="flex" gap={1}>
+            {user?.name === "IT Team" ||
+            user?.department === "admin" ||
+            (user?.department === "Accounts" &&
+              (user?.name === "Deepak Kumar Maurya" ||
+                user?.name === "Gagan Tayal" ||
+                user?.name === "Ajay Singh" ||
+                user?.name === "Sachin Raghav" ||
+                user?.name === "Anamika Poonia" ||
+                user?.name === "Meena Verma" ||
+                user?.name === "Kailash Chand" ||
+                user?.name === "Chandan Singh")) ||
+            (user?.department === "Accounts" &&
+              user?.name === "Sujan Maharjan") ||
+            user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Varun Mishra" ||
+            user?.name === "Prachi Singh" ||
+            user?.role === "purchase" ||
+            (user?.role === "manager" && user?.name === "Naresh Kumar") ||
+            (user?.role === "visitor" &&
+              (user?.name === "Sanjiv Kumar" ||
+                user?.name === "Sushant Ranjan Dubey")) ||
+            (user?.department === "CAM" && user?.name === "Shantanu Sameer") ? (
+              <Button
+                size="sm"
+                onClick={() => navigate("/purchase-order")}
+                sx={{
+                  color: "white",
+                  bgcolor: "transparent",
+                  fontWeight: 500,
+                  fontSize: "1rem",
+                  letterSpacing: 0.5,
+                  borderRadius: "6px",
+                  px: 1.5,
+                  py: 0.5,
+                  "&:hover": {
+                    bgcolor: "rgba(255,255,255,0.15)",
+                  },
+                }}
+              >
+                Purchase Order
+              </Button>
+            ) : null}
+
+            {user?.name === "IT Team" ||
+            user?.department === "admin" ||
+            user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Varun Mishra" ||
+            user?.name === "Prachi Singh" ||
+            user?.role === "purchase" ||
+            (user?.role === "manager" && user?.name === "Naresh Kumar") ||
+            user?.department === "Logistic" ? (
+              <Button
+                size="sm"
+                onClick={() => navigate(`/logistics`)}
+                sx={{
+                  color: "white",
+                  bgcolor: "transparent",
+                  fontWeight: 500,
+                  fontSize: "1rem",
+                  letterSpacing: 0.5,
+                  borderRadius: "6px",
+                  px: 1.5,
+                  py: 0.5,
+                  "&:hover": {
+                    bgcolor: "rgba(255,255,255,0.15)",
+                  },
+                }}
+              >
+                Logistics
+              </Button>
+            ) : null}
+            {(user?.department === "SCM" ||
+              user?.department === "Accounts" ||
+              user?.department === "superadmin" ||
+              user?.department === "admin") && (
+              <Button
+                size="sm"
+                onClick={() => navigate(`/vendors`)}
+                sx={{
+                  color: "white",
+                  bgcolor: "transparent",
+                  fontWeight: 500,
+                  fontSize: "1rem",
+                  letterSpacing: 0.5,
+                  borderRadius: "6px",
+                  px: 1.5,
+                  py: 0.5,
+                  "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+                }}
+              >
+                Vendors
+              </Button>
+            )}
+            {user?.name === "IT Team" ||
+            user?.department === "admin" ||
+            (user?.department === "Accounts" &&
+              (user?.name === "Deepak Kumar Maurya" ||
+                user?.name === "Gagan Tayal" ||
+                user?.name === "Ajay Singh" ||
+                user?.name === "Sachin Raghav" ||
+                user?.name === "Anamika Poonia" ||
+                user?.name === "Meena Verma" ||
+                user?.name === "Kailash Chand" ||
+                user?.name === "Chandan Singh")) ||
+            (user?.department === "Accounts" &&
+              user?.name === "Sujan Maharjan") ||
+            user?.name === "Guddu Rani Dubey" ||
+            user?.name === "Varun Mishra" ||
+            user?.name === "Prachi Singh" ||
+            user?.role === "purchase" ||
+            (user?.role === "manager" && user?.name === "Naresh Kumar") ? (
+              <Button
+                size="sm"
+                onClick={() => navigate(`/vendor_bill`)}
+                sx={{
+                  color: "white",
+                  bgcolor: "transparent",
+                  fontWeight: 500,
+                  fontSize: "1rem",
+                  letterSpacing: 0.5,
+                  borderRadius: "6px",
+                  px: 1.5,
+                  py: 0.5,
+                  "&:hover": {
+                    bgcolor: "rgba(255,255,255,0.15)",
+                  },
+                }}
+              >
+                Vendor Bill
+              </Button>
+            ) : null}
+          </Box>
+        </MainHeader>
+
+        <SubHeader title="Vendor Bill" isBackEnabled={false} sticky>
+          <>
+            {canExport && (
+              <Button
+                variant="outlined"
+                size="sm"
+                color="primary"
+                onClick={() => exportData(false)}
+                startDecorator={<CalendarMonthIcon />}
+              >
+                Export
+              </Button>
+            )}
+
+            {selected.length > 0 &&
+              (user?.name === "Guddu Rani Dubey" ||
+                user?.department === "admin" ||
+                user?.department === "superadmin" ||
+                user?.name === "Varun Mishra") && (
+                <IconButton
+                  color="danger"
+                  size="sm"
+                  variant="outlined"
+                  onClick={handleDelete}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              )}
+
+            <Filter
+              open={open}
+              onOpenChange={setOpen}
+              title="Filters"
+              fields={fields}
+              onApply={(values) => {
+                setSelectStatus(values?.status || "");
+                setDateFilterFrom(values?.dateFilter?.from || "");
+                setDateFilterEnd(values?.dateFilter?.to || "");
+
+                setOpen(false);
+              }}
+              onReset={() => {
+                setSelectStatus("");
+                setDateFilterFrom("");
+                setDateFilterEnd("");
+
+                setOpen(false);
+              }}
+            />
+          </>
+        </SubHeader>
+
         <Box
           component="main"
           className="MainContent"
           sx={{
-            px: { xs: 2, md: 6 },
-            pt: {
-              xs: "calc(12px + var(--Header-height))",
-              sm: "calc(12px + var(--Header-height))",
-              md: 3,
-            },
-            pb: { xs: 2, sm: 2, md: 3 },
             flex: 1,
             display: "flex",
             flexDirection: "column",
-            minWidth: 0,
-            height: "100dvh",
             gap: 1,
+            mt: "108px",
+            p: "16px",
+            px: "24px",
           }}
         >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              marginLeft: { xl: "15%", lg: "18%", },
-            }}
-          >
-            <Breadcrumbs
-              size="sm"
-              aria-label="breadcrumbs"
-              separator={<ChevronRightRoundedIcon fontSize="sm" />}
-              sx={{ pl: 0 }}
-            >
-              {/* <Link
-                underline="none"
-                color="neutral"
-                href="#some-link"
-                aria-label="Home"
-              >
-                <HomeRoundedIcon />
-              </Link> */}
-              <Link
-                underline="hover"
-                color="neutral"
-                href=""
-                sx={{ fontSize: 12, fontWeight: 500 }}
-              >
-                SCM
-              </Link>
-              <Typography
-                color="primary"
-                sx={{ fontWeight: 500, fontSize: 12 }}
-              >
-                Vendor Bill
-              </Typography>
-            </Breadcrumbs>
-          </Box>
-          <Box
-            sx={{
-              display: "flex",
-              mb: 1,
-              gap: 1,
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: { xs: "start", sm: "center" },
-              flexWrap: "wrap",
-              justifyContent: "space-between",
-              marginLeft: { xl: "15%", lg: "18%" },
-            }}
-          >
-            <Typography level="h2" component="h1">
-              Vendor Bill
-            </Typography>
-            <Box
-              sx={{
-                display: "flex",
-                mb: 1,
-                gap: 1,
-                flexDirection: { xs: "column", sm: "row" },
-                alignItems: { xs: "start", sm: "center" },
-                flexWrap: "wrap",
-                justifyContent: "center",
-              }}
-            >
-              {/* <Button
-              color="primary"
-              
-              size="sm"
-            >
-              Add New Project +
-            </Button> */}
-              {/* <Button
-                color="primary"
-                startDecorator={<DownloadRoundedIcon />}
-                size="sm"
-                onClick={handleExportToCSV} 
-              >
-                Export to CSV
-              </Button> */}
-            </Box>
-          </Box>
-          <VendorBill />
-          {/* <OrderTable /> */}
-          {/* <OrderList /> */}
+          <VendorBill
+            ref={vendorRef}
+            onSelectionChange={(len) => setSelectedCount(len)}
+            setSelected={setSelected}
+          />
         </Box>
       </Box>
     </CssVarsProvider>

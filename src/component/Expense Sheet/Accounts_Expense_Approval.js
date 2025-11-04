@@ -24,7 +24,7 @@ import {
   useTheme,
 } from "@mui/joy";
 import { Calendar } from "lucide-react";
-import { useGetAllExpenseQuery } from "../../redux/Expense/expenseSlice";
+import { useGetAllExpenseQuery } from "../../redux/expenseSlice";
 
 const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
   const navigate = useNavigate();
@@ -33,122 +33,66 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedExpenses, setSelectedExpenses] = useState([]);
-  const [selectedDepartment, setSelectedDepartment] = useState("");
-  const [selectedstatus, setSelectedstatus] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
+  const [perPage, setPerPage] = useState(initialPageSize);
+
+
+
+  // ---- helper: merge update to URL params (preserve others) ----
+  const updateParams = (patch) => {
+    const next = new URLSearchParams(searchParams);
+    Object.entries(patch).forEach(([k, v]) => {
+      if (v == null || v === "") next.delete(k);
+      else next.set(k, String(v));
+    });
+    setSearchParams(next);
+  };
+
+  const selectedDepartment = searchParams.get("department") || "";
+  const selectedStatus = searchParams.get("status") || "";
+  const from = searchParams.get("from") || "";
+  const to = searchParams.get("to") || "";
+
+  useEffect(() => {
+    const pageParam = Math.max(
+      1,
+      parseInt(searchParams.get("page") || "1", 10)
+    );
+    if (pageParam !== currentPage) setCurrentPage(pageParam);
+
+    const qParam = searchParams.get("q") || "";
+    if (qParam !== searchQuery) setSearchQuery(qParam);
+  }, [searchParams]);
+
+  // ---- push search to URL (debounced) ----
+  useEffect(() => {
+    const id = setTimeout(() => {
+      // only write if actually different from current URL
+      if ((searchParams.get("q") || "") !== searchQuery) {
+        updateParams({ q: searchQuery, page: 1 });
+      }
+    }, 400);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
 
   const searchParam = searchQuery;
 
-  const { data: getExpense = [], isLoading } = useGetAllExpenseQuery({
-    page: currentPage,
-    department: selectedDepartment,
-    search: searchParam,
-    status: selectedstatus,
-    from,
-    to,
-  });
+  const queryArgs = useMemo(
+    () => ({
+      page: currentPage,
+      limit: perPage,
+      department: selectedDepartment,
+      search: searchParam,
+      status: selectedStatus,
+      from,
+      to,
+    }),
+    [currentPage, selectedDepartment, searchParam, selectedStatus, from, to, perPage]
+  );
 
-  const renderFilters = () => {
-    const departments = [
-      "Accounts",
-      "HR",
-      "Engineering",
-      "Projects",
-      "Infra",
-      "CAM",
-      "Internal",
-      "SCM",
-      "IT Team",
-    ];
+  const { data: getExpense = [], isLoading } = useGetAllExpenseQuery(queryArgs);
 
-    const statuses = [
-      // { value: "draft", label: "Draft" },
-      { value: "submitted", label: "Pending" },
-      { value: "manager approval", label: "Manager Approved" },
-      { value: "hr approval", label: "HR Approved" },
-      { value: "final approval", label: "Approved" },
-      { value: "hold", label: "On Hold" },
-      { value: "rejected", label: "Rejected" },
-    ];
-
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 2,
-          alignItems: "center",
-          mb: 2,
-        }}
-      >
-        <FormControl sx={{ minWidth: 180 }} size="sm">
-          <FormLabel>Department</FormLabel>
-          <Select
-            value={selectedDepartment}
-            onChange={(e, newValue) => {
-              setSelectedDepartment(newValue);
-              setCurrentPage(1);
-            }}
-            size="sm"
-            placeholder="Select Department"
-          >
-            <Option value="">All Departments</Option>
-            {departments.map((dept) => (
-              <Option key={dept} value={dept}>
-                {dept}
-              </Option>
-            ))}
-          </Select>
-        </FormControl>
-
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Status</FormLabel>
-          <Select
-            value={selectedstatus}
-            onChange={(e, newValue) => {
-              setSelectedstatus(newValue);
-              setCurrentPage(1);
-
-            }}
-            size="sm"
-            placeholder="Select Status"
-          >
-            <Option value="">All Status</Option>
-            {statuses.map((status) => (
-              <Option key={status.value} value={status.value}>
-                {status.label}
-              </Option>
-            ))}
-          </Select>
-        </FormControl>
-
-        <FormControl size="sm" sx={{ minWidth: 140 }}>
-          <FormLabel>From Date</FormLabel>
-          <Input
-            type="date"
-            value={from}
-            onChange={(e) => {
-              setFrom(e.target.value);
-              setCurrentPage(1);
-            }}
-          />
-        </FormControl>
-
-        <FormControl size="sm" sx={{ minWidth: 140 }}>
-          <FormLabel>To Date</FormLabel>
-          <Input
-            type="date"
-            value={to}
-            onChange={(e) => {
-              setTo(e.target.value);
-              setCurrentPage(1);
-            }}
-          />
-        </FormControl>
-      </Box>
-    );
-  };
 
   const total = getExpense?.total || 0;
   const limit = getExpense?.limit || 10;
@@ -176,124 +120,103 @@ const AccountsExpense = forwardRef(({ sheetIds, setSheetIds }, ref) => {
     return pages;
   };
 
-  const expenses = useMemo(
-    () => (Array.isArray(getExpense?.data) ? getExpense.data : []),
-    [getExpense]
-  );
 
-const handleSelectAll = (event) => {
-  const ids = paginatedExpenses.map((row) => row._id);
+  const handleSelectAll = (event) => {
+    const ids = paginatedExpenses?.map((row) => row._id);
 
-  if (event.target.checked) {
-    setSelectedExpenses((prevSelected) => [
-      ...new Set([...prevSelected, ...ids]),
-    ]);
-    setSheetIds((prevSheetIds) => [
-      ...new Set([...prevSheetIds, ...ids]),
-    ]);
-  } else {
-    setSelectedExpenses((prevSelected) =>
-      prevSelected.filter((id) => !ids.includes(id))
-    );
-    setSheetIds((prevSheetIds) =>
-      prevSheetIds.filter((id) => !ids.includes(id))
-    );
-  }
-};
-
+    if (event.target.checked) {
+      setSelectedExpenses((prevSelected) => [
+        ...new Set([...prevSelected, ...ids]),
+      ]);
+      setSheetIds((prevSheetIds) => [...new Set([...prevSheetIds, ...ids])]);
+    } else {
+      setSelectedExpenses((prevSelected) =>
+        prevSelected.filter((id) => !ids.includes(id))
+      );
+      setSheetIds((prevSheetIds) =>
+        prevSheetIds.filter((id) => !ids.includes(id))
+      );
+    }
+  };
 
   const handleRowSelect = (_id) => {
-  setSelectedExpenses((prev) =>
-    prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
-  );
+    setSelectedExpenses((prev) =>
+      prev.includes(_id) ? prev.filter((item) => item !== _id) : [...prev, _id]
+    );
 
-  setSheetIds((prev) =>
-    prev.includes(_id) ? prev.filter((id) => id !== _id) : [...prev, _id]
-  );
-};
+    setSheetIds((prev) =>
+      prev.includes(_id) ? prev.filter((id) => id !== _id) : [...prev, _id]
+    );
+  };
 
   const handleSearch = (query) => {
     setSearchQuery(query.toLowerCase());
   };
 
-  const ExpenseCode = ({ currentPage, expense_code, createdAt }) => {
-    const formattedDate = createdAt
-      ? new Date(createdAt).toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        })
-      : "N/A";
-    return (
-      <>
-        <Box>
-          <span
-            style={{ cursor: "pointer", fontWeight: 500 }}
-            onClick={() => {
-              localStorage.setItem("edit_expense", expense_code);
-              navigate(
-                `/update_expense?page=${currentPage}&code=${expense_code}`
-              );
-            }}
-          >
-            {expense_code || "-"}
-          </span>
-        </Box>
-        <Box display="flex" alignItems="center" mt={0.5}>
-          <Calendar size={12} />
-          <span style={{ fontSize: 12, fontWeight: 600 }}>
-            Created At:{" "}
-          </span>{" "}
-          &nbsp;
-          <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
-            {formattedDate}
-          </Typography>
-        </Box>
-      </>
-    );
-  };
-
+  const dateFormate = (createdAt) => {
+    return createdAt ? new Date(createdAt).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }) : "N/A"
+  }
+  // keep this effect: state already synced above, but harmless
   useEffect(() => {
     const page = parseInt(searchParams.get("page")) || 1;
     setCurrentPage(page);
   }, [searchParams]);
 
-  const paginatedExpenses = expenses;
+  // const paginatedExpenses = expenses;
+  const [paginatedExpenses, setPaginatedExpense] = useState([]);
+
+
+  useEffect(() => {
+    setPaginatedExpense(getExpense?.data)
+  }, [getExpense])
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
-      setSearchParams({ page: String(page) });
+      // MERGE page instead of replacing other params
+      updateParams({ page: String(page) });
     }
   };
 
   return (
-    <>
+    <Box
+      sx={{
+        ml: { lg: "var(--Sidebar-width)" },
+        px: "0px",
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+      }}
+    >
       {/* Tablet and Up Filters */}
       <Box
-        className="SearchAndFilters-tabletUp"
-        sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          borderRadius: "sm",
-          py: 2,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1.5,
-          "& > *": {
-            minWidth: { xs: "120px", md: "160px" },
-          },
-        }}
+        display="flex"
+        justifyContent="flex-end"
+        alignItems="center"
+        pb={0.5}
+        flexWrap="wrap"
+        gap={1}
       >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <FormLabel>Search</FormLabel>
-          <Input
-            size="sm"
-            placeholder="Search by Exp. Code, Emp. Code, Emp. Name, or Status"
-            startDecorator={<SearchIcon />}
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-        </FormControl>
-        {renderFilters()}
+        <Box
+          sx={{
+            py: 1,
+            display: "flex",
+            alignItems: "flex-end",
+            gap: 1.5,
+            width: { xs: "100%", md: "50%" },
+          }}
+        >
+          <FormControl sx={{ flex: 1 }} size="sm">
+            <Input
+              size="sm"
+              placeholder="Search by Exp. Code, Emp. Code, Emp. Name, or Status"
+              startDecorator={<SearchIcon />}
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+          </FormControl>
+        </Box>
       </Box>
 
       {/* Table */}
@@ -301,14 +224,11 @@ const handleSelectAll = (event) => {
         className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: "flex",
+          display: { xs: "none", sm: "block" },
           width: "100%",
           borderRadius: "sm",
-          flexShrink: 1,
+          maxHeight: { xs: "66vh", xl: "75vh" },
           overflow: "auto",
-          minHeight: 0,
-          marginLeft: { xl: "15%", lg: "18%" },
-          maxWidth: { lg: "85%", sm: "100%" },
         }}
       >
         <Box
@@ -320,6 +240,10 @@ const handleSelectAll = (event) => {
               <Box
                 component="th"
                 sx={{
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 3,
+                  backgroundColor: "neutral.softBg",
                   borderBottom: "1px solid #ddd",
                   padding: "8px",
                   textAlign: "left",
@@ -328,16 +252,16 @@ const handleSelectAll = (event) => {
                 <Checkbox
                   size="sm"
                   checked={
-                    paginatedExpenses.length > 0 &&
-                    paginatedExpenses.every((expense) =>
+                    paginatedExpenses?.length > 0 &&
+                    paginatedExpenses?.every((expense) =>
                       selectedExpenses.includes(expense._id)
                     )
                   }
                   indeterminate={
-                    paginatedExpenses.some((expense) =>
+                    paginatedExpenses?.some((expense) =>
                       selectedExpenses.includes(expense._id)
                     ) &&
-                    !paginatedExpenses.every((expense) =>
+                    !paginatedExpenses?.every((expense) =>
                       selectedExpenses.includes(expense._id)
                     )
                   }
@@ -358,6 +282,11 @@ const handleSelectAll = (event) => {
                   component="th"
                   key={index}
                   sx={{
+                    position: "sticky",
+                    zIndex: 3,
+                    top: 0,
+                    borderBottom: "1px solid #ddd",
+                    backgroundColor: "neutral.softBg",
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
                     textAlign: "left",
@@ -396,8 +325,8 @@ const handleSelectAll = (event) => {
                   </Box>
                 </Box>
               </Box>
-            ) : paginatedExpenses.length > 0 ? (
-              paginatedExpenses.map((expense, index) => (
+            ) : paginatedExpenses?.length > 0 ? (
+              paginatedExpenses?.map((expense, index) => (
                 <Box
                   component="tr"
                   key={index}
@@ -429,11 +358,29 @@ const handleSelectAll = (event) => {
                     }}
                   >
                     <Box sx={{ fontSize: 15 }}>
-                      <ExpenseCode
-                        currentPage={currentPage}
-                        expense_code={expense.expense_code}
-                        createdAt={expense.createdAt}
-                      />
+                      <Box>
+                        <span
+                          style={{ cursor: "pointer", fontWeight: 500 }}
+                          onClick={() => {
+                            localStorage.setItem("edit_expense", expense?.expense_code);
+                            navigate(
+                              `/update_expense?page=${currentPage}&code=${expense?.expense_code}`
+                            );
+                          }}
+                        >
+                          {expense.expense_code || "-"}
+                        </span>
+                      </Box>
+                      <Box display="flex" alignItems="center" mt={0.5}>
+                        <Calendar size={12} />
+                        <span style={{ fontSize: 12, fontWeight: 600 }}>
+                          Created At:{" "}
+                        </span>{" "}
+                        &nbsp;
+                        <Typography sx={{ fontSize: 12, fontWeight: 400 }}>
+                          {dateFormate(expense.createdAt)}
+                        </Typography>
+                      </Box>
                     </Box>
                   </Box>
                   <Box
@@ -504,8 +451,8 @@ const handleSelectAll = (event) => {
                   >
                     {expense.disbursement_date
                       ? new Date(expense.disbursement_date).toLocaleDateString(
-                          "en-GB"
-                        )
+                        "en-GB"
+                      )
                       : "-"}
                   </Box>
 
@@ -570,11 +517,7 @@ const handleSelectAll = (event) => {
                               title={remarks || "Remarks not found"}
                               arrow
                             >
-                              <IconButton
-                                size="sm"
-                               
-                                color="danger"
-                              >
+                              <IconButton size="sm" color="danger">
                                 <InfoIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
@@ -627,13 +570,12 @@ const handleSelectAll = (event) => {
       <Box
         className="Pagination-laptopUp"
         sx={{
-          pt: 2,
+          pt: 1,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
-          flexDirection: { xs: "column", md: "row" },
-          marginLeft: { xl: "15%", lg: "18%" },
         }}
       >
         <Button
@@ -673,6 +615,28 @@ const handleSelectAll = (event) => {
           )}
         </Box>
 
+        <FormControl size="sm" sx={{ minWidth: 80 }}>
+          <Select
+            value={perPage}
+            onChange={(_e, newValue) => {
+              setPerPage(newValue);
+              setCurrentPage(1);
+              setSearchParams((prev) => {
+                const next = new URLSearchParams(prev);
+                next.set("page", "1");
+                next.set("pageSize", String(newValue));
+                return next;
+              });
+            }}
+          >
+            {[10, 30, 60, 100, 500, 1000].map((num) => (
+              <Option key={num} value={num}>
+                {num}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
+
         <Button
           size="sm"
           variant="outlined"
@@ -684,7 +648,7 @@ const handleSelectAll = (event) => {
           Next
         </Button>
       </Box>
-    </>
+    </Box>
   );
 });
 export default AccountsExpense;

@@ -7,20 +7,19 @@ import SearchIcon from "@mui/icons-material/Search";
 import {
   Chip,
   CircularProgress,
-  Dropdown,
-  Menu,
-  MenuButton,
-  MenuItem,
+  DialogContent,
+  DialogTitle,
   Option,
   Select,
-  Switch,
+  Tab,
+  TabList,
+  Tabs,
   TextField,
 } from "@mui/joy";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Checkbox from "@mui/joy/Checkbox";
 import FormControl from "@mui/joy/FormControl";
-import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import { useTheme } from "@emotion/react";
 import Input from "@mui/joy/Input";
@@ -34,23 +33,19 @@ import Modal from "@mui/joy/Modal";
 import ModalDialog from "@mui/joy/ModalDialog";
 import ModalClose from "@mui/joy/ModalClose";
 import Autocomplete from "@mui/joy/Autocomplete";
-import Textarea from "@mui/joy/Textarea";
 import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
 import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
-
 import {
   useGetHandOverQuery,
   useUpdateHandOverMutation,
   useGetMaterialCategoryQuery,
   useCreatePurchaseRequestMutation,
 } from "../redux/camsSlice";
-
 import { toast } from "react-toastify";
 
-function Dash_cam() {
+function Dash_cam({selected, setSelected}) {
   const navigate = useNavigate();
-  const [selected, setSelected] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState(null);
@@ -60,11 +55,32 @@ function Dash_cam() {
   const [selectedPRProject, setSelectedPRProject] = useState(null);
   const [items, setItems] = useState([]);
   const [otherItemName, setOtherItemName] = useState("");
-  const [otherItemDescription, setOtherItemDescription] = useState("");
   const [otherItemAmount, setOtherItemAmount] = useState("");
-
   const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
   const checkedIcon = <CheckBoxIcon fontSize="small" />;
+  const [selectedTab, setSelectedTab] = useState(
+    () => searchParams.get("tab") || "All"
+  );
+  const options = [1, 5, 10, 20, 50, 100];
+  const [rowsPerPage, setRowsPerPage] = useState(
+    () => Number(searchParams.get("pageSize")) || 10
+  );
+  const getStatusFilter = (tab) => {
+    switch (tab) {
+      case "Handover Pending":
+        return "handoverpending";
+      case "Scope Pending":
+        return "scopepending";
+      case "Scope Open":
+        return "scopeopen";
+      default:
+        return "submitted,Approved";
+    }
+  };
+  const statusFilter = useMemo(
+    () => getStatusFilter(selectedTab),
+    [selectedTab]
+  );
   const {
     data: getHandOverSheet = {},
     isLoading,
@@ -72,10 +88,11 @@ function Dash_cam() {
   } = useGetHandOverQuery({
     page: currentPage,
     search: searchQuery,
-    status: "submitted,Approved",
+    status: statusFilter,
+    limit: rowsPerPage,
   });
   const { data: materialCategoryData = {}, isLoading: isCategoryLoading } =
-    useGetMaterialCategoryQuery();
+    useGetMaterialCategoryQuery({ project_id: selectedPRProject?.project_id });
 
   const materialCategories = materialCategoryData?.data || [];
 
@@ -116,14 +133,12 @@ function Dash_cam() {
       items: formattedItems,
     };
 
-    console.log("Payload being sent:", payload);
-
     try {
       const response = await createPurchaseRequest(payload).unwrap();
       toast.success("Purchase Request created successfully!");
       setIsPRModalOpen(false);
       setItems([]);
-      setOtherItemName(""); // Reset extra fields
+      setOtherItemName("");
       setOtherItemAmount("");
     } catch (error) {
       toast.error(error?.data?.message || "Failed to create Purchase Request.");
@@ -147,7 +162,13 @@ function Dash_cam() {
             navigate(`/project_detail?page=${page}&project_id=${project_id}`);
           }}
         >
+          <Chip
+          variant="outlined"
+          color="primary"
+          >
+
           {code || "-"}
+          </Chip>
         </span>
       </>
     );
@@ -191,31 +212,6 @@ function Dash_cam() {
         user?.name
       );
 
-    const ProjectOverView = ({ currentPage, project_id, code }) => {
-      // console.log("currentPage:", currentPage, "pproject_id:", pproject_id);
-
-      return (
-        <>
-          <span
-            style={{
-              cursor: "pointer",
-              color: theme.vars.palette.text.primary,
-              textDecoration: "underline",
-              textDecorationStyle: "dotted",
-              fontSize: "14px",
-            }}
-            onClick={() => {
-              const page = currentPage;
-              // const project_id = project_id;
-              // sessionStorage.setItem("eng_overview", projectId);
-              navigate(`/overview?page=${page}&project_id=${project_id}`);
-            }}
-          >
-            {code || "-"}
-          </span>
-        </>
-      );
-    };
     useEffect(() => {
       setLockedState(is_locked === "locked" || is_locked === true);
     }, [is_locked]);
@@ -313,8 +309,8 @@ function Dash_cam() {
     setSearchQuery(query.toLowerCase());
   };
   const handleCreatePR = (project) => {
-    setSelectedPRProject(project);
-    setIsPRModalOpen(true);
+    navigate(`/pr_form?mode=create&projectId=${project.project_id}`);
+    console.log({ project });
   };
 
   const filteredAndSortedData = useMemo(() => {
@@ -355,53 +351,131 @@ function Dash_cam() {
 
   const draftPayments = paginatedPayments;
 
+  const total = Number(getHandOverSheet?.total || 0);
+  const pageSize = Number(rowsPerPage || 1);
+  const totalPages = Math.ceil(total / pageSize);
+
   const handlePageChange = (page) => {
-    if (page >= 1) {
+    if (page >= 1 && page <= totalPages) {
       setSearchParams({ page });
       setCurrentPage(page);
     }
   };
 
+  const cannotSeePR =
+    user?.department === "CAM" ||
+    user?.name === "Sushant Ranjan Dubey" ||
+    user?.name === "Sanjiv Kumar";
+
+  const baseHeaders = [
+    "Project Id",
+    "Customer",
+    "Mobile",
+    "State",
+    "Type",
+    "Capacity(AC/DC)",
+    "Slnko Service Charges (with GST)",
+    "Handover",
+    "Action",
+  ];
+  if (!cannotSeePR) baseHeaders.push("Purchsase Request");
+
+  const totalCols = 1 + baseHeaders.length;
+
   return (
-    <>
-      {/* Tablet and Up Filters */}
-      <Box
-        className="SearchAndFilters-tabletUp"
-        sx={{
-          marginLeft: { xl: "15%", lg: "18%" },
-          borderRadius: "sm",
-          py: 2,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1.5,
-          "& > *": {
-            minWidth: { xs: "120px", md: "160px" },
-          },
-        }}
-      >
-        <FormControl sx={{ flex: 1 }} size="sm">
-          <Input
-            size="sm"
-            placeholder="Search by Project ID, Customer"
-            startDecorator={<SearchIcon />}
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-        </FormControl>
+    <Box
+      sx={{
+        ml: {
+          lg: "var(--Sidebar-width)",
+        },
+        px: "0px",
+        width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
+      }}
+    >
+      <Box display={"flex"} justifyContent={"space-between"} pb={0.5}>
+        {/* Tablet and Up Filters */}
+        <Box
+          display={"flex"}
+          justifyContent={"space-between"}
+          width={"100%"}
+          alignItems={"center"}
+        >
+       
+            <Tabs
+              value={selectedTab}
+              onChange={(event, newValue) => {
+                setSelectedTab(newValue);
+                setSearchParams((prev) => {
+                  const newParams = new URLSearchParams(prev);
+                  newParams.set("tab", newValue);
+                  newParams.set("page", 1);
+                  return newParams;
+                });
+              }}
+              indicatorPlacement="none"
+              sx={{
+                bgcolor: "background.level1",
+                borderRadius: 9999,
+                boxShadow: "sm",
+                width: "fit-content",
+              }}
+            >
+              <TabList sx={{ gap: 1 }}>
+                {["All", "Handover Pending", "Scope Pending", "Scope Open"].map(
+                  (label, index) => (
+                    <Tab
+                      key={index}
+                      value={label}
+                      disableIndicator
+                      sx={{
+                        borderRadius: 9999,
+                        fontWeight: "md",
+                        "&.Mui-selected": {
+                          bgcolor: "background.surface",
+                          boxShadow: "sm",
+                        },
+                      }}
+                    >
+                      {label}
+                    </Tab>
+                  )
+                )}
+              </TabList>
+            </Tabs>
+         
+        </Box>
+        <Box
+          className="SearchAndFilters-tabletUp"
+          sx={{
+            borderRadius: "sm",
+            py: 1,
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 1,
+            width: { lg: "100%" },
+          }}
+        >
+          <FormControl sx={{ flex: 1 }} size="sm">
+            <Input
+              size="sm"
+              placeholder="Search by Project ID, Customer"
+              startDecorator={<SearchIcon />}
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+          </FormControl>
+        </Box>
       </Box>
       {/* Table */}
       <Sheet
         className="OrderTableContainer"
         variant="outlined"
         sx={{
-          display: { xs: "none", sm: "initial" },
+          display: { xs: "none", sm: "block" },
           width: "100%",
           borderRadius: "sm",
-          flexShrink: 1,
-          overflow: "auto",
-          minHeight: 0,
-          marginLeft: { lg: "18%", xl: "15%" },
-          maxWidth: { lg: "85%", sm: "100%" },
+          maxHeight: "66vh",
+          overflowY: "auto",
         }}
       >
         <Box
@@ -410,11 +484,17 @@ function Dash_cam() {
         >
           <thead>
             <tr style={{ backgroundColor: "neutral.softBg" }}>
+              {/* checkbox column */}
               <th
                 style={{
+                  position: "sticky",
+                  top: 0,
+                  background: "#e0e0e0",
+                  zIndex: 2,
                   borderBottom: "1px solid #ddd",
                   padding: "8px",
-                  textAlign: "center",
+                  textAlign: "left",
+                  fontWeight: "bold",
                 }}
               >
                 <Checkbox
@@ -427,21 +507,16 @@ function Dash_cam() {
                   }
                 />
               </th>
-              {[
-                "Project Id",
-                "Customer",
-                "Mobile",
-                "State",
-                "Type",
-                "Capacity(AC/DC)",
-                "Slnko Service Charges (with GST)",
-                "Status",
-                "Action",
-                "Purchsase Request",
-              ].map((header, index) => (
+
+              {/* dynamic headers */}
+              {baseHeaders.map((header, index) => (
                 <th
                   key={index}
                   style={{
+                    position: "sticky",
+                    top: 0,
+                    background: "#e0e0e0",
+                    zIndex: 2,
                     borderBottom: "1px solid #ddd",
                     padding: "8px",
                     textAlign: "left",
@@ -453,11 +528,12 @@ function Dash_cam() {
               ))}
             </tr>
           </thead>
+
           <tbody>
             {isLoading ? (
               <tr>
                 <td
-                  colSpan={10}
+                  colSpan={totalCols}
                   style={{ padding: "8px", textAlign: "center" }}
                 >
                   <Box
@@ -482,6 +558,7 @@ function Dash_cam() {
                     "&:hover": { backgroundColor: "neutral.plainHoverBg" },
                   }}
                 >
+                  {/* checkbox cell */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -497,6 +574,8 @@ function Dash_cam() {
                       }
                     />
                   </td>
+
+                  {/* Project Id */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -524,6 +603,8 @@ function Dash_cam() {
                       </Tooltip>
                     )}
                   </td>
+
+                  {/* Customer */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -534,6 +615,7 @@ function Dash_cam() {
                     {project.customer || "-"}
                   </td>
 
+                  {/* Mobile */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -544,6 +626,7 @@ function Dash_cam() {
                     {project.number || "-"}
                   </td>
 
+                  {/* State */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -553,6 +636,8 @@ function Dash_cam() {
                   >
                     {project.state || "-"}
                   </td>
+
+                  {/* Type (scheme) */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -563,6 +648,7 @@ function Dash_cam() {
                     {project.scheme || "-"}
                   </td>
 
+                  {/* Capacity(AC/DC) */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -575,6 +661,7 @@ function Dash_cam() {
                       : "-"}
                   </td>
 
+                  {/* Slnko Service Charges (with GST) */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -585,6 +672,7 @@ function Dash_cam() {
                     {project.total_gst || "-"}
                   </td>
 
+                  {/* Handover */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -601,6 +689,7 @@ function Dash_cam() {
                     />
                   </td>
 
+                  {/* Action */}
                   <td
                     style={{
                       borderBottom: "1px solid #ddd",
@@ -614,42 +703,52 @@ function Dash_cam() {
                       _id={project._id}
                     />
                   </td>
-                  <td
-                    style={{
-                      borderBottom: "1px solid #ddd",
-                      padding: "8px",
-                      textAlign: "left",
-                    }}
-                  >
-                    {project.is_locked === "locked" &&
-                    project.status_of_handoversheet === "Approved" ? (
-                      <Button
-                        size="xm"
-                        variant="soft"
-                        color="primary"
-                        startDecorator={
-                          <AddCircleIcon sx={{ marginRight: 0.8 }} />
-                        }
-                        sx={{
-                          fontSize: "14px",
-                          height: "35px",
-                          padding: "0 16px",
-                          minHeight: "20px",
-                          lineHeight: "1.5",
-                        }}
-                        onClick={() => handleCreatePR(project)}
-                      >
-                        Create PR
-                      </Button>
-                    ) : (
-                      "-"
-                    )}
-                  </td>
+                  {/* Purchase Request (only if allowed) */}
+                  {!cannotSeePR && (
+                    <td
+                      style={{
+                        borderBottom: "1px solid #ddd",
+                        padding: "8px",
+                        textAlign: "left",
+                      }}
+                    >
+                      {project.is_locked === "locked" &&
+                      project.scope_status !== "open" &&
+                      project.status_of_handoversheet === "Approved" ? (
+                        <Button
+                          size="xs"
+                          variant="soft"
+                          color="primary"
+                          startDecorator={
+                            <AddCircleIcon sx={{ mr: 0.8, fontSize: "lg" }} />
+                          }
+                          sx={{
+                            height: "35px",
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            minHeight: "20px",
+                            lineHeight: "1.5",
+                          }}
+                          onClick={() => handleCreatePR(project)}
+                        >
+                          Create PR
+                        </Button>
+                      ) : (
+                        <span style={{ color: "dimgray" }}>
+                          See Project Detail
+                        </span>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={9} style={{ padding: "8px", textAlign: "left" }}>
+                <td
+                  colSpan={totalCols}
+                  style={{ padding: "8px", textAlign: "left" }}
+                >
                   <Box
                     sx={{
                       fontStyle: "italic",
@@ -662,11 +761,7 @@ function Dash_cam() {
                     <img
                       src={NoData}
                       alt="No data"
-                      style={{
-                        width: "50px",
-                        height: "50px",
-                        marginBottom: "8px",
-                      }}
+                      style={{ width: 50, height: 50, marginBottom: 8 }}
                     />
                     <Typography fontStyle="italic">
                       No Handover Sheet Found
@@ -682,13 +777,12 @@ function Dash_cam() {
       <Box
         className="Pagination-laptopUp"
         sx={{
-          pt: 2,
+          pt: 0.5,
           gap: 1,
           [`& .${iconButtonClasses.root}`]: { borderRadius: "50%" },
           display: "flex",
           flexDirection: { xs: "column", sm: "row" },
           alignItems: "center",
-          marginLeft: { lg: "18%", xl: "15%" },
         }}
       >
         {/* Previous Button */}
@@ -703,10 +797,8 @@ function Dash_cam() {
           Previous
         </Button>
 
-        {/* Showing X Results (no total because backend paginates) */}
         <Box>Showing {draftPayments.length} results</Box>
 
-        {/* Page Numbers: Only show current, prev, next for backend-driven pagination */}
         <Box
           sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
         >
@@ -725,8 +817,7 @@ function Dash_cam() {
             {currentPage}
           </IconButton>
 
-          {/* Show next page button if current page has any data (not empty) */}
-          {draftPayments.length > 0 && (
+          {currentPage + 1 <= totalPages && (
             <IconButton
               size="sm"
               variant="outlined"
@@ -738,6 +829,40 @@ function Dash_cam() {
           )}
         </Box>
 
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={1}
+          sx={{ padding: "8px 16px" }}
+        >
+          <Select
+            value={rowsPerPage}
+            onChange={(e, newValue) => {
+              if (newValue !== null) {
+                setRowsPerPage(newValue);
+                setSearchParams((prev) => {
+                  const params = new URLSearchParams(prev);
+                  params.set("pageSize", newValue);
+                  return params;
+                });
+              }
+            }}
+            size="sm"
+            variant="outlined"
+            sx={{
+              minWidth: 80,
+              borderRadius: "md",
+              boxShadow: "sm",
+            }}
+          >
+            {options.map((value) => (
+              <Option key={value} value={value}>
+                {value}
+              </Option>
+            ))}
+          </Select>
+        </Box>
+
         {/* Next Button */}
         <Button
           size="sm"
@@ -745,7 +870,7 @@ function Dash_cam() {
           color="neutral"
           endDecorator={<KeyboardArrowRightIcon />}
           onClick={() => handlePageChange(currentPage + 1)}
-          disabled={draftPayments.length === 0} // disable next if no data at all on this page
+          disabled={currentPage >= totalPages}
         >
           Next
         </Button>
@@ -818,30 +943,6 @@ function Dash_cam() {
                   />
                 )}
               />
-
-              {/* Show additional fields if 'Others' is selected */}
-              {items.some((item) => item.name === "Others") && (
-                <>
-                  <FormControl size="sm">
-                    <FormLabel>Other Item Name</FormLabel>
-                    <Input
-                      placeholder="Enter item name"
-                      value={otherItemName}
-                      onChange={(e) => setOtherItemName(e.target.value)}
-                    />
-                  </FormControl>
-
-                  <FormControl size="sm">
-                    <FormLabel>Other Item Amount</FormLabel>
-                    <Input
-                      placeholder="Enter description"
-                      value={otherItemAmount}
-                      onChange={(e) => setOtherItemAmount(e.target.value)}
-                    />
-                  </FormControl>
-                </>
-              )}
-
               <Button
                 onClick={handlePRSubmit}
                 loading={isPRCreating}
@@ -853,7 +954,7 @@ function Dash_cam() {
           </ModalDialog>
         </Modal>
       </Box>
-    </>
+    </Box>
   );
 }
 export default Dash_cam;
