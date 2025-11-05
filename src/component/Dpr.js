@@ -34,7 +34,7 @@ const MOCK_ROWS = [
     work_completion: { value: "52", unit: "M" },      // total
     current_work: { value: "23", unit: "M" },       // completed
     milestones: [3, 14, 6],                         // 25%, 50%, 75% of total (52M)
-    deadline: "242025-10-29T12:40:11.956+00:00",
+    deadline: "242025-11-07T12:40:11.956+00:00",
   },
   {
     _id: "u2-a1",
@@ -45,7 +45,7 @@ const MOCK_ROWS = [
     work_completion: { value: "45", unit: "percentage" }, // total (denom = 45 here)
     current_work: { value: "40", unit: "percentage" },  // completed
     milestones: [11, 15, 14],                     // 25%, 50%, 75% of 45
-    deadline: "242025-10-29T12:40:11.956+00:00",
+    deadline: "242025-11-15T12:40:11.956+00:00",
   },
   {
     _id: "u3-a1",
@@ -56,7 +56,7 @@ const MOCK_ROWS = [
     work_completion: { value: "45", unit: "Number" },  // total
     current_work: { value: "23", unit: "Number" },   // completed
     milestones: [11, 22, 34],                          // ~25%, 50%, 75% of 45
-    deadline: "242025-10-29T12:40:11.956+00:00",
+    deadline: "242025-11-05T12:40:11.956+00:00",
   },
   {
     _id: "u4-a1",
