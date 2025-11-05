@@ -692,17 +692,19 @@ function DPRTable() {
                   </Button>
 
                   {expandedCard === row._id && (
-                    <Box mt={1} pl={1}>
-                      <Typography level="body-sm">
+                    <Box mt={2} pl={1}>
+                      <Typography level="body-sm" >
                         <strong>Activity:</strong> {row.activity_name}
                       </Typography>
-                      <Typography level="body-sm" mt={2}>
-                        <strong>Work Detail:</strong> {renderWorkPercent(row.current_work, row.work_completion, row.deadline, row.milestones)}
+                      <Typography level="body-sm" mt={1}>
+                        <strong>Work Detail:</strong>
+                      </Typography>
+                      <Typography level="body-sm" mt={1}>
+                        {renderWorkPercent(row.current_work, row.work_completion, row.deadline, row.milestones)}
                       </Typography>
                     </Box>
                   )}
                 </CardContent>
-
               </Card>
             );
           })
