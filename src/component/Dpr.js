@@ -44,7 +44,7 @@ const MOCK_ROWS = [
     reporting_tl: { _id: "a1", name: "ganshyam" },
     work_completion: { value: "45", unit: "percentage" }, // total (denom = 45 here)
     current_work: { value: "40", unit: "percentage" },  // completed
-    milestones: [11, 15, 14],                     // 25%, 50%, 75% of 45
+    milestones: [11, 15, 10],                     // 25%, 50%, 75% of 45
     deadline: "242025-11-15T12:40:11.956+00:00",
   },
   {
@@ -65,7 +65,18 @@ const MOCK_ROWS = [
     activity_name: "Module Mounting Structure",
     reporting_tl: { _id: "a1", name: "ganshyam" },
     work_completion: { value: "45", unit: "Kg" },      // total
-    current_work: { value: "23", unit: "Kg" },       // completed
+    current_work: { value: "9", unit: "Kg" },       // completed
+    milestones: [11, 22, 34],                          // ~25%, 50%, 75% of 45
+    deadline: "242025-10-29T12:40:11.956+00:00",
+  },
+  {
+    _id: "u4-a1",
+    project_code: "PRJ/code",
+    project_name: "ramlal",
+    activity_name: "Module Mounting Structure",
+    reporting_tl: { _id: "a1", name: "ganshyam" },
+    work_completion: { value: "45", unit: "Kg" },      // total
+    current_work: { value: "45", unit: "Kg" },       // completed
     milestones: [11, 22, 34],                          // ~25%, 50%, 75% of 45
     deadline: "242025-10-29T12:40:11.956+00:00",
   },
@@ -164,21 +175,7 @@ function DPRTable() {
     setCurrentPage(1);
   };
 
-  const renderWorkCompletion = (wc) => {
-    if (!wc || wc.value === undefined || wc.value === null) return "-";
-    const unit = wc.unit || "number";
-    // For "%" display, uncomment next line:
-    // const unitLabel = unit === "percentage" ? "%" : unit;
-    const unitLabel = unit;
-    return (
-      <Chip size="sm" variant="soft" color="primary" sx={{ fontWeight: 600 }}>
-        {wc.value} {unitLabel}
-      </Chip>
-    );
-  };
 
-
-  const clamp01 = (x) => (Number.isFinite(x) ? Math.max(0, Math.min(1, x)) : 0);
 
   const diffInDays = (deadline) => {
     if (!deadline) return null;
@@ -189,7 +186,29 @@ function DPRTable() {
     return Math.ceil((d.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
   };
 
-  const renderWorkPercent = (wc, tw, deadline, milestones = [], showPercentLabel = true) => {
+  const PROGRESS_BANDS = [
+    { max: 25, color: "danger", label: "0–25%" },         // red
+    { max: 50, color: "neutral", label: "26–50%" },        // amber
+    { max: 75, color: "primary", label: "51–75%" },        // blue
+    { max: 99, color: "success", label: "76–99%" },        // green
+    // Special case for 100%: keep 'success' but make it a bit bolder
+    {
+      max: 100, color: "success", sx: {
+        "--LinearProgress-progressColor": "var(--joy-palette-success-700)"
+      }, label: "100%"
+    },
+  ];
+
+  const getBandFor = (pct) => {
+    for (const b of PROGRESS_BANDS) if (pct <= b.max) return b;
+    return PROGRESS_BANDS[PROGRESS_BANDS.length - 1];
+  };
+
+  const clamp02 = (x) => Math.max(0, Math.min(1, x));
+
+  const renderWorkPercent = (
+    wc, tw, deadline, milestones = [], showPercentLabel = true
+  ) => {
     if (!wc || wc.value == null || !tw || tw.value == null) return "-";
 
     const unit = (tw.unit || wc.unit || "").toString();
@@ -204,7 +223,7 @@ function DPRTable() {
       );
     }
 
-    const pct = clamp01(completed / total);
+    const pct = clamp02(completed / total);
     const pct100 = Math.round(pct * 100);
 
     // Days info (optional)
@@ -218,7 +237,6 @@ function DPRTable() {
             ? "Due today"
             : `Overdue by ${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"}`;
 
-    // Tooltip content
     const tooltip = (
       <Box sx={{ p: 0.5 }}>
         <Typography level="title-sm" sx={{ fontWeight: 700, mb: 0.5 }}>
@@ -231,11 +249,26 @@ function DPRTable() {
       </Box>
     );
 
-    // Milestone dots -> convert absolute values to % positions
-    const dotPositions = (Array.isArray(milestones) ? milestones : [])
-      .map((m) => Number(m))
-      .filter((m) => Number.isFinite(m) && m >= 0 && m <= total)
-      .map((m) => Math.round((m / total) * 100));
+    const dotPositions = (() => {
+      const deltas = Array.isArray(milestones) ? milestones : [];
+      let run = 0;
+      const cumulative = [];
+
+      for (const x of deltas) {
+        const v = Number(x);
+        if (!Number.isFinite(v)) continue;
+        run += v;                     // accumulate
+        if (run < 0) continue;        // skip negatives after accumulate (optional)
+        if (run > total) break;       // stop if we exceed total (or use Math.min(run, total))
+        cumulative.push(run);
+      }
+
+      // convert cumulative absolute values to % positions
+      return cumulative.map((m) => Math.round((m / total) * 100));
+    })();
+
+    console.log(dotPositions);
+    const band = getBandFor(pct100);
 
     return (
       <Tooltip title={tooltip} arrow variant="soft">
@@ -243,14 +276,18 @@ function DPRTable() {
           <LinearProgress
             determinate
             value={pct100}
+            color={band.color}       // switches at 25/50/75/100
             sx={{
               height: 10,
               borderRadius: 999,
               "--LinearProgress-radius": "999px",
               "--LinearProgress-thickness": "10px",
+              // optional: make the track a bit lighter & keep dots visible
+              "--LinearProgress-trackColor": "var(--joy-palette-neutral-200)",
+              ...band.sx, // allow special overrides for specific bands (e.g., 100%)
             }}
           />
-          {/* Milestone dots */}
+          {/* milestone dots */}
           {dotPositions.map((leftPct, idx) => (
             <Box
               key={idx}
@@ -268,7 +305,6 @@ function DPRTable() {
               }}
             />
           ))}
-          {/* Optional tiny % label on the right */}
           {showPercentLabel && (
             <Typography
               level="body-xs"
