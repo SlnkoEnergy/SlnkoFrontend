@@ -34,6 +34,7 @@ import {
   useUpdateProjectActivityFromTemplateMutation,
   useUpdateStatusOfPlanMutation,
   useUpdateReorderfromActivityMutation,
+  useUpdateActivityInProjectMutation,
 } from "../../redux/projectsSlice";
 import { useLazyGetAllUserWithPaginationQuery } from "../../redux/globalTaskSlice";
 import AppSnackbar from "../../component/AppSnackbar";
@@ -56,6 +57,10 @@ function ViewProjectManagement() {
 
   // NEW: track if any row is selected in child
   const [hasSelection, setHasSelection] = useState(false);
+// track selected Gantt activity DB ids
+const [selectedActivityIds, setSelectedActivityIds] = useState([]);
+const [updateActivityInProject, { isLoading: isAssigning }] =
+  useUpdateActivityInProjectMutation();
 
   const handlePlanStatusFromChild = useCallback((statusObj) => {
     const s = (statusObj?.status || "").toLowerCase();
@@ -335,16 +340,62 @@ function ViewProjectManagement() {
   }, []);
 
   // NEW: submit handler for multi-select mode
-  const handleSubmitAssignees = useCallback(({ ids, rows }) => {
-    // TODO: integrate your POST here with: projectId, ids
-    // e.g., await assignUsers({ projectId, userIds: ids })
+// NEW: submit handler for multi-select mode (sequential updates to avoid version conflicts)
+const handleSubmitAssignees = useCallback(
+  async ({ ids: userIds = [] }) => {
+    if (!projectId) {
+      setSnack({ open: true, msg: "Missing projectId." });
+      return;
+    }
+    if (!selectedActivityIds.length) {
+      setSnack({ open: true, msg: "No activities selected." });
+      return;
+    }
+    if (!userIds.length) {
+      setSnack({ open: true, msg: "Select at least one user to assign." });
+      return;
+    }
 
     setAssignOpen(false);
-    setSnack({
-      open: true,
-      msg: `Selected ${ids?.length || 0} assignee(s)`,
-    });
-  }, []);
+
+    const results = { ok: 0, fail: 0 };
+    try {
+      // Run updates one-by-one to avoid VersionError conflicts
+      for (const activityId of selectedActivityIds) {
+        try {
+          await updateActivityInProject({
+            projectId,
+            activityId, // DB activity id from Gantt
+            data: {
+              assigned_to: userIds,
+              assigned_status: userIds.length > 0 ? "Assigned" : "Removed",
+            },
+          }).unwrap();
+          results.ok += 1;
+        } catch (err) {
+          console.error("Assign failed for", activityId, err);
+          results.fail += 1;
+        }
+      }
+
+      // Refresh the Gantt after the batch completes
+      await (ganttRef.current?.refetch?.() ?? Promise.resolve());
+
+      const msg =
+        results.fail === 0
+          ? `Assigned ${userIds.length} user(s) to ${results.ok} activit${results.ok > 1 ? "ies" : "y"}.`
+          : `Assigned ${userIds.length} user(s) to ${results.ok} activit${results.ok > 1 ? "ies" : "y"}; ${results.fail} failed.`;
+
+      setSnack({ open: true, msg });
+    } catch (e) {
+      const msg = e?.data?.message || e?.message || "Failed to assign user(s).";
+      setSnack({ open: true, msg });
+    }
+  },
+  [projectId, selectedActivityIds, updateActivityInProject]
+);
+
+
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -511,15 +562,16 @@ function ViewProjectManagement() {
           }}
         >
           <View_Project_Management
-            ref={ganttRef}
-            viewModeParam={selectedView}
-            onPlanStatus={handlePlanStatusFromChild}
-            // 🔑 Child must call this with true/false when its checkbox selection changes
-            onSelectionChange={({ any, count }) => {
-              setHasSelection(!!any);
-              setSelectionCount(Number(count || 0));
-            }}
-          />
+  ref={ganttRef}
+  viewModeParam={selectedView}
+  onPlanStatus={handlePlanStatusFromChild}
+ onSelectionChange={({ any, count, ids }) => {    // ⬅️ include ids
+    setHasSelection(!!any);
+    setSelectionCount(Number(count || 0));
+    setSelectedActivityIds(Array.isArray(ids) ? ids : []);   // ⬅️ store ids
+  }}
+/>
+
         </Box>
       </Box>
 

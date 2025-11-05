@@ -717,15 +717,22 @@ const View_Project_Management = forwardRef(
       `gantt-master-${Math.random().toString(36).slice(2)}`
     );
 
-    const notifySelection = () => {
-   try {
-     let count = 0;
-     gantt.eachTask((t) => {
-       if (t?.checked) count++;
-     });
-     onSelectionChange?.({ any: count > 0, count });
-   } catch {}
- };
+// replace notifySelection in ViewProjectManagement.jsx
+const notifySelection = () => {
+  try {
+    let count = 0;
+    const ids = [];
+    gantt.eachTask((t) => {
+      if (t?.checked) {
+        count++;
+        // this is the DB id you need to update:
+        if (t?._dbId) ids.push(String(t._dbId));
+      }
+    });
+    onSelectionChange?.({ any: count > 0, count, ids });
+  } catch {}
+};
+
 
     // Local flag for frozen state
     const planStatus =
@@ -1016,6 +1023,7 @@ const View_Project_Management = forwardRef(
       assigned_status: null,
       work_completion_value: "",
       work_completion_unit: "number",
+      work_completion_deadline: "",
     });
 
     const statusChanged = form.status !== initialStatusRef.current;
@@ -1153,6 +1161,9 @@ const View_Project_Management = forwardRef(
       const wc = act?.work_completion || {};
       const wcUnit = typeof wc.unit === "string" ? wc.unit : "number";
       const wcValue = Number.isFinite(Number(wc.value)) ? String(wc.value) : "";
+      const wcDeadline = wc?.deadline
+        ? toYMD(parseISOAsLocalDate(wc.deadline))
+        : "";
 
       // 🔁 Predecessors for UI
       const uiPreds = preds
@@ -1205,6 +1216,7 @@ const View_Project_Management = forwardRef(
         assigned_status: assignedStatusStr,
         work_completion_value: wcValue,
         work_completion_unit: wcUnit,
+        work_completion_deadline: wcDeadline,
       });
 
       // 🔁 Optional: recompute dates if predecessors exist
@@ -1283,10 +1295,13 @@ const View_Project_Management = forwardRef(
         assigned_to: ensureIds(form.assigned_to),
         assigned_status: computedAssignedStatus || undefined,
       };
-      if (form.work_completion_value !== "") {
+      if (form.work_completion_value !== "" || form.work_completion_deadline) {
         payload.work_completion = {
           unit: form.work_completion_unit || "number",
-          value: Number(form.work_completion_value),
+          value: Number(form.work_completion_value || 0),
+          ...(form.work_completion_deadline
+            ? { deadline: form.work_completion_deadline } // YYYY-MM-DD
+            : {}),
         };
       }
 
@@ -1794,7 +1809,6 @@ const View_Project_Management = forwardRef(
           `<input type="checkbox" class="gantt-row-checkbox" data-id="${
             task.id
           }" ${task.checked ? "checked" : ""}/>`,
-        
       },
 
       {
@@ -2664,7 +2678,12 @@ const View_Project_Management = forwardRef(
 
                 <FormControl>
                   <FormLabel>Work Completion</FormLabel>
-                  <Stack direction="row" spacing={1}>
+
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{ alignItems: "center" }}
+                  >
                     {/* value */}
                     <Input
                       size="sm"
@@ -2678,10 +2697,10 @@ const View_Project_Management = forwardRef(
                         }))
                       }
                       disabled={disableEditing}
-                      sx={{ width: "60%" }}
+                      sx={{ width: { xs: "45%", sm: "34%" } }}
                     />
 
-                    {/* unit (Joy Select uses <Option/>, not MenuItem) */}
+                    {/* unit */}
                     <Select
                       size="sm"
                       value={form.work_completion_unit || "number"}
@@ -2692,9 +2711,8 @@ const View_Project_Management = forwardRef(
                         }))
                       }
                       disabled={disableEditing}
-                      sx={{ width: "40%" }}
+                      sx={{ width: { xs: "55%", sm: "26%" } }}
                       slotProps={{
-                        // keep the options above the drawer/sheet
                         listbox: {
                           sx: {
                             zIndex: 1700,
@@ -2702,7 +2720,6 @@ const View_Project_Management = forwardRef(
                             overflowY: "auto",
                           },
                         },
-                        // optional: ensure the popper itself has elevation
                         popper: { sx: { zIndex: 1700 } },
                       }}
                     >
@@ -2711,7 +2728,32 @@ const View_Project_Management = forwardRef(
                       <Option value="percentage">percentage</Option>
                       <Option value="number">number</Option>
                     </Select>
+
+                    {/* NEW: deadline (right next to unit) */}
+                    <Input
+                      size="sm"
+                      type="date"
+                      placeholder="Deadline"
+                      value={form.work_completion_deadline || ""}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          work_completion_deadline: e.target.value, // YYYY-MM-DD
+                        }))
+                      }
+                      disabled={disableEditing}
+                      sx={{ width: { xs: "100%", sm: "40%" } }}
+                    />
                   </Stack>
+
+                  {/* optional hint */}
+                  <Typography
+                    level="body-xs"
+                    sx={{ color: "text.tertiary", mt: 0.5 }}
+                  >
+                    Leave blank if you want backend to use the baseline end
+                    date.
+                  </Typography>
                 </FormControl>
 
                 <FormControl>
