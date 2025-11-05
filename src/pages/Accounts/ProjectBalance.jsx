@@ -6,10 +6,7 @@ import Link from "@mui/joy/Link";
 import { CssVarsProvider } from "@mui/joy/styles";
 import Typography from "@mui/joy/Typography";
 import React, { useRef } from "react";
-
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
-import { FormControl, FormLabel, Input, Snackbar } from "@mui/joy";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../../component/Partials/Header";
@@ -38,15 +35,7 @@ function ProjectBalance() {
     return null;
   };
 
-  // Create a ref for ProjectBalances component
   const projectBalancesRef = useRef();
-
-  // Function to handle CSV export
-  const handleExportToCSV = () => {
-    if (projectBalancesRef.current) {
-      projectBalancesRef.current.exportToCSV();
-    }
-  };
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -137,34 +126,7 @@ function ProjectBalance() {
                   gap: 2,
                   flexWrap: "wrap",
                 }}
-              >
-                {/* <Input
-                type="date"
-                // value={startDate}
-                // onChange={handleCreditStartDateChange}
-              />
-           
-
-           <Typography mb={1}>to</Typography>
-              
-              <Input
-                type="date"
-                // value={endDate}
-                // onChange={handleCreditEndDateChange}
-              /> */}
-              </Box>
-              {/* {(user?.name === "IT Team" ||
-                user?.name === "Guddu Rani Dubey" ||
-                user?.name === "Prachi Singh" ||
-                user?.name === "admin") && (
-                <Button
-                  color="primary"
-                  onClick={() => navigate("/add_project")}
-                  size="sm"
-                >
-                  Add New Project +
-                </Button>
-              )} */}
+              ></Box>
               {(user?.name === "IT Team" ||
                 user?.name === "Guddu Rani Dubey" ||
                 user?.name === "Varun Mishra" ||
@@ -179,26 +141,6 @@ function ProjectBalance() {
                   Adjustment Form
                 </Button>
               )}
-              {/* {(user?.name === "IT Team" ||
-                user?.name === "Guddu Rani Dubey" ||
-                user?.name === "Prachi Singh" ||
-                user?.department === "admin") && (
-                <Button color="primary" onClick={handleClick} size="sm">
-                  Add New Project +
-                </Button>
-              )}
-
-              <Snackbar
-                open={open}
-                onClose={() => setOpen(false)}
-                variant="soft"
-                color="danger"
-                anchorOrigin={{ vertical: "top", horizontal: "center" }}
-                autoHideDuration={4000}
-              >
-                Projects can now only be added from the Handover Sheet.
-              </Snackbar> */}
-
               {(user?.name === "Gagan Tayal" ||
                 user?.name === "Chandan Singh" ||
                 user?.name === "Sujan Maharjan" ||
@@ -214,21 +156,6 @@ function ProjectBalance() {
                   HandOver Dashboard
                 </Button>
               )}
-              {/* {(user?.name === "IT Team" ||
-                user?.name === "Guddu Rani Dubey" ||
-                user?.name === "Prachi Singh" ||
-                user?.department === "admin" ||
-                user?.name === "Naresh Kumar" ||
-                user?.department === "Accounts") && (
-                <Button
-                  color="primary"
-                  startDecorator={<DownloadRoundedIcon />}
-                  size="sm"
-                  onClick={handleExportToCSV}
-                >
-                  Export to CSV
-                </Button>
-              )} */}
             </Box>
           </Box>
           <ProjectBalances ref={projectBalancesRef} />

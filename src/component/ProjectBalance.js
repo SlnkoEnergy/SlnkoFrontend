@@ -17,6 +17,9 @@ import {
   Skeleton,
   IconButton,
   Checkbox,
+  Tabs,
+  TabList,
+  Tab,
 } from "@mui/joy";
 import {
   Download as DownloadIcon,
@@ -216,7 +219,6 @@ export default function ProjectBalancesJoy() {
   const [params, setParams] = useSearchParams();
   const initialPage = parseInt(params.get("page")) || 1;
   const initialSize = parseInt(params.get("pageSize")) || 10;
-
   const [page, setPage] = useState(initialPage);
   const [pageSize, setPageSize] = useState(initialSize);
   const [query, setQuery] = useState("");
@@ -225,12 +227,14 @@ export default function ProjectBalancesJoy() {
   const [drawerRow, setDrawerRow] = useState(null);
   const [selected, setSelected] = useState(() => new Set());
 
+  const status = params.get("status") || "";
+  const searchParam = params.get("search") || "";
   const {
     data: responseData,
     isLoading,
     refetch,
   } = useGetProjectBalanceQuery(
-    { page, pageSize, search: query },
+    { page, pageSize, search: searchParam, status },
     { refetchOnMountOrArgChange: true }
   );
 
@@ -243,9 +247,12 @@ export default function ProjectBalancesJoy() {
   const end = total ? Math.min(start + rows.length - 1, total) : 0;
 
   useEffect(() => {
-    setParams({ page: String(page), pageSize: String(pageSize) });
+    const p = new URLSearchParams(params);
+    p.set("page", String(page));
+    p.set("pageSize", String(pageSize));
+    setParams(p, { replace: true });
     setSelected(new Set());
-  }, [page, pageSize, setParams]);
+  }, [page, pageSize]);
 
   const [user, setUser] = useState(null);
   useEffect(() => {
@@ -256,7 +263,6 @@ export default function ProjectBalancesJoy() {
     }
   }, []);
 
-  // Use project "code" as selection id (backend expects this)
   const pageIds = rows
     .map((r) => (r?.code ? String(r.code) : null))
     .filter(Boolean);
@@ -264,7 +270,6 @@ export default function ProjectBalancesJoy() {
     pageIds.length > 0 && pageIds.every((id) => selected.has(id));
   const someChecked = !allChecked && pageIds.some((id) => selected.has(id));
 
-  // -------- EXPORT (only on button click) --------
   const exportProjectBalance = async ({
     selectedIds = [],
     selectAll = false,
@@ -466,6 +471,15 @@ export default function ProjectBalancesJoy() {
     }
   };
 
+  const handleStatusChange = (_, v) => {
+    const next = v ?? "";
+    const p = new URLSearchParams(params);
+    if (next) p.set("status", next);
+    else p.delete("status");
+    p.set("page", "1");
+    setParams(p, { replace: true });
+  };
+
   /* -------------------- render -------------------- */
   return (
     <Box sx={{ px: { xs: 1, md: 3 }, py: 2 }}>
@@ -656,17 +670,38 @@ export default function ProjectBalancesJoy() {
           maxWidth: "100%",
         }}
       >
+        {/* NEW: Status Tabs */}
+        <Tabs
+          size="sm"
+          value={status}
+          onChange={handleStatusChange}
+          sx={{ mr: "auto" }}
+        >
+          <TabList variant="soft" color="neutral">
+            <Tab value="">All</Tab>
+            <Tab value="ongoing">Ongoing</Tab>
+            <Tab value="books closed">Books Closed</Tab>
+          </TabList>
+        </Tabs>
+
         <Input
           size="sm"
           placeholder="Search by Project ID, Customer, or Name"
-          value={query}
+          value={searchParam}
           onChange={(e) => {
-            setQuery(e.target.value);
+            const val = e.target.value;
+            setQuery(val);
             setPage(1);
+            const p = new URLSearchParams(params);
+            if (val) p.set("search", val);
+            else p.delete("search");
+            p.set("page", "1");
+            setParams(p, { replace: true });
           }}
           startDecorator={<Search size={16} />}
           sx={{ flex: 1, minWidth: 280 }}
         />
+
         <Select
           size="sm"
           value={pageSize}
@@ -682,6 +717,7 @@ export default function ProjectBalancesJoy() {
             </Option>
           ))}
         </Select>
+
         <Tooltip title="Refresh (sync balances)">
           <span>
             <Button
@@ -701,6 +737,7 @@ export default function ProjectBalancesJoy() {
             </Button>
           </span>
         </Tooltip>
+
         <Button
           size="sm"
           variant="soft"
