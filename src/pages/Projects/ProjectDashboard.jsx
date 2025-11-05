@@ -12,12 +12,9 @@ function ProjectDashBoard() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
-  // ✅ useSearchParams hook
   const [searchParams, setSearchParams] = useSearchParams();
 
   const { data: projectResponse } = useGetProjectDropdownForDashboardQuery({
-    // page: 1,
-    // pageSize: 7,
   });
 
   const projects = Array.isArray(projectResponse)
@@ -26,19 +23,17 @@ function ProjectDashBoard() {
 
   const fields = [
     {
-      key: "projects", // 👈 lowercase to match URL ?projects=
+      key: "projects", 
       label: "Project By Name",
       type: "multiselect",
       options: projects.map((d) => ({ label: d.name, value: d._id })),
     },
   ];
 
-  // ✅ Load selectedIds from URL params initially
   const [selectedIds, setSelectedIds] = useState(
     searchParams.get("projects")?.split(",") || []
   );
 
-  // ✅ Keep URL in sync when selectedIds
   useEffect(() => {
     if (selectedIds.length > 0) {
       setSearchParams({ projects: selectedIds.join(",") });
@@ -123,7 +118,7 @@ function ProjectDashBoard() {
             onOpenChange={setOpen}
             fields={fields}
             title="Filters"
-            values={{ projects: selectedIds }} // 👈 controlled values
+            values={{ projects: selectedIds }}
             onApply={(values) => {
               setSelectedIds(values?.projects || []);
               setOpen(false);
