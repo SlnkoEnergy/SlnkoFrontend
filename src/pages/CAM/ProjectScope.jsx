@@ -157,6 +157,7 @@ function ProjectScope() {
         { label: "On Hold", value: "on_hold" },
         { label: "Delayed", value: "delayed" },
         { label: "Dead", value: "dead" },
+        {label: "Books Closed", value:"books closed"}
       ],
     },
     {

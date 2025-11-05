@@ -5,7 +5,7 @@ import Button from "@mui/joy/Button";
 import Sidebar from "../../component/Partials/Sidebar";
 import SubHeader from "../../component/Partials/SubHeader";
 import MainHeader from "../../component/Partials/MainHeader";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import LibraryAddOutlined from "@mui/icons-material/LibraryAddOutlined";
 import AddActivityModal from "./ActivityModal";
 import { useState } from "react";
@@ -15,11 +15,13 @@ import {
 } from "../../redux/projectsSlice";
 import { toast } from "react-toastify";
 import AllProjects from "../../component/AllProject";
+import Filter from "../../component/Partials/Filter";
 
 function ProjectManagement() {
   const navigate = useNavigate();
   const [openAdd, setOpenAdd] = useState(false);
-
+  const [open, setOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [pushActivity, { isLoading: isPushing }] =
     usePushActivityToProjectMutation();
   const [updateDependency, { isLoading: isUpdatingDeps }] =
@@ -76,7 +78,10 @@ function ProjectManagement() {
           "";
 
         if (!id) {
-          console.error("Missing master Activity _id for update. Payload:", payload);
+          console.error(
+            "Missing master Activity _id for update. Payload:",
+            payload
+          );
           toast.error("Missing activity id for existing activity.");
           return;
         }
@@ -90,9 +95,7 @@ function ProjectManagement() {
 
         // Build update body. Include type & order if present.
         const body = {
-          ...(payload.type
-            ? { type: String(payload.type).toLowerCase() }
-            : {}),
+          ...(payload.type ? { type: String(payload.type).toLowerCase() } : {}),
           ...(Number.isFinite(+payload.order) ? { order: +payload.order } : {}),
           ...(dependencies.length ? { dependencies } : {}),
           ...(predecessors.length ? { predecessors } : {}),
@@ -149,6 +152,24 @@ function ProjectManagement() {
       );
     }
   };
+
+  const fields = [
+    {
+      key: "tab",
+      label: "Filter by Project Status",
+      type: "select",
+      options: [
+        { label: "All", value: "" },
+        { label: "To Be Started", value: "to be started" },
+        { label: "Ongoing", value: "ongoing" },
+        { label: "Completed", value: "completed" },
+        { label: "On Hold", value: "on_hold" },
+        { label: "Delayed", value: "delayed" },
+        { label: "Dead", value: "dead" },
+        { label: "Books Closed", value: "books closed" },
+      ],
+    },
+  ];
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -220,23 +241,56 @@ function ProjectManagement() {
           isBackEnabled={false}
           sticky
           rightSlot={
-            <Button
-              size="sm"
-              variant="outlined"
-              sx={{
-                color: "#3366a3",
-                borderColor: "#3366a3",
-                backgroundColor: "transparent",
-                "--Button-hoverBg": "#e0e0e0",
-                "--Button-hoverBorderColor": "#3366a3",
-                "&:hover": { color: "#3366a3" },
-                height: "8px",
-              }}
-              startDecorator={<LibraryAddOutlined />}
-              onClick={() => setOpenAdd(true)}
-            >
-              Add Activity
-            </Button>
+            <>
+              <Button
+                size="sm"
+                variant="outlined"
+                sx={{
+                  color: "#3366a3",
+                  borderColor: "#3366a3",
+                  backgroundColor: "transparent",
+                  "--Button-hoverBg": "#e0e0e0",
+                  "--Button-hoverBorderColor": "#3366a3",
+                  "&:hover": { color: "#3366a3" },
+                  height: "8px",
+                }}
+                startDecorator={<LibraryAddOutlined />}
+                onClick={() => setOpenAdd(true)}
+              >
+                Add Activity
+              </Button>
+              <Filter
+                open={open}
+                onOpenChange={setOpen}
+                fields={fields}
+                title="Filters"
+                onApply={(values) => {
+                  setSearchParams((prev) => {
+                    const merged = Object.fromEntries(prev.entries());
+                    delete merged.tab;
+
+                    const next = {
+                      ...merged,
+                      page: "1",
+                      ...(values.tab && {
+                        tab: String(values.tab),
+                      }),
+                    };
+
+                    return next;
+                  });
+                  setOpen(false);
+                }}
+                onReset={() => {
+                  setSearchParams((prev) => {
+                    const merged = Object.fromEntries(prev.entries());
+                    delete merged.tab;
+                    delete merged.matchMode;
+                    return { ...merged, page: "1" };
+                  });
+                }}
+              />
+            </>
           }
         />
 
