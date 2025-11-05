@@ -7,9 +7,26 @@ import SubHeader from "../../component/Partials/SubHeader";
 import MainHeader from "../../component/Partials/MainHeader";
 import { Button } from "@mui/joy";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 function Inspection() {
   const navigate = useNavigate();
+
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = getUserData();
+    setUser(userData);
+  }, []);
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("userDetails");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
+
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -17,7 +34,7 @@ function Inspection() {
         <Sidebar />
         <MainHeader title="Engineering" sticky>
           <Box display="flex" gap={1}>
-            <Button
+            {(user?.name !== "Sujoy Mahata" || user?.name !== "Sarthak Sharma") ? (<Button
               size="sm"
               onClick={() => navigate(`/eng_dash`)}
               sx={{
@@ -35,7 +52,7 @@ function Inspection() {
               }}
             >
               All Projects
-            </Button>
+            </Button>) : null}
 
             <Button
               size="sm"
@@ -63,7 +80,7 @@ function Inspection() {
           isBackEnabled={false}
           sticky
         >
-          
+
         </SubHeader>
         <Box
           component="main"
