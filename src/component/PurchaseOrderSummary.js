@@ -71,8 +71,15 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const [bulkRemarks, setBulkRemarks] = useState("");
   const [bulkDate, setBulkDate] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const readStr = (key, fallback) => {
+    const v = searchParams.get(key);
+    return v != null ? v : fallback;
+  };
+  const initialSearch = readStr("search", "");
+
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
   const initialPage = parseInt(searchParams.get("page")) || 1;
   const initialPageSize = parseInt(searchParams.get("pageSize")) || 10;
   const [currentPage, setCurrentPage] = useState(initialPage);
@@ -297,8 +304,37 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
     return Array.isArray(getPO?.data) ? getPO.data : [];
   }, [getPO]);
 
+  const readInt = (key, fallback) => {
+    const v = parseInt(searchParams.get(key) || "", 10);
+    return Number.isFinite(v) && v > 0 ? v : fallback;
+  };
+
+
+  useEffect(() => {
+    const page = readInt("page", 1);
+    const size = readInt("pageSize", 10);
+    const search = readStr("search", "");
+    setCurrentPage(page);
+    setPerPage(size);
+    setSearchQuery(search);
+  }, [searchParams]);
+
+
+  const updateParams = (partial) => {
+    const current = Object.fromEntries(searchParams.entries());
+    Object.entries(partial).forEach(([k, v]) => {
+      if (v === undefined || v === "") delete current[k];
+      else current[k] = String(v);
+    });
+    setSearchParams(current);
+  };
+
   const handleSearch = (query) => {
-    setSearchQuery(query?.toLowerCase());
+    const q = (query || "").trim();
+    setSearchQuery(q);
+    updateParams({ search: q || undefined, page: 1, pageSize: perPage });
+    setCurrentPage(1);
+    setSelected([]);
   };
 
   const handleRowSelect = (_id) => {

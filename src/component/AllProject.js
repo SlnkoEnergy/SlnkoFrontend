@@ -81,7 +81,8 @@ function AllProjects() {
     if (t === "delayed") return "delayed";
     if (t === "completed") return "completed";
     if (t === "on hold") return "on hold";
-    if(t === "dead") return "dead";
+    if (t === "dead") return "dead";
+    if(t === "books closed") return "books closed";
     return t;
   }, [selectedTab]);
 
@@ -172,6 +173,7 @@ function AllProjects() {
     if (s === "to be started") return "warning";
     if (s === "ongoing") return "primary";
     if (s === "dead") return "danger";
+    if (s === "books closed") return "success";
     return "neutral";
   };
 
@@ -194,7 +196,7 @@ function AllProjects() {
   const submitStatusUpdate = async () => {
     if (!statusProjectId) return;
     try {
-      if(!statusForm.remarks){
+      if (!statusForm.remarks) {
         toast.error("Remarks is required!!");
         return;
       }
@@ -224,53 +226,7 @@ function AllProjects() {
           justifyContent={"space-between"}
           width={"100%"}
           alignItems={"center"}
-        >
-          <Tabs
-            value={selectedTab}
-            onChange={(event, newValue) => {
-              setSelectedTab(newValue);
-              setSearchParams((prev) => {
-                const newParams = new URLSearchParams(prev);
-                newParams.set("tab", newValue);
-                newParams.set("page", "1");
-                // keep search & pageSize
-                newParams.set("search", searchQuery || "");
-                newParams.set("pageSize", String(rowsPerPage));
-                return newParams;
-              });
-              setCurrentPage(1);
-            }}
-            sx={{ bgcolor: "background.level1", borderRadius: "xl" }}
-          >
-            <TabList sx={{ gap: 0.5 }}>
-              {[
-                "All",
-                "To Be Started",
-                "Ongoing",
-                "Completed",
-                "Delayed",
-                "On Hold",
-                "Dead"
-              ].map((label) => (
-                <Tab
-                  key={label}
-                  value={label}
-                  disableIndicator
-                  sx={{
-                    borderRadius: "xl",
-                    fontWeight: "sm",
-                    "&.Mui-selected": {
-                      bgcolor: "background.surface",
-                      boxShadow: "sm",
-                    },
-                  }}
-                >
-                  {label}
-                </Tab>
-              ))}
-            </TabList>
-          </Tabs>
-        </Box>
+        ></Box>
 
         <Box
           className="SearchAndFilters-tabletUp"
@@ -647,6 +603,7 @@ function AllProjects() {
                   <Option value="delayed">Delayed</Option>
                   <Option value="on hold">On hold</Option>
                   <Option value="dead">Dead</Option>
+                  <Option value="books closed">Books Closed</Option>
                 </Select>
               </FormControl>
 
