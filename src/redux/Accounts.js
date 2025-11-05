@@ -166,6 +166,7 @@ export const AccountsApi = createApi({
         basic_sales,
         gst_on_sales,
         sales_invoice,
+        isSales,
         files,
       }) => {
         const form = new FormData();
@@ -176,7 +177,7 @@ export const AccountsApi = createApi({
           form.append("gst_on_sales", gst_on_sales);
         if (sales_invoice) form.append("sales_invoice", sales_invoice);
         if (po_number) form.append("po_number", po_number);
-        if (sales_invoice) form.append("sales_invoice", sales_invoice);
+        if (isSales) form.append("isSales", isSales);
 
         if (Array.isArray(files)) {
           files.forEach((f) => {
@@ -189,6 +190,7 @@ export const AccountsApi = createApi({
             }
           });
         }
+
         const url = id ? `sales-update/${id}` : `sales-update/by-number`;
 
         return {
@@ -199,6 +201,30 @@ export const AccountsApi = createApi({
       },
       invalidatesTags: ["Accounts"],
     }),
+
+updateSalesDetailById : builder.mutation({
+  query: ({ salesId, basic_sales, gst_on_sales, sales_invoice, remarks }) => {
+    // Create a new FormData instance to send data as form data
+    const form = new FormData();
+
+    // Append the fields to the form data if they exist
+    if (basic_sales !== undefined) form.append("basic_sales", basic_sales);
+    if (gst_on_sales !== undefined) form.append("gst_on_sales", gst_on_sales);
+    if (sales_invoice) form.append("sales_invoice", sales_invoice);
+    if (remarks) form.append("remarks", remarks);
+
+    // Return the configuration for the PUT request
+    return {
+      url: `update-sales-details/${salesId}`, // URL for the API endpoint
+      method: "PUT",  // HTTP method
+      body: form,  // Form data as the request body
+    };
+  },
+  invalidatesTags: ["Accounts"], // Invalidate the "Accounts" tag after this mutation
+}),
+
+
+
 
     getExportPaymentHistory: builder.query({
       async queryFn({ po_number }, _queryApi, _extraOptions, fetchWithBQ) {
@@ -299,4 +325,5 @@ export const {
   useUpdateRequestExtensionMutation,
   useUpdateRestoreTrashMutation,
   useUpdateSalesPOMutation,
+  useUpdateSalesDetailByIdMutation,
 } = AccountsApi;
