@@ -33,7 +33,7 @@ const MOCK_ROWS = [
     reporting_tl: { _id: "a1", name: "ganshyam" },
     work_completion: { value: "52", unit: "M" },      // total
     current_work: { value: "23", unit: "M" },       // completed
-    milestones: [13, 26, 39],                         // 25%, 50%, 75% of total (52M)
+    milestones: [3, 14, 6],                         // 25%, 50%, 75% of total (52M)
     deadline: "242025-10-29T12:40:11.956+00:00",
   },
   {
@@ -43,8 +43,8 @@ const MOCK_ROWS = [
     activity_name: "Module Mounting Structure",
     reporting_tl: { _id: "a1", name: "ganshyam" },
     work_completion: { value: "45", unit: "percentage" }, // total (denom = 45 here)
-    current_work: { value: "23", unit: "percentage" },  // completed
-    milestones: [11.25, 22.5, 33.75],                     // 25%, 50%, 75% of 45
+    current_work: { value: "40", unit: "percentage" },  // completed
+    milestones: [11, 15, 14],                     // 25%, 50%, 75% of 45
     deadline: "242025-10-29T12:40:11.956+00:00",
   },
   {
@@ -239,7 +239,7 @@ function DPRTable() {
 
     return (
       <Tooltip title={tooltip} arrow variant="soft">
-        <Box sx={{ position: "relative", minWidth: 220, pr: showPercentLabel ? 6 : 0 }}>
+        <Box sx={{ position: "relative", minWidth: 150, pr: showPercentLabel ? 6 : 0 }}>
           <LinearProgress
             determinate
             value={pct100}
@@ -344,7 +344,7 @@ function DPRTable() {
     return { label: "Due now", color: "warning" };
   };
 
-  const DeadlineChip = ({ deadline, tickMs = 30000 }) => {
+  const DeadlineChip = (deadline, tickMs = 30000) => {
     const [now, setNow] = useState(() => Date.now());
 
     useEffect(() => {
@@ -353,6 +353,7 @@ function DPRTable() {
     }, [tickMs]);
 
     const parsed = useMemo(() => parseSafeDate(deadline), [deadline]);
+
 
     if (!parsed) {
       return (
@@ -537,7 +538,7 @@ function DPRTable() {
                   </td>
 
                   <td style={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
-                    {renderWorkPercent(row.current_work, row.work_completion)}
+                    {renderWorkPercent(row.current_work, row.work_completion, row.deadline, row.milestones)}
                   </td>
 
                   <td style={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
