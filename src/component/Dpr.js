@@ -17,6 +17,8 @@ import {
   Typography,
   Chip,
   LinearProgress,
+  Card,
+  CardContent,
 } from "@mui/joy";
 import { iconButtonClasses } from "@mui/joy/IconButton";
 import { useEffect, useMemo, useState } from "react";
@@ -94,6 +96,12 @@ function DPRTable() {
   const [currentPage, setCurrentPage] = useState(pageFromUrl);
   const [rowsPerPage, setRowsPerPage] = useState(pageSizeFromUrl);
   const [searchQuery, setSearchQuery] = useState(searchFromUrl);
+  const [expandedCard, setExpandedCard] = useState(null);
+
+
+  const toggleExpand = (id) => {
+    setExpandedCard(expandedCard === id ? null : id);
+  };
 
   // keep local state in sync with URL nav (back/forward)
   useEffect(() => {
@@ -411,6 +419,25 @@ function DPRTable() {
     );
   };
 
+  const DPRCard = ({ currentPage, project_code, project_name }) => {
+
+    return (
+      <>
+        <Box>
+          <span
+            style={{ cursor: "pointer", fontWeight: 500 }}
+          >
+            {project_code || "-"}
+          </span>
+        </Box>
+        <Box display="flex" alignItems="center" mt={0.5}>
+          <span style={{ fontSize: 12, fontWeight: 600 }}>
+            {project_name || "-"}
+          </span>
+        </Box>
+      </>
+    )
+  }
 
   return (
     <Box
@@ -613,6 +640,246 @@ function DPRTable() {
           </tbody>
         </Box>
       </Sheet >
+
+      <Box
+        sx={{
+          display: { xs: "flex", md: "none" },
+          flexDirection: "column",
+          gap: 2,
+          p: 2,
+        }}
+      >
+
+        {pageRows.length > 0 ? (
+          pageRows.map((row) => {
+
+            return (
+              <Card key={row._id} variant="outlined">
+
+                <CardContent>
+                  <Box
+                    display="flex"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    mb={1}
+                  >
+                    <Typography level="title-md">
+                      <Box
+                        sx={{
+                          display: "inline",
+                          textUnderlineOffset: "2px",
+                          textDecorationColor: "#999",
+                        }}
+
+                      >
+                        <DPRCard
+                          currentPage={currentPage}
+                          project_code={row.project_code}
+                          project_name={row.project_name}
+                        />
+                      </Box>
+                    </Typography>
+                    {DeadlineChip(row.deadline)}
+                  </Box>
+
+                  <Button
+                    size="sm"
+                    onClick={() => toggleExpand(row._id)}
+                    variant="soft"
+                    fullWidth
+                  >
+                    {expandedCard === row._id ? "Hide Details" : "View Details"}
+                  </Button>
+
+                  {expandedCard === row._id && (
+                    <Box mt={1} pl={1}>
+                      <Typography level="body-sm">
+                        <strong>Activity:</strong> {row.activity_name}
+                      </Typography>
+                      <Typography level="body-sm" mt={2}>
+                        <strong>Work Detail:</strong> {renderWorkPercent(row.current_work, row.work_completion, row.deadline, row.milestones)}
+                      </Typography>
+                    </Box>
+                  )}
+                </CardContent>
+
+              </Card>
+            );
+          })
+
+        ) : (
+          <Typography textAlign="center" fontStyle="italic">
+            No data available
+          </Typography>
+        )}
+
+      </Box>
+
+
+      {/* <Box
+        sx={{
+          display: { xs: "flex", md: "none" },
+          flexDirection: "column",
+          gap: 2,
+          p: 2,
+        }}
+      >
+        {paginatedExpenses.length > 0 ? (
+          paginatedExpenses.map((expense) => {
+            const requested = Number(expense.total_requested_amount || 0);
+            const approved = Number(expense.total_approved_amount || 0);
+            const rejected = requested - approved;
+            const disbursement = expense.disbursement_date
+              ? new Date(expense.disbursement_date).toLocaleDateString("en-GB")
+              : "-";
+            const status =
+              typeof expense.current_status === "string"
+                ? expense.current_status
+                : expense.current_status?.status || "";
+
+            const remarks =
+              expense.current_status?.remarks?.trim() || "No remarks provided";
+
+            const getStatusChip = () => {
+              switch (status) {
+                case "draft":
+                case "submitted":
+                  return (
+                    <Chip color="warning" variant="soft" size="sm">
+                      Pending
+                    </Chip>
+                  );
+                case "manager approval":
+                  return (
+                    <Chip color="info" variant="soft" size="sm">
+                      Manager Approved
+                    </Chip>
+                  );
+                case "hr approval":
+                  return (
+                    <Chip color="primary" variant="soft" size="sm">
+                      HR Approved
+                    </Chip>
+                  );
+                case "final approval":
+                  return (
+                    <Chip color="success" variant="soft" size="sm">
+                      Approved
+                    </Chip>
+                  );
+                case "hold":
+                  return (
+                    <Chip color="neutral" variant="soft" size="sm">
+                      On Hold
+                    </Chip>
+                  );
+                case "rejected":
+                  return (
+                    <>
+                      <Box
+                        display="flex"
+                        alignItems="center"
+                        gap={1}
+                        flexWrap="wrap"
+                      >
+                        <Chip variant="soft" color="danger" size="sm">
+                          Rejected
+                        </Chip>
+                        <IconButton
+                          size="sm"
+                          variant="outlined"
+                          color="danger"
+                          onClick={() => setOpen(true)}
+                        >
+                          <InfoIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+
+                      <Modal open={open} onClose={() => setOpen(false)}>
+                        <ModalDialog size="sm" layout="center">
+                          <Typography level="title-md" mb={1}>
+                            Rejection Reason
+                          </Typography>
+                          <Typography level="body-sm">{remarks}</Typography>
+                        </ModalDialog>
+                      </Modal>
+                    </>
+                  );
+                default:
+                  return (
+                    <Chip variant="outlined" size="sm">
+                      -
+                    </Chip>
+                  );
+              }
+            };
+
+            return (
+              <Card key={expense._id} variant="outlined">
+                <CardContent>
+                  <Box
+                    display="flex"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    mb={1}
+                  >
+                    <Typography level="title-md">
+                      <Box
+                        sx={{
+                          display: "inline",
+
+                          textUnderlineOffset: "2px",
+                          textDecorationColor: "#999",
+                        }}
+                      >
+                        <ExpenseCode
+                          currentPage={currentPage}
+                          expense_code={expense.expense_code}
+                          createdAt={expense.createdAt}
+                        />
+                      </Box>
+                    </Typography>
+                    {getStatusChip()}
+                  </Box>
+
+                  <Button
+                    size="sm"
+                    onClick={() => toggleExpand(expense._id)}
+                    variant="soft"
+                    fullWidth
+                  >
+                    {expandedCard === expense._id
+                      ? "Hide Details"
+                      : "View Details"}
+                  </Button>
+
+                  {expandedCard === expense._id && (
+                    <Box mt={1} pl={1}>
+                      <Typography level="body-sm">
+                        <strong>Requested:</strong> {requested}
+                      </Typography>
+                      <Typography level="body-sm">
+                        <strong>Approved:</strong> {approved}
+                      </Typography>
+                      <Typography level="body-sm">
+                        <strong>Rejected:</strong>{" "}
+                        {isNaN(rejected) ? "0" : rejected}
+                      </Typography>
+                      <Typography level="body-sm">
+                        <strong>Disbursement Date:</strong> {disbursement}
+                      </Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })
+        ) : (
+          <Typography textAlign="center" fontStyle="italic">
+            No data available
+          </Typography>
+        )}
+      </Box> */}
 
       {/* Pagination */}
       < Box
