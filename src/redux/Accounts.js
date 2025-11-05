@@ -110,45 +110,59 @@ export const AccountsApi = createApi({
       providesTags: ["Accounts"],
     }),
 
- getCustomerSummary: builder.query({
-  query: ({
-    p_id,
-    _id,
-    start,
-    end,
-    searchClient,
-    searchDebit,
-    searchAdjustment,
-    tab,
-    page = 1,
-    pageSize = 20,
-  }) => {
-    const params = new URLSearchParams();
+    getCustomerSummary: builder.query({
+      query: ({
+        p_id,
+        _id,
+        start,
+        end,
+        searchClient,
+        searchDebit,
+        searchAdjustment,
+        tab,
+        page = 1,
+        pageSize = 20,
+      }) => {
+        const params = new URLSearchParams();
 
-    if (_id) params.append("_id", _id);
-    else if (p_id) params.append("p_id", p_id);
+        if (_id) params.append("_id", _id);
+        else if (p_id) params.append("p_id", p_id);
 
-    if (start) params.append("start", start);
-    if (end) params.append("end", end);
-    if (searchClient) params.append("searchClient", searchClient);
-    if (searchDebit) params.append("searchDebit", searchDebit);
-    if (searchAdjustment) params.append("searchAdjustment", searchAdjustment);
-    if (tab) params.append("tab", tab.toLowerCase());
-    params.append("page", page);
-    params.append("pageSize", pageSize);
+        if (start) params.append("start", start);
+        if (end) params.append("end", end);
+        if (searchClient) params.append("searchClient", searchClient);
+        if (searchDebit) params.append("searchDebit", searchDebit);
+        if (searchAdjustment)
+          params.append("searchAdjustment", searchAdjustment);
+        if (tab) params.append("tab", tab.toLowerCase());
+        params.append("page", page);
+        params.append("pageSize", pageSize);
 
-    return `accounting/customer-payment-summary?${params}`;
-  },
-  transformResponse: (res) => ({
-    adjustment: { history: [], totalCredit: 0, totalDebit: 0, ...(res?.adjustment || {}) },
-    ...res,
-  }),
-  providesTags: ["Accounts"],
-}),
-
+        return `accounting/customer-payment-summary?${params}`;
+      },
+      transformResponse: (res) => ({
+        adjustment: {
+          history: [],
+          totalCredit: 0,
+          totalDebit: 0,
+          ...(res?.adjustment || {}),
+        },
+        ...res,
+      }),
+      providesTags: ["Accounts"],
+    }),
 
     updateSalesPO: builder.mutation({
-      query: ({ id, po_number, remarks, basic_sales, gst_on_sales,sales_invoice, files }) => {
+      query: ({
+        id,
+        po_number,
+        remarks,
+        basic_sales,
+        gst_on_sales,
+        sales_invoice,
+        isSales,
+        files,
+      }) => {
         const form = new FormData();
 
         if (remarks) form.append("remarks", remarks);
@@ -157,7 +171,7 @@ export const AccountsApi = createApi({
           form.append("gst_on_sales", gst_on_sales);
         if (sales_invoice) form.append("sales_invoice", sales_invoice);
         if (po_number) form.append("po_number", po_number);
-         if (sales_invoice) form.append("sales_invoice", sales_invoice);
+        if (isSales) form.append("isSales", isSales);
 
         if (Array.isArray(files)) {
           files.forEach((f) => {
@@ -170,6 +184,7 @@ export const AccountsApi = createApi({
             }
           });
         }
+
         const url = id ? `sales-update/${id}` : `sales-update/by-number`;
 
         return {
@@ -180,6 +195,30 @@ export const AccountsApi = createApi({
       },
       invalidatesTags: ["Accounts"],
     }),
+
+updateSalesDetailById : builder.mutation({
+  query: ({ salesId, basic_sales, gst_on_sales, sales_invoice, remarks }) => {
+    // Create a new FormData instance to send data as form data
+    const form = new FormData();
+
+    // Append the fields to the form data if they exist
+    if (basic_sales !== undefined) form.append("basic_sales", basic_sales);
+    if (gst_on_sales !== undefined) form.append("gst_on_sales", gst_on_sales);
+    if (sales_invoice) form.append("sales_invoice", sales_invoice);
+    if (remarks) form.append("remarks", remarks);
+
+    // Return the configuration for the PUT request
+    return {
+      url: `update-sales-details/${salesId}`, // URL for the API endpoint
+      method: "PUT",  // HTTP method
+      body: form,  // Form data as the request body
+    };
+  },
+  invalidatesTags: ["Accounts"], // Invalidate the "Accounts" tag after this mutation
+}),
+
+
+
 
     getExportPaymentHistory: builder.query({
       async queryFn({ po_number }, _queryApi, _extraOptions, fetchWithBQ) {
@@ -280,4 +319,5 @@ export const {
   useUpdateRequestExtensionMutation,
   useUpdateRestoreTrashMutation,
   useUpdateSalesPOMutation,
+  useUpdateSalesDetailByIdMutation,
 } = AccountsApi;
