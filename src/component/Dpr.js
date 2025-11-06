@@ -31,82 +31,45 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
 
-/** ---------- Mock rows (replace with API later) ---------- */
-const MOCK_ROWS = [
-  {
-    _id: "u1-a1",
-    project_code: "PRJ/code",
-    project_name: "ramlal",
-    activity_name: "Module Mounting Structure",
-    reporting_tl: { _id: "a1", name: "ganshyam" },
-    work_completion: { value: "52", unit: "M" },           // total planned
-    current_work: { value: "23", unit: "M" },              // completed till date
-    milestones: [3, 14, 6],                                 // deltas (sum to checkpoints)
-    deadline: "242025-11-07T12:40:11.956+00:00",
-  },
-  {
-    _id: "u2-a1",
-    project_code: "PRJ/code",
-    project_name: "ramlal",
-    activity_name: "Module Mounting Structure",
-    reporting_tl: { _id: "a1", name: "ganshyam" },
-    work_completion: { value: "45", unit: "percentage" },   // total/denominator = 45
-    current_work: { value: "40", unit: "percentage" },      // completed till date
-    milestones: [11, 15, 10],
-    deadline: "242025-11-15T12:40:11.956+00:00",
-  },
-  {
-    _id: "u3-a1",
-    project_code: "PRJ/code",
-    project_name: "ramlal",
-    activity_name: "Module Mounting Structure",
-    reporting_tl: { _id: "a1", name: "ganshyam" },
-    work_completion: { value: "45", unit: "Number" },
-    current_work: { value: "23", unit: "Number" },
-    milestones: [11, 22, 34],
-    deadline: "242025-11-05T12:40:11.956+00:00",
-  },
-  {
-    _id: "u4-a1",
-    project_code: "PRJ/code",
-    project_name: "ramlal",
-    activity_name: "Module Mounting Structure",
-    reporting_tl: { _id: "a1", name: "ganshyam" },
-    work_completion: { value: "45", unit: "Kg" },
-    current_work: { value: "9", unit: "Kg" },
-    milestones: [11, 22, 34],
-    deadline: "242025-10-29T12:40:11.956+00:00",
-  },
-  {
-    _id: "u4-a2", // fixed duplicate id
-    project_code: "PRJ/code",
-    project_name: "ramlal",
-    activity_name: "Module Mounting Structure",
-    reporting_tl: { _id: "a1", name: "ganshyam" },
-    work_completion: { value: "45", unit: "Kg" },
-    current_work: { value: "45", unit: "Kg" },
-    milestones: [11, 22, 34],
-    deadline: "242025-10-29T12:40:11.956+00:00",
-  },
-];
+// RTK Query hooks
+import {
+  useGetAllDprQuery,
+  useUpdateDprLogMutation, // ⬅️ added
+} from "../../src/redux/projectsSlice";
+
+/** dd-mm-yyyy -> ISO (UTC midnight) */
+const ddmmyyyyToISO = (s) => {
+  if (!s) return null;
+  const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(String(s).trim());
+  if (!m) return null;
+  const [, dd, mm, yyyy] = m;
+  return new Date(Date.UTC(+yyyy, +mm - 1, +dd, 0, 0, 0)).toISOString();
+};
 
 function DPRTable() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   /** ===== URL-backed state ===== */
-  const pageFromUrl = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
-  const pageSizeFromUrl = Math.max(1, parseInt(searchParams.get("pageSize") || "10", 10));
+  const pageFromUrl = Math.max(
+    1,
+    parseInt(searchParams.get("page") || "1", 10)
+  );
+  const pageSizeFromUrl = Math.max(
+    1,
+    parseInt(searchParams.get("pageSize") || "10", 10)
+  );
   const searchFromUrl = searchParams.get("search") || "";
+  const projectIdFromUrl = searchParams.get("projectId") || undefined;
+  const fromFromUrl = searchParams.get("from") || undefined;
+  const toFromUrl = searchParams.get("to") || undefined;
+  const onlyWithDeadlineFromUrl =
+    searchParams.get("onlyWithDeadline") || undefined;
 
   const [currentPage, setCurrentPage] = useState(pageFromUrl);
   const [rowsPerPage, setRowsPerPage] = useState(pageSizeFromUrl);
   const [searchQuery, setSearchQuery] = useState(searchFromUrl);
   const [expandedCard, setExpandedCard] = useState(null);
   const [actionType, setActionType] = useState("progress"); // "progress" | "idle" | "stop"
-
-
-  // NEW: make rows stateful so we can update after logging progress
-  const [rows, setRows] = useState(MOCK_ROWS);
 
   const toggleExpand = (id) => setExpandedCard(expandedCard === id ? null : id);
 
@@ -124,29 +87,82 @@ function DPRTable() {
   const [selected, setSelected] = useState([]);
   const options = [1, 5, 10, 20, 50, 100];
 
-  /** ===== Data (mock now, API later) ===== */
-  const isLoading = false; // set to true while integrating API
-  const allRows = rows;
+  /** ===== API ===== */
+  const { data, isFetching, isLoading, isError, error } = useGetAllDprQuery({
+    page: currentPage,
+    limit: rowsPerPage,
+    search: searchQuery || "",
+    projectId: projectIdFromUrl,
+    from: fromFromUrl,
+    to: toFromUrl,
+    onlyWithDeadline: onlyWithDeadlineFromUrl,
+  });
 
-  /** ===== Helpers for units & numbers ===== */
+  // ⬇️ mutation hook
+  const [updateDprLog, { isLoading: isUpdating, error: updateErr }] =
+    useUpdateDprLogMutation();
+
+  /** ===== Normalize rows to match UI (also store IDs for mutation) ===== */
+  const pageRows = useMemo(() => {
+    const rows = Array.isArray(data?.rows) ? data.rows : [];
+    return rows.map((r, idx) => {
+      const deadlineStr = r.deadline || null; // keep dd-mm-yyyy
+      const deadlineISO = deadlineStr ? ddmmyyyyToISO(deadlineStr) : null; // for math
+
+      // Try to derive IDs from common field names
+      const projectId =
+        r.projectId ||
+        r.project_id ||
+        r.project?._id ||
+        r.project?._idProject ||
+        null;
+
+      const activityId =
+        r.activityId ||
+        r.activity_id ||
+        r._id || // if your API returns activity _id as _id
+        r.activity?._id ||
+        null;
+
+      return {
+        _id:
+          r._id || `${r.project_code || "p"}|${r.activity_name || "a"}|${idx}`,
+        projectId,
+        activityId,
+        project_code: r.project_code || "-",
+        project_name: r.project_name || "-",
+        activity_name: r.activity_name || "-",
+        work_completion: { value: r.value ?? null, unit: r.unit ?? "" }, // denominator
+        current_work: { value: r.todays_progress ?? null, unit: r.unit ?? "" }, // numerator (cumulative vs today - per your API)
+        milestones: [],
+        deadlineISO, // for math
+        deadlineStr, // display as dd-mm-yyyy
+      };
+    });
+  }, [data]);
+
+  const total = data?.total ?? 0;
+  const totalPages =
+    data?.totalPages ?? Math.max(1, Math.ceil(total / rowsPerPage));
+
+  /** ===== numbers helpers ===== */
   const toNum = (v) => {
     const n = Number(v);
     return Number.isFinite(n) ? n : 0;
   };
-
   const getTotal = (r) => toNum(r?.work_completion?.value);
   const getCompleted = (r) => toNum(r?.current_work?.value);
-  const getUnit = (r) => (r?.work_completion?.unit || r?.current_work?.unit || "").toString();
+  const getUnit = (r) =>
+    (r?.work_completion?.unit || r?.current_work?.unit || "").toString();
 
-  /** ===== search filter (case-insensitive) ===== */
+  /** ===== search filter (client side) ===== */
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return allRows;
-    return allRows.filter((r) => {
+    if (!q) return pageRows;
+    return pageRows.filter((r) => {
       const unit = getUnit(r);
       const val = String(r?.work_completion?.value ?? "");
       return (
-        (r.engineer_name || "").toLowerCase().includes(q) ||
         (r.activity_name || "").toLowerCase().includes(q) ||
         (r.project_code || "").toLowerCase().includes(q) ||
         (r.project_name || "").toLowerCase().includes(q) ||
@@ -154,21 +170,25 @@ function DPRTable() {
         val.includes(q)
       );
     });
-  }, [allRows, searchQuery]);
+  }, [pageRows, searchQuery]);
 
-  /** ===== pagination ===== */
-  const total = filtered.length;
-  const totalPages = Math.max(1, Math.ceil(total / rowsPerPage));
+  /** ===== pagination (client-side over filtered) ===== */
   const startIdx = (currentPage - 1) * rowsPerPage;
-  const pageRows = filtered.slice(startIdx, startIdx + rowsPerPage);
+  const viewRows = filtered.slice(startIdx, startIdx + rowsPerPage);
 
   const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
+    const maxPage = totalPages;
+    if (page >= 1 && page <= maxPage) {
       setSearchParams((prev) => {
         const p = new URLSearchParams(prev);
         p.set("page", String(page));
         p.set("pageSize", String(rowsPerPage));
         p.set("search", searchQuery || "");
+        if (projectIdFromUrl) p.set("projectId", projectIdFromUrl);
+        if (fromFromUrl) p.set("from", fromFromUrl);
+        if (toFromUrl) p.set("to", toFromUrl);
+        if (onlyWithDeadlineFromUrl)
+          p.set("onlyWithDeadline", onlyWithDeadlineFromUrl);
         return p;
       });
       setCurrentPage(page);
@@ -176,15 +196,15 @@ function DPRTable() {
     }
   };
 
-  const handleSelectAll = (event) => {
-    if (event.target.checked) setSelected(pageRows.map((r) => r._id));
+  const handleSelectAll = (e) => {
+    if (e.target.checked) setSelected(viewRows.map((r) => r._id));
     else setSelected([]);
   };
-
   const handleRowSelect = (_id) => {
-    setSelected((prev) => (prev.includes(_id) ? prev.filter((x) => x !== _id) : [...prev, _id]));
+    setSelected((prev) =>
+      prev.includes(_id) ? prev.filter((x) => x !== _id) : [...prev, _id]
+    );
   };
-
   const handleSearchChange = (query) => {
     setSearchQuery(query);
     setSearchParams((prev) => {
@@ -192,12 +212,17 @@ function DPRTable() {
       p.set("search", query);
       p.set("page", "1");
       p.set("pageSize", String(rowsPerPage));
+      if (projectIdFromUrl) p.set("projectId", projectIdFromUrl);
+      if (fromFromUrl) p.set("from", fromFromUrl);
+      if (toFromUrl) p.set("to", toFromUrl);
+      if (onlyWithDeadlineFromUrl)
+        p.set("onlyWithDeadline", onlyWithDeadlineFromUrl);
       return p;
     });
     setCurrentPage(1);
   };
 
-  /** ===== Dates & Progress UI ===== */
+  /** ===== Progress bar UI ===== */
   const diffInDays = (deadline) => {
     if (!deadline) return null;
     const d = new Date(deadline);
@@ -211,17 +236,28 @@ function DPRTable() {
     { max: 50, color: "neutral", label: "26–50%" },
     { max: 75, color: "primary", label: "51–75%" },
     { max: 99, color: "success", label: "76–99%" },
-    { max: 100, color: "success", sx: { "--LinearProgress-progressColor": "var(--joy-palette-success-700)" }, label: "100%" },
+    {
+      max: 100,
+      color: "success",
+      sx: {
+        "--LinearProgress-progressColor": "var(--joy-palette-success-700)",
+      },
+      label: "100%",
+    },
   ];
-
   const getBandFor = (pct) => {
     for (const b of PROGRESS_BANDS) if (pct <= b.max) return b;
     return PROGRESS_BANDS[PROGRESS_BANDS.length - 1];
   };
-
   const clamp02 = (x) => Math.max(0, Math.min(1, x));
 
-  const renderWorkPercent = (wc, tw, deadline, milestones = [], showPercentLabel = true) => {
+  const renderWorkPercent = (
+    wc,
+    tw,
+    deadline,
+    milestones = [],
+    showPercentLabel = true
+  ) => {
     if (!wc || wc.value == null || !tw || tw.value == null) return "-";
 
     const unit = (tw.unit || wc.unit || "").toString();
@@ -244,10 +280,10 @@ function DPRTable() {
       days == null
         ? "No deadline"
         : days > 0
-          ? `${days} day${days === 1 ? "" : "s"} left`
-          : days === 0
-            ? "Due today"
-            : `Overdue by ${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"}`;
+        ? `${days} day${days === 1 ? "" : "s"} left`
+        : days === 0
+        ? "Due today"
+        : `Overdue by ${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"}`;
 
     const tooltip = (
       <Box sx={{ p: 0.5 }}>
@@ -280,7 +316,13 @@ function DPRTable() {
 
     return (
       <Tooltip title={tooltip} arrow variant="soft">
-        <Box sx={{ position: "relative", minWidth: 150, pr: showPercentLabel ? 6 : 0 }}>
+        <Box
+          sx={{
+            position: "relative",
+            minWidth: 150,
+            pr: showPercentLabel ? 6 : 0,
+          }}
+        >
           <LinearProgress
             determinate
             value={pct100}
@@ -333,62 +375,24 @@ function DPRTable() {
     );
   };
 
-  const repairDeadlineString = (raw) => {
-    if (!raw) return null;
-    const s = String(raw).trim();
-    if (/^24(?=\d{4}-\d{2}-\d{2}T)/.test(s)) {
-      return s.replace(/^24(?=\d{4}-\d{2}-\d{2}T)/, "");
-    }
-    return s;
-  };
-
-  const parseSafeDate = (raw) => {
-    const repaired = repairDeadlineString(raw);
-    if (!repaired) return null;
-    const d = new Date(repaired);
-    return isNaN(d.getTime()) ? null : d;
-  };
-
-  const fmtAbs = (d) =>
-    d.toLocaleString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-  const humanCountdown = (msDiff) => {
-    const abs = Math.abs(msDiff);
-    const min = 60 * 1000;
-    const hr = 60 * min;
-    const day = 24 * hr;
-    const d = Math.floor(abs / day);
-    const h = Math.floor((abs % day) / hr);
-    const m = Math.floor((abs % hr) / min);
-
-    if (msDiff > 0) {
-      if (d >= 2) return { label: `Due in ${d}d`, color: "primary" };
-      if (d === 1) return { label: "Due in 1d", color: "warning" };
-      if (h >= 2) return { label: `Due in ${h}h ${m}m`, color: "warning" };
-      if (h >= 1) return { label: `Due in ${h}h ${m}m`, color: "danger" };
-      return { label: `Due in ${m}m`, color: "danger" };
-    } else if (msDiff < 0) {
-      if (d >= 1) return { label: `Overdue by ${d}d`, color: "danger" };
-      if (h >= 1) return { label: `Overdue by ${h}h ${m}m`, color: "danger" };
-      return { label: `Overdue by ${m}m`, color: "danger" };
-    }
-    return { label: "Due now", color: "warning" };
-  };
-
-  const DeadlineChip = (deadline, tickMs = 30000) => {
+  /** ===== DeadlineChip (dd-mm-yyyy display) ===== */
+  function DeadlineChip({ dateStr, tickMs = 30000 }) {
     const [now, setNow] = useState(() => Date.now());
     useEffect(() => {
       const id = setInterval(() => setNow(Date.now()), tickMs);
       return () => clearInterval(id);
     }, [tickMs]);
 
-    const parsed = useMemo(() => parseSafeDate(deadline), [deadline]);
+    const parsed = useMemo(() => {
+      if (!dateStr) return null;
+      const s = String(dateStr).trim();
+      const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(s);
+      if (!m) return null;
+      const [, dd, mm, yyyy] = m;
+      const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd), 0, 0, 0, 0);
+      return isNaN(d.getTime()) ? null : d;
+    }, [dateStr]);
+
     if (!parsed) {
       return (
         <Chip size="sm" variant="soft" color="neutral" sx={{ fontWeight: 700 }}>
@@ -396,36 +400,88 @@ function DPRTable() {
         </Chip>
       );
     }
+
     const diff = parsed.getTime() - now;
-    const { label, color } = humanCountdown(diff);
+
+    const abs = Math.abs(diff);
+    const min = 60 * 1000;
+    const hr = 60 * min;
+    const day = 24 * hr;
+    const d = Math.floor(abs / day);
+    const h = Math.floor((abs % day) / hr);
+    const m = Math.floor((abs % hr) / min);
+
+    let label = "Due now";
+    let color = "warning";
+
+    if (diff > 0) {
+      if (d >= 2) {
+        label = `Due in ${d}d`;
+        color = "primary";
+      } else if (d === 1) {
+        label = "Due in 1d";
+        color = "warning";
+      } else if (h >= 2) {
+        label = `Due in ${h}h ${m}m`;
+        color = "warning";
+      } else if (h >= 1) {
+        label = `Due in ${h}h ${m}m`;
+        color = "danger";
+      } else {
+        label = `Due in ${m}m`;
+        color = "danger";
+      }
+    } else if (diff < 0) {
+      if (d >= 1) {
+        label = `Overdue by ${d}d`;
+        color = "danger";
+      } else if (h >= 1) {
+        label = `Overdue by ${h}h ${m}m`;
+        color = "danger";
+      } else {
+        label = `Overdue by ${m}m`;
+        color = "danger";
+      }
+    }
 
     return (
-      <Tooltip arrow title={fmtAbs(parsed)}>
-        <Chip size="sm" variant="soft" color={color} sx={{ fontWeight: 700 }}>
-          {label}
+      <Tooltip arrow title={label}>
+        <Chip
+          size="sm"
+          variant="soft"
+          color={color}
+          sx={{ fontWeight: 700, cursor: "default" }}
+        >
+          {dateStr}
         </Chip>
       </Tooltip>
     );
-  };
+  }
 
   const DPRCard = ({ project_code, project_name }) => (
     <>
       <Box>
-        <span style={{ cursor: "pointer", fontWeight: 500 }}>{project_code || "-"}</span>
+        <span style={{ cursor: "pointer", fontWeight: 500 }}>
+          {project_code || "-"}
+        </span>
       </Box>
       <Box display="flex" alignItems="center" mt={0.5}>
-        <span style={{ fontSize: 12, fontWeight: 600 }}>{project_name || "-"}</span>
+        <span style={{ fontSize: 12, fontWeight: 600 }}>
+          {project_name || "-"}
+        </span>
       </Box>
     </>
   );
 
   /** ==========================
-   *  NEW: Progress Modal state
+   *  Progress Modal state
    *  ========================== */
   const [progressOpen, setProgressOpen] = useState(false);
   const [progressRow, setProgressRow] = useState(null);
   const [progressQty, setProgressQty] = useState("");
-  const [progressDate, setProgressDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [progressDate, setProgressDate] = useState(() =>
+    new Date().toISOString().slice(0, 10)
+  );
   const [progressRemarks, setProgressRemarks] = useState("");
 
   const openProgressFor = (row) => {
@@ -433,9 +489,76 @@ function DPRTable() {
     setProgressQty("");
     setProgressDate(new Date().toISOString().slice(0, 10));
     setProgressRemarks("");
+    setActionType("progress");
+     setSearchParams((prev) => {
+   const p = new URLSearchParams(prev);
+   console.log(row.projectId);
+   console.log(row.activityId);
+   if (row?.projectId)  p.set("projectId", String(row.projectId));
+   if (row?.activityId) p.set("activityId", String(row.activityId));
+   return p;
+ });
     setProgressOpen(true);
   };
   const closeProgress = () => setProgressOpen(false);
+
+  // Optimistic local update helper
+  const applyOptimistic = ({ row, addedQty }) => {
+    if (!row) return;
+    const id = row._id;
+    // This list renders from 'data', so it will refresh after invalidation.
+    // Still, add a quick optimistic feel by updating current row object.
+    row.current_work = {
+      ...row.current_work,
+      value: String(toNum(row.current_work?.value) + toNum(addedQty)),
+    };
+  };
+
+  // Main submit
+  const submitWith = async (statusOverride) => {
+    const row = progressRow;
+    if (!row) return;
+
+    const status = statusOverride || actionType || "progress";
+    const qtyNum = toNum(progressQty);
+
+    // validations
+    console.log("submit",row.projectId);
+    console.log(row.activityId);
+    if (!row.projectId || !row.activityId) {
+      alert(
+        "Missing projectId or activityId for this row. Please check API data mapping."
+      );
+      return;
+    }
+    if (status === "progress" && qtyNum <= 0) {
+      alert("Enter a valid progress quantity (> 0).");
+      return;
+    }
+
+    try {
+      const payload = {
+        projectId: row.projectId,
+        activityId: row.activityId,
+        todays_progress: qtyNum,
+        date: progressDate, // yyyy-mm-dd
+        remarks: (progressRemarks || "").trim(),
+        status, // "progress" | "idle" | "stop"
+      };
+
+      await updateDprLog(payload).unwrap();
+
+      // optimistic touch (optional)
+      if (status === "progress" && qtyNum > 0) {
+        applyOptimistic({ row, addedQty: qtyNum });
+      }
+
+      closeProgress();
+    } catch (e) {
+      console.error("Update DPR Log failed:", e);
+      // The UI shows a message under buttons via updateErr as well.
+    }
+  };
 
   const computedModalNumbers = () => {
     if (!progressRow) return { total: 0, done: 0, remain: 0, unit: "" };
@@ -448,67 +571,6 @@ function DPRTable() {
     return { total, done, remain, unit, qty, newDone };
   };
 
-  // const handleSubmitProgress = async () => {
-  //   if (!progressRow) return;
-
-  //   const { total, done, unit, qty, newDone } = computedModalNumbers();
-
-  //   if (!Number.isFinite(qty) || qty <= 0) {
-  //     alert("Enter a valid progress quantity (> 0).");
-  //     return;
-  //   }
-
-  //   // If unit is "percentage" but denominator is not 100, we still respect your data model:
-  //   // `total` is denominator, so newDone must not exceed total unless you want to allow overshoot.
-  //   if (newDone > total) {
-  //     const ok = confirm(
-  //       `This will exceed the total (${newDone} > ${total} ${unit}). Continue?`
-  //     );
-  //     if (!ok) return;
-  //   }
-
-  //   // --- Build payload for API (replace with your real fields) ---
-  //   const payload = {
-  //     activity_id: progressRow._id,
-  //     project_code: progressRow.project_code,
-  //     project_name: progressRow.project_name,
-  //     activity_name: progressRow.activity_name,
-  //     unit,
-  //     total_planned: total,
-  //     completed_till_yesterday: done,
-  //     today_progress: qty,
-  //     new_cumulative: newDone,
-  //     date: progressDate, // YYYY-MM-DD
-  //     remarks: progressRemarks.trim(),
-  //   };
-
-  //   console.log("Submitting progress payload:", payload);
-
-  //   /** Example axios call (uncomment & replace URL + auth)
-  //    *
-  //    * try {
-  //    *   await axios.post("/v1/dpr/log-progress", payload, { headers: { Authorization: `Bearer ${token}` }});
-  //    * } catch (err) {
-  //    *   console.error(err);
-  //    *   return alert(err?.response?.data?.message || "Failed to submit progress");
-  //    * }
-  //    */
-
-  //   // Update UI locally (until API integration):
-  //   setRows((prev) =>
-  //     prev.map((r) =>
-  //       r._id === progressRow._id
-  //         ? {
-  //           ...r,
-  //           current_work: { ...r.current_work, value: String(newDone) },
-  //         }
-  //         : r
-  //     )
-  //   );
-
-  //   closeProgress();
-  // };
-
   return (
     <Box
       sx={{
@@ -517,8 +579,16 @@ function DPRTable() {
         width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
       }}
     >
-      {/* Header row (Search only; no tabs) */}
-      <Box display="flex" justifyContent="flex-end" alignItems="center" pt={2} pb={0.5} flexWrap="wrap" gap={1}>
+      {/* Header row (Search only) */}
+      <Box
+        display="flex"
+        justifyContent="flex-end"
+        alignItems="center"
+        pt={2}
+        pb={0.5}
+        flexWrap="wrap"
+        gap={1}
+      >
         <Box
           sx={{
             py: 1,
@@ -562,7 +632,7 @@ function DPRTable() {
           }}
         >
           <thead>
-            <tr style={{ backgroundColor: "neutral.softBg" }}>
+            <tr>
               <th
                 style={{
                   position: "sticky",
@@ -578,12 +648,23 @@ function DPRTable() {
               >
                 <Checkbox
                   size="sm"
-                  checked={pageRows.length > 0 && selected.length === pageRows.length}
+                  checked={
+                    viewRows.length > 0 && selected.length === viewRows.length
+                  }
                   onChange={handleSelectAll}
-                  indeterminate={selected.length > 0 && selected.length < pageRows.length}
+                  indeterminate={
+                    selected.length > 0 && selected.length < viewRows.length
+                  }
                 />
               </th>
-              {["Project Code", "Project Name", "Activity", "Work Detail", "Deadline", "Actions"].map((header) => (
+              {[
+                "Project Code",
+                "Project Name",
+                "Activity",
+                "Work Detail",
+                "Deadline",
+                "Actions",
+              ].map((header) => (
                 <th
                   key={header}
                   style={{
@@ -604,7 +685,7 @@ function DPRTable() {
           </thead>
 
           <tbody>
-            {isLoading ? (
+            {isLoading || isFetching ? (
               <tr>
                 <td colSpan={6} style={{ padding: "8px" }}>
                   <Box
@@ -621,10 +702,24 @@ function DPRTable() {
                   </Box>
                 </td>
               </tr>
-            ) : pageRows.length > 0 ? (
-              pageRows.map((row) => (
+            ) : isError ? (
+              <tr>
+                <td colSpan={6} style={{ padding: "8px" }}>
+                  <Typography color="danger">
+                    {error?.data?.message || "Failed to load DPR data"}
+                  </Typography>
+                </td>
+              </tr>
+            ) : viewRows.length > 0 ? (
+              viewRows.map((row) => (
                 <tr key={row._id}>
-                  <td style={{ borderBottom: "1px solid #ddd", padding: "8px", textAlign: "left" }}>
+                  <td
+                    style={{
+                      borderBottom: "1px solid #ddd",
+                      padding: "8px",
+                      textAlign: "left",
+                    }}
+                  >
                     <Checkbox
                       size="sm"
                       checked={selected.includes(row._id)}
@@ -632,18 +727,47 @@ function DPRTable() {
                     />
                   </td>
 
-                  <td style={{ borderBottom: "1px solid #ddd", padding: "8px" }}>{row.project_code || "-"}</td>
-                  <td style={{ borderBottom: "1px solid #ddd", padding: "8px" }}>{row.project_name || "-"}</td>
-                  <td style={{ borderBottom: "1px solid #ddd", padding: "8px" }}>{row.activity_name || "-"}</td>
-
-                  <td style={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
-                    {renderWorkPercent(row.current_work, row.work_completion, row.deadline, row.milestones)}
+                  <td
+                    style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                  >
+                    {row.project_code || "-"}
+                  </td>
+                  <td
+                    style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                  >
+                    {row.project_name || "-"}
+                  </td>
+                  <td
+                    style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                  >
+                    {row.activity_name || "-"}
                   </td>
 
-                  <td style={{ borderBottom: "1px solid #ddd", padding: "8px" }}>{DeadlineChip(row.deadline)}</td>
+                  <td
+                    style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                  >
+                    {renderWorkPercent(
+                      row.current_work,
+                      row.work_completion,
+                      row.deadlineISO,
+                      row.milestones
+                    )}
+                  </td>
 
-                  <td style={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
-                    <Button size="sm" variant="soft" onClick={() => openProgressFor(row)}>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
+                  >
+                    <DeadlineChip dateStr={row.deadlineStr} />
+                  </td>
+
+                  <td
+                    style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                  >
+                    <Button
+                      size="sm"
+                      variant="soft"
+                      onClick={() => openProgressFor(row)}
+                    >
                       Log Today’s Progress
                     </Button>
                   </td>
@@ -670,7 +794,9 @@ function DPRTable() {
                         marginBottom: "8px",
                       }}
                     />
-                    <Typography fontStyle="italic">No DPR entries found</Typography>
+                    <Typography fontStyle="italic">
+                      No DPR entries found
+                    </Typography>
                   </Box>
                 </td>
               </tr>
@@ -680,12 +806,24 @@ function DPRTable() {
       </Sheet>
 
       {/* Mobile cards */}
-      <Box sx={{ display: { xs: "flex", md: "none" }, flexDirection: "column", gap: 2, p: 2 }}>
-        {pageRows.length > 0 ? (
-          pageRows.map((row) => (
+      <Box
+        sx={{
+          display: { xs: "flex", md: "none" },
+          flexDirection: "column",
+          gap: 2,
+          p: 2,
+        }}
+      >
+        {viewRows.length > 0 ? (
+          viewRows.map((row) => (
             <Card key={row._id} variant="outlined">
               <CardContent>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                <Box
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  mb={1}
+                >
                   <Typography level="title-md">
                     <Box
                       sx={{
@@ -694,13 +832,22 @@ function DPRTable() {
                         textDecorationColor: "#999",
                       }}
                     >
-                      <DPRCard project_code={row.project_code} project_name={row.project_name} />
+                      <DPRCard
+                        project_code={row.project_code}
+                        project_name={row.project_name}
+                      />
                     </Box>
                   </Typography>
-                  {DeadlineChip(row.deadline)}
+                  {/* fixed prop name */}
+                  <DeadlineChip dateStr={row.deadlineStr} />
                 </Box>
 
-                <Button size="sm" onClick={() => toggleExpand(row._id)} variant="soft" fullWidth>
+                <Button
+                  size="sm"
+                  onClick={() => toggleExpand(row._id)}
+                  variant="soft"
+                  fullWidth
+                >
                   {expandedCard === row._id ? "Hide Details" : "View Details"}
                 </Button>
 
@@ -713,11 +860,21 @@ function DPRTable() {
                       <strong>Work Detail:</strong>
                     </Typography>
                     <Typography level="body-sm" mt={1}>
-                      {renderWorkPercent(row.current_work, row.work_completion, row.deadline, row.milestones)}
+                      {renderWorkPercent(
+                        row.current_work,
+                        row.work_completion,
+                        row.deadlineISO,
+                        row.milestones
+                      )}
                     </Typography>
 
                     <Box mt={1.5}>
-                      <Button size="sm" variant="soft" onClick={() => openProgressFor(row)} fullWidth>
+                      <Button
+                        size="sm"
+                        variant="soft"
+                        onClick={() => openProgressFor(row)}
+                        fullWidth
+                      >
                         Log Today’s Progress
                       </Button>
                     </Box>
@@ -751,20 +908,23 @@ function DPRTable() {
           color="neutral"
           startDecorator={<KeyboardArrowLeftIcon />}
           onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage <= 1}
+          disabled={currentPage <= 1 || isFetching}
         >
           Previous
         </Button>
 
-        <Box>Showing {pageRows.length} results</Box>
+        <Box>Showing {viewRows.length} results</Box>
 
-        <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
+        <Box
+          sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
+        >
           {currentPage > 1 && (
             <IconButton
               size="sm"
               variant="outlined"
               color="neutral"
               onClick={() => handlePageChange(currentPage - 1)}
+              disabled={isFetching}
             >
               {currentPage - 1}
             </IconButton>
@@ -780,6 +940,7 @@ function DPRTable() {
               variant="outlined"
               color="neutral"
               onClick={() => handlePageChange(currentPage + 1)}
+              disabled={isFetching}
             >
               {currentPage + 1}
             </IconButton>
@@ -797,15 +958,21 @@ function DPRTable() {
                   p.set("pageSize", String(v));
                   p.set("page", "1");
                   p.set("search", searchQuery || "");
+                  if (projectIdFromUrl) p.set("projectId", projectIdFromUrl);
+                  if (fromFromUrl) p.set("from", fromFromUrl);
+                  if (toFromUrl) p.set("to", toFromUrl);
+                  if (onlyWithDeadlineFromUrl)
+                    p.set("onlyWithDeadline", onlyWithDeadlineFromUrl);
                   return p;
                 });
-                setCurrentPage(1);
                 setSelected([]);
+                setCurrentPage(1);
               }
             }}
             size="sm"
             variant="outlined"
             sx={{ minWidth: 80, borderRadius: "md", boxShadow: "sm" }}
+            disabled={isFetching}
           >
             {options.map((v) => (
               <Option key={v} value={v}>
@@ -821,18 +988,21 @@ function DPRTable() {
           color="neutral"
           endDecorator={<KeyboardArrowRightIcon />}
           onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage >= totalPages}
+          disabled={currentPage >= totalPages || isFetching}
         >
           Next
         </Button>
       </Box>
 
       {/* ==============================
-          NEW: Log Progress Modal
+          Log Progress Modal + API hook
          ============================== */}
-      <Modal open={progressOpen} onClose={closeProgress}>
+      <Modal
+        open={progressOpen}
+        onClose={isUpdating ? undefined : closeProgress}
+      >
         <ModalDialog sx={{ maxWidth: 720, width: "96vw" }}>
-          <ModalClose />
+          <ModalClose disabled={isUpdating} />
           <Typography level="h5" fontWeight="lg">
             Log Today’s Progress
           </Typography>
@@ -850,14 +1020,17 @@ function DPRTable() {
                   Project
                 </Typography>
                 <Typography fontWeight="lg">
-                  {progressRow?.project_code || "-"} — {progressRow?.project_name || "-"}
+                  {progressRow?.project_code || "-"} —{" "}
+                  {progressRow?.project_name || "-"}
                 </Typography>
               </Grid>
               <Grid xs={12} md={6}>
                 <Typography level="title-sm" sx={{ color: "text.secondary" }}>
                   Activity
                 </Typography>
-                <Typography fontWeight="lg">{progressRow?.activity_name || "-"}</Typography>
+                <Typography fontWeight="lg">
+                  {progressRow?.activity_name || "-"}
+                </Typography>
               </Grid>
             </Grid>
           </Box>
@@ -872,13 +1045,25 @@ function DPRTable() {
               return (
                 <>
                   <Chip variant="soft" color="neutral">
-                    Total: <b style={{ marginLeft: 6 }}>{total} {unit}</b>
+                    Total:{" "}
+                    <b style={{ marginLeft: 6 }}>
+                      {total} {unit}
+                    </b>
                   </Chip>
                   <Chip variant="soft" color="primary">
-                    Done: <b style={{ marginLeft: 6 }}>{done} {unit}</b>
+                    Done:{" "}
+                    <b style={{ marginLeft: 6 }}>
+                      {done} {unit}
+                    </b>
                   </Chip>
-                  <Chip variant="soft" color={remain > 0 ? "warning" : "success"}>
-                    Remaining: <b style={{ marginLeft: 6 }}>{remain} {unit}</b>
+                  <Chip
+                    variant="soft"
+                    color={remain > 0 ? "warning" : "success"}
+                  >
+                    Remaining:{" "}
+                    <b style={{ marginLeft: 6 }}>
+                      {remain} {unit}
+                    </b>
                   </Chip>
                 </>
               );
@@ -886,7 +1071,12 @@ function DPRTable() {
           </Box>
 
           {/* Form */}
-          <Box mt={2} display="grid" gridTemplateColumns={{ xs: "1fr", md: "1fr 1fr" }} gap={1.5}>
+          <Box
+            mt={2}
+            display="grid"
+            gridTemplateColumns={{ xs: "1fr", md: "1fr 1fr" }}
+            gap={1.5}
+          >
             <FormControl>
               <Typography level="title-sm" sx={{ mb: 0.5 }}>
                 Date
@@ -894,12 +1084,12 @@ function DPRTable() {
               <Input
                 type="date"
                 value={progressDate}
-                onChange={(e) => setProgressDate(e.target.value)} // will not fire when disabled
+                onChange={(e) => setProgressDate(e.target.value)}
                 readOnly
                 slotProps={{ input: { readOnly: true } }}
                 sx={{ "--Input-minHeight": "40px" }}
+                disabled={isUpdating}
               />
-
             </FormControl>
 
             <FormControl>
@@ -913,6 +1103,7 @@ function DPRTable() {
                 onChange={(e) => setProgressQty(e.target.value)}
                 slotProps={{ input: { min: 0, step: "any" } }}
                 sx={{ "--Input-minHeight": "40px" }}
+                disabled={isUpdating || actionType !== "progress"}
               />
             </FormControl>
 
@@ -925,6 +1116,7 @@ function DPRTable() {
                 placeholder="Any notes about today’s work…"
                 value={progressRemarks}
                 onChange={(e) => setProgressRemarks(e.target.value)}
+                disabled={isUpdating}
               />
             </Grid>
           </Box>
@@ -932,7 +1124,31 @@ function DPRTable() {
           {/* Live computed preview */}
           <Box mt={1.5}>
             {(() => {
-              const { total, done, unit, qty, newDone, remain } = computedModalNumbers();
+              const { total, done, unit, qty, newDone, remain } = (() => {
+                if (!progressRow)
+                  return {
+                    total: 0,
+                    done: 0,
+                    remain: 0,
+                    unit: "",
+                    qty: 0,
+                    newDone: 0,
+                  };
+                const t = getTotal(progressRow);
+                const d = getCompleted(progressRow);
+                const u = getUnit(progressRow);
+                const q = toNum(progressQty);
+                const nd = d + q;
+                const rm = Math.max(0, t - nd);
+                return {
+                  total: t,
+                  done: d,
+                  unit: u,
+                  qty: q,
+                  newDone: nd,
+                  remain: rm,
+                };
+              })();
               if (!progressRow) return null;
               return (
                 <Box
@@ -947,19 +1163,43 @@ function DPRTable() {
                   }}
                 >
                   <Chip variant="soft" color="neutral">
-                    Total: <b style={{ marginLeft: 6 }}>{total} {unit}</b>
+                    Total:{" "}
+                    <b style={{ marginLeft: 6 }}>
+                      {total} {unit}
+                    </b>
                   </Chip>
                   <Chip variant="soft" color="primary">
-                    Till Yesterday: <b style={{ marginLeft: 6 }}>{done} {unit}</b>
+                    Till Yesterday:{" "}
+                    <b style={{ marginLeft: 6 }}>
+                      {done} {unit}
+                    </b>
                   </Chip>
                   <Chip variant="soft" color="info">
-                    Today: <b style={{ marginLeft: 6 }}>{qty || 0} {unit}</b>
+                    Today:{" "}
+                    <b style={{ marginLeft: 6 }}>
+                      {actionType === "progress" ? qty || 0 : 0} {unit}
+                    </b>
                   </Chip>
-                  <Chip variant="soft" color={newDone > total ? "danger" : "success"}>
-                    New Cumulative: <b style={{ marginLeft: 6 }}>{newDone} {unit}</b>
+                  <Chip
+                    variant="soft"
+                    color={newDone > total ? "danger" : "success"}
+                  >
+                    New Cumulative:{" "}
+                    <b style={{ marginLeft: 6 }}>
+                      {actionType === "progress" ? newDone : done} {unit}
+                    </b>
                   </Chip>
-                  <Chip variant="soft" color={remain > 0 ? "warning" : "success"}>
-                    Remaining: <b style={{ marginLeft: 6 }}>{Math.max(0, total - newDone)} {unit}</b>
+                  <Chip
+                    variant="soft"
+                    color={remain > 0 ? "warning" : "success"}
+                  >
+                    Remaining:{" "}
+                    <b style={{ marginLeft: 6 }}>
+                      {actionType === "progress"
+                        ? Math.max(0, total - newDone)
+                        : Math.max(0, total - done)}{" "}
+                      {unit}
+                    </b>
                   </Chip>
                 </Box>
               );
@@ -968,15 +1208,26 @@ function DPRTable() {
 
           <Divider sx={{ my: 1.5 }} />
 
-          <Box display="flex" justifyContent="space-between" gap={1} flexWrap="wrap">
+          {/* Mutation error (if any) */}
+          {updateErr && (
+            <Typography color="danger" sx={{ mb: 1 }}>
+              {updateErr?.data?.message ||
+                "Failed to submit. Please try again."}
+            </Typography>
+          )}
+
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            gap={1}
+            flexWrap="wrap"
+          >
             <Box display="flex" gap={1} flexWrap="wrap">
               <Button
                 variant={actionType === "idle" ? "solid" : "soft"}
                 color="warning"
-                onClick={() => {
-                  setActionType("idle");
-                  // handleSubmitProgress("idle");
-                }}
+                onClick={() => submitWith("idle")}
+                disabled={isUpdating}
               >
                 Mark Idle
               </Button>
@@ -984,31 +1235,31 @@ function DPRTable() {
               <Button
                 variant={actionType === "stop" ? "solid" : "soft"}
                 color="danger"
-                onClick={() => {
-                  setActionType("stop");
-                  // handleSubmitProgress("stop");
-                }}
+                onClick={() => submitWith("stop")}
+                disabled={isUpdating}
               >
                 Mark Stop
               </Button>
             </Box>
 
             <Box display="flex" gap={1}>
-              <Button variant="plain" onClick={closeProgress}>
+              <Button
+                variant="plain"
+                onClick={closeProgress}
+                disabled={isUpdating}
+              >
                 Cancel
               </Button>
               <Button
                 variant="solid"
-                onClick={() => {
-                  setActionType("progress");
-                  // handleSubmitProgress("progress");
-                }}
+                onClick={() => submitWith("progress")}
+                loading={isUpdating}
+                disabled={isUpdating}
               >
                 Submit Progress
               </Button>
             </Box>
           </Box>
-
         </ModalDialog>
       </Modal>
     </Box>

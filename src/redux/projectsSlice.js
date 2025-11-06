@@ -540,7 +540,7 @@ export const projectsApi = createApi({
     updateDprLog: builder.mutation({
       query: ({ projectId, activityId, todays_progress, date, remarks, status }) => ({
         url: `projectactivity/${projectId}/activity/${activityId}/dprlog`, // Adjust the URL as needed
-        method: "PUT",
+        method: "PATCH",
         body: {
           todays_progress,
           date,
