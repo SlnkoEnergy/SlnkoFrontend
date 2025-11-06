@@ -395,7 +395,6 @@ const handleEditSave = async () => {
 
 
 
-
   // ------------- data fetch (RTK) -------------
   const {
     data: responseData,
@@ -2573,64 +2572,80 @@ const normalizeAttachments = (atts) => {
                 return (
                   <tr key={sale._id || `${sale.po_number}-${idx}`}>
                     {/* Converted PO + attachments + "view" */}
-                    <td style={{ minWidth: 160 }}>
-                      <Stack spacing={0.75}>
-                        <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap">
-                          <Chip size="sm" variant="soft" color="primary">
-                            <Typography level="body-sm" sx={{ fontWeight: 700 }}>
-                              {sale.po_number || "N/A"}
-                            </Typography>
-                          </Chip>
-                          <Tooltip title="View conversion" placement="top">
-                            <IconButton
-                              size="sm"
-                              variant="plain"
-                              onClick={() => openSaleDetail?.(sale)}
-                              aria-label={`View conversion for PO ${sale.po_number || sale._id}`}
-                            >
-                              <VisibilityRounded fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </Stack>
+                   <td style={{ minWidth: 160 }}>
+  <Stack spacing={0.75}>
+    <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap">
+      <Chip size="sm" variant="soft" color="primary">
+        <Typography level="body-sm" sx={{ fontWeight: 700 }}>
+          {sale.po_number || "N/A"}
+        </Typography>
+      </Chip>
+      <Tooltip title="View conversion" placement="top">
+        <IconButton
+          size="sm"
+          variant="plain"
+          onClick={() => openSaleDetail?.(sale)}
+          aria-label={`View conversion for PO ${sale.po_number || sale._id}`}
+        >
+          <VisibilityRounded fontSize="small" />
+        </IconButton>
+      </Tooltip>
+    </Stack>
 
-                        {/* Attachments */}
-                        <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ mt: 0.5 }}>
-                          {atts.length ? (
-                            atts.map((att, i) => (
-                              <Link
-                                key={att.url || `${sale._id}-att-${i}`}
-                                href={att.url}
-                                target="_blank"
-                                rel="noopener"
-                                underline="hover"
-                                sx={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: 0.5,
-                                  fontSize: 12,
-                                  px: 1,
-                                  py: 0.25,
-                                  borderRadius: "8px",
-                                  backgroundColor: "neutral.softBg",
-                                  maxWidth: 160,
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  whiteSpace: "nowrap",
-                                }}
-                                title={att.name}
-                              >
-                                <AttachFileIcon sx={{ fontSize: 15 }} />
-                                {att.name || `File ${i + 1}`}
-                              </Link>
-                            ))
-                          ) : (
-                            <Typography level="body-xs" sx={{ opacity: 0.6, fontStyle: "italic" }}>
-                              No attachments
-                            </Typography>
-                          )}
-                        </Stack>
-                      </Stack>
-                    </td>
+    {/* Attachments */}
+    <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ mt: 0.5 }}>
+      {atts.length ? (
+        atts.map((att, i) => (
+          <Link
+            key={att.url || `${sale._id}-att-${i}`}
+            href={att.url}
+            target="_blank"
+            rel="noopener"
+            underline="hover"
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 0.5,
+              fontSize: 12,
+              px: 1,
+              py: 0.25,
+              borderRadius: "8px",
+              backgroundColor: "neutral.softBg",
+              maxWidth: 160,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+            title={att.name}
+          >
+            <AttachFileIcon sx={{ fontSize: 15 }} />
+            {att.name || `File ${i + 1}`}
+          </Link>
+        ))
+      ) : (
+        <Typography level="body-xs" sx={{ opacity: 0.6, fontStyle: "italic" }}>
+          No attachments
+        </Typography>
+      )}
+    </Stack>
+
+    {/* Display isSales status */}
+    {sale.isSales && (
+      <Chip
+        size="sm"
+        variant="solid"
+        
+        color={sale.isSales === "true" ? "success" : "warning"}
+        sx={{ mt: 1}}
+      >
+        <Typography sx={{ fontWeight: 700 }}>
+          {sale.isSales === "true" ? "Sold" : "Partially Sold"}
+        </Typography>
+      </Chip>
+    )}
+  </Stack>
+</td>
+
 
                     {show("convDate") && (
                       <td style={{ whiteSpace: "nowrap" }}>{formatDateTime(sale?.converted_at)}</td>
