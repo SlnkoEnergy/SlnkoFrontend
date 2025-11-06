@@ -87,6 +87,42 @@ const ENGINEERS = [
         progressPct: 15,
         status: "bad",
     },
+    {
+        id: "e3",
+        name: "David Kim",
+        avatar: "",
+        assigned: 3,
+        completed: 0,
+        progressPct: 15,
+        status: "bad",
+    },
+    {
+        id: "e3",
+        name: "David Kim",
+        avatar: "",
+        assigned: 3,
+        completed: 0,
+        progressPct: 15,
+        status: "bad",
+    },
+    {
+        id: "e3",
+        name: "David Kim",
+        avatar: "",
+        assigned: 3,
+        completed: 0,
+        progressPct: 15,
+        status: "bad",
+    },
+    {
+        id: "e3",
+        name: "David Kim",
+        avatar: "",
+        assigned: 3,
+        completed: 0,
+        progressPct: 15,
+        status: "bad",
+    },
 ];
 
 const ACTIVITIES = [
@@ -123,8 +159,8 @@ const ACTIVITIES = [
 function KPIBox({ color, icon, title, value, subtitle }) {
     const Icon = icon;
     return (
-        <Card sx={{ ...cardSx, height: 120, bgcolor: `${color}.softBg` }}>
-            <Box display="flex" alignItems="center" gap={1} mb={1}>
+        <Card sx={{ ...cardSx, minHeight: 100, bgcolor: `${color}.softBg`, padding: 2 }}>
+            <Box display="flex" alignItems="center" gap={1} mb={0.5}>
                 <Box
                     sx={{
                         p: 1,
@@ -135,21 +171,22 @@ function KPIBox({ color, icon, title, value, subtitle }) {
                 >
                     <Icon />
                 </Box>
-                <Typography level="title-sm" sx={{ color: `${color}.softColor` }}>
+                <Typography level="title-sm" sx={{ color: `${color}.softColor`, fontWeight: '500' }}>
                     {title}
                 </Typography>
             </Box>
-            <Typography level="h2" sx={{ lineHeight: 1 }}>
+            <Typography level="h2" sx={{ lineHeight: 1, fontSize: '1.5rem' }}>
                 {value}
             </Typography>
             {subtitle && (
-                <Typography level="body-xs" color="neutral">
+                <Typography level="body-xs" color="neutral" sx={{ mt: 0.5 }}>
                     {subtitle}
                 </Typography>
             )}
         </Card>
     );
 }
+
 
 function StatusPill({ status }) {
     if (status === "On Track")
@@ -208,7 +245,7 @@ function EngineerRow({ e }) {
                 </Box>
                 {statusIcon}
             </Box>
-        </Card>
+        </Card >
     );
 }
 
@@ -223,7 +260,7 @@ export default function Activity_Dash() {
             }}
         >
             {/* KPI Row */}
-            <Grid container spacing={2}>
+            <Grid container spacing={2} columns={12}>
                 <Grid xs={12} md={4}>
                     <KPIBox
                         color="success"
@@ -256,7 +293,7 @@ export default function Activity_Dash() {
             <Grid container spacing={2} mt={0.5}>
                 {/* Project Details */}
                 <Grid xs={12} md={8}>
-                    <Card sx={{ ...cardSx }}>
+                    <Card sx={{ ...cardSx, minHeight: "300px"}}>
                         <Box display="flex" justifyContent="space-between" alignItems="flex-start">
                             <Typography level="title-lg">Project Details</Typography>
                             <StatusPill status={PROJECT.status} />
@@ -290,7 +327,7 @@ export default function Activity_Dash() {
 
                 {/* Assigned Engineers */}
                 <Grid xs={12} md={4}>
-                    <Card sx={{ ...cardSx }}>
+                    <Card sx={{ ...cardSx, overflow: "auto", maxHeight: "300px"}}>
                         <Typography level="title-lg" mb={1}>
                             Assigned Engineer
                         </Typography>
