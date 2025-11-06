@@ -243,7 +243,10 @@ export default function VendorBillForm({
   const buildPayloadItems = useCallback(
     () =>
       lines.map((l) => ({
-        category_id: l.category_id,
+        category: {
+          category_id: l.category_id,
+          category_name: l.Category
+        },
         product_name: l.product_name,
         product_make: l.product_make,
         uom: l.uom,
