@@ -44,6 +44,90 @@ const bandColor = (pct) => {
 
 const formatPct = (v) => `${Math.round(Number(v || 0))}%`;
 
+const data = {
+    project_detail: {
+        code: "RJK-Ck-45454",
+        name: "rajasthan is the biest place ",
+        site_address: "F-62 shyam vihar vatika road sanganer jaipur",
+        number: "78877878787",
+    },
+    acitvities: [
+        {
+            activity_name: "Pile Marking",
+            actualfinsh: "8 Nov",
+            dpr_logs: [
+                {
+                    today_progress: "12",
+                    date: "1 NOv",
+                    remarks: "work in progress",
+                    status: "In Progress",
+                },
+                {
+                    today_progress: "14",
+                    date: "3 NOv",
+                    remarks: "work in progress 1",
+                    status: "In Progress",
+                },
+                {
+                    today_progress: "51",
+                    date: "5 Nov",
+                    remarks: "work",
+                    status: "In Progress",
+                }
+            ]
+        },
+        {
+            activity_name: "Module",
+            actualfinsh: "6 Nov",
+            dpr_logs: [
+                {
+                    today_progress: "1",
+                    date: "1 NOv",
+                    remarks: "work in progress",
+                    status: "In Progress",
+                },
+                {
+                    today_progress: "14",
+                    date: "3 NOv",
+                    remarks: "work in progress 1",
+                    status: "In Progress",
+                },
+                {
+                    today_progress: "45",
+                    date: "5 Nov",
+                    remarks: "work",
+                    status: "In Progress",
+                }
+            ]
+        },
+        {
+            activity_name: "Module",
+            actualfinsh: null,
+            planed_finish: "4 NOv",
+            dpr_logs: [
+                {
+                    today_progress: "1",
+                    date: "1 NOv",
+                    remarks: "work in progress",
+                    status: "In Progress",
+                },
+                {
+                    today_progress: "14",
+                    date: "3 NOv",
+                    remarks: "work in progress 1",
+                    status: "In Progress",
+                },
+                {
+                    today_progress: "45",
+                    date: "5 Nov",
+                    remarks: "work",
+                    status: "In Progress",
+                }
+            ]
+        }
+    ]
+};
+
 /* ------------------- mock data ------------------- */
 const PROJECT = {
     code: "PCH-458-A",
@@ -293,7 +377,7 @@ export default function Activity_Dash() {
             <Grid container spacing={2} mt={0.5}>
                 {/* Project Details */}
                 <Grid xs={12} md={8}>
-                    <Card sx={{ ...cardSx, minHeight: "300px"}}>
+                    <Card sx={{ ...cardSx, minHeight: "500px" }}>
                         <Box display="flex" justifyContent="space-between" alignItems="flex-start">
                             <Typography level="title-lg">Project Details</Typography>
                             <StatusPill status={PROJECT.status} />
@@ -327,7 +411,7 @@ export default function Activity_Dash() {
 
                 {/* Assigned Engineers */}
                 <Grid xs={12} md={4}>
-                    <Card sx={{ ...cardSx, overflow: "auto", maxHeight: "300px"}}>
+                    <Card sx={{ ...cardSx, overflow: "auto", maxHeight: "500px" }}>
                         <Typography level="title-lg" mb={1}>
                             Assigned Engineer
                         </Typography>
