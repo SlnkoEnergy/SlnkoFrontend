@@ -536,6 +536,45 @@ export const projectsApi = createApi({
       query: (id) => "projectactivity/project-users",
       providesTags: ["Project"],
     }),
+
+    updateDprLog: builder.mutation({
+      query: ({ projectId, activityId, todays_progress, date, remarks, status }) => ({
+        url: `projectactivity/${projectId}/activity/${activityId}/dprlog`, // Adjust the URL as needed
+        method: "PUT",
+        body: {
+          todays_progress,
+          date,
+          remarks,
+          status,
+        },
+      }),
+      invalidatesTags: ["Project"],
+    }),
+
+    getAllDpr: builder.query({
+      query: ({
+        page = 1,
+        limit = 10,
+        search = "",
+        projectId,
+        from,
+        to,
+        onlyWithDeadline,
+      }) => {
+        const params = new URLSearchParams();
+        if (projectId) params.set("projectId", projectId);
+        if (search) params.set("search", search);
+        if (from) params.set("from", from);
+        if (to) params.set("to", to);
+        if (onlyWithDeadline) params.set("onlyWithDeadline", onlyWithDeadline);
+
+        return {
+          url: `projectActivity/alldpr?${params.toString()}`,
+          method: "GET",
+        };
+      },
+      providesTags: ["Project"],
+    }),
   }),
 });
 
@@ -596,5 +635,7 @@ export const {
   useExportProjectSchedulePdfQuery,
   useLazyExportProjectSchedulePdfQuery,
   useUpdateReorderfromActivityMutation,
-  useGetAllProjectUserQuery
+  useGetAllProjectUserQuery,
+  useUpdateDprLogMutation,
+  useGetAllDprQuery,
 } = projectsApi;
