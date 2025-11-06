@@ -412,6 +412,8 @@ export default function CustomerPaymentSummary() {
     pageSize,
   });
 
+  console.log({ responseData });
+
   // shape-safe fallbacks
   const {
     projectDetails = {},
@@ -1258,13 +1260,19 @@ export default function CustomerPaymentSummary() {
       [
         "6",
         "Bills received, yet to be invoiced to customer",
-        safeRound(responseData?.aggregate_billed_value),
+        safeRound(
+          responseData?.clientHistory?.meta?.total_remaining_sales_value
+        ),
         "#FFF",
       ],
       [
         "7",
-        "Advances left after bills received [4-5-6]",
-        safeRound(responseData?.remaining_advance_left_after_billed),
+        "Advances left after bills received [4 - 5 - 6]",
+        safeRound(
+          responseData?.total_advance_paid -
+            responseData?.total_sales_value -
+            responseData?.clientHistory?.meta?.total_remaining_sales_value
+        ),
         "#FFF",
       ],
       [
@@ -1276,7 +1284,15 @@ export default function CustomerPaymentSummary() {
       [
         "9",
         "Balance With Slnko [3 - 5 - 6 - 7 - 8]",
-        safeRound(responseData?.balance_with_slnko),
+        safeRound(
+          responseData?.netBalance -
+            responseData?.total_sales_value -
+            responseData?.clientHistory?.meta?.total_remaining_sales_value -
+            (responseData?.total_advance_paid -
+              responseData?.total_sales_value -
+              responseData?.clientHistory?.meta?.total_remaining_sales_value) -
+            responseData?.total_adjustment
+        ),
         "#FFECB3",
         true,
       ],
