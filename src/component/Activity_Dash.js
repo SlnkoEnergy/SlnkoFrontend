@@ -7,7 +7,6 @@ import {
     Typography,
     Chip,
     LinearProgress,
-    Button,
     IconButton,
     Divider,
     Avatar,
@@ -24,7 +23,7 @@ import DoneAll from "@mui/icons-material/DoneAll";
 import ErrorOutline from "@mui/icons-material/ErrorOutline";
 import Person from "@mui/icons-material/Person";
 import LocationOn from "@mui/icons-material/LocationOn";
-import InfoOutlined from "@mui/icons-material/InfoOutlined";
+import ActivityFinishLineChart from "./ActivityFinishLineChart";
 
 /* ------------------- theme helpers ------------------- */
 const cardSx = {
@@ -47,222 +46,119 @@ const formatPct = (v) => `${Math.round(Number(v || 0))}%`;
 const data = {
     project_detail: {
         code: "RJK-Ck-45454",
-        name: "rajasthan is the biest place ",
+        name: "rajasthan is the best place ",
         site_address: "F-62 shyam vihar vatika road sanganer jaipur",
         number: "78877878787",
+        status: "On going",
+        customer: "suraj yadav",
     },
     acitvities: [
         {
             activity_name: "Pile Marking",
             actualfinsh: "8 Nov",
-            assigned_user: [
-                {
-                    _id: "u1-u2",
-                    user_name: "Emily White",
-                }
-            ],
+            current_status: "not started",
+            assigned_user: [{ _id: "u1-u2", user_name: "Emily White" }],
             dpr_logs: [
-                {
-                    today_progress: "12",
-                    date: "1 NOv",
-                    remarks: "work in progress",
-                    status: "In Progress",
-                },
-                {
-                    today_progress: "14",
-                    date: "3 NOv",
-                    remarks: "work in progress 1",
-                    status: "In Progress",
-                },
-                {
-                    today_progress: "51",
-                    date: "5 Nov",
-                    remarks: "work",
-                    status: "In Progress",
-                }
-            ]
+                { today_progress: "1", date: "1 NOv", remarks: "work in progress", status: "In Progress" },
+                { today_progress: "14", date: "3 NOv", remarks: "work in progress 1", status: "In Progress" },
+                { today_progress: "51", date: "5 Nov", remarks: "work", status: "In Progress" },
+            ],
+            work_completion: { unit: "M", value: "100", deadline: "8 Nov" },
         },
         {
             activity_name: "Module",
             actualfinsh: "6 Nov",
-            assigned_user: [
-                {
-                    user_name: "John Chen",
-                    _id: "u2-u2",
-                }
-            ],
+            current_status: "in progress",
+            assigned_user: [{ user_name: "John Chen", _id: "u2-u2" }],
             dpr_logs: [
-                {
-                    today_progress: "1",
-                    date: "1 NOv",
-                    remarks: "work in progress",
-                    status: "In Progress",
-                },
-                {
-                    today_progress: "14",
-                    date: "3 NOv",
-                    remarks: "work in progress 1",
-                    status: "In Progress",
-                },
-                {
-                    today_progress: "45",
-                    date: "5 Nov",
-                    remarks: "work",
-                    status: "In Progress",
-                }
-            ]
+                { today_progress: "1", date: "1 NOv", remarks: "work in progress", status: "In Progress" },
+                { today_progress: "14", date: "3 NOv", remarks: "work in progress 1", status: "In Progress" },
+                { today_progress: "45", date: "5 Nov", remarks: "work", status: "In Progress" },
+            ],
+            work_completion: { unit: "M", value: "100", deadline: "8 Nov" },
         },
         {
             activity_name: "Module",
             actualfinsh: null,
+            current_status: "completed",
             planed_finish: "4 NOv",
-
-            assigned_user: [
-                {
-                    user_name: "John Chen",
-                    _id: "u2-u2",
-                }
-            ],
+            assigned_user: [{ user_name: "John Chen", _id: "u2-u2" }],
             dpr_logs: [
-                {
-                    today_progress: "1",
-                    date: "1 NOv",
-                    remarks: "work in progress",
-                    status: "In Progress",
-                },
-                {
-                    today_progress: "14",
-                    date: "3 NOv",
-                    remarks: "work in progress 1",
-                    status: "In Progress",
-                },
-                {
-                    today_progress: "45",
-                    date: "5 Nov",
-                    remarks: "work",
-                    status: "In Progress",
-                }
-            ]
-        }
-    ]
+                { today_progress: "1", date: "1 NOv", remarks: "work in progress", status: "In Progress" },
+                { today_progress: "14", date: "3 NOv", remarks: "work in progress 1", status: "In Progress" },
+                { today_progress: "45", date: "5 Nov", remarks: "work", status: "In Progress" },
+            ],
+            work_completion: { unit: "M", value: "100", deadline: "8 Nov" },
+        },
+        {
+            activity_name: "Pile Marking",
+            actualfinsh: "8 Nov",
+            current_status: "not started",
+            assigned_user: [{ _id: "u1-u2", user_name: "Emily White" }],
+            dpr_logs: [
+                { today_progress: "1", date: "1 NOv", remarks: "work in progress", status: "In Progress" },
+                { today_progress: "14", date: "3 NOv", remarks: "work in progress 1", status: "In Progress" },
+                { today_progress: "51", date: "5 Nov", remarks: "work", status: "In Progress" },
+            ],
+            work_completion: { unit: "M", value: "100", deadline: "8 Nov" },
+        },
+        {
+            activity_name: "Module",
+            actualfinsh: null,
+            current_status: "completed",
+            planed_finish: "4 NOv",
+            assigned_user: [{ user_name: "John Chen", _id: "u2-u2" }],
+            dpr_logs: [
+                { today_progress: "1", date: "1 NOv", remarks: "work in progress", status: "In Progress" },
+                { today_progress: "14", date: "3 NOv", remarks: "work in progress 1", status: "In Progress" },
+                { today_progress: "45", date: "5 Nov", remarks: "work", status: "In Progress" },
+            ],
+            work_completion: { unit: "M", value: "100", deadline: "8 Nov" },
+        },
+        {
+            activity_name: "Module",
+            actualfinsh: null,
+            current_status: "completed",
+            planed_finish: "4 NOv",
+            assigned_user: [{ user_name: "John Chen", _id: "u2-u2" }],
+            dpr_logs: [
+                { today_progress: "1", date: "1 NOv", remarks: "work in progress", status: "In Progress" },
+                { today_progress: "14", date: "3 NOv", remarks: "work in progress 1", status: "In Progress" },
+                { today_progress: "45", date: "5 Nov", remarks: "work", status: "In Progress" },
+            ],
+            work_completion: { unit: "M", value: "100", deadline: "8 Nov" },
+        },
+    ],
 };
 
-/* ------------------- mock data ------------------- */
-const PROJECT = {
-    code: "PCH-458-A",
-    name: "Project: New City Hall Construction",
-    customer: "Mr. John Doe",
-    address: "123 Main St, Anytown",
-    status: "On Track", // On Track / At Risk / Delayed
-};
-
-const KPI = {
-    workDonePct: 72,
-    activitiesAtRisk: 2,
-    engineerCapacityAvg: 85,
-};
-
-const ENGINEERS = [
-    {
-        id: "e1",
-        name: "John Chen",
-        avatar: "",
-        assigned: 5,
-        completed: 2,
-        progressPct: 100,
-        status: "ok", // ok | warn | bad
-    },
-    {
-        id: "e2",
-        name: "Emily White",
-        avatar: "",
-        assigned: 4,
-        completed: 1,
-        progressPct: 40,
-        status: "warn",
-    },
-    {
-        id: "e3",
-        name: "David Kim",
-        avatar: "",
-        assigned: 3,
-        completed: 0,
-        progressPct: 15,
-        status: "bad",
-    },
-    {
-        id: "e3",
-        name: "David Kim",
-        avatar: "",
-        assigned: 3,
-        completed: 0,
-        progressPct: 15,
-        status: "bad",
-    },
-    {
-        id: "e3",
-        name: "David Kim",
-        avatar: "",
-        assigned: 3,
-        completed: 0,
-        progressPct: 15,
-        status: "bad",
-    },
-    {
-        id: "e3",
-        name: "David Kim",
-        avatar: "",
-        assigned: 3,
-        completed: 0,
-        progressPct: 15,
-        status: "bad",
-    },
-    {
-        id: "e3",
-        name: "David Kim",
-        avatar: "",
-        assigned: 3,
-        completed: 0,
-        progressPct: 15,
-        status: "bad",
-    },
-];
-
-const ACTIVITIES = [
-    {
-        id: "a1",
-        name: "Foundation Pour",
-        assignee: "John Chen",
-        deadlineChip: { text: "NOV 05", variant: "soft", color: "warning" },
-        workPct: 100,
-        lastUpdate: "2h ago",
-        priority: "normal",
-    },
-    {
-        id: "a2",
-        name: "Electrical Rough-in",
-        assignee: "Emily White",
-        deadlineChip: { text: "NOV 05", variant: "soft", color: "warning" },
-        workPct: 40,
-        lastUpdate: "—",
-        priority: "normal",
-    },
-    {
-        id: "a3",
-        name: "HVAC Installation",
-        assignee: "David Kim",
-        deadlineChip: { text: "OCT 28", variant: "soft", color: "danger" },
-        workPct: 0,
-        lastUpdate: "3d ago",
-        priority: "overdue",
-    },
-];
+const KPI = { engineerCapacityAvg: 85 };
 
 /* ------------------- small pieces ------------------- */
-function KPIBox({ color, icon, title, value, subtitle }) {
+function KPIBox({ color, icon, title, value, subtitle, onClick }) {
     const Icon = icon;
+    const clickable = typeof onClick === "function";
     return (
-        <Card sx={{ ...cardSx, minHeight: 100, bgcolor: `${color}.softBg`, padding: 2 }}>
+        <Card
+            onClick={onClick}
+            role={clickable ? "button" : undefined}
+            tabIndex={clickable ? 0 : undefined}
+            onKeyDown={(e) => {
+                if (clickable && (e.key === "Enter" || e.key === " ")) {
+                    e.preventDefault();
+                    onClick();
+                }
+            }}
+            sx={{
+                ...cardSx,
+                minHeight: 100,
+                bgcolor: `${color}.softBg`,
+                padding: 2,
+                cursor: clickable ? "pointer" : "default",
+                transition: "box-shadow .15s ease, transform .05s ease",
+                "&:hover": clickable ? { boxShadow: "md" } : undefined,
+                "&:active": clickable ? { transform: "scale(0.995)" } : undefined,
+            }}
+        >
             <Box display="flex" alignItems="center" gap={1} mb={0.5}>
                 <Box
                     sx={{
@@ -274,11 +170,11 @@ function KPIBox({ color, icon, title, value, subtitle }) {
                 >
                     <Icon />
                 </Box>
-                <Typography level="title-sm" sx={{ color: `${color}.softColor`, fontWeight: '500' }}>
+                <Typography level="title-sm" sx={{ color: `${color}.softColor`, fontWeight: 500 }}>
                     {title}
                 </Typography>
             </Box>
-            <Typography level="h2" sx={{ lineHeight: 1, fontSize: '1.5rem' }}>
+            <Typography level="h2" sx={{ lineHeight: 1, fontSize: "1.5rem" }}>
                 {value}
             </Typography>
             {subtitle && (
@@ -290,12 +186,52 @@ function KPIBox({ color, icon, title, value, subtitle }) {
     );
 }
 
+function CalculateWork(activities = []) {
+    let actualDone = 0;
+    let totalQty = 0;
+
+    activities.forEach((act) => {
+        act.dpr_logs.forEach((dpr) => {
+            actualDone += Number(dpr.today_progress || 0);
+        });
+        totalQty += Number(act.work_completion?.value || 0);
+    });
+
+    if (totalQty === 0) return 0;
+    return (actualDone / totalQty) * 100;
+}
+
+function calcActivityPercent(act) {
+    const actual = act.dpr_logs.reduce((a, b) => a + Number(b.today_progress || 0), 0);
+    const total = Number(act.work_completion?.value || 0);
+    if (!total) return 0;
+    return (actual / total) * 100;
+}
+
+function CalculateAtRisk(activities = []) {
+    let count = 0;
+    const today = new Date();
+
+    activities.forEach((act) => {
+        const deadline = new Date(act.work_completion?.deadline);
+        if (deadline < today) count++;
+    });
+
+    return count;
+}
+
+function CalculateNotStarted(activities = []) {
+    let count = 0;
+    activities.forEach((act) => {
+        count += act.current_status === "not started" ? 1 : 0;
+    })
+
+    return count;
+}
 
 function StatusPill({ status }) {
-    if (status === "On Track")
-        return <Chip size="sm" variant="soft" color="success">On Track</Chip>;
-    if (status === "At Risk")
-        return <Chip size="sm" variant="soft" color="warning">At Risk</Chip>;
+    if (status === "On going") return <Chip size="sm" variant="soft" color="success">In Progress</Chip>;
+    if (status === "At Risk") return <Chip size="sm" variant="soft" color="warning">At Risk</Chip>;
     return <Chip size="sm" variant="soft" color="danger">Delayed</Chip>;
 }
 
@@ -348,12 +284,65 @@ function EngineerRow({ e }) {
                 </Box>
                 {statusIcon}
             </Box>
-        </Card >
+        </Card>
     );
 }
 
+function prepareEngineers(activities = []) {
+    const map = {};
+
+    activities.forEach((act) => {
+        act.assigned_user.forEach((u) => {
+            if (!map[u._id]) {
+                map[u._id] = {
+                    id: u._id,
+                    name: u.user_name,
+                    assigned: 0,
+                    completed: 0,
+                    totalPlanned: 0,
+                    totalActual: 0,
+                };
+            }
+
+            map[u._id].assigned += 1;
+
+            let actual = act.dpr_logs.reduce((a, b) => a + Number(b.today_progress || 0), 0);
+            let planned = Number(act.work_completion?.value || 0);
+
+            map[u._id].totalActual += actual;
+            map[u._id].totalPlanned += planned;
+
+            if (actual >= planned) map[u._id].completed += 1;
+        });
+    });
+
+    return Object.values(map).map((e) => ({
+        ...e,
+        progressPct: e.totalPlanned ? (e.totalActual / e.totalPlanned) * 100 : 0,
+        status: e.progressPct >= 90 ? "ok" : e.progressPct >= 50 ? "warn" : "alert",
+    }));
+}
+
+const ENGINEERS = prepareEngineers(data.acitvities);
+
 /* ------------------- main component ------------------- */
 export default function Activity_Dash() {
+    // filters: "all" | "completed" | "in_progress" | "in_progress_risk"
+    const [activityFilter, setActivityFilter] = React.useState("in_progress");
+
+    const filteredActivities = React.useMemo(() => {
+        const today = new Date();
+        return data.acitvities.filter((a) => {
+            const status = a.current_status?.toLowerCase();
+            const deadline = new Date(a.work_completion.deadline);
+
+            if (activityFilter === "completed") return status === "completed";
+            if (activityFilter === "in_progress_risk") return status === "in progress" && deadline < today;
+            if (activityFilter === "in_progress") return status === "in progress";
+            return true; // "all"
+        });
+    }, [activityFilter]);
+
     return (
         <Box
             sx={{
@@ -369,8 +358,9 @@ export default function Activity_Dash() {
                         color="success"
                         icon={DoneAll}
                         title="Work Done (Project)"
-                        value={formatPct(KPI.workDonePct)}
+                        value={formatPct(CalculateWork(data.acitvities))}
                         subtitle="Total progress"
+                        onClick={() => setActivityFilter("completed")}
                     />
                 </Grid>
                 <Grid xs={12} md={4}>
@@ -378,17 +368,19 @@ export default function Activity_Dash() {
                         color="warning"
                         icon={AccessTime}
                         title="Activities Past Deadline"
-                        value={`${KPI.activitiesAtRisk} (At Risk)`}
+                        value={`${CalculateAtRisk(data.acitvities)} (At Risk)`}
                         subtitle="Requires attention"
+                        onClick={() => setActivityFilter("in_progress_risk")}
                     />
                 </Grid>
                 <Grid xs={12} md={4}>
                     <KPIBox
                         color="primary"
                         icon={TrendingUp}
-                        title="Engineer Capacity"
-                        value={`Avg. ${formatPct(KPI.engineerCapacityAvg)}`}
-                        subtitle="Active load factor"
+                        title="Remain Work"
+                        value={` ${CalculateNotStarted(data.acitvities)}`}
+                        subtitle="Not Started Activities"
+                        onClick={() => setActivityFilter("not started")}
                     />
                 </Grid>
             </Grid>
@@ -397,40 +389,37 @@ export default function Activity_Dash() {
                 {/* Project Details */}
                 <Grid xs={12} md={8}>
                     <Card sx={{ ...cardSx, minHeight: "500px" }}>
-                        <Box display="flex" justifyContent="space-between" alignItems="flex-start">
-                            <Typography level="title-lg">Project Details</Typography>
-                            <StatusPill status={PROJECT.status} />
-                        </Box>
+
 
                         <Typography level="h4" mt={1}>
-                            {PROJECT.name}
+                            {data.project_detail.name}
                         </Typography>
 
-                        <Box mt={1.5} display="grid" gridTemplateColumns={{ xs: "1fr", sm: "1fr 1fr" }} gap={1}>
+                        <Box display="grid" gridTemplateColumns={{ xs: "1fr", sm: "1fr 1fr" }} gap={1}>
                             <Typography level="body-sm">
-                                <strong>Project Code:</strong> {PROJECT.code}
+                                <strong>Project Code:</strong> {data.project_detail.code}
                             </Typography>
                             <Typography level="body-sm">
-                                <strong>Customer Name:</strong> {PROJECT.customer}
+                                <strong>Customer Name:</strong> {data.project_detail.customer}
                             </Typography>
                             <Box display="flex" alignItems="center" gap={0.75}>
                                 <LocationOn fontSize="sm" />
-                                <Typography level="body-sm">{PROJECT.address}</Typography>
+                                <Typography level="body-sm">{data.project_detail.site_address}</Typography>
                             </Box>
                         </Box>
 
-                        <Box mt={2} display="flex" gap={1}>
-                            <Button size="sm" variant="soft" startDecorator={<InfoOutlined />}>
-                                Customer Details
-                            </Button>
-                            <Button size="sm" variant="plain">Notes</Button>
-                        </Box>
+                        <ActivityFinishLineChart
+                            apiData={data.acitvities}
+                            projectId={data.project_detail.code}
+                            title={data.project_detail.name}
+                            height={350}
+                        />
                     </Card>
                 </Grid>
 
                 {/* Assigned Engineers */}
                 <Grid xs={12} md={4}>
-                    <Card sx={{ ...cardSx, overflow: "auto", maxHeight: "500px" }}>
+                    <Card sx={{ ...cardSx, overflow: "auto", maxHeight: "500px", minHeight: "500px" }}>
                         <Typography level="title-lg" mb={1}>
                             Assigned Engineer
                         </Typography>
@@ -444,10 +433,17 @@ export default function Activity_Dash() {
             {/* Activity Tracking */}
             <Card sx={{ ...cardSx, mt: 2 }}>
                 <Box display="flex" justifyContent="space-between" alignItems="center">
-                    <Typography level="title-lg">Activity Tracking</Typography>
-                    <IconButton variant="plain" size="sm">
-                        <MoreHoriz />
-                    </IconButton>
+                    <Typography level="title-lg">
+                        Activity Tracking{activityFilter !== "all" ? ` — ${activityFilter.replaceAll("_", " ")}` : ""}
+                    </Typography>
+                    <Box display="flex" gap={1} alignItems="center">
+                        {/* Quick reset */}
+                        <Tooltip title="Show all">
+                            <IconButton variant="plain" size="sm" onClick={() => setActivityFilter("all")}>
+                                <MoreHoriz />
+                            </IconButton>
+                        </Tooltip>
+                    </Box>
                 </Box>
                 <Divider sx={{ my: 1.5 }} />
 
@@ -475,28 +471,24 @@ export default function Activity_Dash() {
                             </tr>
                         </thead>
                         <tbody>
-                            {ACTIVITIES.map((a) => {
-                                const pct = Math.round(a.workPct || 0);
-                                const overdue = a.priority === "overdue";
+                            {filteredActivities.map((a) => {
+                                const pct = calcActivityPercent(a);
+                                const overdue = new Date(a.work_completion.deadline) < new Date();
+
                                 return (
-                                    <tr key={a.id}>
+                                    <tr key={a.activity_name}>
                                         <td>
                                             <Box display="flex" alignItems="center" gap={1}>
                                                 <Person fontSize="sm" />
-                                                <Typography level="body-sm">{a.name}</Typography>
+                                                <Typography level="body-sm">{a.activity_name}</Typography>
                                             </Box>
                                         </td>
                                         <td>
-                                            <Typography level="body-sm">{a.assignee}</Typography>
+                                            <Typography level="body-sm">{a.assigned_user[0].user_name}</Typography>
                                         </td>
                                         <td>
-                                            <Chip
-                                                size="sm"
-                                                variant={a.deadlineChip.variant}
-                                                color={a.deadlineChip.color}
-                                                sx={{ fontWeight: 700 }}
-                                            >
-                                                {a.deadlineChip.text}
+                                            <Chip size="sm" variant="soft" color={overdue ? "danger" : "primary"}>
+                                                {a.work_completion.deadline}
                                             </Chip>
                                         </td>
                                         <td>
@@ -527,12 +519,7 @@ export default function Activity_Dash() {
                                             </Box>
                                         </td>
                                         <td style={{ textAlign: "right" }}>
-                                            <Typography
-                                                level="body-sm"
-                                                sx={{ color: overdue ? "danger.solidBg" : "text.primary" }}
-                                            >
-                                                {a.lastUpdate}
-                                            </Typography>
+                                            <Typography level="body-sm">{a.dpr_logs[a.dpr_logs.length - 1].date}</Typography>
                                         </td>
                                         <td>
                                             <Tooltip title="Actions">
