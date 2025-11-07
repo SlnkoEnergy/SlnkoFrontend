@@ -27,14 +27,14 @@ import {
   Grid,
 } from "@mui/joy";
 import { iconButtonClasses } from "@mui/joy/IconButton";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import NoData from "../assets/alert-bell.svg";
 
 // RTK Query hooks
 import {
   useGetAllDprQuery,
-  useUpdateDprLogMutation, // ⬅️ added
+  useUpdateDprLogMutation,
 } from "../../src/redux/projectsSlice";
 
 /** dd-mm-yyyy -> ISO (UTC midnight) */
@@ -46,8 +46,43 @@ const ddmmyyyyToISO = (s) => {
   return new Date(Date.UTC(+yyyy, +mm - 1, +dd, 0, 0, 0)).toISOString();
 };
 
+/** dd-mm-yyyy -> Date at local midnight */
+const ddmmyyyyToLocalDate = (s) => {
+  if (!s) return null;
+  const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(String(s).trim());
+  if (!m) return null;
+  const [, dd, mm, yyyy] = m;
+  const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd), 0, 0, 0, 0);
+  return isNaN(d.getTime()) ? null : d;
+};
+
+const startOfDay = (d) =>
+  d ? new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0) : null;
+
+/** ceil days difference a->b, never negative */
+const daysBetween = (a, b) => {
+  if (!a || !b) return 0;
+  const A = startOfDay(a);
+  const B = startOfDay(b);
+  const ms = B.getTime() - A.getTime();
+  if (ms <= 0) return 0;
+  return Math.ceil(ms / (24 * 60 * 60 * 1000));
+};
+
+const HEADERS = [
+  "Project Code",
+  "Project Name",
+  "Activity",
+  "Work Detail",
+  "Deadline",
+  "Delay", // NEW COLUMN
+  "Status",
+  "Actions",
+];
+
 function DPRTable() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const prevQueryRef = useRef(null);
 
   /** ===== URL-backed state ===== */
   const pageFromUrl = Math.max(
@@ -88,41 +123,100 @@ function DPRTable() {
   const options = [1, 5, 10, 20, 50, 100];
 
   /** ===== API ===== */
-  const { data, isFetching, isLoading, isError, error } = useGetAllDprQuery({
-    page: currentPage,
-    limit: rowsPerPage,
-    search: searchQuery || "",
-    projectId: projectIdFromUrl,
-    from: fromFromUrl,
-    to: toFromUrl,
-    onlyWithDeadline: onlyWithDeadlineFromUrl,
-  });
+  const { data, isFetching, isLoading, isError, error, refetch } =
+    useGetAllDprQuery({
+      page: currentPage,
+      limit: rowsPerPage,
+      search: searchQuery || "",
+      projectId: projectIdFromUrl,
+      from: fromFromUrl,
+      to: toFromUrl,
+      onlyWithDeadline: onlyWithDeadlineFromUrl,
+    });
 
-  // ⬇️ mutation hook
+  // mutation
   const [updateDprLog, { isLoading: isUpdating, error: updateErr }] =
     useUpdateDprLogMutation();
 
-  /** ===== Normalize rows to match UI (also store IDs for mutation) ===== */
+  /** ===== Normalize rows to match UI ===== */
+  const norm = (s) => {
+    const x = (s || "").toString().toLowerCase().trim();
+    if (x === "completed" || x === "complete") return "completed";
+    if (x === "work stopped" || x === "stopped" || x === "stop") return "stop";
+    if (x === "in-progress" || x === "progress") return "progress";
+    if (x === "idle") return "idle";
+    return "progress";
+  };
+
   const pageRows = useMemo(() => {
     const rows = Array.isArray(data?.rows) ? data.rows : [];
     return rows.map((r, idx) => {
-      const deadlineStr = r.deadline || null; // keep dd-mm-yyyy
-      const deadlineISO = deadlineStr ? ddmmyyyyToISO(deadlineStr) : null; // for math
+      const deadlineStr = r.deadline || null;
+      const deadlineISO = deadlineStr ? ddmmyyyyToISO(deadlineStr) : null;
 
-      // Try to derive IDs from common field names
+      // totals
+      const total = Number(r.value ?? 0);
+      const cumulative = Number(r.cumulative_progress ?? 0); // for bar
+      const todaysSum = Number(r.todays_progress ?? 0);
+
+      // latest log status from API (string); we also compute lifecycleCompleted
+      const apiStatus = (r.dpr_status || r.status || "")
+        .toString()
+        .toLowerCase();
+
+      const lifecycleCompleted = total > 0 && cumulative >= total;
+
+      const normStatus = lifecycleCompleted
+        ? "completed"
+        : apiStatus === "in-progress" || apiStatus === "progress"
+        ? "progress"
+        : apiStatus === "work stopped" ||
+          apiStatus === "stopped" ||
+          apiStatus === "stop"
+        ? "stop"
+        : apiStatus === "idle"
+        ? "idle"
+        : "progress";
+
+      // ids…
       const projectId =
         r.projectId ||
         r.project_id ||
         r.project?._id ||
         r.project?._idProject ||
         null;
-
       const activityId =
-        r.activityId ||
-        r.activity_id ||
-        r._id || // if your API returns activity _id as _id
-        r.activity?._id ||
-        null;
+        r.activityId || r.activity_id || r._id || r.activity?._id || null;
+
+      // ===== Delay calculation on FE =====
+      const deadlineLocal = ddmmyyyyToLocalDate(deadlineStr);
+      const todayLocal = startOfDay(new Date());
+
+      let delayDays = 0;
+
+      if (deadlineLocal) {
+        if (normStatus === "idle" || normStatus === "stop") {
+          // Not counted in these statuses
+          delayDays = 0;
+        } else if (normStatus === "completed") {
+          // Use the date of completion and keep it fixed
+          // We take r.dpr_date (dd-mm-yyyy) as the "last log date", which is when it likely completed.
+          const completedStr = r.dpr_date || null;
+          const completedLocal = ddmmyyyyToLocalDate(completedStr);
+          if (completedLocal && completedLocal > deadlineLocal) {
+            delayDays = daysBetween(deadlineLocal, completedLocal);
+          } else {
+            delayDays = 0;
+          }
+        } else {
+          // In progress: compute live delay vs today
+          if (todayLocal > deadlineLocal) {
+            delayDays = daysBetween(deadlineLocal, todayLocal);
+          }
+        }
+      }
+
+      const delayText = r.delay ?? null; // optional reason text if backend ever sends
 
       return {
         _id:
@@ -132,11 +226,26 @@ function DPRTable() {
         project_code: r.project_code || "-",
         project_name: r.project_name || "-",
         activity_name: r.activity_name || "-",
-        work_completion: { value: r.value ?? null, unit: r.unit ?? "" }, // denominator
-        current_work: { value: r.todays_progress ?? null, unit: r.unit ?? "" }, // numerator (cumulative vs today - per your API)
+
+        // total target:
+        work_completion: { value: total ?? null, unit: r.unit ?? "" },
+
+        // cumulative done (for bar & %):
+        current_work: { value: cumulative ?? null, unit: r.unit ?? "" },
+
+        // optional: today's sum
+        todays_sum: todaysSum,
+
+        // computed delay
+        delay_days: delayDays,
+        delay_text: delayText,
+
         milestones: [],
-        deadlineISO, // for math
-        deadlineStr, // display as dd-mm-yyyy
+        deadlineISO,
+        deadlineStr,
+
+        // keep status for chips & "not counted"
+        status: normStatus,
       };
     });
   }, [data]);
@@ -151,7 +260,7 @@ function DPRTable() {
     return Number.isFinite(n) ? n : 0;
   };
   const getTotal = (r) => toNum(r?.work_completion?.value);
-  const getCompleted = (r) => toNum(r?.current_work?.value);
+  const getCompleted = (r) => toNum(r?.current_work?.value); // cumulative now
   const getUnit = (r) =>
     (r?.work_completion?.unit || r?.current_work?.unit || "").toString();
 
@@ -251,6 +360,67 @@ function DPRTable() {
   };
   const clamp02 = (x) => Math.max(0, Math.min(1, x));
 
+  const renderStatusChipCell = (s) => {
+    const st = norm(s);
+    const label =
+      st === "completed"
+        ? "Completed"
+        : st === "idle"
+        ? "Idle"
+        : st === "stop"
+        ? "Work Stopped"
+        : "In progress";
+
+    // completed -> green, idle -> grey, in progress -> orange, stop -> red
+    const color =
+      st === "completed"
+        ? "success"
+        : st === "idle"
+        ? "neutral"
+        : st === "stop"
+        ? "danger"
+        : "warning";
+
+    return (
+      <Chip variant="soft" color={color} sx={{ fontWeight: 700 }}>
+        {label}
+      </Chip>
+    );
+  };
+
+  const renderDelayCell = (delayDays, delayText, status) => {
+    const st = norm(status);
+    const showNotCounted = st === "idle" || st === "stop";
+
+    let label = "On time";
+    let color = "neutral";
+
+    if (showNotCounted) {
+      label = "Not counted";
+      color = "neutral";
+    } else if (Number(delayDays) > 0) {
+      label = `Overdue ${Number(delayDays)}d`;
+      color = "danger";
+    }
+
+    const tooltip =
+      delayText && String(delayText).trim()
+        ? `Delay reason: ${String(delayText).trim()}`
+        : showNotCounted
+        ? "Delay not counted for Idle/Stopped status"
+        : Number(delayDays) > 0
+        ? "Deadline exceeded"
+        : "No delay";
+
+    return (
+      <Tooltip title={tooltip} arrow variant="soft">
+        <Chip variant="soft" color={color} sx={{ fontWeight: 700 }}>
+          {label}
+        </Chip>
+      </Tooltip>
+    );
+  };
+
   const renderWorkPercent = (
     wc,
     tw,
@@ -262,7 +432,7 @@ function DPRTable() {
 
     const unit = (tw.unit || wc.unit || "").toString();
     const total = Number(tw.value);
-    const completed = Number(wc.value);
+    const completed = Number(wc.value); // cumulative
 
     if (!Number.isFinite(total) || total <= 0) {
       return (
@@ -489,29 +659,72 @@ function DPRTable() {
     setProgressQty("");
     setProgressDate(new Date().toISOString().slice(0, 10));
     setProgressRemarks("");
-    setActionType("progress");
-     setSearchParams((prev) => {
-   const p = new URLSearchParams(prev);
-   console.log(row.projectId);
-   console.log(row.activityId);
-   if (row?.projectId)  p.set("projectId", String(row.projectId));
-   if (row?.activityId) p.set("activityId", String(row.activityId));
-   return p;
- });
+
+    const initial = norm(row?.status);
+    setActionType(initial);
+    setProgressRow({ ...row, status: initial });
+
+    // snapshot current params so we can restore on close
+    prevQueryRef.current = Object.fromEntries(searchParams.entries());
+
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+      if (row?.projectId) p.set("projectId", String(row.projectId));
+      if (row?.activityId) p.set("activityId", String(row.activityId));
+      return p;
+    });
+
     setProgressOpen(true);
   };
-  const closeProgress = () => setProgressOpen(false);
 
-  // Optimistic local update helper
+  const closeProgress = () => {
+    setProgressOpen(false);
+    // optional UI resets
+    setActionType("progress");
+    setProgressRow(null);
+    setProgressQty("");
+    setProgressRemarks("");
+
+    setSearchParams((prev) => {
+      // If we captured a snapshot, restore it
+      if (prevQueryRef.current) {
+        const restored = new URLSearchParams(prevQueryRef.current);
+        prevQueryRef.current = null;
+        return restored;
+      }
+      // Fallback: just delete the IDs
+      const p = new URLSearchParams(prev);
+      p.delete("projectId");
+      p.delete("activityId");
+      return p;
+    });
+  };
+
+  // Optimistic local update helper (cumulative)
   const applyOptimistic = ({ row, addedQty }) => {
     if (!row) return;
-    const id = row._id;
-    // This list renders from 'data', so it will refresh after invalidation.
-    // Still, add a quick optimistic feel by updating current row object.
     row.current_work = {
       ...row.current_work,
       value: String(toNum(row.current_work?.value) + toNum(addedQty)),
     };
+  };
+
+  // input guards
+  const onQtyKeyDown = (e) => {
+    if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
+  };
+
+  const handleQtyChange = (e) => {
+    const v = e.target.value;
+    if (v === "" || v == null) {
+      setProgressQty("");
+      return;
+    }
+    let n = Number(v);
+    if (!Number.isFinite(n)) return;
+    if (n < 0) n = 0;
+    if (n > remainingCap) n = remainingCap; // hard cap
+    setProgressQty(String(n));
   };
 
   // Main submit
@@ -519,20 +732,20 @@ function DPRTable() {
     const row = progressRow;
     if (!row) return;
 
-    const status = statusOverride || actionType || "progress";
-    const qtyNum = toNum(progressQty);
+    const status = statusOverride ?? actionType ?? "progress";
 
-    // validations
-    console.log("submit",row.projectId);
-    console.log(row.activityId);
+    // qty is only required/used for "progress"
+    const qtyNum = status === "progress" ? toNum(progressQty) : 0;
+
+    // validation
     if (!row.projectId || !row.activityId) {
       alert(
         "Missing projectId or activityId for this row. Please check API data mapping."
       );
       return;
     }
-    if (status === "progress" && qtyNum <= 0) {
-      alert("Enter a valid progress quantity (> 0).");
+    if (status === "progress" && (qtyNum <= 0 || qtyNum > remainingCap)) {
+      alert(`Enter a valid progress quantity (0 < qty ≤ ${remainingCap}).`);
       return;
     }
 
@@ -540,23 +753,34 @@ function DPRTable() {
       const payload = {
         projectId: row.projectId,
         activityId: row.activityId,
-        todays_progress: qtyNum,
-        date: progressDate, // yyyy-mm-dd
+        todays_progress: qtyNum, // 0 for idle/stop
+        date: progressDate,
         remarks: (progressRemarks || "").trim(),
         status, // "progress" | "idle" | "stop"
       };
 
-      await updateDprLog(payload).unwrap();
+      const res = await updateDprLog(payload).unwrap();
 
-      // optimistic touch (optional)
-      if (status === "progress" && qtyNum > 0) {
+      // latest status from backend
+      const latestBackendStatus =
+        res?.updatedActivity?.dpr_log?.slice(-1)?.[0]?.status;
+      const latest = norm(latestBackendStatus) || "progress";
+
+      // update select + modal row + table row
+      setActionType(latest);
+      setProgressRow((prev) => (prev ? { ...prev, status: latest } : prev));
+      row.status = latest;
+
+      if (latest === "progress" && qtyNum > 0) {
         applyOptimistic({ row, addedQty: qtyNum });
       }
+
+      // refresh list
+      await refetch();
 
       closeProgress();
     } catch (e) {
       console.error("Update DPR Log failed:", e);
-      // The UI shows a message under buttons via updateErr as well.
     }
   };
 
@@ -570,6 +794,21 @@ function DPRTable() {
     const remain = Math.max(0, total - newDone);
     return { total, done, remain, unit, qty, newDone };
   };
+
+  // Is this activity already fully completed?
+  const isFullyDone = useMemo(() => {
+    if (!progressRow) return false;
+    const total = getTotal(progressRow);
+    const done = getCompleted(progressRow);
+    return total > 0 && done >= total;
+  }, [progressRow]);
+
+  const remainingCap = useMemo(() => {
+    if (!progressRow) return 0;
+    const total = getTotal(progressRow);
+    const done = getCompleted(progressRow);
+    return Math.max(0, total - done);
+  }, [progressRow]);
 
   return (
     <Box
@@ -657,14 +896,7 @@ function DPRTable() {
                   }
                 />
               </th>
-              {[
-                "Project Code",
-                "Project Name",
-                "Activity",
-                "Work Detail",
-                "Deadline",
-                "Actions",
-              ].map((header) => (
+              {HEADERS.map((header) => (
                 <th
                   key={header}
                   style={{
@@ -687,7 +919,7 @@ function DPRTable() {
           <tbody>
             {isLoading || isFetching ? (
               <tr>
-                <td colSpan={6} style={{ padding: "8px" }}>
+                <td colSpan={HEADERS.length + 1} style={{ padding: "8px" }}>
                   <Box
                     sx={{
                       fontStyle: "italic",
@@ -704,7 +936,7 @@ function DPRTable() {
               </tr>
             ) : isError ? (
               <tr>
-                <td colSpan={6} style={{ padding: "8px" }}>
+                <td colSpan={HEADERS.length + 1} style={{ padding: "8px" }}>
                   <Typography color="danger">
                     {error?.data?.message || "Failed to load DPR data"}
                   </Typography>
@@ -727,42 +959,39 @@ function DPRTable() {
                     />
                   </td>
 
-                  <td
-                    style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
-                  >
+                  <td style={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
                     {row.project_code || "-"}
                   </td>
-                  <td
-                    style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
-                  >
+                  <td style={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
                     {row.project_name || "-"}
                   </td>
-                  <td
-                    style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
-                  >
+                  <td style={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
                     {row.activity_name || "-"}
                   </td>
 
-                  <td
-                    style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
-                  >
+                  <td style={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
                     {renderWorkPercent(
-                      row.current_work,
-                      row.work_completion,
+                      row.current_work, // cumulative
+                      row.work_completion, // total
                       row.deadlineISO,
                       row.milestones
                     )}
                   </td>
 
-                  <td
-                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
-                  >
+                  <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
                     <DeadlineChip dateStr={row.deadlineStr} />
                   </td>
 
-                  <td
-                    style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
-                  >
+                  {/* Delay cell (computed on FE) */}
+                  <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
+                    {renderDelayCell(row.delay_days, row.delay_text, row.status)}
+                  </td>
+
+                  <td style={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
+                    {renderStatusChipCell(row.status)}
+                  </td>
+
+                  <td style={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
                     <Button
                       size="sm"
                       variant="soft"
@@ -775,7 +1004,10 @@ function DPRTable() {
               ))
             ) : (
               <tr>
-                <td colSpan={6} style={{ padding: "8px", textAlign: "left" }}>
+                <td
+                  colSpan={HEADERS.length + 1}
+                  style={{ padding: "8px", textAlign: "left" }}
+                >
                   <Box
                     sx={{
                       fontStyle: "italic",
@@ -838,7 +1070,6 @@ function DPRTable() {
                       />
                     </Box>
                   </Typography>
-                  {/* fixed prop name */}
                   <DeadlineChip dateStr={row.deadlineStr} />
                 </Box>
 
@@ -867,6 +1098,18 @@ function DPRTable() {
                         row.milestones
                       )}
                     </Typography>
+
+                    {/* Delay on mobile */}
+                    <Box mt={1}>
+                      <Typography level="body-sm" sx={{ mb: 0.5 }}>
+                        <strong>Delay:</strong>
+                      </Typography>
+                      {renderDelayCell(
+                        row.delay_days,
+                        row.delay_text,
+                        row.status
+                      )}
+                    </Box>
 
                     <Box mt={1.5}>
                       <Button
@@ -1042,28 +1285,41 @@ function DPRTable() {
               const done = progressRow ? getCompleted(progressRow) : 0;
               const unit = progressRow ? getUnit(progressRow) : "";
               const remain = Math.max(0, total - done);
+
+              const s = norm(progressRow?.status);
+              const statusLabel =
+                s === "completed"
+                  ? "Completed"
+                  : s === "idle"
+                  ? "Idle"
+                  : s === "stop"
+                  ? "Work Stopped"
+                  : "In progress";
+              const statusColor =
+                s === "completed"
+                  ? "success"
+                  : s === "idle"
+                  ? "neutral"
+                  : s === "stop"
+                  ? "danger"
+                  : "warning";
+
               return (
                 <>
                   <Chip variant="soft" color="neutral">
-                    Total:{" "}
-                    <b style={{ marginLeft: 6 }}>
-                      {total} {unit}
-                    </b>
+                    Total: <b style={{ marginLeft: 6 }}>{total} {unit}</b>
                   </Chip>
                   <Chip variant="soft" color="primary">
-                    Done:{" "}
-                    <b style={{ marginLeft: 6 }}>
-                      {done} {unit}
-                    </b>
+                    Done: <b style={{ marginLeft: 6 }}>{done} {unit}</b>
                   </Chip>
                   <Chip
                     variant="soft"
                     color={remain > 0 ? "warning" : "success"}
                   >
-                    Remaining:{" "}
-                    <b style={{ marginLeft: 6 }}>
-                      {remain} {unit}
-                    </b>
+                    Remaining: <b style={{ marginLeft: 6 }}>{remain} {unit}</b>
+                  </Chip>
+                  <Chip variant="soft" color={statusColor}>
+                    Status: <b style={{ marginLeft: 6 }}>{statusLabel}</b>
                   </Chip>
                 </>
               );
@@ -1098,13 +1354,25 @@ function DPRTable() {
               </Typography>
               <Input
                 type="number"
-                placeholder={`e.g. 30`}
+                placeholder={isFullyDone ? "Completed" : `Max ${remainingCap}`}
                 value={progressQty}
-                onChange={(e) => setProgressQty(e.target.value)}
-                slotProps={{ input: { min: 0, step: "any" } }}
+                onChange={handleQtyChange}
+                onKeyDown={onQtyKeyDown}
+                slotProps={{
+                  input: { min: 0, max: remainingCap, step: "any" },
+                }}
                 sx={{ "--Input-minHeight": "40px" }}
-                disabled={isUpdating || actionType !== "progress"}
+                disabled={
+                  isUpdating ||
+                  actionType !== "progress" || // blocks for Idle/Stop
+                  isFullyDone ||
+                  remainingCap <= 0
+                }
               />
+              <Typography level="body-xs" sx={{ mt: 0.5, opacity: 0.7 }}>
+                Max today: {remainingCap}{" "}
+                {progressRow ? getUnit(progressRow) : ""}
+              </Typography>
             </FormControl>
 
             <Grid xs={12}>
@@ -1118,6 +1386,23 @@ function DPRTable() {
                 onChange={(e) => setProgressRemarks(e.target.value)}
                 disabled={isUpdating}
               />
+            </Grid>
+
+            <Grid xs={12} md={6}>
+              <Typography level="title-sm" sx={{ mb: 0.5 }}>
+                Status
+              </Typography>
+              <Select
+                value={actionType}
+                onChange={(_, v) => v && setActionType(v)}
+                disabled={isUpdating}
+                sx={{ "--Select-minHeight": "40px" }}
+              >
+                {/* backend enum: progress | idle | stop */}
+                <Option value="progress">In progress</Option>
+                <Option value="idle">Idle</Option>
+                <Option value="stop">Work Stopped</Option>
+              </Select>
             </Grid>
           </Box>
 
@@ -1252,9 +1537,16 @@ function DPRTable() {
               </Button>
               <Button
                 variant="solid"
-                onClick={() => submitWith("progress")}
+                onClick={() => submitWith()}
                 loading={isUpdating}
-                disabled={isUpdating}
+                disabled={
+                  isUpdating ||
+                  isFullyDone || // can't add more progress once completed
+                  (actionType === "progress" &&
+                    (remainingCap <= 0 ||
+                      toNum(progressQty) <= 0 ||
+                      toNum(progressQty) > remainingCap))
+                }
               >
                 Submit Progress
               </Button>
