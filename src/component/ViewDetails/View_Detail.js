@@ -58,7 +58,6 @@ import { debounce } from "lodash";
 
 import {
   useGetCustomerSummaryQuery,
-  useUpdateSalesDetailByIdMutation,
   useUpdateSalesPOMutation,
 } from "../../redux/Accounts";
 import ViewColumnIcon from "@mui/icons-material/ViewColumn";
@@ -157,7 +156,7 @@ export default function CustomerPaymentSummary() {
     setSearchParams(next);
   };
 
-    const COLUMN_CONFIG = useMemo(
+  const COLUMN_CONFIG = useMemo(
     () => [
       // "poNumber" kept always visible (not in menu) – add here if you want it toggleable
       { key: "vendor", label: "Vendor" },
@@ -178,6 +177,7 @@ export default function CustomerPaymentSummary() {
       { key: "billedTotal", label: "Billed Total (₹)" },
 
       { key: "remainingSales", label: "Remaining Sales Closure (incl. GST)" },
+      { key: "status", label: "Status" },
       { key: "select", label: "Select checkbox" },
     ],
     []
@@ -240,161 +240,158 @@ export default function CustomerPaymentSummary() {
     user?.name &&
     !["Chandan Singh", "Sachin Raghav", "Kailash Chand"].includes(user.name);
 
-// --- Sales table column config & visibility ---
-const SALES_COLUMNS = useMemo(
-  () => [
-    { key: "convDate", label: "Conversion Date" },
-    { key: "item", label: "Item" },
-    { key: "invoice", label: "Invoice Number" },
-    { key: "billBasic", label: "Bill Basic (₹)" },
-    { key: "salesBasic", label: "Sales Value (₹)" },
-    { key: "salesGst", label: "Sales GST (₹)" },
-    { key: "salesTotal", label: "Total Sales (₹)" },
-    { key: "actions", label: "Actions" },
-  ],
-  []
-);
+  // --- Sales table column config & visibility ---
+  const SALES_COLUMNS = useMemo(
+    () => [
+      { key: "convDate", label: "Conversion Date" },
+      { key: "item", label: "Item" },
+      { key: "invoice", label: "Invoice Number" },
+      { key: "billBasic", label: "Bill Basic (₹)" },
+      { key: "salesBasic", label: "Sales Value (₹)" },
+      { key: "salesGst", label: "Sales GST (₹)" },
+      { key: "salesTotal", label: "Total Sales (₹)" },
+      { key: "actions", label: "Actions" },
+    ],
+    []
+  );
 
-const SALES_STORAGE_KEY = "sales-summary-columns-v1";
+  const SALES_STORAGE_KEY = "sales-summary-columns-v1";
 
-const salesDefaults = useMemo(() => {
-  const o = {};
-  for (const c of SALES_COLUMNS) o[c.key] = c.defaultVisible !== false; // default true
-  return o;
-}, [SALES_COLUMNS]);
+  const salesDefaults = useMemo(() => {
+    const o = {};
+    for (const c of SALES_COLUMNS) o[c.key] = c.defaultVisible !== false; // default true
+    return o;
+  }, [SALES_COLUMNS]);
 
-const [salesVis, setSalesVis] = useState(salesDefaults);
+  const [salesVis, setSalesVis] = useState(salesDefaults);
 
-// Load once
-useEffect(() => {
-  try {
-    const raw = localStorage.getItem(SALES_STORAGE_KEY);
-    if (!raw) return;
-    const parsed = JSON.parse(raw);
-    const merged = { ...salesDefaults };
-    for (const k of Object.keys(parsed || {})) if (k in merged) merged[k] = !!parsed[k];
-    setSalesVis(merged);
-  } catch {}
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, []);
+  // Load once
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SALES_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      const merged = { ...salesDefaults };
+      for (const k of Object.keys(parsed || {}))
+        if (k in merged) merged[k] = !!parsed[k];
+      setSalesVis(merged);
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-// Persist
-useEffect(() => {
-  try {
-    localStorage.setItem(SALES_STORAGE_KEY, JSON.stringify(salesVis));
-  } catch {}
-}, [salesVis]);
+  // Persist
+  useEffect(() => {
+    try {
+      localStorage.setItem(SALES_STORAGE_KEY, JSON.stringify(salesVis));
+    } catch {}
+  }, [salesVis]);
 
-const toggleSalesCol = (key) =>
-  setSalesVis((s) => ({ ...s, [key]: !s[key] }));
-const setAllSalesCols = (v) => {
-  const next = {};
-  for (const c of SALES_COLUMNS) next[c.key] = !!v;
-  setSalesVis(next);
-};
-const resetSalesCols = () => setSalesVis(salesDefaults);
-const showSales = (key) => !!salesVis[key];
+  const toggleSalesCol = (key) =>
+    setSalesVis((s) => ({ ...s, [key]: !s[key] }));
+  const setAllSalesCols = (v) => {
+    const next = {};
+    for (const c of SALES_COLUMNS) next[c.key] = !!v;
+    setSalesVis(next);
+  };
+  const resetSalesCols = () => setSalesVis(salesDefaults);
+  const showSales = (key) => !!salesVis[key];
 
-
-
-const [editOpen, setEditOpen] = React.useState(false);
-const [editRow, setEditRow] = React.useState(null);
-const [form, setForm] = React.useState({
-  basic_sales: "",  // Initial empty string to be populated from DB
-  gst_on_sales: "", // Initial empty string to be populated from DB
-  sales_invoice: "",
-  remarks: "",
-});
-const [saving, setSaving] = React.useState(false);
-
-// Derived values to show preview in the modal (GST amount, total with GST)
-const gstPercentFromDB = Number(editRow?.gst_on_sales ?? 0); // Default to 0 if undefined
-const basicNum = Number(form.basic_sales || 0); // Ensure basic_sales is a number
-const gstAmt = (basicNum * gstPercentFromDB) / 100;
-const totalWithGst = basicNum + gstAmt;
-
-const openEdit = (row) => {
-  setEditRow(row);
-
-  // Calculate GST rate percentage from gst_on_sales for display purposes
-  const gstRatePercent = row?.gst_on_sales ? (row.gst_on_sales * 100) / row.basic_sales : 0;
-
-  setForm({
-    basic_sales: row?.basic_sales || "",
-    gst_rate_percent: gstRatePercent,  // This is what will be displayed in the input field
-    sales_invoice: row?.sales_invoice || "",
-    remarks: (row?.remarks || "").trim(),
+  const [editOpen, setEditOpen] = React.useState(false);
+  const [editRow, setEditRow] = React.useState(null);
+  const [form, setForm] = React.useState({
+    basic_sales: "", // Initial empty string to be populated from DB
+    gst_on_sales: "", // Initial empty string to be populated from DB
+    sales_invoice: "",
+    remarks: "",
   });
-  setEditOpen(true);
-};
+  const [saving, setSaving] = React.useState(false);
 
+  // Derived values to show preview in the modal (GST amount, total with GST)
+  const gstPercentFromDB = Number(editRow?.gst_on_sales ?? 0); // Default to 0 if undefined
+  const basicNum = Number(form.basic_sales || 0); // Ensure basic_sales is a number
+  const gstAmt = (basicNum * gstPercentFromDB) / 100;
+  const totalWithGst = basicNum + gstAmt;
 
+  const openEdit = (row) => {
+    setEditRow(row);
 
-const closeEdit = () => {
-  setEditOpen(false);
-  setEditRow(null);
-};
+    // Calculate GST rate percentage from gst_on_sales for display purposes
+    const gstRatePercent = row?.gst_on_sales
+      ? (row.gst_on_sales * 100) / row.basic_sales
+      : 0;
 
-const onChange = (k) => (e) => setForm((s) => ({ ...s, [k]: e.target.value }));
-
-
-const handleEditSave = async () => {
-
-  console.log(form.gst_rate_percent);
-  
-  const basic = parseFloat(form.basic_sales);  // Ensure this is a number
-  const gstP = parseFloat(form.gst_rate_percent);  // Get the GST percent value
-
-  // Basic validation for numbers
-  if (isNaN(basic) || basic <= 0) {
-    return toast.error("Enter valid Basic Sales (positive number required)");
-  }
-
-  if (isNaN(gstP) || gstP < 0) {
-    return toast.error("Enter valid GST % (positive number required)");
-  }
-
-  // Prepare the payload to send to the API
-  const payload = {
-    salesId: editRow?._id, 
-    basic_sales: basic,      // Send as a number
-    gst_on_sales: gstP,     // Send GST as percentage (mapped to gst_on_sales for saving)
-    sales_invoice: (form.sales_invoice || "").trim(),
-    remarks: (form.remarks || "").trim(),
+    setForm({
+      basic_sales: row?.basic_sales || "",
+      gst_rate_percent: gstRatePercent, // This is what will be displayed in the input field
+      sales_invoice: row?.sales_invoice || "",
+      remarks: (row?.remarks || "").trim(),
+    });
+    setEditOpen(true);
   };
 
-  console.log("Payload sent:", payload);
+  const closeEdit = () => {
+    setEditOpen(false);
+    setEditRow(null);
+  };
 
-  try {
-    setSaving(true);
+  const onChange = (k) => (e) =>
+    setForm((s) => ({ ...s, [k]: e.target.value }));
 
-    // Get token from localStorage (or wherever you're storing it)
-    const token = localStorage.getItem("authToken");
+  const handleEditSave = async () => {
+    console.log(form.gst_rate_percent);
 
-    // Send the request using Axios with the payload as JSON and include the token in headers
-    const response = await Axios.put(`/update-sales-details/${payload.salesId}`, payload, {
-       headers: {
-              "x-auth-token": token,
-            }
-    });
+    const basic = parseFloat(form.basic_sales); // Ensure this is a number
+    const gstP = parseFloat(form.gst_rate_percent); // Get the GST percent value
 
-    toast.success("Sales detail updated");
-    setSaving(false);
-    closeEdit();
-    refetch?.();  // Optionally refetch the data after successful update
-  } catch (e) {
-    console.error("Edit save failed:", e);
-    setSaving(false);
-    toast.error(e?.response?.data?.message || "Failed to update sales detail");
-  }
-};
+    // Basic validation for numbers
+    if (isNaN(basic) || basic <= 0) {
+      return toast.error("Enter valid Basic Sales (positive number required)");
+    }
 
+    if (isNaN(gstP) || gstP < 0) {
+      return toast.error("Enter valid GST % (positive number required)");
+    }
 
+    // Prepare the payload to send to the API
+    const payload = {
+      salesId: editRow?._id,
+      basic_sales: basic, // Send as a number
+      gst_on_sales: gstP, // Send GST as percentage (mapped to gst_on_sales for saving)
+      sales_invoice: (form.sales_invoice || "").trim(),
+      remarks: (form.remarks || "").trim(),
+    };
 
+    console.log("Payload sent:", payload);
 
+    try {
+      setSaving(true);
 
+      // Get token from localStorage (or wherever you're storing it)
+      const token = localStorage.getItem("authToken");
 
+      // Send the request using Axios with the payload as JSON and include the token in headers
+      const response = await Axios.put(
+        `/update-sales-details/${payload.salesId}`,
+        payload,
+        {
+          headers: {
+            "x-auth-token": token,
+          },
+        }
+      );
 
+      toast.success("Sales detail updated");
+      setSaving(false);
+      closeEdit();
+      refetch?.(); // Optionally refetch the data after successful update
+    } catch (e) {
+      console.error("Edit save failed:", e);
+      setSaving(false);
+      toast.error(
+        e?.response?.data?.message || "Failed to update sales detail"
+      );
+    }
+  };
 
   // ------------- data fetch (RTK) -------------
   const {
@@ -414,6 +411,8 @@ const handleEditSave = async () => {
     page,
     pageSize,
   });
+
+  console.log({ responseData });
 
   // shape-safe fallbacks
   const {
@@ -445,40 +444,39 @@ const handleEditSave = async () => {
     return isNaN(x) ? "—" : `${x.toLocaleDateString()}`;
   };
 
-    const filteredSales = useMemo(() => {
-  const q = (searchSales || "").trim().toLowerCase();
-  if (!q) return SalesSummary || [];
-  return (SalesSummary || []).filter((s) => {
-    const po = String(s?.po_number || "").toLowerCase();
-    const vendor = String(s?.vendor || "").toLowerCase();
-    const item = getItemLabel(s).toLowerCase();
-    const inv = String(s?.sales_invoice || "").toLowerCase();
-    return po.includes(q) || vendor.includes(q) || item.includes(q) || inv.includes(q);
-  });
-}, [SalesSummary, searchSales]);
+  const filteredSales = useMemo(() => {
+    const q = (searchSales || "").trim().toLowerCase();
+    if (!q) return SalesSummary || [];
+    return (SalesSummary || []).filter((s) => {
+      const po = String(s?.po_number || "").toLowerCase();
+      const vendor = String(s?.vendor || "").toLowerCase();
+      const item = getItemLabel(s).toLowerCase();
+      const inv = String(s?.sales_invoice || "").toLowerCase();
+      return (
+        po.includes(q) ||
+        vendor.includes(q) ||
+        item.includes(q) ||
+        inv.includes(q)
+      );
+    });
+  }, [SalesSummary, searchSales]);
 
-const normalizeAttachments = (atts) => {
+  const normalizeAttachments = (atts) => {
+    const arr = Array.isArray(atts) ? atts : atts ? [atts] : [];
 
-  const arr = Array.isArray(atts) ? atts : atts ? [atts] : [];
+    return arr
+      .map((a) => {
+        const url = a?.url || a?.attachment_url || a?.fileurl || "";
+        const name =
+          a?.name ||
+          a?.attachment_name ||
+          a?.filename ||
+          (url ? url.split("/").pop() : "File");
 
-  return arr
-    .map((a) => {
-      const url =
-        a?.url ||
-        a?.attachment_url ||
-        a?.fileurl ||
-        "";
-      const name =
-        a?.name ||
-        a?.attachment_name ||
-        a?.filename ||
-        (url ? url.split("/").pop() : "File");
-
-      return { url, name };
-    })
-    .filter((a) => a.url);
-};
-
+        return { url, name };
+      })
+      .filter((a) => a.url);
+  };
 
   const getItemLabel = (row) => {
     if (typeof row?.item_name === "string") return row.item_name;
@@ -492,7 +490,6 @@ const normalizeAttachments = (atts) => {
     }
     return row?.item_name || "-";
   };
-
 
   // Debounced refetch on filter changes
   useEffect(() => {
@@ -508,7 +505,6 @@ const normalizeAttachments = (atts) => {
     refetch,
   ]);
 
- 
   const writeUrl = (newPage) => {
     const next = new URLSearchParams(searchParams);
     next.set("tab", activeTab);
@@ -691,8 +687,6 @@ const normalizeAttachments = (atts) => {
     }
   };
 
-
-
   const handleDeleteClient = async ({ _id }) => {
     if (selectedClients.length === 0) {
       toast.error("No POs selected for deletion.");
@@ -722,7 +716,6 @@ const normalizeAttachments = (atts) => {
       toast.error(msg);
     }
   };
-
 
   const handleDeleteCredit = async () => {
     if (selectedCredits.length === 0) {
@@ -826,8 +819,7 @@ const normalizeAttachments = (atts) => {
   const [selectedPO, setSelectedPO] = useState([]);
   const [salesAmounts, setSalesAmounts] = useState({});
   const [salesInvoice, setSalesInvoice] = useState("");
-  const [completeSales, setCompleteSales] = useState({}); 
-
+  const [completeSales, setCompleteSales] = useState({});
   const handleSalesConvert = async () => {
     try {
       // 1) Must have PO(s)
@@ -841,7 +833,9 @@ const normalizeAttachments = (atts) => {
         (po) => Number(po.total_billed_value || 0) > 0
       );
       if (!validPOs.length) {
-        toast.error("Only POs with billed value greater than 0 can be converted.");
+        toast.error(
+          "Only POs with billed value greater than 0 can be converted."
+        );
         return;
       }
 
@@ -859,7 +853,9 @@ const normalizeAttachments = (atts) => {
       }
       const invoiceOk = /^[A-Za-z0-9\/\-.]+$/.test(inv);
       if (!invoiceOk) {
-        toast.error("Sales Invoice No. can contain letters, numbers, '/', '-' or '.'.");
+        toast.error(
+          "Sales Invoice No. can contain letters, numbers, '/', '-' or '.'."
+        );
         return;
       }
 
@@ -884,7 +880,9 @@ const normalizeAttachments = (atts) => {
       });
       if (capErrors.length) {
         const poList = capErrors.map((p) => p.po_number).join(", ");
-        toast.error(`Basic Sales must not exceed Billed Basic Value for: ${poList}`);
+        toast.error(
+          `Basic Sales must not exceed Billed Basic Value for: ${poList}`
+        );
         return;
       }
 
@@ -1262,13 +1260,19 @@ const normalizeAttachments = (atts) => {
       [
         "6",
         "Bills received, yet to be invoiced to customer",
-        safeRound(responseData?.aggregate_billed_value),
+        safeRound(
+          responseData?.clientHistory?.meta?.total_remaining_sales_value
+        ),
         "#FFF",
       ],
       [
         "7",
-        "Advances left after bills received [4-5-6]",
-        safeRound(responseData?.remaining_advance_left_after_billed),
+        "Advances left after bills received [4 - 5 - 6]",
+        safeRound(
+          responseData?.total_advance_paid -
+            responseData?.total_sales_value -
+            responseData?.clientHistory?.meta?.total_remaining_sales_value
+        ),
         "#FFF",
       ],
       [
@@ -1280,7 +1284,15 @@ const normalizeAttachments = (atts) => {
       [
         "9",
         "Balance With Slnko [3 - 5 - 6 - 7 - 8]",
-        safeRound(responseData?.balance_with_slnko),
+        safeRound(
+          responseData?.netBalance -
+            responseData?.total_sales_value -
+            responseData?.clientHistory?.meta?.total_remaining_sales_value -
+            (responseData?.total_advance_paid -
+              responseData?.total_sales_value -
+              responseData?.clientHistory?.meta?.total_remaining_sales_value) -
+            responseData?.total_adjustment
+        ),
         "#FFECB3",
         true,
       ],
@@ -2045,779 +2057,1209 @@ const normalizeAttachments = (atts) => {
           {/* ====================== PURCHASE (Client History) ====================== */}
           <TabPanel value="purchase" sx={{ p: 0 }}>
             <Box mt={4}>
-      {/* Toolbar */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexDirection: { xs: "column", md: "row" },
-          gap: 2,
-          mb: 2,
-        }}
-      >
-        <Input
-          placeholder="Search PO Number, Item or Vendor..."
-          value={searchClient}
-          onChange={(e) => setSearchClient(e.target.value)}
-          sx={{ width: { xs: "100%", md: 350 } }}
-        />
-
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          {canUseActions && (
-            <>
-              <Button
-                variant="solid"
-                color="primary"
-                disabled={selectedClients.length === 0}
-                onClick={() => setConfirmCloseOpen(true)}
+              {/* Toolbar */}
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexDirection: { xs: "column", md: "row" },
+                  gap: 2,
+                  mb: 2,
+                }}
               >
-                Sales Conversion
-              </Button>
+                <Input
+                  placeholder="Search PO Number, Item or Vendor..."
+                  value={searchClient}
+                  onChange={(e) => setSearchClient(e.target.value)}
+                  sx={{ width: { xs: "100%", md: 350 } }}
+                />
 
-              {canDelete && (
-                <>
-                  <Divider orientation="vertical" flexItem />
-                  <IconButton
-                    color="danger"
-                    disabled={selectedClients.length === 0}
-                    onClick={handleDeleteClient}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </>
-              )}
-            </>
-          )}
-
-          {/* Column menu */}
-          <Dropdown>
-            <MenuButton
-              variant="outlined"
-              startDecorator={<ViewColumnIcon />}
-              sx={{ whiteSpace: "nowrap" }}
-            >
-              Columns
-            </MenuButton>
-            <Menu placement="bottom-end" sx={{ minWidth: 260, maxHeight: 380, overflow: "auto" }}>
-              <MenuItem disabled sx={{ fontWeight: 600 }}>
-                Column visibility
-              </MenuItem>
-              <Divider />
-              {COLUMN_CONFIG.map((c) => (
-                <MenuItem key={c.key} onClick={() => toggle(c.key)}>
-                  <Checkbox checked={!!vis[c.key]} readOnly size="sm" sx={{ mr: 1 }} />
-                  {c.label}
-                </MenuItem>
-              ))}
-              <Divider />
-              <MenuItem>
-                <Button size="sm" variant="plain" onClick={() => setAll(true)}>
-                  Select all
-                </Button>
-                <Button size="sm" variant="plain" onClick={() => setAll(false)} sx={{ ml: "auto" }}>
-                  None
-                </Button>
-              </MenuItem>
-              <MenuItem>
-                <Button size="sm" variant="outlined" color="neutral" onClick={reset} fullWidth>
-                  Reset to default
-                </Button>
-              </MenuItem>
-            </Menu>
-          </Dropdown>
-        </Box>
-      </Box>
-
-      {/* Table */}
-      <Sheet
-        variant="outlined"
-        sx={{
-          borderRadius: 12,
-          overflowX: "auto",
-          p: { xs: 1, sm: 2 },
-          boxShadow: "md",
-          bgcolor: "#fff",
-          "@media print": {
-            boxShadow: "none",
-            border: "none",
-            borderRadius: 0,
-            p: 0,
-            overflow: "visible",
-          },
-        }}
-      >
-        <Table
-          borderAxis="both"
-          stickyHeader
-          sx={{
-            width: "100%",
-            minWidth: 1000,
-            tableLayout: "auto",
-            fontSize: { xs: 12, sm: 14 },
-            "& thead": {
-              backgroundColor: "background.level1",
-              "& th": {
-                px: 2,
-                py: 1.1,
-                fontWeight: 600,
-                color: "text.secondary",
-                borderColor: "neutral.outlinedBorder",
-                textAlign: "center",
-              },
-            },
-            "& tbody tr:hover": { backgroundColor: "background.level1" },
-            "& th, & td": {
-              px: { xs: 1, sm: 2 },
-              py: 1,
-              verticalAlign: "middle",
-              lineHeight: 1.5,
-              borderColor: "neutral.outlinedBorder",
-            },
-            "& td": { wordBreak: "break-word", overflowWrap: "anywhere" },
-            "& td.em": { fontWeight: 700, color: "text.primary" },
-            "& th.em": { fontWeight: 800, color: "text.primary" },
-          }}
-        >
-          <colgroup>
-            <col style={{ minWidth: "250px" }} /> {/* PO Number always */}
-            {show("vendor") && <col style={{ minWidth: "250px" }} />}
-            {show("item") && <col style={{ minWidth: "300px" }} />}
-
-            {show("poBasic") && <col style={{ minWidth: "160px" }} />}
-            {show("poGst") && <col style={{ minWidth: "160px" }} />}
-            {show("poTotal") && <col style={{ minWidth: "160px" }} />}
-
-            {show("advancePaid") && <col style={{ minWidth: "200px" }} />}
-            {show("advanceRemaining") && <col style={{ minWidth: "200px" }} />}
-
-            {show("billBasic") && <col style={{ minWidth: "200px" }} />}
-            {show("billGst") && <col style={{ minWidth: "200px" }} />}
-            {show("billedTotal") && <col style={{ minWidth: "200px" }} />}
-
-            {show("remainingSales") && <col style={{ minWidth: "200px" }} />}
-            {show("select") && <col style={{ minWidth: "100px" }} />}
-          </colgroup>
-
-          <thead>
-            <tr>
-              <th rowSpan={2} className="text">PO Number</th>
-              {show("vendor") && <th rowSpan={2} className="text">Vendor</th>}
-              {show("item") && <th rowSpan={2} className="text">Item</th>}
-
-              {(show("poBasic") || show("poGst") || show("poTotal")) && (
-                <th
-                  colSpan={visibleCount("poBasic", "poGst", "poTotal")}
-                  className="poGroup"
-                >
-                  PO Value (₹)
-                </th>
-              )}
-
-              {show("advancePaid") && <th rowSpan={2} className="num">Advance Paid (₹)</th>}
-              {show("advanceRemaining") && (
-                <th rowSpan={2} className="num groupSplitRight">Advance Remaining (₹)</th>
-              )}
-
-              {(show("billBasic") || show("billGst") || show("billedTotal")) && (
-                <th
-                  colSpan={visibleCount("billBasic", "billGst", "billedTotal")}
-                  className="billedGroup"
-                >
-                  Total Billed (₹)
-                </th>
-              )}
-
-              {show("remainingSales") && (
-                <th rowSpan={2} className="num">Remaining Sales Closure(incl. gst)</th>
-              )}
-
-              {show("select") && (
-                <th rowSpan={2} style={{ textAlign: "center" }}>
-                  <Checkbox
-                    onChange={(e) => {
-                      if (e.target.checked)
-                        setSelectedClients(ClientSummary.map((c) => c._id));
-                      else setSelectedClients([]);
-                    }}
-                    checked={
-                      ClientSummary.length > 0 &&
-                      selectedClients.length === ClientSummary.length
-                    }
-                    disabled={ClientSummary.length === 0}
-                  />
-                </th>
-              )}
-            </tr>
-            <tr>
-              {show("poBasic") && <th className="num em poGroup">Basic (₹)</th>}
-              {show("poGst") && <th className="num em poGroup">GST (₹)</th>}
-              {show("poTotal") && <th className="num em poGroup">Total (₹)</th>}
-
-              {show("billBasic") && <th className="num em billedGroup">Basic (₹)</th>}
-              {show("billGst") && <th className="num em billedGroup">GST (₹)</th>}
-              {show("billedTotal") && <th className="num em billedGroup">Total (₹)</th>}
-            </tr>
-          </thead>
-
-          <tbody>
-            {isLoading ? (
-              <tr>
-                <td colSpan={13} style={{ textAlign: "center", padding: 20 }}>
-                  <Typography level="body-md" sx={{ fontStyle: "italic" }}>
-                    Loading purchase history...
-                  </Typography>
-                </td>
-              </tr>
-            ) : ClientSummary.length > 0 ? (
-              ClientSummary.map((client) => (
-                <tr key={client._id}>
-                  <td className="text">{client.po_number || "N/A"}</td>
-
-                  {show("vendor") && <td className="text">{client.vendor || "N/A"}</td>}
-
-                  {show("item") && (
-                    <td className="text item" title={getItemLabel(client) || "—"}>
-                      <Typography
-                        level="body-sm"
-                        sx={{
-                          display: "block",
-                          maxWidth: { xs: "100%", md: 280 },
-                          overflow: "hidden",
-                          textOverflow: { xs: "clip", md: "ellipsis" },
-                          whiteSpace: { xs: "normal", md: "nowrap" },
-                        }}
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  {canUseActions && (
+                    <>
+                      <Button
+                        variant="solid"
+                        color="primary"
+                        disabled={selectedClients.length === 0}
+                        onClick={() => setConfirmCloseOpen(true)}
                       >
-                        {getItemLabel(client)}
-                      </Typography>
-                    </td>
+                        Sales Conversion
+                      </Button>
+
+                      {canDelete && (
+                        <>
+                          <Divider orientation="vertical" flexItem />
+                          <IconButton
+                            color="danger"
+                            disabled={selectedClients.length === 0}
+                            onClick={handleDeleteClient}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </>
+                      )}
+                    </>
                   )}
 
-                  {show("poBasic") && (
-                    <td className="num em"><RupeeValue value={client.po_basic || 0} /></td>
-                  )}
-                  {show("poGst") && (
-                    <td className="num em"><RupeeValue value={client.gst || 0} /></td>
-                  )}
-                  {show("poTotal") && (
-                    <td className="num em"><RupeeValue value={client.po_value || 0} /></td>
-                  )}
+                  {/* Column menu */}
+                  <Dropdown>
+                    <MenuButton
+                      variant="outlined"
+                      startDecorator={<ViewColumnIcon />}
+                      sx={{ whiteSpace: "nowrap" }}
+                    >
+                      Columns
+                    </MenuButton>
+                    <Menu
+                      placement="bottom-end"
+                      sx={{ minWidth: 260, maxHeight: 380, overflow: "auto" }}
+                    >
+                      <MenuItem disabled sx={{ fontWeight: 600 }}>
+                        Column visibility
+                      </MenuItem>
+                      <Divider />
+                      {COLUMN_CONFIG.map((c) => (
+                        <MenuItem key={c.key} onClick={() => toggle(c.key)}>
+                          <Checkbox
+                            checked={!!vis[c.key]}
+                            readOnly
+                            size="sm"
+                            sx={{ mr: 1 }}
+                          />
+                          {c.label}
+                        </MenuItem>
+                      ))}
+                      <Divider />
+                      <MenuItem>
+                        <Button
+                          size="sm"
+                          variant="plain"
+                          onClick={() => setAll(true)}
+                        >
+                          Select all
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="plain"
+                          onClick={() => setAll(false)}
+                          sx={{ ml: "auto" }}
+                        >
+                          None
+                        </Button>
+                      </MenuItem>
+                      <MenuItem>
+                        <Button
+                          size="sm"
+                          variant="outlined"
+                          color="neutral"
+                          onClick={reset}
+                          fullWidth
+                        >
+                          Reset to default
+                        </Button>
+                      </MenuItem>
+                    </Menu>
+                  </Dropdown>
+                </Box>
+              </Box>
 
-                  {show("advancePaid") && (
-                    <td className="num"><RupeeValue value={client.advance_paid || 0} /></td>
-                  )}
-                  {show("advanceRemaining") && (
-                    <td className="num"><RupeeValue value={client.remaining_amount || 0} /></td>
-                  )}
-
-                  {show("billBasic") && (
-                    <td className="num em"><RupeeValue value={client.bill_basic || 0} /></td>
-                  )}
-                  {show("billGst") && (
-                    <td className="num em"><RupeeValue value={client.bill_gst || 0} /></td>
-                  )}
-                  {show("billedTotal") && (
-                    <td className="num em"><RupeeValue value={client.total_billed_value || 0} /></td>
-                  )}
-
-                  {show("remainingSales") && (
-                    <td className="num"><RupeeValue value={client.remaining_sales_value || 0} /></td>
-                  )}
-
-                  {show("select") && (
-                    <td style={{ textAlign: "center" }}>
-                      <Checkbox
-                        checked={selectedClients.includes(client._id)}
-                        onChange={() =>
-                          setSelectedClients((prev) =>
-                            prev.includes(client._id)
-                              ? prev.filter((id) => id !== client._id)
-                              : [...prev, client._id]
-                          )
-                        }
-                      />
-                    </td>
-                  )}
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={13} style={{ textAlign: "center", padding: 20 }}>
-                  <Typography level="body-md">No purchase history available</Typography>
-                </td>
-              </tr>
-            )}
-          </tbody>
-
-          {ClientSummary.length > 0 && (
-            <tfoot>
-              <tr>
-                <td
-                  colSpan={1 + (show("vendor") ? 1 : 0) + (show("item") ? 1 : 0)}
-                  style={{ textAlign: "right", fontWeight: 700 }}
+              {/* Table */}
+              <Sheet
+                variant="outlined"
+                sx={{
+                  borderRadius: 12,
+                  overflowX: "auto",
+                  p: { xs: 1, sm: 2 },
+                  boxShadow: "md",
+                  bgcolor: "#fff",
+                  "@media print": {
+                    boxShadow: "none",
+                    border: "none",
+                    borderRadius: 0,
+                    p: 0,
+                    overflow: "visible",
+                  },
+                }}
+              >
+                <Table
+                  borderAxis="both"
+                  stickyHeader
+                  sx={{
+                    width: "100%",
+                    minWidth: 1000,
+                    tableLayout: "auto",
+                    fontSize: { xs: 12, sm: 14 },
+                    "& thead": {
+                      backgroundColor: "background.level1",
+                      "& th": {
+                        px: 2,
+                        py: 1.1,
+                        fontWeight: 600,
+                        color: "text.secondary",
+                        borderColor: "neutral.outlinedBorder",
+                        textAlign: "center",
+                      },
+                    },
+                    "& tbody tr:hover": {
+                      backgroundColor: "background.level1",
+                    },
+                    "& th, & td": {
+                      px: { xs: 1, sm: 2 },
+                      py: 1,
+                      verticalAlign: "middle",
+                      lineHeight: 1.5,
+                      borderColor: "neutral.outlinedBorder",
+                    },
+                    "& td": {
+                      wordBreak: "break-word",
+                      overflowWrap: "anywhere",
+                    },
+                    "& td.em": { fontWeight: 700, color: "text.primary" },
+                    "& th.em": { fontWeight: 800, color: "text.primary" },
+                  }}
                 >
-                  Total:
-                </td>
+                  <colgroup>
+                    <col style={{ minWidth: "250px" }} />
+                    {show("vendor") && <col style={{ minWidth: "250px" }} />}
+                    {show("item") && <col style={{ minWidth: "300px" }} />}
+                    {show("poBasic") && <col style={{ minWidth: "160px" }} />}
+                    {show("poGst") && <col style={{ minWidth: "160px" }} />}
+                    {show("poTotal") && <col style={{ minWidth: "160px" }} />}
+                    {show("advancePaid") && (
+                      <col style={{ minWidth: "200px" }} />
+                    )}
+                    {show("advanceRemaining") && (
+                      <col style={{ minWidth: "200px" }} />
+                    )}
+                    {show("billBasic") && <col style={{ minWidth: "200px" }} />}
+                    {show("billGst") && <col style={{ minWidth: "200px" }} />}
+                    {show("billedTotal") && (
+                      <col style={{ minWidth: "200px" }} />
+                    )}
+                    {show("remainingSales") && (
+                      <col style={{ minWidth: "200px" }} />
+                    )}
+                    {show("status") && <col style={{ minWidth: "150px" }} />}
+                    {show("select") && <col style={{ minWidth: "100px" }} />}
+                  </colgroup>
 
-                {show("poBasic") && (
-                  <td className="num em">
-                    <RupeeValue value={clientHistory?.meta?.total_po_basic || 0} />
-                  </td>
-                )}
-                {show("poGst") && (
-                  <td className="num em">
-                    <RupeeValue value={clientHistory?.meta?.total_gst || 0} />
-                  </td>
-                )}
-                {show("poTotal") && (
-                  <td className="num em">
-                    <RupeeValue value={clientHistory?.meta?.total_po_value || 0} />
-                  </td>
-                )}
+                  <thead>
+                    <tr>
+                      <th rowSpan={2} className="text">
+                        PO Number
+                      </th>
+                      {show("vendor") && (
+                        <th rowSpan={2} className="text">
+                          Vendor
+                        </th>
+                      )}
+                      {show("item") && (
+                        <th rowSpan={2} className="text">
+                          Item
+                        </th>
+                      )}
 
-                {show("advancePaid") && (
-                  <td className="num">
-                    <RupeeValue value={clientHistory?.meta?.total_advance_paid || 0} />
-                  </td>
-                )}
-                {show("advanceRemaining") && (
-                  <td className="num">
-                    <RupeeValue value={clientHistory?.meta?.total_remaining_amount || 0} />
-                  </td>
-                )}
+                      {(show("poBasic") ||
+                        show("poGst") ||
+                        show("poTotal")) && (
+                        <th
+                          colSpan={visibleCount("poBasic", "poGst", "poTotal")}
+                          className="poGroup"
+                        >
+                          PO Value (₹)
+                        </th>
+                      )}
 
-                {show("billBasic") && (
-                  <td className="num em">
-                    <RupeeValue value={clientHistory?.meta?.total_bill_basic || 0} />
-                  </td>
-                )}
-                {show("billGst") && (
-                  <td className="num em">
-                    <RupeeValue value={clientHistory?.meta?.total_bill_gst || 0} />
-                  </td>
-                )}
-                {show("billedTotal") && (
-                  <td className="num em">
-                    <RupeeValue value={clientHistory?.meta?.total_billed_value || 0} />
-                  </td>
-                )}
+                      {show("advancePaid") && (
+                        <th rowSpan={2} className="num">
+                          Advance Paid (₹)
+                        </th>
+                      )}
+                      {show("advanceRemaining") && (
+                        <th rowSpan={2} className="num groupSplitRight">
+                          Advance Remaining (₹)
+                        </th>
+                      )}
 
-                {show("remainingSales") && (
-                  <td className="num em">
-                    <RupeeValue value={clientHistory?.meta?.total_remaining_sales_value || 0} />
-                  </td>
-                )}
+                      {(show("billBasic") ||
+                        show("billGst") ||
+                        show("billedTotal")) && (
+                        <th
+                          colSpan={visibleCount(
+                            "billBasic",
+                            "billGst",
+                            "billedTotal"
+                          )}
+                          className="billedGroup"
+                        >
+                          Total Billed (₹)
+                        </th>
+                      )}
 
-                {show("select") && <td />}
-              </tr>
-            </tfoot>
-          )}
-        </Table>
-      </Sheet>
-    </Box>
+                      {show("remainingSales") && (
+                        <th rowSpan={2} className="num">
+                          Remaining Sales Closure(incl. gst)
+                        </th>
+                      )}
+
+                      {show("status") && (
+                        <th rowSpan={2} className="text">
+                          Status
+                        </th>
+                      )}
+
+                      {show("select") && (
+                        <th rowSpan={2} style={{ textAlign: "center" }}>
+                          <Checkbox
+                            onChange={(e) => {
+                              if (e.target.checked)
+                                setSelectedClients(
+                                  ClientSummary.map((c) => c._id)
+                                );
+                              else setSelectedClients([]);
+                            }}
+                            checked={
+                              ClientSummary.length > 0 &&
+                              selectedClients.length === ClientSummary.length
+                            }
+                            disabled={ClientSummary.length === 0}
+                          />
+                        </th>
+                      )}
+                    </tr>
+                    <tr>
+                      {show("poBasic") && (
+                        <th className="num em poGroup">Basic (₹)</th>
+                      )}
+                      {show("poGst") && (
+                        <th className="num em poGroup">GST (₹)</th>
+                      )}
+                      {show("poTotal") && (
+                        <th className="num em poGroup">Total (₹)</th>
+                      )}
+
+                      {show("billBasic") && (
+                        <th className="num em billedGroup">Basic (₹)</th>
+                      )}
+                      {show("billGst") && (
+                        <th className="num em billedGroup">GST (₹)</th>
+                      )}
+                      {show("billedTotal") && (
+                        <th className="num em billedGroup">Total (₹)</th>
+                      )}
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {isLoading ? (
+                      <tr>
+                        <td
+                          colSpan={14}
+                          style={{ textAlign: "center", padding: 20 }}
+                        >
+                          <Typography
+                            level="body-md"
+                            sx={{ fontStyle: "italic" }}
+                          >
+                            Loading purchase history...
+                          </Typography>
+                        </td>
+                      </tr>
+                    ) : ClientSummary.length > 0 ? (
+                      ClientSummary.map((client) => (
+                        <tr key={client._id}>
+                          <td className="text">{client.po_number || "N/A"}</td>
+
+                          {show("vendor") && (
+                            <td className="text">{client.vendor || "N/A"}</td>
+                          )}
+
+                          {show("item") && (
+                            <td
+                              className="text item"
+                              title={getItemLabel(client) || "—"}
+                            >
+                              <Typography
+                                level="body-sm"
+                                sx={{
+                                  display: "block",
+                                  maxWidth: { xs: "100%", md: 280 },
+                                  overflow: "hidden",
+                                  textOverflow: { xs: "clip", md: "ellipsis" },
+                                  whiteSpace: { xs: "normal", md: "nowrap" },
+                                }}
+                              >
+                                {getItemLabel(client)}
+                              </Typography>
+                            </td>
+                          )}
+
+                          {show("poBasic") && (
+                            <td className="num em">
+                              <RupeeValue value={client.po_basic || 0} />
+                            </td>
+                          )}
+                          {show("poGst") && (
+                            <td className="num em">
+                              <RupeeValue value={client.gst || 0} />
+                            </td>
+                          )}
+                          {show("poTotal") && (
+                            <td className="num em">
+                              <RupeeValue value={client.po_value || 0} />
+                            </td>
+                          )}
+
+                          {show("advancePaid") && (
+                            <td className="num">
+                              <RupeeValue value={client.advance_paid || 0} />
+                            </td>
+                          )}
+                          {show("advanceRemaining") && (
+                            <td className="num">
+                              <RupeeValue
+                                value={client.remaining_amount || 0}
+                              />
+                            </td>
+                          )}
+
+                          {show("billBasic") && (
+                            <td className="num em">
+                              <RupeeValue value={client.bill_basic || 0} />
+                            </td>
+                          )}
+                          {show("billGst") && (
+                            <td className="num em">
+                              <RupeeValue value={client.bill_gst || 0} />
+                            </td>
+                          )}
+                          {show("billedTotal") && (
+                            <td className="num em">
+                              <RupeeValue
+                                value={client.total_billed_value || 0}
+                              />
+                            </td>
+                          )}
+
+                          {show("remainingSales") && (
+                            <td className="num">
+                              <RupeeValue
+                                value={client.remaining_sales_value || 0}
+                              />
+                            </td>
+                          )}
+
+                          <td style={{ textAlign: "center" }}>
+                            <Chip
+                              color={
+                                client.remaining_sales_value === 0 &&
+                                client.po_basic === client.bill_basic
+                                  ? "success"
+                                  : client.bill_basic ===
+                                    client.remaining_sales_value
+                                  ? "error"
+                                  : "warning"
+                              }
+                            >
+                              {client.remaining_sales_value === 0 &&
+                              client.po_basic === client.bill_basic
+                                ? "Fully Sold"
+                                : client.bill_basic ===
+                                  client.remaining_sales_value
+                                ? "Pending"
+                                : "Partially Sold"}
+                            </Chip>
+                          </td>
+
+                          {show("select") && (
+                            <td style={{ textAlign: "center" }}>
+                              <Checkbox
+                                checked={selectedClients.includes(client._id)}
+                                onChange={() =>
+                                  setSelectedClients((prev) =>
+                                    prev.includes(client._id)
+                                      ? prev.filter((id) => id !== client._id)
+                                      : [...prev, client._id]
+                                  )
+                                }
+                              />
+                            </td>
+                          )}
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={14}
+                          style={{ textAlign: "center", padding: 20 }}
+                        >
+                          <Typography level="body-md">
+                            No purchase history available
+                          </Typography>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+
+                  {ClientSummary.length > 0 && (
+                    <tfoot>
+                      <tr>
+                        <td
+                          colSpan={
+                            1 +
+                            (show("vendor") ? 1 : 0) +
+                            (show("item") ? 1 : 0)
+                          }
+                          style={{ textAlign: "right", fontWeight: 700 }}
+                        >
+                          Total:
+                        </td>
+
+                        {show("poBasic") && (
+                          <td className="num em">
+                            <RupeeValue
+                              value={clientHistory?.meta?.total_po_basic || 0}
+                            />
+                          </td>
+                        )}
+                        {show("poGst") && (
+                          <td className="num em">
+                            <RupeeValue
+                              value={clientHistory?.meta?.total_gst || 0}
+                            />
+                          </td>
+                        )}
+                        {show("poTotal") && (
+                          <td className="num em">
+                            <RupeeValue
+                              value={clientHistory?.meta?.total_po_value || 0}
+                            />
+                          </td>
+                        )}
+
+                        {show("advancePaid") && (
+                          <td className="num">
+                            <RupeeValue
+                              value={
+                                clientHistory?.meta?.total_advance_paid || 0
+                              }
+                            />
+                          </td>
+                        )}
+                        {show("advanceRemaining") && (
+                          <td className="num">
+                            <RupeeValue
+                              value={
+                                clientHistory?.meta?.total_remaining_amount || 0
+                              }
+                            />
+                          </td>
+                        )}
+
+                        {show("billBasic") && (
+                          <td className="num em">
+                            <RupeeValue
+                              value={clientHistory?.meta?.total_bill_basic || 0}
+                            />
+                          </td>
+                        )}
+                        {show("billGst") && (
+                          <td className="num em">
+                            <RupeeValue
+                              value={clientHistory?.meta?.total_bill_gst || 0}
+                            />
+                          </td>
+                        )}
+                        {show("billedTotal") && (
+                          <td className="num em">
+                            <RupeeValue
+                              value={
+                                clientHistory?.meta?.total_billed_value || 0
+                              }
+                            />
+                          </td>
+                        )}
+
+                        {show("remainingSales") && (
+                          <td className="num em">
+                            <RupeeValue
+                              value={
+                                clientHistory?.meta
+                                  ?.total_remaining_sales_value || 0
+                              }
+                            />
+                          </td>
+                        )}
+
+                        {show("select") && <td />}
+                      </tr>
+                    </tfoot>
+                  )}
+                </Table>
+              </Sheet>
+            </Box>
           </TabPanel>
 
           {/* ====================== SALES ====================== */}
           <TabPanel value="sales" sx={{ p: 0 }}>
-           <Box mt={4}>
-      {/* Toolbar */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexDirection: { xs: "column", md: "row" },
-          gap: 2,
-          mb: 2,
-          "@media print": { display: "none" },
-        }}
-      >
-        <Input
-          placeholder="Search Vendor or Item or PO"
-          value={searchSales}
-          onChange={(e) => setSearchSales(e.target.value)}
-          sx={{ width: { xs: "100%", md: 350 } }}
-        />
-        <Dropdown>
-          <MenuButton
-            variant="outlined"
-            startDecorator={<ViewColumnIcon />}
-            sx={{ whiteSpace: "nowrap" }}
-          >
-            Columns
-          </MenuButton>
-          <Menu placement="bottom-end" sx={{ minWidth: 260, maxHeight: 380, overflow: "auto" }}>
-            <MenuItem disabled sx={{ fontWeight: 600 }}>Column visibility</MenuItem>
-            <Divider />
-            {SALES_COLUMNS.map((c) => (
-              <MenuItem key={c.key} onClick={() => toggle(c.key)}>
-                <Checkbox checked={!!vis[c.key]} readOnly size="sm" sx={{ mr: 1 }} />
-                {c.label}
-              </MenuItem>
-            ))}
-            <Divider />
-            <MenuItem>
-              <Button size="sm" variant="plain" onClick={() => setAll(true)}>Select all</Button>
-              <Button size="sm" variant="plain" onClick={() => setAll(false)} sx={{ ml: "auto" }}>None</Button>
-            </MenuItem>
-            <MenuItem>
-              <Button size="sm" variant="outlined" color="neutral" onClick={reset} fullWidth>
-                Reset to default
-              </Button>
-            </MenuItem>
-          </Menu>
-        </Dropdown>
-      </Box>
-
-      {/* Table */}
-      <Sheet
-        variant="outlined"
-        sx={{
-          borderRadius: "12px",
-          overflowX: "auto",
-          overflowY: "hidden",
-          p: { xs: 1, sm: 2 },
-          boxShadow: "md",
-          bgcolor: "#fff",
-          width: "100%",
-          maxWidth: "100%",
-          "@media print": {
-            boxShadow: "none",
-            border: "none",
-            borderRadius: 0,
-            overflow: "visible",
-            p: 0,
-          },
-        }}
-      >
-        <Table
-          borderAxis="both"
-          stickyHeader
-          sx={{
-            minWidth: 950,
-            width: "100%",
-            tableLayout: "fixed",
-            fontSize: { xs: 12, sm: 14 },
-            "& thead": { backgroundColor: "neutral.softBg" },
-            "& tbody tr:nth-of-type(even)": { backgroundColor: "rgba(0,0,0,0.02)" },
-            "& th, & td": {
-              px: { xs: 1, sm: 2 },
-              py: { xs: 1, sm: 1.25 },
-              verticalAlign: "top",
-              wordBreak: "break-word",
-              overflowWrap: "anywhere",
-              textAlign: "left",
-              lineHeight: 1.4,
-            },
-            "& th.num, & td.num": {
-              textAlign: "right",
-              fontVariantNumeric: "tabular-nums",
-              whiteSpace: "nowrap",
-            },
-          }}
-        >
-          <thead>
-            <tr>
-              <th rowSpan={2}>Converted PO’s</th>
-              {show("convDate") && <th rowSpan={2}>Conversion Date</th>}
-              {show("item") && <th rowSpan={2}>Item</th>}
-              {show("invoice") && <th rowSpan={2}>Invoice Number</th>}
-              {show("billBasic") && <th rowSpan={2} className="num">Bill Basic (₹)</th>}
-              {(show("salesBasic") || show("salesGst") || show("salesTotal")) && (
-                <th colSpan={[
-                  show("salesBasic"), show("salesGst"), show("salesTotal")
-                ].filter(Boolean).length} style={{ textAlign: "center" }}>Sales</th>
-              )}
-              {show("actions") && <th rowSpan={2} style={{ textAlign: "center" }}>Actions</th>}
-            </tr>
-            <tr>
-              {show("salesBasic") && <th className="num">Value (₹)</th>}
-              {show("salesGst") && <th className="num">GST (₹)</th>}
-              {show("salesTotal") && (
-                <th className="num" style={{ backgroundColor: "#E3F2FD" }}>Total Sales (₹)</th>
-              )}
-            </tr>
-          </thead>
-
-          <tbody>
-            {isLoading ? (
-              <tr>
-                <td colSpan={8} style={{ textAlign: "center", padding: 20 }}>
-                  <Typography level="body-md" sx={{ fontStyle: "italic" }}>
-                    Loading sales history...
-                  </Typography>
-                </td>
-              </tr>
-            ) : (SalesSummary?.length || 0) === 0 ? (
-              <tr>
-                <td colSpan={8} style={{ textAlign: "center", padding: 20 }}>
-                  <Typography level="body-md">No sales history available</Typography>
-                </td>
-              </tr>
-            ) : filteredSales.length === 0 ? (
-              <tr>
-                <td colSpan={8} style={{ textAlign: "center", padding: 20 }}>
-                  <Typography level="body-md">No matching results</Typography>
-                </td>
-              </tr>
-            ) : (
-              filteredSales.map((sale, idx) => {
-                const atts = normalizeAttachments(sale.attachments);
-                const toNum = (v) => Number.isFinite(Number(v)) ? Number(v) : 0;
-
-                const billBasic = toNum(sale.bill_basic ?? sale.bill_basic_value ?? sale.bill_basic_amount);
-                const salesBasic = toNum(sale.sales_basic ?? sale.basic_sales ?? sale.basicSales ?? 0);
-                const salesGstAmt = toNum(sale.sales_gst ?? sale.gst_on_sales ?? 0); // amount, not percent
-                const totalSales = salesBasic + salesGstAmt;
-
-                return (
-                  <tr key={sale._id || `${sale.po_number}-${idx}`}>
-                    {/* Converted PO + attachments + "view" */}
-                    <td style={{ minWidth: 160 }}>
-                      <Stack spacing={0.75}>
-                        <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap">
-                          <Chip size="sm" variant="soft" color="primary">
-                            <Typography level="body-sm" sx={{ fontWeight: 700 }}>
-                              {sale.po_number || "N/A"}
-                            </Typography>
-                          </Chip>
-                          <Tooltip title="View conversion" placement="top">
-                            <IconButton
-                              size="sm"
-                              variant="plain"
-                              onClick={() => openSaleDetail?.(sale)}
-                              aria-label={`View conversion for PO ${sale.po_number || sale._id}`}
-                            >
-                              <VisibilityRounded fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </Stack>
-
-                        {/* Attachments */}
-                        <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ mt: 0.5 }}>
-                          {atts.length ? (
-                            atts.map((att, i) => (
-                              <Link
-                                key={att.url || `${sale._id}-att-${i}`}
-                                href={att.url}
-                                target="_blank"
-                                rel="noopener"
-                                underline="hover"
-                                sx={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: 0.5,
-                                  fontSize: 12,
-                                  px: 1,
-                                  py: 0.25,
-                                  borderRadius: "8px",
-                                  backgroundColor: "neutral.softBg",
-                                  maxWidth: 160,
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  whiteSpace: "nowrap",
-                                }}
-                                title={att.name}
-                              >
-                                <AttachFileIcon sx={{ fontSize: 15 }} />
-                                {att.name || `File ${i + 1}`}
-                              </Link>
-                            ))
-                          ) : (
-                            <Typography level="body-xs" sx={{ opacity: 0.6, fontStyle: "italic" }}>
-                              No attachments
-                            </Typography>
-                          )}
-                        </Stack>
-                      </Stack>
-                    </td>
-
-                    {show("convDate") && (
-                      <td style={{ whiteSpace: "nowrap" }}>{formatDateTime(sale?.converted_at)}</td>
-                    )}
-
-                    {show("item") && (
-                      <td
-                        title={getItemLabel?.(sale) || "N/A"}
-                        style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden", maxWidth: "100%" }}
+            <Box mt={4}>
+              {/* Toolbar */}
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexDirection: { xs: "column", md: "row" },
+                  gap: 2,
+                  mb: 2,
+                  "@media print": { display: "none" },
+                }}
+              >
+                <Input
+                  placeholder="Search Vendor or Item or PO"
+                  value={searchSales}
+                  onChange={(e) => setSearchSales(e.target.value)}
+                  sx={{ width: { xs: "100%", md: 350 } }}
+                />
+                <Dropdown>
+                  <MenuButton
+                    variant="outlined"
+                    startDecorator={<ViewColumnIcon />}
+                    sx={{ whiteSpace: "nowrap" }}
+                  >
+                    Columns
+                  </MenuButton>
+                  <Menu
+                    placement="bottom-end"
+                    sx={{ minWidth: 260, maxHeight: 380, overflow: "auto" }}
+                  >
+                    <MenuItem disabled sx={{ fontWeight: 600 }}>
+                      Column visibility
+                    </MenuItem>
+                    <Divider />
+                    {SALES_COLUMNS.map((c) => (
+                      <MenuItem key={c.key} onClick={() => toggle(c.key)}>
+                        <Checkbox
+                          checked={!!vis[c.key]}
+                          readOnly
+                          size="sm"
+                          sx={{ mr: 1 }}
+                        />
+                        {c.label}
+                      </MenuItem>
+                    ))}
+                    <Divider />
+                    <MenuItem>
+                      <Button
+                        size="sm"
+                        variant="plain"
+                        onClick={() => setAll(true)}
                       >
-                        {getItemLabel?.(sale) || "N/A"}
-                      </td>
-                    )}
-
-                    {show("invoice") && <td>{sale.sales_invoice || "—"}</td>}
-                    {show("billBasic") && (
-                      <td className="num"><RupeeValue value={Math.round(billBasic)} /></td>
-                    )}
-                    {show("salesBasic") && (
-                      <td className="num"><RupeeValue value={Math.round(salesBasic)} /></td>
-                    )}
-                    {show("salesGst") && (
-                      <td className="num"><RupeeValue value={Math.round(salesGstAmt)} /></td>
-                    )}
-                    {show("salesTotal") && (
-                      <td className="num" style={{ backgroundColor: "#E3F2FD" }}>
-                        <RupeeValue value={Math.round(totalSales)} />
-                      </td>
-                    )}
-
-                    {show("actions") && (
-                      <td style={{ textAlign: "center" }}>
-                        <Tooltip title="Edit this conversion">
-                          <IconButton size="sm" variant="plain" onClick={() => openEdit(sale)}>
-                            <EditRounded fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </td>
-                    )}
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-
-          {/* Totals for filtered rows */}
-          {filteredSales.length > 0 && (
-            <tfoot>
-              {(() => {
-                const toNum = (v) => Number.isFinite(Number(v)) ? Number(v) : 0;
-                const sum = (pick) => filteredSales.reduce((acc, s) => acc + pick(s), 0);
-                const totalBillBasic = sum(s => toNum(s.bill_basic ?? s.bill_basic_value ?? s.bill_basic_amount));
-                const totalSalesBasic = sum(s => toNum(s.sales_basic ?? s.basic_sales ?? s.basicSales ?? 0));
-                const totalSalesGst = sum(s => toNum(s.sales_gst ?? s.gst_on_sales ?? 0));
-                const totalSalesOverall = totalSalesBasic + totalSalesGst;
-
-                const firstSpan = 1; // "Converted PO's" fixed
-                const dynamicSpan =
-                  (show("convDate") ? 1 : 0) +
-                  (show("item") ? 1 : 0) +
-                  (show("invoice") ? 1 : 0);
-
-                return (
-                  <tr style={{ fontWeight: "bold", backgroundColor: "#FFF9C4" }}>
-                    <td colSpan={firstSpan + dynamicSpan} style={{ textAlign: "right" }}>
-                      Total:
-                    </td>
-                    {show("billBasic") && (
-                      <td className="num"><RupeeValue value={Math.round(totalBillBasic)} /></td>
-                    )}
-                    {show("salesBasic") && (
-                      <td className="num"><RupeeValue value={Math.round(totalSalesBasic)} /></td>
-                    )}
-                    {show("salesGst") && (
-                      <td className="num"><RupeeValue value={Math.round(totalSalesGst)} /></td>
-                    )}
-                    {show("salesTotal") && (
-                      <td className="num" style={{ backgroundColor: "#E3F2FD" }}>
-                        <RupeeValue value={Math.round(totalSalesOverall)} />
-                      </td>
-                    )}
-                    {show("actions") && <td />} {/* keep grid aligned */}
-                  </tr>
-                );
-              })()}
-            </tfoot>
-          )}
-        </Table>
-      </Sheet>
-
-      {/* View modal (your existing detail view) */}
-      <Modal open={!!saleDetailOpen} onClose={closeSaleDetail}>
-        <ModalDialog sx={{ width: 520 }}>
-          <DialogTitle>Sales Conversion</DialogTitle>
-          <DialogContent>
-            <Stack spacing={1.25}>
-              <Typography level="title-sm">
-                PO: <strong>{activeSale?.po_number ?? "—"}</strong>
-              </Typography>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Typography level="body-sm"><strong>Converted At:</strong></Typography>
-                <Chip size="sm" variant="soft">{formatDateTime(activeSale?.converted_at)}</Chip>
-              </Stack>
-              <Typography level="body-sm"><strong>Converted By:</strong> {activeSale?.converted_by ?? "—"}</Typography>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Typography level="body-sm"><strong>Sales Invoice No.:</strong></Typography>
-                <Chip size="sm" variant="soft" color={activeSale?.sales_invoice ? "primary" : "neutral"}>
-                  {activeSale?.sales_invoice?.trim() ? activeSale.sales_invoice : "—"}
-                </Chip>
-              </Stack>
-              <Typography level="body-sm" sx={{ whiteSpace: "pre-wrap" }}>
-                <strong>Remarks:</strong> {activeSale?.remarks?.trim() || "—"}
-              </Typography>
-
-              {/* Attachments */}
-              <Box>
-                <Typography level="body-sm" sx={{ mb: 0.5 }}><strong>Attachments</strong></Typography>
-                <Sheet variant="soft" sx={{ p: 1, borderRadius: "md", maxHeight: 220, overflow: "auto" }}>
-                  <Stack spacing={0.75}>
-                    {(() => {
-                      const files = normalizeAttachments(activeSale?.attachments);
-                      return files.length ? (
-                        files.map((a, i) => (
-                          <Box key={a.url || `file-${i}`} sx={{
-                            display: "flex", alignItems: "center", justifyContent: "space-between",
-                            gap: 1, px: 1, py: 0.75, borderRadius: "sm",
-                            "&:hover": { backgroundColor: "neutral.plainHoverBg" },
-                          }}>
-                            <Stack direction="row" spacing={1} alignItems="center">
-                              <InsertDriveFileRounded fontSize="small" />
-                              <Link href={a.url} target="_blank" rel="noopener" underline="hover">
-                                {a.name || a.url?.split("/").pop() || "File"}
-                              </Link>
-                            </Stack>
-                          </Box>
-                        ))
-                      ) : (
-                        <Typography level="body-xs" sx={{ opacity: 0.7 }}>No attachments</Typography>
-                      );
-                    })()}
-                  </Stack>
-                </Sheet>
+                        Select all
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="plain"
+                        onClick={() => setAll(false)}
+                        sx={{ ml: "auto" }}
+                      >
+                        None
+                      </Button>
+                    </MenuItem>
+                    <MenuItem>
+                      <Button
+                        size="sm"
+                        variant="outlined"
+                        color="neutral"
+                        onClick={reset}
+                        fullWidth
+                      >
+                        Reset to default
+                      </Button>
+                    </MenuItem>
+                  </Menu>
+                </Dropdown>
               </Box>
 
-              <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ mt: 1 }}>
-                <Button variant="plain" onClick={closeSaleDetail}>Close</Button>
-              </Stack>
-            </Stack>
-          </DialogContent>
-        </ModalDialog>
-      </Modal>
+              {/* Table */}
+              <Sheet
+                variant="outlined"
+                sx={{
+                  borderRadius: "12px",
+                  overflowX: "auto",
+                  overflowY: "hidden",
+                  p: { xs: 1, sm: 2 },
+                  boxShadow: "md",
+                  bgcolor: "#fff",
+                  width: "100%",
+                  maxWidth: "100%",
+                  "@media print": {
+                    boxShadow: "none",
+                    border: "none",
+                    borderRadius: 0,
+                    overflow: "visible",
+                    p: 0,
+                  },
+                }}
+              >
+                <Table
+                  borderAxis="both"
+                  stickyHeader
+                  sx={{
+                    minWidth: 950,
+                    width: "100%",
+                    tableLayout: "fixed",
+                    fontSize: { xs: 12, sm: 14 },
+                    "& thead": { backgroundColor: "neutral.softBg" },
+                    "& tbody tr:nth-of-type(even)": {
+                      backgroundColor: "rgba(0,0,0,0.02)",
+                    },
+                    "& th, & td": {
+                      px: { xs: 1, sm: 2 },
+                      py: { xs: 1, sm: 1.25 },
+                      verticalAlign: "top",
+                      wordBreak: "break-word",
+                      overflowWrap: "anywhere",
+                      textAlign: "left",
+                      lineHeight: 1.4,
+                    },
+                    "& th.num, & td.num": {
+                      textAlign: "right",
+                      fontVariantNumeric: "tabular-nums",
+                      whiteSpace: "nowrap",
+                    },
+                  }}
+                >
+                  <thead>
+                    <tr>
+                      <th rowSpan={2}>Converted PO’s</th>
+                      {show("convDate") && <th rowSpan={2}>Conversion Date</th>}
+                      {show("item") && <th rowSpan={2}>Item</th>}
+                      {show("invoice") && <th rowSpan={2}>Invoice Number</th>}
+                      {show("billBasic") && (
+                        <th rowSpan={2} className="num">
+                          Bill Basic (₹)
+                        </th>
+                      )}
+                      {(show("salesBasic") ||
+                        show("salesGst") ||
+                        show("salesTotal")) && (
+                        <th
+                          colSpan={
+                            [
+                              show("salesBasic"),
+                              show("salesGst"),
+                              show("salesTotal"),
+                            ].filter(Boolean).length
+                          }
+                          style={{ textAlign: "center" }}
+                        >
+                          Sales
+                        </th>
+                      )}
+                      {show("actions") && (
+                        <th rowSpan={2} style={{ textAlign: "center" }}>
+                          Actions
+                        </th>
+                      )}
+                    </tr>
+                    <tr>
+                      {show("salesBasic") && <th className="num">Value (₹)</th>}
+                      {show("salesGst") && <th className="num">GST (₹)</th>}
+                      {show("salesTotal") && (
+                        <th
+                          className="num"
+                          style={{ backgroundColor: "#E3F2FD" }}
+                        >
+                          Total Sales (₹)
+                        </th>
+                      )}
+                    </tr>
+                  </thead>
 
-      {/* Edit modal (new) */}
-<Modal open={editOpen} onClose={closeEdit}>
-  <ModalDialog sx={{ width: 520 }}>
-    <DialogTitle>Edit Sales Conversion</DialogTitle>
-    <DialogContent>
-      <Stack spacing={1.2}>
-        <Typography level="body-sm">
-          PO: <strong>{editRow?.po_number ?? "—"}</strong>
-        </Typography>
+                  <tbody>
+                    {isLoading ? (
+                      <tr>
+                        <td
+                          colSpan={8}
+                          style={{ textAlign: "center", padding: 20 }}
+                        >
+                          <Typography
+                            level="body-md"
+                            sx={{ fontStyle: "italic" }}
+                          >
+                            Loading sales history...
+                          </Typography>
+                        </td>
+                      </tr>
+                    ) : (SalesSummary?.length || 0) === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={8}
+                          style={{ textAlign: "center", padding: 20 }}
+                        >
+                          <Typography level="body-md">
+                            No sales history available
+                          </Typography>
+                        </td>
+                      </tr>
+                    ) : filteredSales.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={8}
+                          style={{ textAlign: "center", padding: 20 }}
+                        >
+                          <Typography level="body-md">
+                            No matching results
+                          </Typography>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredSales.map((sale, idx) => {
+                        const atts = normalizeAttachments(sale.attachments);
+                        const toNum = (v) =>
+                          Number.isFinite(Number(v)) ? Number(v) : 0;
 
-        <Stack direction="row" spacing={1}>
-          <Box sx={{ flex: 1 }}>
-            <Typography level="body-xs" sx={{ mb: 0.25 }}>Basic Sales (₹)</Typography>
-            <Input
-              value={form.basic_sales}
-              onChange={onChange("basic_sales")}
-              slotProps={{ input: { min: 0, step: "0.01" } }}
-            />
-          </Box>
+                        const billBasic = toNum(
+                          sale.bill_basic ??
+                            sale.bill_basic_value ??
+                            sale.bill_basic_amount
+                        );
+                        const salesBasic = toNum(
+                          sale.sales_basic ??
+                            sale.basic_sales ??
+                            sale.basicSales ??
+                            0
+                        );
+                        const salesGstAmt = toNum(
+                          sale.sales_gst ?? sale.gst_on_sales ?? 0
+                        ); // amount, not percent
+                        const totalSales = salesBasic + salesGstAmt;
 
-          {/* GST % Editable */}
-          <Box sx={{ width: 180 }}>
-  <Typography level="body-xs" sx={{ mb: 0.25 }}>GST on Sales (%)</Typography>
-  <Input
-    value={form.gst_rate_percent}  // Bind it to gst_rate_percent
-    onChange={onChange("gst_rate_percent")}  // Handle change for gst_rate_percent
-    slotProps={{ input: { min: 0, step: "0.01" } }}
+                        return (
+                          <tr key={sale._id || `${sale.po_number}-${idx}`}>
+                            {/* Converted PO + attachments + "view" */}
+                            <td style={{ minWidth: 160 }}>
+                              <Stack spacing={0.75}>
+                                <Stack
+                                  direction="row"
+                                  spacing={0.5}
+                                  alignItems="center"
+                                  flexWrap="wrap"
+                                >
+                                  <Chip
+                                    size="sm"
+                                    variant="soft"
+                                    color="primary"
+                                  >
+                                    <Typography
+                                      level="body-sm"
+                                      sx={{ fontWeight: 700 }}
+                                    >
+                                      {sale.po_number || "N/A"}
+                                    </Typography>
+                                  </Chip>
+                                  <Tooltip
+                                    title="View conversion"
+                                    placement="top"
+                                  >
+                                    <IconButton
+                                      size="sm"
+                                      variant="plain"
+                                      onClick={() => openSaleDetail?.(sale)}
+                                      aria-label={`View conversion for PO ${
+                                        sale.po_number || sale._id
+                                      }`}
+                                    >
+                                      <VisibilityRounded fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                </Stack>
 
-  />
-</Box>
+                                {/* Attachments */}
+                                <Stack
+                                  direction="row"
+                                  spacing={0.75}
+                                  flexWrap="wrap"
+                                  useFlexGap
+                                  sx={{ mt: 0.5 }}
+                                >
+                                  {atts.length ? (
+                                    atts.map((att, i) => (
+                                      <Link
+                                        key={att.url || `${sale._id}-att-${i}`}
+                                        href={att.url}
+                                        target="_blank"
+                                        rel="noopener"
+                                        underline="hover"
+                                        sx={{
+                                          display: "inline-flex",
+                                          alignItems: "center",
+                                          gap: 0.5,
+                                          fontSize: 12,
+                                          px: 1,
+                                          py: 0.25,
+                                          borderRadius: "8px",
+                                          backgroundColor: "neutral.softBg",
+                                          maxWidth: 160,
+                                          overflow: "hidden",
+                                          textOverflow: "ellipsis",
+                                          whiteSpace: "nowrap",
+                                        }}
+                                        title={att.name}
+                                      >
+                                        <AttachFileIcon sx={{ fontSize: 15 }} />
+                                        {att.name || `File ${i + 1}`}
+                                      </Link>
+                                    ))
+                                  ) : (
+                                    <Typography
+                                      level="body-xs"
+                                      sx={{ opacity: 0.6, fontStyle: "italic" }}
+                                    >
+                                      No attachments
+                                    </Typography>
+                                  )}
+                                </Stack>
 
-        </Stack>
+                                {/* Display isSales status */}
+                                {sale.isSales && (
+                                  <Chip
+                                    size="sm"
+                                    variant="solid"
+                                    color={
+                                      sale.isSales === "true"
+                                        ? "success"
+                                        : "warning"
+                                    }
+                                    sx={{ mt: 1 }}
+                                  >
+                                    <Typography sx={{ fontWeight: 700 }}>
+                                      {sale.isSales === "true"
+                                        ? "Sold"
+                                        : "Partially Sold"}
+                                    </Typography>
+                                  </Chip>
+                                )}
+                              </Stack>
+                            </td>
 
-        {/* Live preview */}
-        {/* {(() => {
+                            {show("convDate") && (
+                              <td style={{ whiteSpace: "nowrap" }}>
+                                {formatDateTime(sale?.converted_at)}
+                              </td>
+                            )}
+
+                            {show("item") && (
+                              <td
+                                title={getItemLabel?.(sale) || "N/A"}
+                                style={{
+                                  whiteSpace: "nowrap",
+                                  textOverflow: "ellipsis",
+                                  overflow: "hidden",
+                                  maxWidth: "100%",
+                                }}
+                              >
+                                {getItemLabel?.(sale) || "N/A"}
+                              </td>
+                            )}
+
+                            {show("invoice") && (
+                              <td>{sale.sales_invoice || "—"}</td>
+                            )}
+                            {show("billBasic") && (
+                              <td className="num">
+                                <RupeeValue value={Math.round(billBasic)} />
+                              </td>
+                            )}
+                            {show("salesBasic") && (
+                              <td className="num">
+                                <RupeeValue value={Math.round(salesBasic)} />
+                              </td>
+                            )}
+                            {show("salesGst") && (
+                              <td className="num">
+                                <RupeeValue value={Math.round(salesGstAmt)} />
+                              </td>
+                            )}
+                            {show("salesTotal") && (
+                              <td
+                                className="num"
+                                style={{ backgroundColor: "#E3F2FD" }}
+                              >
+                                <RupeeValue value={Math.round(totalSales)} />
+                              </td>
+                            )}
+
+                            {show("actions") && (
+                              <td style={{ textAlign: "center" }}>
+                                <Tooltip title="Edit this conversion">
+                                  <IconButton
+                                    size="sm"
+                                    variant="plain"
+                                    onClick={() => openEdit(sale)}
+                                  >
+                                    <EditRounded fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              </td>
+                            )}
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+
+                  {/* Totals for filtered rows */}
+                  {filteredSales.length > 0 && (
+                    <tfoot>
+                      {(() => {
+                        const toNum = (v) =>
+                          Number.isFinite(Number(v)) ? Number(v) : 0;
+                        const sum = (pick) =>
+                          filteredSales.reduce((acc, s) => acc + pick(s), 0);
+                        const totalBillBasic = sum((s) =>
+                          toNum(
+                            s.bill_basic ??
+                              s.bill_basic_value ??
+                              s.bill_basic_amount
+                          )
+                        );
+                        const totalSalesBasic = sum((s) =>
+                          toNum(
+                            s.sales_basic ?? s.basic_sales ?? s.basicSales ?? 0
+                          )
+                        );
+                        const totalSalesGst = sum((s) =>
+                          toNum(s.sales_gst ?? s.gst_on_sales ?? 0)
+                        );
+                        const totalSalesOverall =
+                          totalSalesBasic + totalSalesGst;
+
+                        const firstSpan = 1; // "Converted PO's" fixed
+                        const dynamicSpan =
+                          (show("convDate") ? 1 : 0) +
+                          (show("item") ? 1 : 0) +
+                          (show("invoice") ? 1 : 0);
+
+                        return (
+                          <tr
+                            style={{
+                              fontWeight: "bold",
+                              backgroundColor: "#FFF9C4",
+                            }}
+                          >
+                            <td
+                              colSpan={firstSpan + dynamicSpan}
+                              style={{ textAlign: "right" }}
+                            >
+                              Total:
+                            </td>
+                            {show("billBasic") && (
+                              <td className="num">
+                                <RupeeValue
+                                  value={Math.round(totalBillBasic)}
+                                />
+                              </td>
+                            )}
+                            {show("salesBasic") && (
+                              <td className="num">
+                                <RupeeValue
+                                  value={Math.round(totalSalesBasic)}
+                                />
+                              </td>
+                            )}
+                            {show("salesGst") && (
+                              <td className="num">
+                                <RupeeValue value={Math.round(totalSalesGst)} />
+                              </td>
+                            )}
+                            {show("salesTotal") && (
+                              <td
+                                className="num"
+                                style={{ backgroundColor: "#E3F2FD" }}
+                              >
+                                <RupeeValue
+                                  value={Math.round(totalSalesOverall)}
+                                />
+                              </td>
+                            )}
+                            {show("actions") && <td />}{" "}
+                            {/* keep grid aligned */}
+                          </tr>
+                        );
+                      })()}
+                    </tfoot>
+                  )}
+                </Table>
+              </Sheet>
+
+              {/* View modal (your existing detail view) */}
+              <Modal open={!!saleDetailOpen} onClose={closeSaleDetail}>
+                <ModalDialog sx={{ width: 520 }}>
+                  <DialogTitle>Sales Conversion</DialogTitle>
+                  <DialogContent>
+                    <Stack spacing={1.25}>
+                      <Typography level="title-sm">
+                        PO: <strong>{activeSale?.po_number ?? "—"}</strong>
+                      </Typography>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Typography level="body-sm">
+                          <strong>Converted At:</strong>
+                        </Typography>
+                        <Chip size="sm" variant="soft">
+                          {formatDateTime(activeSale?.converted_at)}
+                        </Chip>
+                      </Stack>
+                      <Typography level="body-sm">
+                        <strong>Converted By:</strong>{" "}
+                        {activeSale?.converted_by ?? "—"}
+                      </Typography>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Typography level="body-sm">
+                          <strong>Sales Invoice No.:</strong>
+                        </Typography>
+                        <Chip
+                          size="sm"
+                          variant="soft"
+                          color={
+                            activeSale?.sales_invoice ? "primary" : "neutral"
+                          }
+                        >
+                          {activeSale?.sales_invoice?.trim()
+                            ? activeSale.sales_invoice
+                            : "—"}
+                        </Chip>
+                      </Stack>
+                      <Typography
+                        level="body-sm"
+                        sx={{ whiteSpace: "pre-wrap" }}
+                      >
+                        <strong>Remarks:</strong>{" "}
+                        {activeSale?.remarks?.trim() || "—"}
+                      </Typography>
+
+                      {/* Attachments */}
+                      <Box>
+                        <Typography level="body-sm" sx={{ mb: 0.5 }}>
+                          <strong>Attachments</strong>
+                        </Typography>
+                        <Sheet
+                          variant="soft"
+                          sx={{
+                            p: 1,
+                            borderRadius: "md",
+                            maxHeight: 220,
+                            overflow: "auto",
+                          }}
+                        >
+                          <Stack spacing={0.75}>
+                            {(() => {
+                              const files = normalizeAttachments(
+                                activeSale?.attachments
+                              );
+                              return files.length ? (
+                                files.map((a, i) => (
+                                  <Box
+                                    key={a.url || `file-${i}`}
+                                    sx={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "space-between",
+                                      gap: 1,
+                                      px: 1,
+                                      py: 0.75,
+                                      borderRadius: "sm",
+                                      "&:hover": {
+                                        backgroundColor: "neutral.plainHoverBg",
+                                      },
+                                    }}
+                                  >
+                                    <Stack
+                                      direction="row"
+                                      spacing={1}
+                                      alignItems="center"
+                                    >
+                                      <InsertDriveFileRounded fontSize="small" />
+                                      <Link
+                                        href={a.url}
+                                        target="_blank"
+                                        rel="noopener"
+                                        underline="hover"
+                                      >
+                                        {a.name ||
+                                          a.url?.split("/").pop() ||
+                                          "File"}
+                                      </Link>
+                                    </Stack>
+                                  </Box>
+                                ))
+                              ) : (
+                                <Typography
+                                  level="body-xs"
+                                  sx={{ opacity: 0.7 }}
+                                >
+                                  No attachments
+                                </Typography>
+                              );
+                            })()}
+                          </Stack>
+                        </Sheet>
+                      </Box>
+
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        justifyContent="flex-end"
+                        sx={{ mt: 1 }}
+                      >
+                        <Button variant="plain" onClick={closeSaleDetail}>
+                          Close
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  </DialogContent>
+                </ModalDialog>
+              </Modal>
+
+              {/* Edit modal (new) */}
+              <Modal open={editOpen} onClose={closeEdit}>
+                <ModalDialog sx={{ width: 520 }}>
+                  <DialogTitle>Edit Sales Conversion</DialogTitle>
+                  <DialogContent>
+                    <Stack spacing={1.2}>
+                      <Typography level="body-sm">
+                        PO: <strong>{editRow?.po_number ?? "—"}</strong>
+                      </Typography>
+
+                      <Stack direction="row" spacing={1}>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography level="body-xs" sx={{ mb: 0.25 }}>
+                            Basic Sales (₹)
+                          </Typography>
+                          <Input
+                            value={form.basic_sales}
+                            onChange={onChange("basic_sales")}
+                            slotProps={{ input: { min: 0, step: "0.01" } }}
+                          />
+                        </Box>
+
+                        {/* GST % Editable */}
+                        <Box sx={{ width: 180 }}>
+                          <Typography level="body-xs" sx={{ mb: 0.25 }}>
+                            GST on Sales (%)
+                          </Typography>
+                          <Input
+                            value={form.gst_rate_percent} // Bind it to gst_rate_percent
+                            onChange={onChange("gst_rate_percent")} // Handle change for gst_rate_percent
+                            slotProps={{ input: { min: 0, step: "0.01" } }}
+                          />
+                        </Box>
+                      </Stack>
+
+                      {/* Live preview */}
+                      {/* {(() => {
           const basicNum = parseFloat(form.basic_sales || "0");
           const gstP = parseFloat(form.gst_on_sales || "0");
 
@@ -2861,31 +3303,44 @@ const normalizeAttachments = (atts) => {
           );
         })()} */}
 
-        <Box>
-          <Typography level="body-xs" sx={{ mb: 0.25 }}>Sales Invoice No.</Typography>
-          <Input value={form.sales_invoice} onChange={onChange("sales_invoice")} />
-        </Box>
+                      <Box>
+                        <Typography level="body-xs" sx={{ mb: 0.25 }}>
+                          Sales Invoice No.
+                        </Typography>
+                        <Input
+                          value={form.sales_invoice}
+                          onChange={onChange("sales_invoice")}
+                        />
+                      </Box>
 
-        <Box>
-          <Typography level="body-xs" sx={{ mb: 0.25 }}>Remarks</Typography>
-          <Input value={form.remarks} onChange={onChange("remarks")} />
-        </Box>
+                      <Box>
+                        <Typography level="body-xs" sx={{ mb: 0.25 }}>
+                          Remarks
+                        </Typography>
+                        <Input
+                          value={form.remarks}
+                          onChange={onChange("remarks")}
+                        />
+                      </Box>
 
-        <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ mt: 1 }}>
-          <Button variant="plain" onClick={closeEdit}>Cancel</Button>
-          <Button loading={saving} onClick={handleEditSave}>Save</Button>
-        </Stack>
-      </Stack>
-    </DialogContent>
-  </ModalDialog>
-</Modal>
-
-
-
-
-
-
-    </Box>
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        justifyContent="flex-end"
+                        sx={{ mt: 1 }}
+                      >
+                        <Button variant="plain" onClick={closeEdit}>
+                          Cancel
+                        </Button>
+                        <Button loading={saving} onClick={handleEditSave}>
+                          Save
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  </DialogContent>
+                </ModalDialog>
+              </Modal>
+            </Box>
           </TabPanel>
 
           {/* ====================== ADJUSTMENT ====================== */}
@@ -3218,17 +3673,6 @@ const normalizeAttachments = (atts) => {
                   return;
                 }
 
-                // if (validPOs.length < selectedPOsData.length) {
-                //   const skipped = selectedPOsData
-                //     .filter((po) => Number(po.total_billed_value || 0) <= 0)
-                //     .map((p) => p.po_number)
-                //     .join(", ");
-                //   toast.warning(
-                //     // `Skipped PO(s) without billed value: ${skipped}`
-                //   );
-                // }
-
-                // ✅ Proceed with valid ones only
                 setSelectedPO(validPOs);
                 setSalesAmounts(
                   validPOs.reduce((acc, po) => {
@@ -3248,161 +3692,168 @@ const normalizeAttachments = (atts) => {
 
       {/* ================= Sales Conversion Modal ================= */}
       <Modal open={salesOpen} onClose={() => setSalesOpen(false)}>
-      <ModalDialog
-        aria-labelledby="sales-convert-title"
-        sx={{
-          width: 720,
-          borderRadius: "lg",
-          boxShadow: "xl",
-          p: 3,
-          background: "linear-gradient(180deg, #fff 0%, #f9f9f9 100%)",
-        }}
-      >
-        <DialogTitle id="sales-convert-title" sx={{ fontWeight: 700, mb: 1 }}>
-          Sales Conversion
-        </DialogTitle>
+        <ModalDialog
+          aria-labelledby="sales-convert-title"
+          sx={{
+            width: 1100,
+            borderRadius: "lg",
+            boxShadow: "xl",
+            p: 3,
+            background: "linear-gradient(180deg, #fff 0%, #f9f9f9 100%)",
+          }}
+        >
+          <DialogTitle id="sales-convert-title" sx={{ fontWeight: 700, mb: 1 }}>
+            Sales Conversion
+          </DialogTitle>
 
-        <DialogContent>
-          <Stack spacing={2.5}>
-            {/* ---- PO Table ---- */}
-            <Sheet
-              variant="outlined"
-              sx={{
-                borderRadius: "md",
-                overflow: "auto",
-                maxHeight: 280,
-                borderColor: "neutral.outlinedBorder",
-              }}
-            >
-              {/* Header Row */}
-              <Box
+          <DialogContent>
+            <Stack spacing={2.5}>
+              {/* ---- PO Table ---- */}
+              <Sheet
+                variant="outlined"
                 sx={{
-                  display: "grid",
-                  gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr 1fr", // +1 for toggle
-                  gap: 1,
-                  px: 1.5,
-                  py: 1,
-                  backgroundColor: "neutral.softBg",
-                  position: "sticky",
-                  top: 0,
-                  borderBottom: "1px solid",
+                  borderRadius: "md",
+                  overflow: "auto",
+                  maxHeight: 280,
                   borderColor: "neutral.outlinedBorder",
-                  fontWeight: 600,
-                  zIndex: 2,
                 }}
               >
-                {[
-                  { label: "PO No.", align: "left" },
-                  { label: "PO Value", align: "right" },
-                  { label: "Bill Basic", align: "right" },
-                  { label: "Advance Paid", align: "right" },
-                  { label: "Basic Sales", align: "right" },
-                  { label: "GST on Sales", align: "right" },
-                  { label: "Complete Sales", align: "center" }, // NEW
-                ].map((col) => (
-                  <Typography
-                    key={col.label}
-                    level="body-sm"
-                    textAlign={col.align}
-                    sx={{ fontWeight: 700 }}
-                  >
-                    {col.label}
-                  </Typography>
-                ))}
-              </Box>
-
-              {/* Data Rows */}
-              {(selectedPO || [])
-                .filter((po) => Number(po.bill_basic) > 0)
-                .map((po, idx) => {
-                  const id = po._id;
-                  const poValue = Number(po.po_value || 0);
-                  const billBasic = Number(po.bill_basic || 0);
-                  const totalAdvance = Number(po.advance_paid || 0);
-                  const basic = Number(salesAmounts[id]?.basic || 0);
-                  const gst = Number(salesAmounts[id]?.gst || 0);
-
-                  const basicExceeds = basic > billBasic;
-                  const showInfo = billBasic > totalAdvance;
-
-                  return (
-                    <Box
-                      key={id}
-                      sx={{
-                        display: "grid",
-                        gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr 1fr", // +1 for toggle
-                        gap: 1,
-                        px: 1.5,
-                        py: 0.9,
-                        alignItems: "center",
-                        borderBottom: "1px dashed",
-                        borderColor: "neutral.outlinedBorder",
-                        backgroundColor:
-                          idx % 2 === 0
-                            ? "background.body"
-                            : "neutral.softBg",
-                        "&:hover": {
-                          backgroundColor: "neutral.plainHoverBg",
-                        },
-                      }}
+                {/* Header Row */}
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr 1fr", // +1 for toggle
+                    gap: 1,
+                    px: 1.5,
+                    py: 1,
+                    backgroundColor: "neutral.softBg",
+                    position: "sticky",
+                    top: 0,
+                    borderBottom: "1px solid",
+                    borderColor: "neutral.outlinedBorder",
+                    fontWeight: 600,
+                    zIndex: 2,
+                  }}
+                >
+                  {[
+                    { label: "PO No.", align: "left" },
+                    { label: "PO Value", align: "right" },
+                    { label: "Bill Basic", align: "right" },
+                    { label: "Advance Paid", align: "right" },
+                    { label: "Remaining Sales Value", align: "right" },
+                    { label: "Basic Sales", align: "right" },
+                    { label: "GST on Sales(%)", align: "right" },
+                    // { label: "Complete Sales", align: "center" }, // NEW
+                  ].map((col) => (
+                    <Typography
+                      key={col.label}
+                      level="body-sm"
+                      textAlign={col.align}
+                      sx={{ fontWeight: 700 }}
                     >
-                      {/* PO No. */}
-                      <Typography level="body-sm" sx={{ fontWeight: 600 }}>
-                        {po.po_number}
-                      </Typography>
+                      {col.label}
+                    </Typography>
+                  ))}
+                </Box>
 
-                      <Typography level="body-sm" textAlign="right">
-                        {poValue.toLocaleString()}
-                      </Typography>
-                      <Typography level="body-sm" textAlign="right">
-                        {billBasic.toLocaleString()}
-                      </Typography>
-                      <Typography
-                        level="body-sm"
-                        textAlign="right"
-                        color={showInfo ? "danger.plainColor" : "neutral"}
-                      >
-                        {totalAdvance.toLocaleString()}
-                      </Typography>
-
-                      {/* Basic Sales */}
-                      <Input
-                        size="sm"
-                        type="number"
-                        value={salesAmounts[id]?.basic ?? ""}
-                        placeholder="Basic"
-                        onChange={(e) =>
-                          setSalesAmounts((prev) => ({
-                            ...prev,
-                            [id]: { ...prev[id], basic: e.target.value },
-                          }))
-                        }
+                {/* Data Rows */}
+                {(selectedPO || [])
+                  .filter((po) => Number(po.bill_basic) > 0)
+                  .map((po, idx) => {
+                    const id = po._id;
+                    const poValue = Number(po.po_value || 0);
+                    const billBasic = Number(po.bill_basic || 0);
+                    const totalAdvance = Number(po.advance_paid || 0);
+                    const basic = Number(salesAmounts[id]?.basic || 0);
+                    const gst = Number(salesAmounts[id]?.gst || 0);
+                    const remaining_sales = Number(po.remaining_sales_value);
+                    const basicExceeds = basic > remaining_sales;
+                    const showInfo = billBasic > totalAdvance;
+                    return (
+                      <Box
+                        key={id}
                         sx={{
-                          width: 100,
-                          ml: "auto",
-                          borderColor: basicExceeds
-                            ? "danger.solidBg"
-                            : undefined,
+                          display: "grid",
+                          gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr 1fr", // +1 for toggle
+                          gap: 1,
+                          px: 1.5,
+                          py: 0.9,
+                          alignItems: "center",
+                          borderBottom: "1px dashed",
+                          borderColor: "neutral.outlinedBorder",
+                          backgroundColor:
+                            idx % 2 === 0
+                              ? "background.body"
+                              : "neutral.softBg",
+                          "&:hover": {
+                            backgroundColor: "neutral.plainHoverBg",
+                          },
                         }}
-                      />
+                      >
+                        {/* PO No. */}
+                        <Typography level="body-sm" sx={{ fontWeight: 600 }}>
+                          {po.po_number}
+                        </Typography>
 
-                      {/* GST on Sales (%) */}
-                      <Input
-                        size="sm"
-                        type="number"
-                        value={salesAmounts[id]?.gst ?? ""}
-                        placeholder="GST"
-                        onChange={(e) =>
-                          setSalesAmounts((prev) => ({
-                            ...prev,
-                            [id]: { ...prev[id], gst: e.target.value },
-                          }))
-                        }
-                        sx={{ width: 100, ml: "auto" }}
-                      />
+                        <Typography level="body-sm" textAlign="right">
+                          {poValue.toLocaleString()}
+                        </Typography>
+                        <Typography level="body-sm" textAlign="right">
+                          {billBasic.toLocaleString()}
+                        </Typography>
+                        <Typography
+                          level="body-sm"
+                          textAlign="right"
+                          color={showInfo ? "danger.plainColor" : "neutral"}
+                        >
+                          {totalAdvance.toLocaleString()}
+                        </Typography>
+                        <Typography
+                          level="body-sm"
+                          textAlign="right"
+                          color={showInfo ? "danger.plainColor" : "neutral"}
+                        >
+                          {remaining_sales.toLocaleString()}
+                        </Typography>
 
-                      {/* NEW: Complete Sales toggle */}
-                      <Box sx={{ display: "flex", justifyContent: "center" }}>
+                        {/* Basic Sales */}
+                        <Input
+                          size="sm"
+                          type="number"
+                          value={salesAmounts[id]?.basic ?? ""}
+                          placeholder="Basic"
+                          onChange={(e) =>
+                            setSalesAmounts((prev) => ({
+                              ...prev,
+                              [id]: { ...prev[id], basic: e.target.value },
+                            }))
+                          }
+                          sx={{
+                            width: 100,
+                            ml: "auto",
+                            borderColor: basicExceeds
+                              ? "danger.solidBg"
+                              : undefined,
+                          }}
+                        />
+
+                        {/* GST on Sales (%) */}
+                        <Input
+                          size="sm"
+                          type="number"
+                          value={salesAmounts[id]?.gst ?? ""}
+                          placeholder="GST"
+                          onChange={(e) =>
+                            setSalesAmounts((prev) => ({
+                              ...prev,
+                              [id]: { ...prev[id], gst: e.target.value },
+                            }))
+                          }
+                          sx={{ width: 100, ml: "auto" }}
+                        />
+
+                        {/* NEW: Complete Sales toggle */}
+                        {/* <Box sx={{ display: "flex", justifyContent: "center" }}>
                         <Switch
                           size="sm"
                           checked={completeSales[id] ?? true}
@@ -3416,182 +3867,195 @@ const normalizeAttachments = (atts) => {
                             thumb: { "aria-label": "Complete Sales toggle" },
                           }}
                         />
+                      </Box> */}
                       </Box>
-                    </Box>
-                  );
-                })}
-            </Sheet>
+                    );
+                  })}
+              </Sheet>
 
-            {/* ---- File Upload ---- */}
-            <Sheet
-              variant="soft"
-              onClick={() => fileInputRef.current?.click()}
-              onDrop={onDrop}
-              onDragOver={onDragOver}
-              onDragLeave={onDragLeave}
-              sx={{
-                border: "2px dashed",
-                borderColor: isDragging
-                  ? "primary.solidBg"
-                  : "neutral.outlinedBorder",
-                borderRadius: "lg",
-                p: 3,
-                textAlign: "center",
-                cursor: "pointer",
-                transition: "all .2s ease-in-out",
-                "&:hover": {
-                  borderColor: "primary.solidBg",
-                  backgroundColor: "neutral.softBg",
-                },
-              }}
-            >
-              <Typography level="title-sm">
-                <strong>Drop files here</strong> or <u>browse</u>
-              </Typography>
-              <Typography level="body-xs" color="neutral">
-                Supports multiple files (.PNG, .JPG, .PDF)
-              </Typography>
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                accept="image/*,application/pdf"
-                onChange={onFileInputChange}
-                style={{ display: "none" }}
-              />
-              <Typography level="body-sm" sx={{ mt: 1 }}>
-                {salesFiles.length
-                  ? `${salesFiles.length} file(s) selected`
-                  : "No files selected"}
-              </Typography>
-            </Sheet>
-
-            {salesFiles.length > 0 && (
-              <Box
+              {/* ---- File Upload ---- */}
+              <Sheet
+                variant="soft"
+                onClick={() => fileInputRef.current?.click()}
+                onDrop={onDrop}
+                onDragOver={onDragOver}
+                onDragLeave={onDragLeave}
                 sx={{
-                  mt: 1.5,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 0.75,
-                  maxHeight: 140,
-                  overflowY: "auto",
+                  border: "2px dashed",
+                  borderColor: isDragging
+                    ? "primary.solidBg"
+                    : "neutral.outlinedBorder",
+                  borderRadius: "lg",
+                  p: 3,
+                  textAlign: "center",
+                  cursor: "pointer",
+                  transition: "all .2s ease-in-out",
+                  "&:hover": {
+                    borderColor: "primary.solidBg",
+                    backgroundColor: "neutral.softBg",
+                  },
                 }}
               >
-                {salesFiles.map(({ file }) => (
-                  <Box
-                    key={`${file.name}-${file.size}-${file.lastModified}`}
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      backgroundColor: "background.level1",
-                      borderRadius: "sm",
-                      px: 1.2,
-                      py: 0.5,
-                      border: "1px solid",
-                      borderColor: "neutral.outlinedBorder",
-                      "&:hover": {
-                        backgroundColor: "neutral.plainHoverBg",
-                      },
-                    }}
-                  >
-                    <Typography
-                      level="body-sm"
-                      sx={{
-                        wordBreak: "break-all",
-                        flex: 1,
-                        pr: 1,
-                        fontSize: "sm",
-                      }}
-                    >
-                      {file.name}
-                    </Typography>
+                <Typography level="title-sm">
+                  <strong>Drop files here</strong> or <u>browse</u>
+                </Typography>
+                <Typography level="body-xs" color="neutral">
+                  Supports multiple files (.PNG, .JPG, .PDF)
+                </Typography>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*,application/pdf"
+                  onChange={onFileInputChange}
+                  style={{ display: "none" }}
+                />
+                <Typography level="body-sm" sx={{ mt: 1 }}>
+                  {salesFiles.length
+                    ? `${salesFiles.length} file(s) selected`
+                    : "No files selected"}
+                </Typography>
+              </Sheet>
 
+              {salesFiles.length > 0 && (
+                <Box
+                  sx={{
+                    mt: 1.5,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 0.75,
+                    maxHeight: 140,
+                    overflowY: "auto",
+                  }}
+                >
+                  {salesFiles.map(({ file }) => (
                     <Box
-                      onClick={() => removeFile(file)}
+                      key={`${file.name}-${file.size}-${file.lastModified}`}
                       sx={{
-                        cursor: "pointer",
-                        color: "danger.solidBg",
-                        "&:hover": { color: "danger.plainColor" },
                         display: "flex",
                         alignItems: "center",
+                        justifyContent: "space-between",
+                        backgroundColor: "background.level1",
+                        borderRadius: "sm",
+                        px: 1.2,
+                        py: 0.5,
+                        border: "1px solid",
+                        borderColor: "neutral.outlinedBorder",
+                        "&:hover": {
+                          backgroundColor: "neutral.plainHoverBg",
+                        },
                       }}
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        width="18"
-                        fill="currentColor"
+                      <Typography
+                        level="body-sm"
+                        sx={{
+                          wordBreak: "break-all",
+                          flex: 1,
+                          pr: 1,
+                          fontSize: "sm",
+                        }}
                       >
-                        <path d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7A1 1 0 0 0 5.7 7.11L10.59 12l-4.9 4.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.9a1 1 0 0 0 1.41-1.41L13.41 12l4.9-4.89a1 1 0 0 0-.01-1.4z" />
-                      </svg>
+                        {file.name}
+                      </Typography>
+
+                      <Box
+                        onClick={() => removeFile(file)}
+                        sx={{
+                          cursor: "pointer",
+                          color: "danger.solidBg",
+                          "&:hover": { color: "danger.plainColor" },
+                          display: "flex",
+                          alignItems: "center",
+                        }}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          width="18"
+                          fill="currentColor"
+                        >
+                          <path d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7A1 1 0 0 0 5.7 7.11L10.59 12l-4.9 4.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.9a1 1 0 0 0 1.41-1.41L13.41 12l4.9-4.89a1 1 0 0 0-.01-1.4z" />
+                        </svg>
+                      </Box>
                     </Box>
-                  </Box>
-                ))}
+                  ))}
 
-                <Button
+                  <Button
+                    variant="outlined"
+                    color="neutral"
+                    size="sm"
+                    onClick={clearAllFiles}
+                    sx={{ alignSelf: "flex-end", mt: 0.5, fontSize: "xs" }}
+                  >
+                    Clear All
+                  </Button>
+                </Box>
+              )}
+
+              {/* ---- Invoice ---- */}
+              <FormControl>
+                <FormLabel sx={{ fontWeight: 600 }}>
+                  Sales Invoice No.
+                </FormLabel>
+                <Input
+                  size="md"
                   variant="outlined"
-                  color="neutral"
-                  size="sm"
-                  onClick={clearAllFiles}
-                  sx={{ alignSelf: "flex-end", mt: 0.5, fontSize: "xs" }}
-                >
-                  Clear All
-                </Button>
-              </Box>
-            )}
+                  placeholder="Enter Sales Invoice Number"
+                  value={salesInvoice}
+                  onChange={(e) => setSalesInvoice(e.target.value)}
+                  sx={{
+                    borderRadius: "md",
+                    backgroundColor: "background.body",
+                  }}
+                />
+              </FormControl>
 
-            {/* ---- Invoice ---- */}
-            <FormControl>
-              <FormLabel sx={{ fontWeight: 600 }}>Sales Invoice No.</FormLabel>
-              <Input
-                size="md"
-                variant="outlined"
-                placeholder="Enter Sales Invoice Number"
-                value={salesInvoice}
-                onChange={(e) => setSalesInvoice(e.target.value)}
-                sx={{ borderRadius: "md", backgroundColor: "background.body" }}
+              {/* ---- Remarks ---- */}
+              <Textarea
+                minRows={3}
+                placeholder="Enter remarks..."
+                variant="soft"
+                value={salesRemarks}
+                onChange={(e) => setSalesRemarks(e.target.value)}
+                sx={{
+                  fontSize: "sm",
+                  borderRadius: "md",
+                  backgroundColor: "background.body",
+                }}
               />
-            </FormControl>
 
-            {/* ---- Remarks ---- */}
-            <Textarea
-              minRows={3}
-              placeholder="Enter remarks..."
-              variant="soft"
-              value={salesRemarks}
-              onChange={(e) => setSalesRemarks(e.target.value)}
-              sx={{ fontSize: "sm", borderRadius: "md", backgroundColor: "background.body" }}
-            />
-
-            {/* ---- Actions ---- */}
-            <Stack direction="row" spacing={1.5} justifyContent="flex-end">
-              <Button variant="plain" color="neutral" onClick={() => setSalesOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                variant="solid"
-                color="primary"
-                loading={isConverting}
-                disabled={
-                  !salesRemarks.trim() ||
-                  selectedPO.some((po) => {
-                    const id = po._id;
-                    const billBasic = Number(po.bill_basic || 0);
-                    const basic = Number(salesAmounts[id]?.basic || 0);
-                    return basic < 0 || basic > billBasic;
-                  })
-                }
-                onClick={handleSalesConvert}
-              >
-                Convert
-              </Button>
+              {/* ---- Actions ---- */}
+              <Stack direction="row" spacing={1.5} justifyContent="flex-end">
+                <Button
+                  variant="plain"
+                  color="neutral"
+                  onClick={() => setSalesOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="solid"
+                  color="primary"
+                  loading={isConverting}
+                  disabled={
+                    !salesRemarks.trim() ||
+                    selectedPO.some((po) => {
+                      const id = po._id;
+                      const billBasic = Number(po.bill_basic || 0);
+                      const basic = Number(salesAmounts[id]?.basic || 0);
+                      return basic < 0 || basic > billBasic;
+                    })
+                  }
+                  onClick={handleSalesConvert}
+                >
+                  Convert
+                </Button>
+              </Stack>
             </Stack>
-          </Stack>
-        </DialogContent>
-      </ModalDialog>
-    </Modal>
+          </DialogContent>
+        </ModalDialog>
+      </Modal>
     </Box>
   );
 }
