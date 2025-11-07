@@ -408,6 +408,7 @@ function Sidebar() {
           (user?.name === "Deepak Kumar Maurya" ||
             user?.name === "Gagan Tayal" ||
             user?.name === "Ajay Singh" ||
+            user?.name === "Kanchan Kashyap"||
             user?.name === "Sachin Raghav" ||
             user?.name === "Anamika Poonia" ||
             user?.name === "Meena Verma" ||
