@@ -231,6 +231,7 @@ export default function CustomerPaymentSummary() {
     "Prachi Singh",
     "admin",
     "Chandan Singh",
+    "Deepak Kumar Maurya",
     "Gagan Tayal",
     "Sachin Raghav",
     "Kailash Chand",
@@ -238,7 +239,7 @@ export default function CustomerPaymentSummary() {
 
   const canDelete =
     user?.name &&
-    !["Chandan Singh", "Sachin Raghav", "Kailash Chand"].includes(user.name);
+    !["Chandan Singh", "Deepak Kumar Maurya", "Sachin Raghav", "Kailash Chand"].includes(user.name);
 
   // --- Sales table column config & visibility ---
   const SALES_COLUMNS = useMemo(
