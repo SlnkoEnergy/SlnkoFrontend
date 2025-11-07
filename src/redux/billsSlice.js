@@ -91,10 +91,10 @@ export const billsApi = createApi({
 
     // DELETE bill by ID
     deleteBill: builder.mutation({
-      query: ({ids}) => ({
+      query: ({ ids }) => ({
         url: `delete-bill`,
         method: "DELETE",
-        body: {ids}
+        body: { ids }
       }),
       invalidatesTags: ["Bill"],
     }),
@@ -148,7 +148,7 @@ export const billsApi = createApi({
       }),
       invalidatesTags: ["Pohistory"],
     }),
-    
+
   }),
 });
 
