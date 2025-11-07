@@ -63,41 +63,41 @@ function useCoarsePointer() {
 function DPRTable() {
   const [searchParams, setSearchParams] = useSearchParams();
   const isTouch = useCoarsePointer();
-/** dd-mm-yyyy -> Date at local midnight */
-const ddmmyyyyToLocalDate = (s) => {
-  if (!s) return null;
-  const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(String(s).trim());
-  if (!m) return null;
-  const [, dd, mm, yyyy] = m;
-  const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd), 0, 0, 0, 0);
-  return isNaN(d.getTime()) ? null : d;
-};
+  /** dd-mm-yyyy -> Date at local midnight */
+  const ddmmyyyyToLocalDate = (s) => {
+    if (!s) return null;
+    const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(String(s).trim());
+    if (!m) return null;
+    const [, dd, mm, yyyy] = m;
+    const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd), 0, 0, 0, 0);
+    return isNaN(d.getTime()) ? null : d;
+  };
 
-const startOfDay = (d) =>
-  d ? new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0) : null;
+  const startOfDay = (d) =>
+    d ? new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0) : null;
 
-/** ceil days difference a->b, never negative */
-const daysBetween = (a, b) => {
-  if (!a || !b) return 0;
-  const A = startOfDay(a);
-  const B = startOfDay(b);
-  const ms = B.getTime() - A.getTime();
-  if (ms <= 0) return 0;
-  return Math.ceil(ms / (24 * 60 * 60 * 1000));
-};
+  /** ceil days difference a->b, never negative */
+  const daysBetween = (a, b) => {
+    if (!a || !b) return 0;
+    const A = startOfDay(a);
+    const B = startOfDay(b);
+    const ms = B.getTime() - A.getTime();
+    if (ms <= 0) return 0;
+    return Math.ceil(ms / (24 * 60 * 60 * 1000));
+  };
 
-const HEADERS = [
-  "Project Code",
-  "Project Name",
-  "Activity",
-  "Work Detail",
-  "Deadline",
-  "Delay", // NEW COLUMN
-  "Status",
-  "Actions",
-];
+  const HEADERS = [
+    "Project Code",
+    "Project Name",
+    "Activity",
+    "Work Detail",
+    "Deadline",
+    "Delay", // NEW COLUMN
+    "Status",
+    "Actions",
+  ];
 
-// function DPRTable() {
+  // function DPRTable() {
   // const [searchParams, setSearchParams] = useSearchParams();
   const prevQueryRef = useRef(null);
 
@@ -186,14 +186,14 @@ const HEADERS = [
       const normStatus = lifecycleCompleted
         ? "completed"
         : apiStatus === "in-progress" || apiStatus === "progress"
-        ? "progress"
-        : apiStatus === "work stopped" ||
-          apiStatus === "stopped" ||
-          apiStatus === "stop"
-        ? "stop"
-        : apiStatus === "idle"
-        ? "idle"
-        : "progress";
+          ? "progress"
+          : apiStatus === "work stopped" ||
+            apiStatus === "stopped" ||
+            apiStatus === "stop"
+            ? "stop"
+            : apiStatus === "idle"
+              ? "idle"
+              : "progress";
 
       // ids…
       const projectId =
@@ -410,20 +410,20 @@ const HEADERS = [
       st === "completed"
         ? "Completed"
         : st === "idle"
-        ? "Idle"
-        : st === "stop"
-        ? "Work Stopped"
-        : "In progress";
+          ? "Idle"
+          : st === "stop"
+            ? "Work Stopped"
+            : "In progress";
 
     // completed -> green, idle -> grey, in progress -> orange, stop -> red
     const color =
       st === "completed"
         ? "success"
         : st === "idle"
-        ? "neutral"
-        : st === "stop"
-        ? "danger"
-        : "warning";
+          ? "neutral"
+          : st === "stop"
+            ? "danger"
+            : "warning";
 
     return (
       <Chip variant="soft" color={color} sx={{ fontWeight: 700 }}>
@@ -451,10 +451,10 @@ const HEADERS = [
       delayText && String(delayText).trim()
         ? `Delay reason: ${String(delayText).trim()}`
         : showNotCounted
-        ? "Delay not counted for Idle/Stopped status"
-        : Number(delayDays) > 0
-        ? "Deadline exceeded"
-        : "No delay";
+          ? "Delay not counted for Idle/Stopped status"
+          : Number(delayDays) > 0
+            ? "Deadline exceeded"
+            : "No delay";
 
     return (
       <Tooltip title={tooltip} arrow variant="soft">
@@ -1362,18 +1362,18 @@ const HEADERS = [
                 s === "completed"
                   ? "Completed"
                   : s === "idle"
-                  ? "Idle"
-                  : s === "stop"
-                  ? "Work Stopped"
-                  : "In progress";
+                    ? "Idle"
+                    : s === "stop"
+                      ? "Work Stopped"
+                      : "In progress";
               const statusColor =
                 s === "completed"
                   ? "success"
                   : s === "idle"
-                  ? "neutral"
-                  : s === "stop"
-                  ? "danger"
-                  : "warning";
+                    ? "neutral"
+                    : s === "stop"
+                      ? "danger"
+                      : "warning";
 
               return (
                 <>
