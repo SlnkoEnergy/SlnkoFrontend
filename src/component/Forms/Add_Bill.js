@@ -240,19 +240,21 @@ export default function VendorBillForm({
   const [addBill, { isLoading: postingCreate }] = useAddBillMutation();
   const [updateBill, { isLoading: postingUpdate }] = useUpdateBillMutation();
 
-  const buildPayloadItems = useCallback(
-    () =>
-      lines.map((l) => ({
-        category_id: l.category_id,
-        product_name: l.product_name,
-        product_make: l.product_make,
-        uom: l.uom,
-        quantity: l.qty,
-        bill_value: l.price,
-        gst_percent: l.tax,
-      })),
+  const buildPayloadItems = useCallback(() =>
+    lines.map((l) => ({
+      category: l.category_id && l.Category
+        ? { category_id: l.category_id, category_name: l.Category }
+        : {},
+      product_name: l.product_name,
+      product_make: l.product_make,
+      uom: l.uom,
+      quantity: l.qty,
+      bill_value: l.price,
+      gst_percent: l.tax,
+    })),
     [lines]
   );
+
 
   const [triggerGetBillHistory] = useLazyGetBillHistoryQuery();
 
