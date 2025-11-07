@@ -55,6 +55,12 @@ const data = {
         {
             activity_name: "Pile Marking",
             actualfinsh: "8 Nov",
+            assigned_user: [
+                {
+                    _id: "u1-u2",
+                    user_name: "Emily White",
+                }
+            ],
             dpr_logs: [
                 {
                     today_progress: "12",
@@ -79,6 +85,12 @@ const data = {
         {
             activity_name: "Module",
             actualfinsh: "6 Nov",
+            assigned_user: [
+                {
+                    user_name: "John Chen",
+                    _id: "u2-u2",
+                }
+            ],
             dpr_logs: [
                 {
                     today_progress: "1",
@@ -104,6 +116,13 @@ const data = {
             activity_name: "Module",
             actualfinsh: null,
             planed_finish: "4 NOv",
+
+            assigned_user: [
+                {
+                    user_name: "John Chen",
+                    _id: "u2-u2",
+                }
+            ],
             dpr_logs: [
                 {
                     today_progress: "1",
