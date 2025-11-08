@@ -176,7 +176,8 @@ export default function CustomerPaymentSummary() {
       { key: "billGst", label: "Billed GST (₹)" },
       { key: "billedTotal", label: "Billed Total (₹)" },
 
-      { key: "remainingSales", label: "Remaining Sales Closure (incl. GST)" },
+      { key: "remainingSales", label: "Remaining Sales Closure" },
+      {key: "remainingSalesGST", label: "Remaining Sales Closure(inc GST)"},
       { key: "status", label: "Status" },
       { key: "select", label: "Select checkbox" },
     ],
@@ -1262,7 +1263,7 @@ export default function CustomerPaymentSummary() {
         "6",
         "Bills received, yet to be invoiced to customer",
         safeRound(
-          responseData?.clientHistory?.meta?.total_remaining_sales_value
+          responseData?.clientHistory?.meta?.total_remaining_sales_value_with_gst
         ),
         "#FFF",
       ],
@@ -1272,7 +1273,7 @@ export default function CustomerPaymentSummary() {
         safeRound(
           responseData?.total_advance_paid -
             responseData?.total_sales_value -
-            responseData?.clientHistory?.meta?.total_remaining_sales_value
+            responseData?.clientHistory?.meta?.total_remaining_sales_value_with_gst
         ),
         "#FFF",
       ],
@@ -1288,10 +1289,10 @@ export default function CustomerPaymentSummary() {
         safeRound(
           responseData?.netBalance -
             responseData?.total_sales_value -
-            responseData?.clientHistory?.meta?.total_remaining_sales_value -
+            responseData?.clientHistory?.meta?.total_remaining_sales_value_with_gst -
             (responseData?.total_advance_paid -
               responseData?.total_sales_value -
-              responseData?.clientHistory?.meta?.total_remaining_sales_value) -
+              responseData?.clientHistory?.meta?.total_remaining_sales_value_with_gst) -
             responseData?.total_adjustment
         ),
         "#FFECB3",
@@ -2241,6 +2242,9 @@ export default function CustomerPaymentSummary() {
                     {show("remainingSales") && (
                       <col style={{ minWidth: "200px" }} />
                     )}
+                    {show("remainingSalesGST") && (
+                      <col style={{ minWidth: "200px" }} />
+                    )}
                     {show("status") && <col style={{ minWidth: "150px" }} />}
                     {show("select") && <col style={{ minWidth: "100px" }} />}
                   </colgroup>
@@ -2303,6 +2307,12 @@ export default function CustomerPaymentSummary() {
                           Remaining Sales Closure
                         </th>
                       )}
+                      {show("remainingSalesGST") && (
+                        <th rowSpan={2} className="num">
+                          Remaining Sales Closure(inc GST)
+                        </th>
+                      )}
+
 
                       {show("status") && (
                         <th rowSpan={2} className="text">
@@ -2451,6 +2461,14 @@ export default function CustomerPaymentSummary() {
                             </td>
                           )}
 
+                          {show("remainingSalesGST") && (
+                            <td className="num">
+                              <RupeeValue
+                                value={client.remaining_sales_value_with_gst || 0}
+                              />
+                            </td>
+                          )}
+
                           <td style={{ textAlign: "center" }}>
                             <Chip
                               color={
@@ -2588,6 +2606,17 @@ export default function CustomerPaymentSummary() {
                               value={
                                 clientHistory?.meta
                                   ?.total_remaining_sales_value || 0
+                              }
+                            />
+                          </td>
+                        )}
+
+                        {show("remainingSalesGST") && (
+                          <td className="num em">
+                            <RupeeValue
+                              value={
+                                clientHistory?.meta
+                                  ?.total_remaining_sales_value_with_gst || 0
                               }
                             />
                           </td>
