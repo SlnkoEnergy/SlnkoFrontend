@@ -330,7 +330,7 @@ const PurchaseOrderSummary = forwardRef((props, ref) => {
   };
 
   const handleSearch = (query) => {
-    const q = (query || "").trim();
+    const q = query
     setSearchQuery(q);
     updateParams({ search: q || undefined, page: 1, pageSize: perPage });
     setCurrentPage(1);
