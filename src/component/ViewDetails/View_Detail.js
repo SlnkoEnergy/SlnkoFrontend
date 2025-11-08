@@ -2300,7 +2300,7 @@ export default function CustomerPaymentSummary() {
 
                       {show("remainingSales") && (
                         <th rowSpan={2} className="num">
-                          Remaining Sales Closure(incl. gst)
+                          Remaining Sales Closure
                         </th>
                       )}
 
