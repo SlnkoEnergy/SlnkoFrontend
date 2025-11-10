@@ -32,7 +32,6 @@ import {
   Textarea,
 } from "@mui/joy";
 import Avatar from "@mui/joy/Avatar";
-import ReactSelect from "react-select";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import EventOutlinedIcon from "@mui/icons-material/EventOutlined";
 import { Timelapse, Add, Delete } from "@mui/icons-material";
@@ -42,16 +41,11 @@ import {
   useUpdateActivityInProjectMutation,
   useCreateProjectActivityMutation,
   useGetActivityInProjectQuery,
-  useGetAllProjectUserQuery,
 } from "../redux/projectsSlice";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import AppSnackbar from "./AppSnackbar";
 import { toast } from "react-toastify";
-
-import enIN from "date-fns/locale/en-IN";
-const DateRange = lazy(() =>
-  import("react-date-range").then((m) => ({ default: m.DateRange }))
-);
+import { useGetAllUserQuery } from "../redux/globalTaskSlice";
 
 /* ---------------- helpers ---------------- */
 const labelToType = { FS: "0", SS: "1", FF: "2" };
@@ -549,21 +543,63 @@ function DepRow({ title, options, row, onChange, onRemove, disabled = false }) {
 }
 
 /* ---------- row for resources ---------- */
-function ResourceRow({ row, onChange, onRemove, disabled = false }) {
+function ResourceRow({
+  row,
+  onChange,
+  onRemove,
+  assignOptions = [],
+  disabled = false,
+}) {
+  const cap = Math.max(1, Number(row?.number) || 1);
+
+  // normalize any incoming shape (string id OR {_id, name})
+  const toId = (x) => {
+    if (!x) return "";
+    if (typeof x === "object" && x._id) return String(x._id);
+    return String(x);
+  };
+
+  // always work with array of **ids**
+  const selectedIds = Array.isArray(row?.user_id) ? row.user_id.map(toId) : [];
+
+  const handlePickChange = (_, values) => {
+    // values are option objects from assignOptions -> map to their ids
+    const nextIds = values.map((v) => v.value);
+    const allowed = nextIds.length > cap ? nextIds.slice(0, cap) : nextIds;
+
+    if (nextIds.length > cap && typeof toast?.warning === "function") {
+      toast.warning(
+        `You can assign up to ${cap} user${cap === 1 ? "" : "s"} for this row.`
+      );
+    }
+
+    // write back using a consistent key: user_id (array of ids)
+    onChange({ ...row, user_id: allowed });
+  };
+
+  const handleNumberChange = (e) => {
+    const n = Math.max(1, Number(e.target.value) || 1);
+    // trim if cap reduced
+    const trimmed =
+      selectedIds.length > n ? selectedIds.slice(0, n) : selectedIds;
+    onChange({ ...row, number: n, user_id: trimmed });
+  };
+
   return (
     <Stack
       direction="row"
       alignItems="center"
       spacing={1}
-      sx={{ width: "100%" }}
+      sx={{ width: "100%", flexWrap: "wrap" }}
     >
+      {/* Type */}
       <Select
         size="sm"
         placeholder="Type"
         value={row.type || ""}
         disabled={disabled}
         onChange={(_, v) => onChange({ ...row, type: v || "" })}
-        sx={{ minWidth: "80%" }}
+        sx={{ minWidth: 200, flexShrink: 0 }}
         slotProps={{ listbox: { sx: { zIndex: 1401 } } }}
       >
         {RESOURCE_TYPES.map((t) => (
@@ -576,21 +612,43 @@ function ResourceRow({ row, onChange, onRemove, disabled = false }) {
         ))}
       </Select>
 
+      {/* Headcount */}
       <Input
         size="sm"
         type="number"
         inputMode="numeric"
         placeholder="Number"
-        value={row.number ?? ""}
+        value={row.number ?? 1}
         disabled={disabled}
-        onChange={(e) =>
-          onChange({
-            ...row,
-            number: Number(e.target.value) > 1 ? Number(e.target.value) : 1,
-          })
-        }
-        sx={{ width: "100%" }}
+        onChange={handleNumberChange}
+        sx={{ width: 80, flexShrink: 0 }}
       />
+
+      {/* Per-row assignees */}
+      <Stack spacing={0.5} sx={{ minWidth: 320, flex: 1 }}>
+        <Autocomplete
+          multiple
+          size="sm"
+          placeholder={`Select up to ${cap}`}
+          options={assignOptions} // [{ value: "<userId>", label: "<name>" }, ...]
+          getOptionLabel={(o) => o.label}
+          isOptionEqualToValue={(a, b) => a.value === b.value}
+          // set value by filtering options with currently selected **ids**
+          value={assignOptions.filter((o) => selectedIds.includes(o.value))}
+          onChange={handlePickChange}
+          filterSelectedOptions
+          disableCloseOnSelect
+          disabled={disabled || cap === 0}
+          getOptionDisabled={(opt) =>
+            selectedIds.length >= cap && !selectedIds.includes(opt.value)
+          }
+          slotProps={{
+            listbox: {
+              sx: { zIndex: 1401, maxHeight: 240, overflowY: "auto" },
+            },
+          }}
+        />
+      </Stack>
 
       <IconButton
         color="danger"
@@ -613,8 +671,6 @@ const View_Project_Management = forwardRef(
 
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
-    // === Work-completion deadline (calendar selection state) ===
-
     // read initial params
     const projectId = searchParams.get("project_id");
     const initView = (searchParams.get("type") || "site").toLowerCase();
@@ -642,119 +698,11 @@ const View_Project_Management = forwardRef(
       setSearchParams(params, { replace: true });
     };
 
-    const rangePresetOptions = [
-      { value: "custom", label: "Custom" },
-      { value: "today", label: "Today" },
-      { value: "next7", label: "Next 7 days" },
-      { value: "thisWeek", label: "This week" },
-      { value: "thisMonth", label: "This month" },
-    ];
-    function applyPreset(preset) {
-      const now = new Date();
-      let from = "",
-        to = "";
-
-      switch (preset) {
-        case "today": {
-          const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          from = toYMDLocal(d);
-          to = toYMDLocal(d);
-          break;
-        }
-        case "next7": {
-          const d1 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          const d2 = new Date(d1);
-          d2.setDate(d2.getDate() + 6);
-          from = toYMDLocal(d1);
-          to = toYMDLocal(d2);
-          break;
-        }
-        case "thisWeek": {
-          const d1 = startOfWeek(now);
-          const d2 = endOfWeek(now);
-          from = toYMDLocal(d1);
-          to = toYMDLocal(d2);
-          break;
-        }
-        case "thisMonth": {
-          const d1 = startOfMonth(now);
-          const d2 = endOfMonth(now);
-          from = toYMDLocal(d1);
-          to = toYMDLocal(d2);
-          break;
-        }
-        default: // custom
-          break;
-      }
-
-      setForm((f) => ({
-        ...f,
-        work_completion_preset: preset,
-        ...(from ? { work_completion_deadline_from: from } : {}),
-        ...(to ? { work_completion_deadline_to: to } : {}),
-      }));
-    }
-
     useEffect(() => {
-      // ensure URL reflects initial normalized state on first mount
       syncURL(actView, timelineMode);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const [assignPick, setAssignPick] = useState([]);
-
-    const handleAssignPicked = () => {
-      if (!assignPick.length) return;
-
-      setForm((f) => {
-        const prev = ensureIds(f.assigned_to);
-        const next = Array.from(new Set([...prev, ...assignPick]));
-
-        let newStatus = "Assigned";
-        if (prev.length && next.length > prev.length) newStatus = "Assigned";
-        else if (next.length && next.length !== prev.length)
-          newStatus = "Partial";
-        else if (!next.length) newStatus = "Removed";
-
-        return {
-          ...f,
-          assigned_to: next,
-          assigned_status: newStatus,
-        };
-      });
-
-      setAssignPick([]);
-      toast.success("Engineer's assigned successfully.");
-    };
-
-    const handleRemovePicked = (ids) => {
-      const toRemove = Array.isArray(ids) ? ids : assignPick;
-      if (!toRemove.length) return;
-
-      setForm((f) => {
-        const prev = ensureIds(f.assigned_to);
-        const remaining = prev.filter((id) => !toRemove.includes(id));
-
-        let newStatus = "Removed";
-        if (remaining.length && remaining.length !== prev.length)
-          newStatus = "Partial";
-
-        return {
-          ...f,
-          assigned_to: remaining,
-          assigned_status: newStatus,
-        };
-      });
-
-      setAssignPick([]);
-      toast.info("User(s) removed successfully.");
-    };
-
-    function dedupeStatus(arr) {
-      const map = new Map();
-      arr.forEach((e) => map.set(String(e.user_id), e));
-      return Array.from(map.values());
-    }
 
     const { data: apiData, refetch: refetchAll } =
       useGetProjectActivityByProjectIdQuery(projectId, { skip: !projectId });
@@ -764,7 +712,7 @@ const View_Project_Management = forwardRef(
     const [createProjectActivity] = useCreateProjectActivityMutation();
 
     const { data: projectUsers = [], isFetching: isFetchingUsers } =
-      useGetAllProjectUserQuery();
+      useGetAllUserQuery({ department: "Projects" });
 
     const assignOptions = Array.isArray(projectUsers?.data)
       ? projectUsers.data.map((u) => ({
@@ -1110,13 +1058,9 @@ const View_Project_Management = forwardRef(
       predecessors: [],
       resources: [],
       remarks: "",
-      assigned_to: [],
-      assigned_status: null,
+      assigned_user: [],
       work_completion_value: "",
       work_completion_unit: "number",
-      work_completion_deadline_from: "",
-      work_completion_deadline_to: "",
-      work_completion_preset: "custom",
     });
 
     const statusChanged = form.status !== initialStatusRef.current;
@@ -1226,28 +1170,6 @@ const View_Project_Management = forwardRef(
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [form.predecessors, form.duration, form.start]);
 
-    const toId = (x) => (typeof x === "string" ? x : x?._id || x?.id || "");
-    const ensureIds = (arr) =>
-      Array.isArray(arr) ? arr.map(toId).filter(Boolean) : [];
-
-    const wcSelection = useMemo(() => {
-      const from =
-        parseISOAsLocalDate(form.work_completion_deadline_from) || new Date();
-      const to = parseISOAsLocalDate(form.work_completion_deadline_to) || from;
-      return [{ startDate: from, endDate: to, key: "selection" }];
-    }, [form.work_completion_deadline_from, form.work_completion_deadline_to]);
-
-    const handleWcRangeChange = (ranges) => {
-      const sel = ranges?.selection || ranges?.ranges?.selection;
-      if (!sel) return;
-      setForm((f) => ({
-        ...f,
-        work_completion_deadline_from: toYMD(sel.startDate),
-        work_completion_deadline_to: toYMD(sel.endDate),
-        work_completion_preset: "custom",
-      }));
-    };
-
     useEffect(() => {
       if (!activityFetch || !selectedId) return;
 
@@ -1272,24 +1194,6 @@ const View_Project_Management = forwardRef(
       const wc = act?.work_completion || {};
       const wcUnit = typeof wc.unit === "string" ? wc.unit : "number";
       const wcValue = Number.isFinite(Number(wc.value)) ? String(wc.value) : "";
-      let wcDeadlineFrom = "";
-      let wcDeadlineTo = "";
-      if (wc?.deadline) {
-        const t = typeof wc.deadline;
-        if (t === "string" || wc.deadline instanceof Date) {
-          // legacy single date → use as both from/to
-          const ymd = toYMD(parseISOAsLocalDate(wc.deadline));
-          wcDeadlineFrom = ymd || "";
-          wcDeadlineTo = ymd || "";
-        } else if (t === "object") {
-          wcDeadlineFrom = wc.deadline?.from
-            ? toYMD(parseISOAsLocalDate(wc.deadline.from))
-            : "";
-          wcDeadlineTo = wc.deadline?.to
-            ? toYMD(parseISOAsLocalDate(wc.deadline.to))
-            : "";
-        }
-      }
 
       // 🔁 Predecessors for UI
       const uiPreds = preds
@@ -1318,13 +1222,9 @@ const View_Project_Management = forwardRef(
       const uiResources = resArrRaw.map((r) => ({
         type: r?.type || "",
         number: Number(r?.number) || 0,
+        user_id: Array.isArray(r?.user_id) ? r.user_id : [],
       }));
 
-      const assignedToIds = ensureIds(act?.assigned_to);
-      const assignedStatusStr =
-        typeof act?.assigned_status === "string" ? act.assigned_status : null;
-
-      // 🧭 Set all values including assigned_by
       setForm({
         status: fetchedStatus,
         start: startISO ? toYMD(parseISOAsLocalDate(startISO)) : "",
@@ -1335,19 +1235,10 @@ const View_Project_Management = forwardRef(
         remarks: fetchedRemarksRef.current,
         updatedByName,
         updatedByUrl,
-        assigned_by: toId(assignedBy), // ✅ store ID if needed for logic
-        assignedByName,
-        assignedByUrl,
-        assigned_to: assignedToIds,
-        assigned_status: assignedStatusStr,
+        assigned_user: assignPick || [],
         work_completion_value: wcValue,
         work_completion_unit: wcUnit,
-        work_completion_deadline_from: wcDeadlineFrom,
-        work_completion_deadline_to: wcDeadlineTo,
-        work_completion_preset: "custom",
       });
-
-      // 🔁 Optional: recompute dates if predecessors exist
       const durNum = Number(durStr || 0);
       if (uiPreds.length > 0 && durNum > 0) {
         const res = recomputeDatesFromPredecessors(uiPreds, durNum);
@@ -1366,21 +1257,6 @@ const View_Project_Management = forwardRef(
         setSnack({ open: true, msg: extractBackendError(activityFetchError) });
       }
     }, [activityFetchError]);
-
-    useEffect(() => {
-      const from = form.work_completion_deadline_from;
-      const to = form.work_completion_deadline_to;
-      if (!from || !to) return;
-
-      const df = new Date(from);
-      const dt = new Date(to);
-      if (!isNaN(df) && !isNaN(dt) && df.getTime() > dt.getTime()) {
-        setSnack({
-          open: true,
-          msg: "Deadline From cannot be after Deadline To.",
-        });
-      }
-    }, [form.work_completion_deadline_from, form.work_completion_deadline_to]);
 
     const saveFromModal = async () => {
       if (!selectedId) return;
@@ -1414,6 +1290,7 @@ const View_Project_Management = forwardRef(
             .map((r) => ({
               type: String(r.type),
               number: Number(r.number || 1),
+              user_id: Array.isArray(r?.user_id) ? r.user_id : [],
             }))
         : [];
 
@@ -1435,35 +1312,9 @@ const View_Project_Management = forwardRef(
         predecessors: predsPayload,
         resources: resourcesPayload,
         remarks: form.remarks || "",
-        assigned_to: ensureIds(form.assigned_to),
-        assigned_status: computedAssignedStatus || undefined,
+        work_completion_value: form.work_completion_value || 0,
+        work_completion_unit: form.work_completion_unit || "number",
       };
-      if (
-        form.work_completion_value !== "" ||
-        form.work_completion_deadline_from ||
-        form.work_completion_deadline_to
-      ) {
-        const deadlineObj =
-          form.work_completion_deadline_from || form.work_completion_deadline_to
-            ? {
-                // send only what user provided; backend supports partial
-                ...(form.work_completion_deadline_from
-                  ? { from: form.work_completion_deadline_from }
-                  : {}),
-                ...(form.work_completion_deadline_to
-                  ? { to: form.work_completion_deadline_to }
-                  : {}),
-              }
-            : undefined;
-
-        payload.work_completion = {
-          unit: form.work_completion_unit || "number",
-          value: Number(form.work_completion_value || 0),
-          ...(deadlineObj ? { deadline: deadlineObj } : {}),
-        };
-      }
-
-      console.log("🛰️ Sending update payload:", payload);
 
       try {
         const result = await updateActivityInProject({
@@ -2810,6 +2661,7 @@ const View_Project_Management = forwardRef(
                       <ResourceRow
                         key={`res-${idx}`}
                         row={r}
+                        assignOptions={assignOptions}
                         onChange={(nr) =>
                           setForm((f) => {
                             const arr = [...f.resources];
@@ -2882,219 +2734,11 @@ const View_Project_Management = forwardRef(
                     >
                       <Option value="m">m</Option>
                       <Option value="kg">kg</Option>
-                      <Option value="percentage">percentage</Option>
-                      <Option value="number">number</Option>
+                      <Option value="percentage">Percentage</Option>
+                      <Option value="number">Number</Option>
                     </Select>
-
-                    {/* preset selector (same as before) */}
-                    <Box sx={{ width: { xs: "100%", sm: "40%" } }}>
-                      <ReactSelect
-                        isSearchable={false}
-                        value={
-                          rangePresetOptions.find(
-                            (o) => o.value === form.work_completion_preset
-                          ) || rangePresetOptions[0]
-                        }
-                        onChange={(opt) => applyPreset(opt?.value || "custom")}
-                        options={rangePresetOptions}
-                        isDisabled={disableEditing}
-                        menuPortalTarget={document.body}
-                        styles={{
-                          menuPortal: (base) => ({ ...base, zIndex: 1700 }),
-                        }}
-                      />
-                    </Box>
                   </Stack>
-
-                  {/* calendar (react-date-range) */}
-                  <Box
-                    sx={{
-                      mt: 1,
-                      width: "100%",
-                      ...(disableEditing && {
-                        opacity: 0.6,
-                        pointerEvents: "none",
-                      }),
-                    }}
-                  >
-                    <Suspense
-                      fallback={<Box sx={{ p: 1.5 }}>Loading calendar…</Box>}
-                    >
-                      <DateRange
-                        locale={enIN}
-                        ranges={wcSelection}
-                        onChange={handleWcRangeChange}
-                        moveRangeOnFirstSelection={false}
-                        months={1}
-                        direction="horizontal"
-                        rangeColors={["#3366a3"]}
-                      />
-                    </Suspense>
-
-                    <Typography
-                      level="body-xs"
-                      sx={{ color: "text.tertiary", mt: 0.5 }}
-                    >
-                      {form.work_completion_deadline_from || "—"} →{" "}
-                      {form.work_completion_deadline_to || "—"}
-                    </Typography>
-                  </Box>
-
-                  {/* optional hint */}
-                  <Typography
-                    level="body-xs"
-                    sx={{ color: "text.tertiary", mt: 0.5 }}
-                  >
-                    You can set either or both dates. If left blank, backend may
-                    use defaults (e.g., baseline).
-                  </Typography>
                 </FormControl>
-
-                <FormControl>
-                  <FormLabel>Assigned To (Site Engineers)</FormLabel>
-                  <Autocomplete
-                    multiple
-                    size="sm"
-                    placeholder={
-                      isFetchingUsers
-                        ? "Loading users..."
-                        : "Select user(s) to assign"
-                    }
-                    options={assignOptions}
-                    getOptionLabel={(o) => o.label}
-                    isOptionEqualToValue={(a, b) => a.value === b.value}
-                    value={assignOptions.filter((o) =>
-                      assignPick.includes(o.value)
-                    )}
-                    onChange={(_, values) => {
-                      const next = values.map((v) => v.value);
-                      setAssignPick(next);
-                    }}
-                    filterSelectedOptions
-                    disableCloseOnSelect
-                    disabled={disableEditing || isFetchingUsers}
-                    slotProps={{
-                      listbox: {
-                        sx: { zIndex: 1401, maxHeight: 240, overflowY: "auto" },
-                      },
-                    }}
-                  />
-
-                  <Stack direction="row" spacing={1} sx={{ mt: 1.25 }}>
-                    <Button
-                      size="sm"
-                      color="success"
-                      startDecorator={<Add fontSize="small" />}
-                      onClick={() => {
-                        if (!assignPick.length) {
-                          toast.info("Select user(s) first.");
-                          return;
-                        }
-                        handleAssignPicked();
-                      }}
-                      disabled={!assignPick.length || disableEditing}
-                    >
-                      Assign
-                    </Button>
-
-                    <Button
-                      size="sm"
-                      color="danger"
-                      variant="soft"
-                      startDecorator={<Delete fontSize="small" />}
-                      onClick={() => {
-                        if (!assignPick.length) {
-                          toast.info("Select user(s) to remove.");
-                          return;
-                        }
-                        handleRemovePicked();
-                      }}
-                      disabled={!assignPick.length || disableEditing}
-                    >
-                      Remove
-                    </Button>
-                  </Stack>
-
-                  {(form.assigned_to?.length ?? 0) > 0 ? (
-                    <Stack spacing={0.75} sx={{ mt: 1.5 }}>
-                      <Typography
-                        level="body-sm"
-                        sx={{ fontWeight: 600, color: "text.secondary" }}
-                      >
-                        Currently Assigned
-                      </Typography>
-
-                      <Stack
-                        direction="row"
-                        spacing={0.75}
-                        flexWrap="wrap"
-                        useFlexGap
-                      >
-                        {form.assigned_to.map((id) => {
-                          const user = assignOptions.find(
-                            (o) => o.value === id
-                          );
-                          const label = user ? user.label : id;
-
-                          return (
-                            <Chip
-                              key={id}
-                              size="sm"
-                              variant="soft"
-                              color="primary"
-                              sx={{ alignItems: "center" }}
-                              endDecorator={
-                                <ChipDelete
-                                  aria-label={`Remove ${label}`}
-                                  variant="plain"
-                                  color="danger"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setForm((f) => {
-                                      const remaining = f.assigned_to.filter(
-                                        (x) => x !== id
-                                      );
-                                      let newStatus = "Removed";
-                                      if (
-                                        remaining.length &&
-                                        remaining.length !==
-                                          f.assigned_to.length
-                                      ) {
-                                        newStatus = "Partial";
-                                      }
-                                      return {
-                                        ...f,
-                                        assigned_to: remaining,
-                                        assigned_status: newStatus,
-                                      };
-                                    });
-                                    toast.info(
-                                      "Engineer's removed successfully."
-                                    );
-                                  }}
-                                />
-                              }
-                            >
-                              {label}
-                            </Chip>
-                          );
-                        })}
-                      </Stack>
-                    </Stack>
-                  ) : (
-                    <Typography
-                      level="body-xs"
-                      sx={{
-                        mt: 1,
-                        color: "text.tertiary",
-                        fontStyle: "italic",
-                      }}
-                    >
-                      No users currently assigned.
-                    </Typography>
-                  )}
-                </FormControl>
-
                 <Divider />
 
                 {/* ---------- ACTION BUTTONS ---------- */}
