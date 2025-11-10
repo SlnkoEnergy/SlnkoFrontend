@@ -16,8 +16,19 @@ import {
   Typography,
   Checkbox,
   CircularProgress,
+  Select, // Added for AssignModal
+  Option, // Added for AssignModal
+  Chip, // Added for AssignModal
+  IconButton, // Added for AssignModal
 } from "@mui/joy";
-import { Save, ContentPasteGo, PersonAdd } from "@mui/icons-material";
+import {
+  Save,
+  ContentPasteGo,
+  PersonAdd,
+  Close as CloseIcon, // Added for AssignModal
+  Add as AddIcon, // Added for AssignModal
+  Delete as DeleteIcon, // Added for AssignModal
+} from "@mui/icons-material";
 import Sidebar from "../../component/Partials/Sidebar";
 import SubHeader from "../../component/Partials/SubHeader";
 import MainHeader from "../../component/Partials/MainHeader";
@@ -28,7 +39,6 @@ import Filter from "../../component/Partials/Filter";
 import SearchPickerModal from "../../component/SearchPickerModal";
 import {
   useExportProjectScheduleMutation,
-  useExportProjectSchedulePdfQuery,
   useLazyExportProjectSchedulePdfQuery,
   useLazyGetAllTemplateNameSearchQuery,
   useUpdateProjectActivityFromTemplateMutation,
@@ -36,9 +46,257 @@ import {
   useUpdateReorderfromActivityMutation,
   useUpdateActivityInProjectMutation,
 } from "../../redux/projectsSlice";
-import { useLazyGetAllUserWithPaginationQuery } from "../../redux/globalTaskSlice";
 import AppSnackbar from "../../component/AppSnackbar";
 import { ArrowDownUp } from "lucide-react";
+
+// Mock data for the AssignModal (Replace with actual data/API calls)
+const mockRoles = [
+  { label: "Civil Engineer", value: "civil_engineer" },
+  { label: "Architect", value: "architect" },
+  { label: "Project Manager", value: "project_manager" },
+];
+const mockUsers = [
+  "Abhay Singh",
+  "Abhishek Singh",
+  "Abhishek Yadav",
+  "Aman Kumar",
+  "Bhavya Sharma",
+  "Chirag Jain",
+];
+
+// NOTE: This is a placeholder function to simulate selecting a user.
+const mockSelectUser = (current) => {
+    const availableUsers = mockUsers.filter(u => !current.includes(u));
+    if (availableUsers.length > 0) {
+        return availableUsers[Math.floor(Math.random() * availableUsers.length)];
+    }
+    return null;
+}
+
+/**
+ * 🛠️ AssignModal Component: Implements the UI seen in the user's image.
+ */
+function AssignModal({ open, onClose, isAssigning, onSubmit }) {
+  // States initialized with values from the user's screenshot
+  const [role, setRole] = useState("civil_engineer");
+  const [completionValue, setCompletionValue] = useState("23");
+  const [completionUnit, setCompletionUnit] = useState("Percentage");
+  const [assignedUsers, setAssignedUsers] = useState([
+    "Abhay Singh",
+    "Abhishek Singh",
+    "Abhishek Yadav",
+    "Aman Kumar",
+  ]);
+
+  // Handlers
+  const handleUserRemove = (userToRemove) => {
+    setAssignedUsers(assignedUsers.filter((u) => u !== userToRemove));
+  };
+
+  const handleUserAdd = () => {
+    // This should eventually open your SearchPickerModal for users
+    const newUser = mockSelectUser(assignedUsers);
+    if (newUser && !assignedUsers.includes(newUser)) {
+        setAssignedUsers([...assignedUsers, newUser]);
+    }
+  };
+
+  const handleSave = () => {
+    onSubmit({
+      role: role,
+      completionValue: completionValue,
+      completionUnit: completionUnit,
+      assignedUsers: assignedUsers,
+    });
+    // State reset on close/success is handled by parent's setAssignOpen(false)
+  };
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      slotProps={{
+        backdrop: {
+          sx: {
+            backgroundColor: "rgba(15, 18, 24, 0.55)",
+            backdropFilter: "blur(2px)",
+          },
+        },
+      }}
+    >
+      <ModalDialog
+        variant="soft"
+        color="neutral"
+        sx={{
+          maxWidth: 600,
+          width: "100%",
+          borderRadius: "xl",
+          boxShadow: "lg",
+          p: 2,
+        }}
+      >
+        <DialogTitle sx={{ pb: 0.5 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <PersonAdd fontSize="small" />
+            Assign Resources
+          </Box>
+        </DialogTitle>
+
+        <DialogContent
+          sx={{
+            pt: 0.5,
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+          }}
+        >
+          {/* Resources Section */}
+          <FormControl>
+            <FormLabel>Resources</FormLabel>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: "1fr 0.3fr 1.5fr auto", // Role | Number | Users | Add/Delete
+                gap: 1.5,
+                alignItems: "center",
+              }}
+            >
+              {/* Role Select (Civil Engineer) */}
+              <Select
+                value={role}
+                onChange={(_e, newValue) => setRole(newValue)}
+                size="sm"
+                variant="soft"
+                disabled={isAssigning}
+              >
+                {mockRoles.map((r) => (
+                  <Option key={r.value} value={r.value}>
+                    {r.label}
+                  </Option>
+                ))}
+              </Select>
+
+              {/* Number Input (12) */}
+              <Input
+                value="12"
+                size="sm"
+                variant="soft"
+                disabled
+                sx={{ textAlign: "center" }}
+              />
+
+              {/* Users Multi-Select/Chip Display */}
+              <Box
+                sx={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 0.5,
+                  p: 0.5,
+                  border: "1px solid",
+                  borderColor: "neutral.outlinedBorder",
+                  borderRadius: "sm",
+                  minHeight: "34px",
+                  alignItems: "center",
+                }}
+              >
+                {assignedUsers.map((user) => (
+                  <Chip
+                    key={user}
+                    size="sm"
+                    variant="soft"
+                    endDecorator={
+                      <IconButton
+                        size="sm"
+                        variant="plain"
+                        onClick={() => handleUserRemove(user)}
+                        disabled={isAssigning}
+                      >
+                        <CloseIcon fontSize="inherit" />
+                      </IconButton>
+                    }
+                  >
+                    {user}
+                  </Chip>
+                ))}
+                {/* Placeholder for 'Select...' which opens the picker */}
+                <Typography
+                  level="body-sm"
+                  color="text.tertiary"
+                  sx={{ cursor: "pointer" }}
+                  onClick={handleUserAdd}
+                >
+                  {assignedUsers.length === 0 ? "Select..." : "Add..."}
+                </Typography>
+              </Box>
+
+              {/* Delete Icon (Trash) */}
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <IconButton size="sm" variant="soft" color="danger" title="Delete Resources">
+                    <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            </Box>
+          </FormControl>
+
+          <hr />
+
+          {/* Work Completion Section */}
+          <FormControl>
+            <FormLabel>Work Completion</FormLabel>
+            <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
+              {/* Completion Value Input (23) */}
+              <Input
+                type="number"
+                value={completionValue}
+                onChange={(e) => setCompletionValue(e.target.value)}
+                placeholder="0"
+                size="sm"
+                variant="soft"
+                disabled={isAssigning}
+                sx={{ maxWidth: 100 }}
+              />
+
+              {/* Percentage/Units Select (Percentage) */}
+              <Select
+                value={completionUnit}
+                onChange={(_e, newValue) => setCompletionUnit(newValue)}
+                size="sm"
+                variant="soft"
+                disabled={isAssigning}
+              >
+                <Option value="Percentage">Percentage</Option>
+                <Option value="Units">Units</Option>
+                <Option value="Hours">Hours</Option>
+              </Select>
+            </Box>
+          </FormControl>
+        </DialogContent>
+
+        <DialogActions sx={{ pt: 1 }}>
+          <Button
+            variant="outlined"
+            color="neutral"
+            onClick={onClose}
+            disabled={isAssigning}
+          >
+            Close
+          </Button>
+          <Button
+            startDecorator={
+              isAssigning ? <CircularProgress size="sm" thickness={3} /> : <Save />
+            }
+            onClick={handleSave}
+            loading={isAssigning}
+            disabled={isAssigning || assignedUsers.length === 0}
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </ModalDialog>
+    </Modal>
+  );
+}
+
 
 function ViewProjectManagement() {
   const navigate = useNavigate();
@@ -48,7 +306,7 @@ function ViewProjectManagement() {
   const selectedView = searchParams.get("view") || "week";
   const [snack, setSnack] = useState({ open: false, msg: "" });
   const ganttRef = useRef(null);
-  const [assignOpen, setAssignOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false); // 🔑 Controls the AssignModal
   const timeline = searchParams.get("timeline");
   const type = searchParams.get("type");
   const [loading, setLoading] = useState(false);
@@ -58,10 +316,10 @@ function ViewProjectManagement() {
 
   // NEW: track if any row is selected in child
   const [hasSelection, setHasSelection] = useState(false);
-// track selected Gantt activity DB ids
-const [selectedActivityIds, setSelectedActivityIds] = useState([]);
-const [updateActivityInProject, { isLoading: isAssigning }] =
-  useUpdateActivityInProjectMutation();
+  // track selected Gantt activity DB ids
+  const [selectedActivityIds, setSelectedActivityIds] = useState([]);
+  const [updateActivityInProject, { isLoading: isAssigning }] =
+    useUpdateActivityInProjectMutation();
 
   const handlePlanStatusFromChild = useCallback((statusObj) => {
     const s = (statusObj?.status || "").toLowerCase();
@@ -87,6 +345,36 @@ const [updateActivityInProject, { isLoading: isAssigning }] =
       setSnack({ open: true, msg: "Failed to update status:" });
     }
   };
+
+  // 🔑 NEW: Handler for the Assign Modal's Save button
+  const handleAssign = async ({ role, completionValue, completionUnit, assignedUsers }) => {
+    if (!projectId || selectedActivityIds.length === 0) {
+      setSnack({ open: true, msg: "Error: No project or activities selected." });
+      return;
+    }
+
+    try {
+      // NOTE: You must ensure 'assignedUsers' are converted to IDs if your API expects them.
+      const payload = {
+        projectId,
+        activityIds: selectedActivityIds,
+        role, // e.g., 'civil_engineer'
+        completionValue: parseFloat(completionValue), // e.g., 23
+        completionUnit, // e.g., 'Percentage'
+        assignedUsers: assignedUsers, // e.g., ['Abhay Singh', ...]
+      };
+
+      await updateActivityInProject(payload).unwrap();
+
+      setSnack({ open: true, msg: "Resources assigned successfully." });
+      setAssignOpen(false); // Close the modal
+      ganttRef.current?.refetch?.(); // Refresh data
+    } catch (e) {
+      const msg = e?.data?.message || "Failed to assign resources.";
+      setSnack({ open: true, msg: `Error: ${msg}` });
+    }
+  };
+
 
   // ====== Filters ======
   const [open, setOpen] = useState(false);
@@ -280,124 +568,6 @@ const [updateActivityInProject, { isLoading: isAssigning }] =
     }
   };
 
-  // ====== Assign To (SearchPickerModal) ======
-  const assignColumns = useMemo(
-    () => [
-      { key: "name", label: "Name", width: "55%" },
-      {
-        key: "emp_id",
-        label: "Emp ID",
-        width: "45%",
-        render: (r) => r.emp_id || r.employee_id || r.empId || "—",
-      },
-    ],
-    []
-  );
-
-  const [triggerGetUsers] = useLazyGetAllUserWithPaginationQuery();
-
-  const fetchAssignPage = useCallback(
-    async ({ search = "", page = 1, pageSize = 7 }) => {
-      const res = await triggerGetUsers(
-        {
-          search,
-          page,
-          pageSize,
-          department: "Projects", // only Projects department
-        },
-        true
-      );
-
-      const payload = res?.data || {};
-      const rows =
-        payload?.rows ||
-        payload?.data ||
-        payload?.users ||
-        (Array.isArray(payload) ? payload : []);
-      const total =
-        payload?.total ||
-        payload?.pagination?.total ||
-        (Array.isArray(rows) ? rows.length : 0);
-
-      const safeRows = Array.isArray(rows)
-        ? rows.map((u, i) => ({
-            _id: u._id || u.id || String(i),
-            ...u,
-          }))
-        : [];
-
-      return { rows: safeRows, total };
-    },
-    [triggerGetUsers]
-  );
-
-  const handlePickAssignee = useCallback((row) => {
-    setAssignOpen(false);
-    setSnack({
-      open: true,
-      msg: `Picked: ${row?.name || row?.emp_id || row?._id || "—"}`,
-    });
-    // TODO: integrate assign API here (projectId + row._id)
-  }, []);
-
-  // NEW: submit handler for multi-select mode
-// NEW: submit handler for multi-select mode (sequential updates to avoid version conflicts)
-const handleSubmitAssignees = useCallback(
-  async ({ ids: userIds = [] }) => {
-    if (!projectId) {
-      setSnack({ open: true, msg: "Missing projectId." });
-      return;
-    }
-    if (!selectedActivityIds.length) {
-      setSnack({ open: true, msg: "No activities selected." });
-      return;
-    }
-    if (!userIds.length) {
-      setSnack({ open: true, msg: "Select at least one user to assign." });
-      return;
-    }
-
-    setAssignOpen(false);
-
-    const results = { ok: 0, fail: 0 };
-    try {
-      // Run updates one-by-one to avoid VersionError conflicts
-      for (const activityId of selectedActivityIds) {
-        try {
-          await updateActivityInProject({
-            projectId,
-            activityId, // DB activity id from Gantt
-            data: {
-              assigned_to: userIds,
-              assigned_status: userIds.length > 0 ? "Assigned" : "Removed",
-            },
-          }).unwrap();
-          results.ok += 1;
-        } catch (err) {
-          console.error("Assign failed for", activityId, err);
-          results.fail += 1;
-        }
-      }
-
-      // Refresh the Gantt after the batch completes
-      await (ganttRef.current?.refetch?.() ?? Promise.resolve());
-
-      const msg =
-        results.fail === 0
-          ? `Assigned ${userIds.length} user(s) to ${results.ok} activit${results.ok > 1 ? "ies" : "y"}.`
-          : `Assigned ${userIds.length} user(s) to ${results.ok} activit${results.ok > 1 ? "ies" : "y"}; ${results.fail} failed.`;
-
-      setSnack({ open: true, msg });
-    } catch (e) {
-      const msg = e?.data?.message || e?.message || "Failed to assign user(s).";
-      setSnack({ open: true, msg });
-    }
-  },
-  [projectId, selectedActivityIds, updateActivityInProject]
-);
-
-
-
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
@@ -522,7 +692,7 @@ const handleSubmitAssignees = useCallback(
                   color="primary"
                   size="sm"
                   startDecorator={<PersonAdd />}
-                  onClick={() => setAssignOpen(true)}
+                  onClick={() => setAssignOpen(true)} // 🔑 Opens the new modal
                   sx={{ height: "8px" }}
                   title={
                     selectionCount ? `${selectionCount} row(s) selected` : ""
@@ -575,18 +745,27 @@ const handleSubmitAssignees = useCallback(
           }}
         >
           <View_Project_Management
-  ref={ganttRef}
-  viewModeParam={selectedView}
-  onPlanStatus={handlePlanStatusFromChild}
- onSelectionChange={({ any, count, ids }) => {    // ⬅️ include ids
-    setHasSelection(!!any);
-    setSelectionCount(Number(count || 0));
-    setSelectedActivityIds(Array.isArray(ids) ? ids : []);   // ⬅️ store ids
-  }}
-/>
-
+            ref={ganttRef}
+            viewModeParam={selectedView}
+            onPlanStatus={handlePlanStatusFromChild}
+            onSelectionChange={({ any, count, ids }) => {
+              // ⬅️ include ids
+              setHasSelection(!!any);
+              setSelectionCount(Number(count || 0));
+              setSelectedActivityIds(Array.isArray(ids) ? ids : []); // ⬅️ store ids
+            }}
+          />
         </Box>
       </Box>
+
+      {/* 🔑 Assign to Modal */}
+      <AssignModal
+        open={assignOpen}
+        onClose={() => setAssignOpen(false)}
+        isAssigning={isAssigning}
+        onSubmit={handleAssign}
+      />
+
 
       {/* Save as Template Modal */}
       <Modal
@@ -794,27 +973,6 @@ const handleSubmitAssignees = useCallback(
           </DialogActions>
         </ModalDialog>
       </Modal>
-
-      {/* Assign To — Search Picker (Projects dept users) */}
-      <SearchPickerModal
-        open={assignOpen}
-        onClose={() => setAssignOpen(false)}
-        // keep onPick for single-click behavior if you ever turn off multi
-        onPick={handlePickAssignee}
-        title="Assign to"
-        columns={assignColumns}
-        fetchPage={fetchAssignPage}
-        searchKey="name, emp_id"
-        pageSize={7}
-        rowKey="_id"
-        backdropSx={{ backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" }}
-        // NEW: enable multi-select with a Submit button
-        multi
-        showSubmit
-        submitLabel="Assign Selected"
-        onSubmit={handleSubmitAssignees}
-      />
-
       <AppSnackbar
         color={isError ? "danger" : "success"}
         open={!!snack.open}

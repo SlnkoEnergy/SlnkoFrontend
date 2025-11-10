@@ -139,21 +139,32 @@ export const projectsApi = createApi({
       providesTags: ["Project"],
     }),
     exportLoan: builder.mutation({
+    exportLoan: builder.mutation({
       query: ({
         project_ids,
         type,
         loan_status,
         bank_state,
+        loan_status,
+        bank_state,
 
+        expected_disbursement_from,
+        expected_disbursement_to,
         expected_disbursement_from,
         expected_disbursement_to,
 
         expected_sanction_from,
         expected_sanction_to,
+        expected_sanction_from,
+        expected_sanction_to,
 
         actual_disbursement_from,
         actual_disbursement_to,
+        actual_disbursement_from,
+        actual_disbursement_to,
 
+        actual_sanction_from,
+        actual_sanction_to,
         actual_sanction_from,
         actual_sanction_to,
       }) => ({
@@ -532,12 +543,15 @@ export const projectsApi = createApi({
       invalidatesTags: ["Project"],
     }),
 
-    getAllProjectUser: builder.query({
-      query: (id) => "projectactivity/project-users",
-      providesTags: ["Project"],
-    }),
-
     updateDprLog: builder.mutation({
+      query: ({
+        projectId,
+        activityId,
+        todays_progress,
+        date,
+        remarks,
+        status,
+      }) => ({
       query: ({
         projectId,
         activityId,
@@ -570,11 +584,32 @@ export const projectsApi = createApi({
         status, // ✅ ADD THIS
       }) => {
         const params = new URLSearchParams();
+      query: ({
+        page = 1,
+        limit = 10,
+        search = "",
+        projectId,
+        from,
+        to,
+        onlyWithDeadline,
+        status, // ✅ ADD THIS
+      }) => {
+        const params = new URLSearchParams();
 
         // ✅ pagination
         params.set("page", String(page));
         params.set("limit", String(limit));
+        // ✅ pagination
+        params.set("page", String(page));
+        params.set("limit", String(limit));
 
+        // ✅ filters
+        if (projectId) params.set("projectId", projectId);
+        if (search) params.set("search", search);
+        if (from) params.set("from", from);
+        if (to) params.set("to", to);
+        if (onlyWithDeadline) params.set("onlyWithDeadline", onlyWithDeadline);
+        if (status) params.set("status", status); // ✅ pass-through
         // ✅ filters
         if (projectId) params.set("projectId", projectId);
         if (search) params.set("search", search);
@@ -661,7 +696,6 @@ export const {
   useExportProjectSchedulePdfQuery,
   useLazyExportProjectSchedulePdfQuery,
   useUpdateReorderfromActivityMutation,
-  useGetAllProjectUserQuery,
   useUpdateDprLogMutation,
   useGetAllDprQuery,
   useGetDprStatusCardsByIdQuery,
