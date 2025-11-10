@@ -21,7 +21,7 @@ import { Save, ContentPasteGo, PersonAdd } from "@mui/icons-material";
 import Sidebar from "../../component/Partials/Sidebar";
 import SubHeader from "../../component/Partials/SubHeader";
 import MainHeader from "../../component/Partials/MainHeader";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useRef, useState, useMemo, useCallback } from "react";
 import View_Project_Management from "../../component/ViewProjectManagement";
 import Filter from "../../component/Partials/Filter";
@@ -41,6 +41,7 @@ import AppSnackbar from "../../component/AppSnackbar";
 import { ArrowDownUp } from "lucide-react";
 
 function ViewProjectManagement() {
+  const navigate = useNavigate();
   const [selectionCount, setSelectionCount] = useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
   const projectId = searchParams.get("project_id") || "";
@@ -501,6 +502,18 @@ const handleSubmitAssignees = useCallback(
               >
                 Fetch From Template
               </Button>
+               <Button
+                            size="sm"
+                            onClick={() => navigate(`/dpr`)}
+                            sx={{
+                  backgroundColor: "#3366a3",
+                  color: "#fff",
+                  "&:hover": { backgroundColor: "#285680" },
+                  height: "8px",
+                }}
+                        >
+                            DPR
+                        </Button>
 
               {/* Assign to (only when any checkbox is ticked) */}
               {hasSelection && (
