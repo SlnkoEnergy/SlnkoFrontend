@@ -176,7 +176,7 @@ export default function CustomerPaymentSummary() {
       { key: "billGst", label: "Billed GST (₹)" },
       { key: "billedTotal", label: "Billed Total (₹)" },
 
-      { key: "remainingSales", label: "Remaining Sales Closure" },
+      { key: "remainingSales", label: "Remaining Sales Closure(w/o GST)" },
       {key: "remainingSalesGST", label: "Remaining Sales Closure(inc GST)"},
       { key: "status", label: "Status" },
       { key: "select", label: "Select checkbox" },
@@ -2304,7 +2304,7 @@ export default function CustomerPaymentSummary() {
 
                       {show("remainingSales") && (
                         <th rowSpan={2} className="num">
-                          Remaining Sales Closure
+                          Remaining Sales Closure(w/o GST)
                         </th>
                       )}
                       {show("remainingSalesGST") && (
@@ -3770,7 +3770,7 @@ export default function CustomerPaymentSummary() {
                     { label: "PO Value", align: "right" },
                     { label: "Bill Basic", align: "right" },
                     { label: "Advance Paid", align: "right" },
-                    { label: "Remaining Sales Value", align: "right" },
+                    { label: "Remaining Sales Value(w/o GST)", align: "right" },
                     { label: "Basic Sales", align: "right" },
                     { label: "GST on Sales(%)", align: "right" },
                     // { label: "Complete Sales", align: "center" }, // NEW
