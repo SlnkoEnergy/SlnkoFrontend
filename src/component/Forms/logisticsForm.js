@@ -234,8 +234,8 @@ const AddLogisticForm = () => {
 
     const poIds = Array.isArray(doc.po_id)
       ? doc.po_id
-          .map((p) => (typeof p === "string" ? p : p?._id))
-          .filter(Boolean)
+        .map((p) => (typeof p === "string" ? p : p?._id))
+        .filter(Boolean)
       : [];
 
     const idToName = {};
@@ -251,69 +251,69 @@ const AddLogisticForm = () => {
     setTransportationPos((prev) => ({ ...prev, ...pos }));
 
     const getPoObj = (it) => {
-  if (it && typeof it.material_po === "object" && it.material_po) {
-    return it.material_po;
-  }
-  const id = it?.material_po || it?.po_id || "";
-  // use local `pos` map (built from doc.po_id) first, then fall back to cached page
-  return pos[id] || (poData?.data || []).find((p) => p._id === id) || null;
-};
+      if (it && typeof it.material_po === "object" && it.material_po) {
+        return it.material_po;
+      }
+      const id = it?.material_po || it?.po_id || "";
+      // use local `pos` map (built from doc.po_id) first, then fall back to cached page
+      return pos[id] || (poData?.data || []).find((p) => p._id === id) || null;
+    };
 
     // Items table
-const mappedItems = Array.isArray(doc.items)
-  ? doc.items.map((it) => {
-      const poObj = getPoObj(it);
-      const catObj =
-        typeof it.category_id === "object" && it.category_id
-          ? it.category_id
-          : null;
+    const mappedItems = Array.isArray(doc.items)
+      ? doc.items.map((it) => {
+        const poObj = getPoObj(it);
+        const catObj =
+          typeof it.category_id === "object" && it.category_id
+            ? it.category_id
+            : null;
 
-      return {
-        po_id: poObj?._id || it.material_po || "",
-        po_item_id: it.po_item_id || null,
+        return {
+          po_id: poObj?._id || it.material_po || "",
+          po_item_id: it.po_item_id || null,
 
-        // fill from PO
-        po_number: poObj?.po_number || "",
-        project_id: poObj?.p_id || doc.p_id || "",
-        vendor: poObj?.vendor || doc.vendor || "",
+          // fill from PO
+          po_number: poObj?.po_number || "",
+          project_id: poObj?.p_id || doc.p_id || "",
+          vendor: poObj?.vendor || doc.vendor || "",
 
-        // product/category fields
-        product_name: it.product_name || "",
-        category_id: catObj?._id ?? it.category_id ?? null,
-        category_name: it?.category_name || catObj?.name || "",
-        product_make: it.product_make || "",
-        uom: it.uom || "",
+          // product/category fields
+          product_name: it.product_name || "",
+          category_id: catObj?._id ?? it.category_id ?? null,
+          category_name: it?.category_name || catObj?.name || "",
+          product_make: it.product_make || "",
+          uom: it.uom || "",
 
-        // quantities/weight
-        quantity_requested: it.quantity_requested || "",
-        quantity_po: it.quantity_po || "",
-        received_qty: it.received_qty || "",
-        ton: it.weight || "",
-      };
-    })
-  : [];
+          // quantities/weight
+          quantity_requested: it.quantity_requested || "",
+          quantity_po: it.quantity_po || "",
+          received_qty: it.received_qty || "",
+          ton: it.weight || "",
+        };
+      })
+      : [];
 
     setItems(
       mappedItems.length
         ? mappedItems
         : [
-            {
-              po_id: "",
-              po_item_id: null,
-              po_number: "",
-              project_id: "",
-              vendor: "",
-              received_qty: "",
-              product_name: "",
-              category_id: null,
-              category_name: "",
-              product_make: "",
-              uom: "",
-              quantity_requested: "",
-              quantity_po: "",
-              ton: "",
-            },
-          ]
+          {
+            po_id: "",
+            po_item_id: null,
+            po_number: "",
+            project_id: "",
+            vendor: "",
+            received_qty: "",
+            product_name: "",
+            category_id: null,
+            category_name: "",
+            product_make: "",
+            uom: "",
+            quantity_requested: "",
+            quantity_po: "",
+            ton: "",
+          },
+        ]
     );
 
     setVehicleCost(Number(doc.total_transport_po_value || 0));
@@ -574,111 +574,111 @@ const mappedItems = Array.isArray(doc.items)
     };
   }
 
-// REPLACE your current handleSubmit with this
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  try {
-    const normalizedItems = items.map((i) => ({
-      material_po: i.po_id,
-      po_item_id: i.po_item_id || null,
-      category_id: i.category_id ?? null,
-      product_name: i.product_name,
-      product_make: i.product_make,
-      uom: i.uom || "",
-      quantity_requested: String(i.quantity_requested || ""),
-      received_qty: String(i.received_qty || ""),
-      quantity_po: String(i.quantity_po || ""),
-      weight: String(i.ton || ""),
-    }));
+  // REPLACE your current handleSubmit with this
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const normalizedItems = items.map((i) => ({
+        material_po: i.po_id,
+        po_item_id: i.po_item_id || null,
+        category_id: i.category_id ?? null,
+        product_name: i.product_name,
+        product_make: i.product_make,
+        uom: i.uom || "",
+        quantity_requested: String(i.quantity_requested || ""),
+        received_qty: String(i.received_qty || ""),
+        quantity_po: String(i.quantity_po || ""),
+        weight: String(i.ton || ""),
+      }));
 
-    const payload = {
-      po_id: transportation,
-      vehicle_number: formData.vehicle_number,
-      driver_number: formData.driver_number,
-      total_ton: String(totalWeight),
-      total_transport_po_value: String(vehicleCost),
-      attachment_url: formData.attachment_url,
-      description: formData.description,
-      items: normalizedItems,
-    };
+      const payload = {
+        po_id: transportation,
+        vehicle_number: formData.vehicle_number,
+        driver_number: formData.driver_number,
+        total_ton: String(totalWeight),
+        total_transport_po_value: String(vehicleCost),
+        attachment_url: formData.attachment_url,
+        description: formData.description,
+        items: normalizedItems,
+      };
 
-    if (isEdit && logisticId) {
-      // UPDATE
-      if (selectedFiles.length > 0) {
-        const fd = buildUpdateFormData(payload, selectedFiles);
-        await updateLogistic({ id: logisticId, body: fd }).unwrap();
-      } else {
-        await updateLogistic({ id: logisticId, body: payload }).unwrap();
-      }
-
-      // Optional: write an update entry to history
-      try {
-        const { numericChanges, descChanged, descFrom, descTo } = buildLogChanges(
-          serverBaseline,
-          {
-            total_ton: Number(totalWeight),
-            total_transport_po_value: Number(vehicleCost),
-            description: formData.description,
-          }
-        );
-
-        if (numericChanges.length || descChanged) {
-          const userData = localStorage.getItem("userDetails");
-          const userObj = userData ? JSON.parse(userData) : null;
-          await addLogisticHistory({
-            subject_type: "logistic",
-            subject_id: logisticId,
-            event_type: "update",
-            message: "Logistic updated",
-            createdBy: { name: userObj?.name || "User", user_id: userObj?._id },
-            changes: [
-              ...numericChanges,
-              ...(descChanged
-                ? [{ path: "description", label: "Description", from: descFrom, to: descTo }]
-                : []),
-            ],
-            attachments: [],
-          }).unwrap();
+      if (isEdit && logisticId) {
+        // UPDATE
+        if (selectedFiles.length > 0) {
+          const fd = buildUpdateFormData(payload, selectedFiles);
+          await updateLogistic({ id: logisticId, body: fd }).unwrap();
+        } else {
+          await updateLogistic({ id: logisticId, body: payload }).unwrap();
         }
-      } catch {
-        /* non-blocking */
-      }
 
-      toast.success("Logistic updated successfully");
-      await refetchLogistic();
-    } else {
-      // CREATE
-      const res = await addLogistic(payload).unwrap();
-      const createdId = res?.data?._id || res?._id || res?.id || res?.data?.id || null;
-
-      // Optional: write a creation note to history
-      if (createdId) {
+        // Optional: write an update entry to history
         try {
-          const userData = localStorage.getItem("userDetails");
-          const userObj = userData ? JSON.parse(userData) : null;
-          await addLogisticHistory({
-            subject_type: "logistic",
-            subject_id: createdId,
-            event_type: "note",
-            message: "Logistic entry created",
-            createdBy: { name: userObj?.name || "User", user_id: userObj?._id },
-            changes: [],
-            attachments: [],
-          }).unwrap();
+          const { numericChanges, descChanged, descFrom, descTo } = buildLogChanges(
+            serverBaseline,
+            {
+              total_ton: Number(totalWeight),
+              total_transport_po_value: Number(vehicleCost),
+              description: formData.description,
+            }
+          );
+
+          if (numericChanges.length || descChanged) {
+            const userData = localStorage.getItem("userDetails");
+            const userObj = userData ? JSON.parse(userData) : null;
+            await addLogisticHistory({
+              subject_type: "logistic",
+              subject_id: logisticId,
+              event_type: "update",
+              message: "Logistic updated",
+              createdBy: { name: userObj?.name || "User", user_id: userObj?._id },
+              changes: [
+                ...numericChanges,
+                ...(descChanged
+                  ? [{ path: "description", label: "Description", from: descFrom, to: descTo }]
+                  : []),
+              ],
+              attachments: [],
+            }).unwrap();
+          }
         } catch {
           /* non-blocking */
         }
+
+        toast.success("Logistic updated successfully");
+        await refetchLogistic();
+      } else {
+        // CREATE
+        const res = await addLogistic(payload).unwrap();
+        const createdId = res?.data?._id || res?._id || res?.id || res?.data?.id || null;
+
+        // Optional: write a creation note to history
+        if (createdId) {
+          try {
+            const userData = localStorage.getItem("userDetails");
+            const userObj = userData ? JSON.parse(userData) : null;
+            await addLogisticHistory({
+              subject_type: "logistic",
+              subject_id: createdId,
+              event_type: "note",
+              message: "Logistic entry created",
+              createdBy: { name: userObj?.name || "User", user_id: userObj?._id },
+              changes: [],
+              attachments: [],
+            }).unwrap();
+          } catch {
+            /* non-blocking */
+          }
+        }
+
+        toast.success("Logistic entry created successfully");
       }
 
-      toast.success("Logistic entry created successfully");
+      handleReset();
+    } catch (err) {
+      console.error("Failed to submit logistic:", err);
+      toast.error(isEdit ? "Failed to update logistic" : "Failed to create logistic");
     }
-
-    handleReset();
-  } catch (err) {
-    console.error("Failed to submit logistic:", err);
-    toast.error(isEdit ? "Failed to update logistic" : "Failed to create logistic");
-  }
-};
+  };
 
 
 
@@ -1005,7 +1005,7 @@ const handleSubmit = async (e) => {
                 <FormLabel>Vendor</FormLabel>
                 <Input
                   name="vendor"
-                  value={formData.vendor}
+                  value={formData.vendor?.name || formData.vendor}
                   onChange={handleChange}
                   placeholder="Auto-filled"
                   readOnly
@@ -1219,14 +1219,14 @@ const handleSubmit = async (e) => {
                         value={
                           item.po_id
                             ? {
-                                value: item.po_id,
-                                label:
-                                  poData?.data?.find(
-                                    (po) => po._id === item.po_id
-                                  )?.po_number ||
-                                  item.po_number ||
-                                  "(No PO)",
-                              }
+                              value: item.po_id,
+                              label:
+                                poData?.data?.find(
+                                  (po) => po._id === item.po_id
+                                )?.po_number ||
+                                item.po_number ||
+                                "(No PO)",
+                            }
                             : null
                         }
                         isDisabled={isView}
