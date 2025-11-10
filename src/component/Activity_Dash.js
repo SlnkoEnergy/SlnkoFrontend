@@ -24,9 +24,9 @@ import ErrorOutline from "@mui/icons-material/ErrorOutline";
 import Person from "@mui/icons-material/Person";
 import LocationOn from "@mui/icons-material/LocationOn";
 import { useParams, useSearchParams } from "react-router-dom";
-
-import ActivityFinishLineChart from "./ActivityFinishLineChart";
+import ActivityFinishLineChart from "../../src/component/ActivityFinishLineChart";
 import { useGetDprStatusCardsByIdQuery } from "../../src/redux/projectsSlice";
+
 
 /* ------------------- theme helpers ------------------- */
 const cardSx = {

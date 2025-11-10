@@ -674,7 +674,7 @@ function ViewProjectManagement() {
               </Button>
                <Button
                             size="sm"
-                            onClick={() => navigate(`/dpr`)}
+                            onClick={() => navigate(`/dpr?projectId=${projectId}`)}
                             sx={{
                   backgroundColor: "#3366a3",
                   color: "#fff",
