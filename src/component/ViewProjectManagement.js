@@ -6,7 +6,10 @@ import {
   useState,
   forwardRef,
   useImperativeHandle,
+  Suspense,
+  lazy,
 } from "react";
+
 import "dhtmlx-gantt/codebase/dhtmlxgantt.css";
 import gantt from "dhtmlx-gantt/codebase/dhtmlxgantt";
 import {
@@ -29,7 +32,7 @@ import {
   Textarea,
 } from "@mui/joy";
 import Avatar from "@mui/joy/Avatar";
-
+import ReactSelect from "react-select";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import EventOutlinedIcon from "@mui/icons-material/EventOutlined";
 import { Timelapse, Add, Delete } from "@mui/icons-material";
@@ -44,6 +47,11 @@ import {
 import { useSearchParams, useNavigate } from "react-router-dom";
 import AppSnackbar from "./AppSnackbar";
 import { toast } from "react-toastify";
+
+import enIN from "date-fns/locale/en-IN";
+const DateRange = lazy(() =>
+  import("react-date-range").then((m) => ({ default: m.DateRange }))
+);
 
 /* ---------------- helpers ---------------- */
 const labelToType = { FS: "0", SS: "1", FF: "2" };
@@ -83,6 +91,36 @@ function parseISOAsLocalDate(v) {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v));
   if (m) return new Date(+m[1], +m[2] - 1, +m[3], 0, 0, 0);
   return null;
+}
+
+function startOfWeek(d) {
+  const dt = new Date(d);
+  const day = dt.getDay(); // 0=Sun
+  const diff = (day + 6) % 7; // make Monday start
+  dt.setDate(dt.getDate() - diff);
+  dt.setHours(0, 0, 0, 0);
+  return dt;
+}
+function endOfWeek(d) {
+  const s = startOfWeek(d);
+  const e = new Date(s);
+  e.setDate(s.getDate() + 6);
+  return e;
+}
+function startOfMonth(d) {
+  const dt = new Date(d);
+  return new Date(dt.getFullYear(), dt.getMonth(), 1);
+}
+function endOfMonth(d) {
+  const dt = new Date(d);
+  return new Date(dt.getFullYear(), dt.getMonth() + 1, 0);
+}
+function toYMDLocal(d) {
+  if (!d) return "";
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 /* ---------- grid date cells (always baseline) ---------- */
@@ -575,6 +613,7 @@ const View_Project_Management = forwardRef(
 
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
+    // === Work-completion deadline (calendar selection state) ===
 
     // read initial params
     const projectId = searchParams.get("project_id");
@@ -602,6 +641,59 @@ const View_Project_Management = forwardRef(
       params.set("timeline", nextTimeline);
       setSearchParams(params, { replace: true });
     };
+
+    const rangePresetOptions = [
+      { value: "custom", label: "Custom" },
+      { value: "today", label: "Today" },
+      { value: "next7", label: "Next 7 days" },
+      { value: "thisWeek", label: "This week" },
+      { value: "thisMonth", label: "This month" },
+    ];
+    function applyPreset(preset) {
+      const now = new Date();
+      let from = "",
+        to = "";
+
+      switch (preset) {
+        case "today": {
+          const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          from = toYMDLocal(d);
+          to = toYMDLocal(d);
+          break;
+        }
+        case "next7": {
+          const d1 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const d2 = new Date(d1);
+          d2.setDate(d2.getDate() + 6);
+          from = toYMDLocal(d1);
+          to = toYMDLocal(d2);
+          break;
+        }
+        case "thisWeek": {
+          const d1 = startOfWeek(now);
+          const d2 = endOfWeek(now);
+          from = toYMDLocal(d1);
+          to = toYMDLocal(d2);
+          break;
+        }
+        case "thisMonth": {
+          const d1 = startOfMonth(now);
+          const d2 = endOfMonth(now);
+          from = toYMDLocal(d1);
+          to = toYMDLocal(d2);
+          break;
+        }
+        default: // custom
+          break;
+      }
+
+      setForm((f) => ({
+        ...f,
+        work_completion_preset: preset,
+        ...(from ? { work_completion_deadline_from: from } : {}),
+        ...(to ? { work_completion_deadline_to: to } : {}),
+      }));
+    }
 
     useEffect(() => {
       // ensure URL reflects initial normalized state on first mount
@@ -717,22 +809,21 @@ const View_Project_Management = forwardRef(
       `gantt-master-${Math.random().toString(36).slice(2)}`
     );
 
-// replace notifySelection in ViewProjectManagement.jsx
-const notifySelection = () => {
-  try {
-    let count = 0;
-    const ids = [];
-    gantt.eachTask((t) => {
-      if (t?.checked) {
-        count++;
-        // this is the DB id you need to update:
-        if (t?._dbId) ids.push(String(t._dbId));
-      }
-    });
-    onSelectionChange?.({ any: count > 0, count, ids });
-  } catch {}
-};
-
+    // replace notifySelection in ViewProjectManagement.jsx
+    const notifySelection = () => {
+      try {
+        let count = 0;
+        const ids = [];
+        gantt.eachTask((t) => {
+          if (t?.checked) {
+            count++;
+            // this is the DB id you need to update:
+            if (t?._dbId) ids.push(String(t._dbId));
+          }
+        });
+        onSelectionChange?.({ any: count > 0, count, ids });
+      } catch {}
+    };
 
     // Local flag for frozen state
     const planStatus =
@@ -1023,7 +1114,9 @@ const notifySelection = () => {
       assigned_status: null,
       work_completion_value: "",
       work_completion_unit: "number",
-      work_completion_deadline: "",
+      work_completion_deadline_from: "",
+      work_completion_deadline_to: "",
+      work_completion_preset: "custom",
     });
 
     const statusChanged = form.status !== initialStatusRef.current;
@@ -1137,6 +1230,24 @@ const notifySelection = () => {
     const ensureIds = (arr) =>
       Array.isArray(arr) ? arr.map(toId).filter(Boolean) : [];
 
+    const wcSelection = useMemo(() => {
+      const from =
+        parseISOAsLocalDate(form.work_completion_deadline_from) || new Date();
+      const to = parseISOAsLocalDate(form.work_completion_deadline_to) || from;
+      return [{ startDate: from, endDate: to, key: "selection" }];
+    }, [form.work_completion_deadline_from, form.work_completion_deadline_to]);
+
+    const handleWcRangeChange = (ranges) => {
+      const sel = ranges?.selection || ranges?.ranges?.selection;
+      if (!sel) return;
+      setForm((f) => ({
+        ...f,
+        work_completion_deadline_from: toYMD(sel.startDate),
+        work_completion_deadline_to: toYMD(sel.endDate),
+        work_completion_preset: "custom",
+      }));
+    };
+
     useEffect(() => {
       if (!activityFetch || !selectedId) return;
 
@@ -1161,9 +1272,24 @@ const notifySelection = () => {
       const wc = act?.work_completion || {};
       const wcUnit = typeof wc.unit === "string" ? wc.unit : "number";
       const wcValue = Number.isFinite(Number(wc.value)) ? String(wc.value) : "";
-      const wcDeadline = wc?.deadline
-        ? toYMD(parseISOAsLocalDate(wc.deadline))
-        : "";
+      let wcDeadlineFrom = "";
+      let wcDeadlineTo = "";
+      if (wc?.deadline) {
+        const t = typeof wc.deadline;
+        if (t === "string" || wc.deadline instanceof Date) {
+          // legacy single date → use as both from/to
+          const ymd = toYMD(parseISOAsLocalDate(wc.deadline));
+          wcDeadlineFrom = ymd || "";
+          wcDeadlineTo = ymd || "";
+        } else if (t === "object") {
+          wcDeadlineFrom = wc.deadline?.from
+            ? toYMD(parseISOAsLocalDate(wc.deadline.from))
+            : "";
+          wcDeadlineTo = wc.deadline?.to
+            ? toYMD(parseISOAsLocalDate(wc.deadline.to))
+            : "";
+        }
+      }
 
       // 🔁 Predecessors for UI
       const uiPreds = preds
@@ -1216,7 +1342,9 @@ const notifySelection = () => {
         assigned_status: assignedStatusStr,
         work_completion_value: wcValue,
         work_completion_unit: wcUnit,
-        work_completion_deadline: wcDeadline,
+        work_completion_deadline_from: wcDeadlineFrom,
+        work_completion_deadline_to: wcDeadlineTo,
+        work_completion_preset: "custom",
       });
 
       // 🔁 Optional: recompute dates if predecessors exist
@@ -1238,6 +1366,21 @@ const notifySelection = () => {
         setSnack({ open: true, msg: extractBackendError(activityFetchError) });
       }
     }, [activityFetchError]);
+
+    useEffect(() => {
+      const from = form.work_completion_deadline_from;
+      const to = form.work_completion_deadline_to;
+      if (!from || !to) return;
+
+      const df = new Date(from);
+      const dt = new Date(to);
+      if (!isNaN(df) && !isNaN(dt) && df.getTime() > dt.getTime()) {
+        setSnack({
+          open: true,
+          msg: "Deadline From cannot be after Deadline To.",
+        });
+      }
+    }, [form.work_completion_deadline_from, form.work_completion_deadline_to]);
 
     const saveFromModal = async () => {
       if (!selectedId) return;
@@ -1295,13 +1438,28 @@ const notifySelection = () => {
         assigned_to: ensureIds(form.assigned_to),
         assigned_status: computedAssignedStatus || undefined,
       };
-      if (form.work_completion_value !== "" || form.work_completion_deadline) {
+      if (
+        form.work_completion_value !== "" ||
+        form.work_completion_deadline_from ||
+        form.work_completion_deadline_to
+      ) {
+        const deadlineObj =
+          form.work_completion_deadline_from || form.work_completion_deadline_to
+            ? {
+                // send only what user provided; backend supports partial
+                ...(form.work_completion_deadline_from
+                  ? { from: form.work_completion_deadline_from }
+                  : {}),
+                ...(form.work_completion_deadline_to
+                  ? { to: form.work_completion_deadline_to }
+                  : {}),
+              }
+            : undefined;
+
         payload.work_completion = {
           unit: form.work_completion_unit || "number",
           value: Number(form.work_completion_value || 0),
-          ...(form.work_completion_deadline
-            ? { deadline: form.work_completion_deadline } // YYYY-MM-DD
-            : {}),
+          ...(deadlineObj ? { deadline: deadlineObj } : {}),
         };
       }
 
@@ -2675,7 +2833,6 @@ const notifySelection = () => {
                 <Divider />
 
                 {/* ---------- WORK COMPLETION ---------- */}
-
                 <FormControl>
                   <FormLabel>Work Completion</FormLabel>
 
@@ -2729,30 +2886,67 @@ const notifySelection = () => {
                       <Option value="number">number</Option>
                     </Select>
 
-                    {/* NEW: deadline (right next to unit) */}
-                    <Input
-                      size="sm"
-                      type="date"
-                      placeholder="Deadline"
-                      value={form.work_completion_deadline || ""}
-                      onChange={(e) =>
-                        setForm((f) => ({
-                          ...f,
-                          work_completion_deadline: e.target.value, // YYYY-MM-DD
-                        }))
-                      }
-                      disabled={disableEditing}
-                      sx={{ width: { xs: "100%", sm: "40%" } }}
-                    />
+                    {/* preset selector (same as before) */}
+                    <Box sx={{ width: { xs: "100%", sm: "40%" } }}>
+                      <ReactSelect
+                        isSearchable={false}
+                        value={
+                          rangePresetOptions.find(
+                            (o) => o.value === form.work_completion_preset
+                          ) || rangePresetOptions[0]
+                        }
+                        onChange={(opt) => applyPreset(opt?.value || "custom")}
+                        options={rangePresetOptions}
+                        isDisabled={disableEditing}
+                        menuPortalTarget={document.body}
+                        styles={{
+                          menuPortal: (base) => ({ ...base, zIndex: 1700 }),
+                        }}
+                      />
+                    </Box>
                   </Stack>
+
+                  {/* calendar (react-date-range) */}
+                  <Box
+                    sx={{
+                      mt: 1,
+                      width: "100%",
+                      ...(disableEditing && {
+                        opacity: 0.6,
+                        pointerEvents: "none",
+                      }),
+                    }}
+                  >
+                    <Suspense
+                      fallback={<Box sx={{ p: 1.5 }}>Loading calendar…</Box>}
+                    >
+                      <DateRange
+                        locale={enIN}
+                        ranges={wcSelection}
+                        onChange={handleWcRangeChange}
+                        moveRangeOnFirstSelection={false}
+                        months={1}
+                        direction="horizontal"
+                        rangeColors={["#3366a3"]}
+                      />
+                    </Suspense>
+
+                    <Typography
+                      level="body-xs"
+                      sx={{ color: "text.tertiary", mt: 0.5 }}
+                    >
+                      {form.work_completion_deadline_from || "—"} →{" "}
+                      {form.work_completion_deadline_to || "—"}
+                    </Typography>
+                  </Box>
 
                   {/* optional hint */}
                   <Typography
                     level="body-xs"
                     sx={{ color: "text.tertiary", mt: 0.5 }}
                   >
-                    Leave blank if you want backend to use the baseline end
-                    date.
+                    You can set either or both dates. If left blank, backend may
+                    use defaults (e.g., baseline).
                   </Typography>
                 </FormControl>
 

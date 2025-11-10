@@ -1,22 +1,126 @@
-import { useState } from "react";
+// pages/DprManagement.jsx
+import { useMemo, useState, useEffect } from "react";
 import Box from "@mui/joy/Box";
 import CssBaseline from "@mui/joy/CssBaseline";
 import { CssVarsProvider } from "@mui/joy/styles";
 import Button from "@mui/joy/Button";
-import Modal from "@mui/joy/Modal";
-import Sheet from "@mui/joy/Sheet";
-import Typography from "@mui/joy/Typography";
-import LibraryAddOutlined from "@mui/icons-material/LibraryAddOutlined";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import Sidebar from "../../component/Partials/Sidebar";
 import SubHeader from "../../component/Partials/SubHeader";
 import MainHeader from "../../component/Partials/MainHeader";
 import DPRTable from "../../component/Dpr";
+import Filter from "../../component/Partials/Filter";
+
+import { useGetProjectDropdownQuery } from "../../redux/projectsSlice";
 
 function DprManagement() {
   const navigate = useNavigate();
-  const [openAdd, setOpenAdd] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [filterOpen, setFilterOpen] = useState(false);
+
+  const { data: dropdownRaw, isLoading: isDropdownLoading } =
+    useGetProjectDropdownQuery();
+
+  const projectOptions = useMemo(() => {
+    const list =
+      (Array.isArray(dropdownRaw?.data) && dropdownRaw.data) ||
+      (Array.isArray(dropdownRaw?.projects) && dropdownRaw.projects) ||
+      (Array.isArray(dropdownRaw) && dropdownRaw) ||
+      [];
+
+    return list
+      .map((it) => {
+        const code =
+          it.code ||
+          it.project_code ||
+          it.projectCode ||
+          it.code_value ||
+          it.value ||
+          it.id ||
+          "";
+        if (!code) return null;
+        return { label: String(code), value: String(code) };
+      })
+      .filter(Boolean);
+  }, [dropdownRaw]);
+
+  const projectCodeFromUrl = searchParams.get("project_code") || "";
+  const statusFromUrl = searchParams.get("status") || "";
+  const fromFromUrl = searchParams.get("from") || undefined;
+  const toFromUrl = searchParams.get("to") || undefined;
+
+  // Optional: clean invalid project_code from URL if dropdown no longer has it
+  useEffect(() => {
+    if (
+      projectCodeFromUrl &&
+      !projectOptions.some((o) => o.value === projectCodeFromUrl)
+    ) {
+      setSearchParams((prev) => {
+        const p = new URLSearchParams(prev);
+        p.delete("project_code");
+        return p;
+      });
+    }
+  }, [projectCodeFromUrl, projectOptions, setSearchParams]);
+
+  const FILTER_FIELDS = [
+    {
+      key: "project_code",
+      label: "Project Code",
+      type: "select",
+      options: projectOptions,
+    },
+    { key: "deadline", label: "Deadline (Range)", type: "daterange" },
+    {
+      key: "status",
+      label: "Status",
+      type: "select",
+      options: [
+       { label: "In progress", value: "in progress" },
+        { label: "Idle", value: "idle" },
+         { label: "Work Stopped", value: "work stopped" },
+        { label: "Completed", value: "completed" },
+      ],
+    },
+  ];
+
+  const handleApplyFilters = (vals) => {
+    const next = new URLSearchParams(searchParams);
+
+    next.delete("project_name"); // ensure never present
+
+    if (vals.project_code) next.set("project_code", String(vals.project_code));
+    else next.delete("project_code");
+
+    const dr = vals.deadline;
+    if (dr?.from) next.set("from", dr.from);
+    else next.delete("from");
+    if (dr?.to) next.set("to", dr.to);
+    else next.delete("to");
+
+    if (vals.status) next.set("status", String(vals.status));
+    else next.delete("status");
+
+    next.set("page", "1");
+    if (!next.get("pageSize")) next.set("pageSize", "10");
+
+    setSearchParams(next);
+    setFilterOpen(false);
+  };
+
+  const handleResetFilters = () => {
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+      p.delete("project_code");
+      p.delete("project_name");
+      p.delete("from");
+      p.delete("to");
+      p.delete("status");
+      p.set("page", "1");
+      return p;
+    });
+  };
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -43,7 +147,6 @@ function DprManagement() {
             >
               Dashboard
             </Button>
-
             <Button
               size="sm"
               onClick={() => navigate(`/project_management`)}
@@ -61,7 +164,6 @@ function DprManagement() {
             >
               All Projects
             </Button>
-
             <Button
               size="sm"
               onClick={() => navigate(`/project_template`)}
@@ -79,7 +181,6 @@ function DprManagement() {
             >
               Templates
             </Button>
-
             <Button
               size="sm"
               onClick={() => navigate(`/dpr_management`)}
@@ -105,23 +206,23 @@ function DprManagement() {
           isBackEnabled={false}
           sticky
           rightSlot={
-            <Button
-              size="sm"
-              variant="outlined"
-              sx={{
-                color: "#3366a3",
-                borderColor: "#3366a3",
-                backgroundColor: "transparent",
-                "--Button-hoverBg": "#e0e0e0",
-                "--Button-hoverBorderColor": "#3366a3",
-                "&:hover": { color: "#3366a3" },
-                height: "8px",
+            <Filter
+              open={filterOpen}
+              onOpenChange={setFilterOpen}
+              fields={FILTER_FIELDS}
+              initialValues={{
+                project_code: projectCodeFromUrl || undefined,
+                status: statusFromUrl || undefined,
+                deadline:
+                  fromFromUrl || toFromUrl
+                    ? { from: fromFromUrl, to: toFromUrl }
+                    : undefined,
               }}
-              startDecorator={<LibraryAddOutlined />}
-              onClick={() => setOpenAdd(true)}
-            >
-              Add DPR
-            </Button>
+              title="Filter DPR"
+              onApply={handleApplyFilters}
+              onReset={handleResetFilters}
+              disabled={isDropdownLoading}
+            />
           }
         />
 
@@ -139,7 +240,6 @@ function DprManagement() {
           }}
         >
           <DPRTable />
-
         </Box>
       </Box>
     </CssVarsProvider>

@@ -62,6 +62,8 @@ function useCoarsePointer() {
 
 function DPRTable() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const statusFromUrl = searchParams.get("status") || "";
+ const projectCodeFromUrl = searchParams.get("project_code") || "";
   const isTouch = useCoarsePointer();
   /** dd-mm-yyyy -> Date at local midnight */
   const ddmmyyyyToLocalDate = (s) => {
@@ -143,12 +145,15 @@ function DPRTable() {
   const { data, isFetching, isLoading, isError, error, refetch } =
     useGetAllDprQuery({
       page: currentPage,
-      limit: rowsPerPage,
-      search: searchQuery || "",
-      projectId: projectIdFromUrl,
-      from: fromFromUrl,
-      to: toFromUrl,
-      onlyWithDeadline: onlyWithDeadlineFromUrl,
+    limit: rowsPerPage,
+    search: projectCodeFromUrl ? projectCodeFromUrl : (searchQuery || ""),
+    status: projectCodeFromUrl
+      ? "project code"
+      : (statusFromUrl ? statusFromUrl.replace(/-/g, " ") : undefined),
+    projectId: projectIdFromUrl,
+    from: fromFromUrl,
+    to: toFromUrl,
+    onlyWithDeadline: onlyWithDeadlineFromUrl,
     });
 
   // mutation

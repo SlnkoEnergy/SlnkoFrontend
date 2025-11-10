@@ -552,29 +552,37 @@ export const projectsApi = createApi({
     }),
 
     getAllDpr: builder.query({
-      query: ({
-        page = 1,
-        limit = 10,
-        search = "",
-        projectId,
-        from,
-        to,
-        onlyWithDeadline,
-      }) => {
-        const params = new URLSearchParams();
-        if (projectId) params.set("projectId", projectId);
-        if (search) params.set("search", search);
-        if (from) params.set("from", from);
-        if (to) params.set("to", to);
-        if (onlyWithDeadline) params.set("onlyWithDeadline", onlyWithDeadline);
+  query: ({
+    page = 1,
+    limit = 10,
+    search = "",
+    projectId,
+    from,
+    to,
+    onlyWithDeadline,
+    status,          // ✅ ADD THIS
+  }) => {
+    const params = new URLSearchParams();
 
-        return {
-          url: `projectActivity/alldpr?${params.toString()}`,
-          method: "GET",
-        };
-      },
-      providesTags: ["Project"],
-    }),
+    // ✅ pagination
+    params.set("page", String(page));
+    params.set("limit", String(limit));
+
+    // ✅ filters
+    if (projectId) params.set("projectId", projectId);
+    if (search) params.set("search", search);
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+    if (onlyWithDeadline) params.set("onlyWithDeadline", onlyWithDeadline);
+    if (status) params.set("status", status); // ✅ pass-through
+
+    return {
+      url: `projectActivity/alldpr?${params.toString()}`,
+      method: "GET",
+    };
+  },
+  providesTags: ["Project"],
+}),
   }),
 });
 
