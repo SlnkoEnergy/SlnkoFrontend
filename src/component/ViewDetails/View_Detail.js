@@ -451,6 +451,19 @@ export default function CustomerPaymentSummary() {
     return isNaN(x) ? "—" : `${x.toLocaleDateString()}`;
   };
 
+    const getItemLabel = (row) => {
+    if (typeof row?.item_name === "string") return row.item_name;
+    if (Array.isArray(row?.item_name)) {
+      return row.item_name
+        .map(
+          (it) => it?.product_name || it?.category?.name || it?.category || ""
+        )
+        .filter(Boolean)
+        .join(", ");
+    }
+    return row?.item_name || "-";
+  };
+
   const filteredSales = useMemo(() => {
     const q = (searchSales || "").trim().toLowerCase();
     if (!q) return SalesSummary || [];
@@ -485,18 +498,7 @@ export default function CustomerPaymentSummary() {
       .filter((a) => a.url);
   };
 
-  const getItemLabel = (row) => {
-    if (typeof row?.item_name === "string") return row.item_name;
-    if (Array.isArray(row?.item_name)) {
-      return row.item_name
-        .map(
-          (it) => it?.product_name || it?.category?.name || it?.category || ""
-        )
-        .filter(Boolean)
-        .join(", ");
-    }
-    return row?.item_name || "-";
-  };
+
 
   // Debounced refetch on filter changes
   useEffect(() => {
