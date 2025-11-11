@@ -63,7 +63,7 @@ function useCoarsePointer() {
 function DPRTable() {
   const [searchParams, setSearchParams] = useSearchParams();
   const statusFromUrl = searchParams.get("status") || "";
- const projectCodeFromUrl = searchParams.get("project_code") || "";
+  const projectCodeFromUrl = searchParams.get("project_code") || "";
   const isTouch = useCoarsePointer();
   /** dd-mm-yyyy -> Date at local midnight */
   const ddmmyyyyToLocalDate = (s) => {
@@ -145,15 +145,17 @@ function DPRTable() {
   const { data, isFetching, isLoading, isError, error, refetch } =
     useGetAllDprQuery({
       page: currentPage,
-    limit: rowsPerPage,
-    search: projectCodeFromUrl ? projectCodeFromUrl : (searchQuery || ""),
-    status: projectCodeFromUrl
-      ? "project code"
-      : (statusFromUrl ? statusFromUrl.replace(/-/g, " ") : undefined),
-    projectId: projectIdFromUrl,
-    from: fromFromUrl,
-    to: toFromUrl,
-    onlyWithDeadline: onlyWithDeadlineFromUrl,
+      limit: rowsPerPage,
+      search: projectCodeFromUrl ? projectCodeFromUrl : searchQuery || "",
+      status: projectCodeFromUrl
+        ? "project code"
+        : statusFromUrl
+        ? statusFromUrl.replace(/-/g, " ")
+        : undefined,
+      projectId: projectIdFromUrl,
+      from: fromFromUrl,
+      to: toFromUrl,
+      onlyWithDeadline: onlyWithDeadlineFromUrl,
     });
 
   // mutation
@@ -171,8 +173,11 @@ function DPRTable() {
   };
 
   const pageRows = useMemo(() => {
-    const rows = Array.isArray(data?.rows) ? data.rows : [];
-    return rows.map((r, idx) => {
+    const raw =
+      (Array.isArray(data?.data) && data.data) ||
+      (Array.isArray(data?.rows) && data.rows) ||
+      [];
+    return raw.map((r, idx) => {
       const deadlineStr = r.deadline || null;
       const deadlineISO = deadlineStr ? ddmmyyyyToISO(deadlineStr) : null;
 
@@ -191,14 +196,14 @@ function DPRTable() {
       const normStatus = lifecycleCompleted
         ? "completed"
         : apiStatus === "in-progress" || apiStatus === "progress"
-          ? "progress"
-          : apiStatus === "work stopped" ||
-            apiStatus === "stopped" ||
-            apiStatus === "stop"
-            ? "stop"
-            : apiStatus === "idle"
-              ? "idle"
-              : "progress";
+        ? "progress"
+        : apiStatus === "work stopped" ||
+          apiStatus === "stopped" ||
+          apiStatus === "stop"
+        ? "stop"
+        : apiStatus === "idle"
+        ? "idle"
+        : "progress";
 
       // ids…
       const projectId =
@@ -272,9 +277,12 @@ function DPRTable() {
     });
   }, [data]);
 
-  const total = data?.total ?? 0;
-  const totalPages =
-    data?.totalPages ?? Math.max(1, Math.ceil(total / rowsPerPage));
+  // prefer server-provided pagination
+  const totalPages = Number(data?.pagination?.totalPages || data?.totalPages || 1);
+  const hasNextPage =
+    data?.pagination?.hasNextPage ?? (currentPage < totalPages);
+  const hasPrevPage =
+    data?.pagination?.hasPrevPage ?? (currentPage > 1);
 
   /** ===== numbers helpers ===== */
   const toNum = (v) => {
@@ -303,9 +311,8 @@ function DPRTable() {
     });
   }, [pageRows, searchQuery]);
 
-  /** ===== pagination (client-side over filtered) ===== */
-  const startIdx = (currentPage - 1) * rowsPerPage;
-  const viewRows = filtered.slice(startIdx, startIdx + rowsPerPage);
+  /** ===== view rows (server paginated) ===== */
+  const viewRows = filtered;
 
   const handlePageChange = (page) => {
     const maxPage = totalPages;
@@ -392,10 +399,10 @@ function DPRTable() {
       days == null
         ? "No deadline"
         : days > 0
-          ? `${days} day${days === 1 ? "" : "s"} left`
-          : days === 0
-            ? "Due today"
-            : `Overdue by ${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"}`;
+        ? `${days} day${days === 1 ? "" : "s"} left`
+        : days === 0
+        ? "Due today"
+        : `Overdue by ${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"}`;
 
     return {
       pct100,
@@ -415,19 +422,19 @@ function DPRTable() {
       st === "completed"
         ? "Completed"
         : st === "idle"
-          ? "Idle"
-          : st === "stop"
-            ? "Work Stopped"
-            : "In progress";
+        ? "Idle"
+        : st === "stop"
+        ? "Work Stopped"
+        : "In progress";
 
     const color =
       st === "completed"
         ? "success"
         : st === "idle"
-          ? "neutral"
-          : st === "stop"
-            ? "danger"
-            : "warning";
+        ? "neutral"
+        : st === "stop"
+        ? "danger"
+        : "warning";
 
     return (
       <Chip variant="soft" color={color} sx={{ fontWeight: 700 }}>
@@ -455,10 +462,10 @@ function DPRTable() {
       delayText && String(delayText).trim()
         ? `Delay reason: ${String(delayText).trim()}`
         : showNotCounted
-          ? "Delay not counted for Idle/Stopped status"
-          : Number(delayDays) > 0
-            ? "Deadline exceeded"
-            : "No delay";
+        ? "Delay not counted for Idle/Stopped status"
+        : Number(delayDays) > 0
+        ? "Deadline exceeded"
+        : "No delay";
 
     return (
       <Tooltip title={tooltip} arrow variant="soft">
@@ -516,7 +523,13 @@ function DPRTable() {
     const band = getBandFor(pct100);
 
     const Bar = (
-      <Box sx={{ position: "relative", minWidth: 150, pr: showPercentLabel ? 6 : 0 }}>
+      <Box
+        sx={{
+          position: "relative",
+          minWidth: 150,
+          pr: showPercentLabel ? 6 : 0,
+        }}
+      >
         <LinearProgress
           determinate
           value={pct100}
@@ -575,7 +588,10 @@ function DPRTable() {
           <Typography level="body-xs" sx={{ mt: 0.5 }}>
             <b>Progress:</b> {pct100}% &nbsp;•&nbsp; <b>Qty:</b> {summary}
           </Typography>
-          <Typography level="body-xs" sx={{ mt: 0.25, color: "text.secondary" }}>
+          <Typography
+            level="body-xs"
+            sx={{ mt: 0.25, color: "text.secondary" }}
+          >
             {daysText}
           </Typography>
         </Box>
@@ -1013,17 +1029,25 @@ function DPRTable() {
                     />
                   </td>
 
-                  <td style={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
+                  <td
+                    style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                  >
                     {row.project_code || "-"}
                   </td>
-                  <td style={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
+                  <td
+                    style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                  >
                     {row.project_name || "-"}
                   </td>
-                  <td style={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
+                  <td
+                    style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                  >
                     {row.activity_name || "-"}
                   </td>
 
-                  <td style={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
+                  <td
+                    style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                  >
                     {renderWorkPercent(
                       row.current_work, // cumulative
                       row.work_completion, // total
@@ -1034,20 +1058,32 @@ function DPRTable() {
                     )}
                   </td>
 
-                  <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
+                  >
                     <DeadlineChip dateStr={row.deadlineStr} />
                   </td>
 
                   {/* Delay cell (computed on FE) */}
-                  <td style={{ padding: "8px", borderBottom: "1px solid #ddd" }}>
-                    {renderDelayCell(row.delay_days, row.delay_text, row.status)}
+                  <td
+                    style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
+                  >
+                    {renderDelayCell(
+                      row.delay_days,
+                      row.delay_text,
+                      row.status
+                    )}
                   </td>
 
-                  <td style={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
+                  <td
+                    style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                  >
                     {renderStatusChipCell(row.status)}
                   </td>
 
-                  <td style={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
+                  <td
+                    style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                  >
                     <Button
                       size="sm"
                       variant="soft"
@@ -1154,8 +1190,8 @@ function DPRTable() {
                         row.work_completion,
                         row.deadlineISO,
                         row.milestones,
-                        true,   // showPercentLabel
-                        true    // inlineDetails -> text printed under bar
+                        true, // showPercentLabel
+                        true // inlineDetails -> text printed under bar
                       )}
                     </Typography>
 
@@ -1211,7 +1247,7 @@ function DPRTable() {
           color="neutral"
           startDecorator={<KeyboardArrowLeftIcon />}
           onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage <= 1 || isFetching}
+          disabled={!hasPrevPage || isFetching}
         >
           Previous
         </Button>
@@ -1291,7 +1327,7 @@ function DPRTable() {
           color="neutral"
           endDecorator={<KeyboardArrowRightIcon />}
           onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage >= totalPages || isFetching}
+          disabled={!hasNextPage || isFetching}
         >
           Next
         </Button>
@@ -1324,9 +1360,6 @@ function DPRTable() {
           <Typography level="h5" fontWeight="lg">
             Log Today’s Progress
           </Typography>
-          <Typography level="body-sm" sx={{ color: "text.secondary", mb: 1 }}>
-            Capture today’s completed quantity with optional remarks.
-          </Typography>
 
           <Divider />
 
@@ -1353,170 +1386,61 @@ function DPRTable() {
             </Grid>
           </Box>
 
-          {/* Past progress chips */}
-          <Box mt={1.5} display="flex" gap={1} flexWrap="wrap">
-            {(() => {
-              const total = progressRow ? getTotal(progressRow) : 0;
-              const done = progressRow ? getCompleted(progressRow) : 0;
-              const unit = progressRow ? getUnit(progressRow) : "";
-              const remain = Math.max(0, total - done);
-
-              const s = norm(progressRow?.status);
-              const statusLabel =
-                s === "completed"
-                  ? "Completed"
-                  : s === "idle"
-                    ? "Idle"
-                    : s === "stop"
-                      ? "Work Stopped"
-                      : "In progress";
-              const statusColor =
-                s === "completed"
-                  ? "success"
-                  : s === "idle"
-                    ? "neutral"
-                    : s === "stop"
-                      ? "danger"
-                      : "warning";
-
-              return (
-                <>
-                  <Chip variant="soft" color="neutral">
-                    Total: <b style={{ marginLeft: 6 }}>{total} {unit}</b>
-                  </Chip>
-                  <Chip variant="soft" color="primary">
-                    Done: <b style={{ marginLeft: 6 }}>{done} {unit}</b>
-                  </Chip>
-                  <Chip
-                    variant="soft"
-                    color={remain > 0 ? "warning" : "success"}
-                  >
-                    Remaining: <b style={{ marginLeft: 6 }}>{remain} {unit}</b>
-                  </Chip>
-                  <Chip variant="soft" color={statusColor}>
-                    Status: <b style={{ marginLeft: 6 }}>{statusLabel}</b>
-                  </Chip>
-                </>
-              );
-            })()}
-          </Box>
-
-          {/* Form */}
-          <Box
-            mt={2}
-            display="grid"
-            gridTemplateColumns={{ xs: "1fr", md: "1fr 1fr" }}
-            gap={1.5}
-          >
-            <FormControl>
-              <Typography level="title-sm" sx={{ mb: 0.5 }}>
-                Date
-              </Typography>
-              <Input
-                type="date"
-                value={progressDate}
-                onChange={(e) => setProgressDate(e.target.value)}
-                readOnly
-                slotProps={{ input: { readOnly: true } }}
-                sx={{ "--Input-minHeight": "40px" }}
-                disabled={isUpdating}
-              />
-            </FormControl>
-
-            <FormControl>
-              <Typography level="title-sm" sx={{ mb: 0.5 }}>
-                Today’s Progress ({progressRow ? getUnit(progressRow) : ""})
-              </Typography>
-              <Input
-                type="number"
-                placeholder={isFullyDone ? "Completed" : `Max ${remainingCap}`}
-                value={progressQty}
-                onChange={handleQtyChange}
-                onKeyDown={onQtyKeyDown}
-                slotProps={{
-                  input: { min: 0, max: remainingCap, step: "any" },
-                }}
-                sx={{ "--Input-minHeight": "40px" }}
-                disabled={
-                  isUpdating ||
-                  actionType !== "progress" || // blocks for Idle/Stop
-                  isFullyDone ||
-                  remainingCap <= 0
-                }
-              />
-              <Typography level="body-xs" sx={{ mt: 0.5, opacity: 0.7 }}>
-                Max today: {remainingCap}{" "}
-                {progressRow ? getUnit(progressRow) : ""}
-              </Typography>
-            </FormControl>
-
-            <Grid xs={12}>
-              <Typography level="title-sm" sx={{ mb: 0.5 }}>
-                Remarks (optional)
-              </Typography>
-              <Textarea
-                minRows={2}
-                placeholder="Any notes about today’s work…"
-                value={progressRemarks}
-                onChange={(e) => setProgressRemarks(e.target.value)}
-                disabled={isUpdating}
-              />
-            </Grid>
-
-            <Grid xs={12} md={6}>
-              <Typography level="title-sm" sx={{ mb: 0.5 }}>
-                Status
-              </Typography>
-              <Select
-                value={actionType}
-                onChange={(_, v) => v && setActionType(v)}
-                disabled={isUpdating}
-                sx={{ "--Select-minHeight": "40px" }}
-              >
-                {/* backend enum: progress | idle | stop */}
-                <Option value="progress">In progress</Option>
-                <Option value="idle">Idle</Option>
-                <Option value="stop">Work Stopped</Option>
-              </Select>
-            </Grid>
-          </Box>
-
-          {/* Live computed preview */}
+          {/* Single summary area (Today → Completed → Pending → Total) */}
           <Box mt={1.5}>
             {(() => {
               if (!progressRow) return null;
-              const t = getTotal(progressRow);
-              const d = getCompleted(progressRow);
-              const u = getUnit(progressRow);
-              const q = toNum(progressQty);
-              const nd = d + q;
-              const rm = Math.max(0, t - nd);
+
+              const t = getTotal(progressRow); // Total
+              const d = getCompleted(progressRow); // Completed till yesterday
+              const u = getUnit(progressRow); // Unit
+              const q = toNum(progressQty); // Today's qty (typed)
+              const nd = actionType === "progress" ? d + q : d; // New cumulative
+              const rm = Math.max(0, t - nd); // Pending/Remaining
+              const todayShown = actionType === "progress" ? q || 0 : 0;
+
               return (
                 <Box
                   sx={{
-                    p: 1,
-                    borderRadius: "sm",
-                    bgcolor: "background.level1",
+                    p: 0,
+                    borderRadius: 0,
+                    bgcolor: "transparent",
                     display: "flex",
                     gap: 1,
                     flexWrap: "wrap",
                     alignItems: "center",
                   }}
                 >
+                  {/* Today: light green */}
+                  <Chip variant="soft" color="success">
+                    Today:{" "}
+                    <b style={{ marginLeft: 6 }}>
+                      {todayShown} {u}
+                    </b>
+                  </Chip>
+
+                  {/* Completed: dark green */}
+                  <Chip variant="solid" color="success">
+                    Completed:{" "}
+                    <b style={{ marginLeft: 6 }}>
+                      {d} {u}
+                    </b>
+                  </Chip>
+
+                  {/* Pending: grey */}
                   <Chip variant="soft" color="neutral">
-                    Total: <b style={{ marginLeft: 6 }}>{t} {u}</b>
+                    Pending:{" "}
+                    <b style={{ marginLeft: 6 }}>
+                      {rm} {u}
+                    </b>
                   </Chip>
+
+                  {/* Total: blue */}
                   <Chip variant="soft" color="primary">
-                    Till Yesterday: <b style={{ marginLeft: 6 }}>{d} {u}</b>
-                  </Chip>
-                  <Chip variant="soft" color="info">
-                    Today: <b style={{ marginLeft: 6 }}>{actionType === "progress" ? q || 0 : 0} {u}</b>
-                  </Chip>
-                  <Chip variant="soft" color={nd > t ? "danger" : "success"}>
-                    New Cumulative: <b style={{ marginLeft: 6 }}>{actionType === "progress" ? nd : d} {u}</b>
-                  </Chip>
-                  <Chip variant="soft" color={rm > 0 ? "warning" : "success"}>
-                    Remaining: <b style={{ marginLeft: 6 }}>{actionType === "progress" ? rm : Math.max(0, t - d)} {u}</b>
+                    Total:{" "}
+                    <b style={{ marginLeft: 6 }}>
+                      {t} {u}
+                    </b>
                   </Chip>
                 </Box>
               );
@@ -1525,63 +1449,183 @@ function DPRTable() {
 
           <Divider sx={{ my: 1.5 }} />
 
-          {updateErr && (
-            <Typography color="danger" sx={{ mb: 1 }}>
-              {updateErr?.data?.message || "Failed to submit. Please try again."}
-            </Typography>
-          )}
+          {/* Form */}
+          {(() => {
+            const remarksRequired =
+              actionType === "idle" || actionType === "stop";
+            const remarksMissing =
+              remarksRequired && !String(progressRemarks || "").trim();
+            return (
+              <>
+                <Box
+                  mt={2}
+                  display="grid"
+                  gridTemplateColumns={{ xs: "1fr", md: "1fr 1fr" }}
+                  gap={1.5}
+                >
+                  <FormControl>
+                    <Typography level="title-sm" sx={{ mb: 0.5 }}>
+                      Date
+                    </Typography>
+                    <Input
+                      type="date"
+                      value={progressDate}
+                      onChange={(e) => setProgressDate(e.target.value)}
+                      readOnly
+                      slotProps={{ input: { readOnly: true } }}
+                      sx={{ "--Input-minHeight": "40px" }}
+                      disabled={isUpdating}
+                    />
+                  </FormControl>
 
-          <Box
-            display="flex"
-            justifyContent="space-between"
-            gap={1}
-            flexWrap="wrap"
-            sx={{
-              flexDirection: { xs: "column", sm: "row" },
-              "& > *": { width: { xs: "100%", sm: "auto" } },
-            }}
-          >
-            <Box display="flex" gap={1} flexWrap="wrap">
-              <Button
-                variant={actionType === "idle" ? "solid" : "soft"}
-                color="warning"
-                onClick={() => submitWith("idle")}
-                disabled={isUpdating}
-              >
-                Mark Idle
-              </Button>
+                  <FormControl>
+                    <Typography level="title-sm" sx={{ mb: 0.5 }}>
+                      Today’s Progress (
+                      {progressRow ? getUnit(progressRow) : ""})
+                    </Typography>
+                    <Input
+                      type="number"
+                      placeholder={
+                        isFullyDone ? "Completed" : `Max ${remainingCap}`
+                      }
+                      value={progressQty}
+                      onChange={handleQtyChange}
+                      onKeyDown={onQtyKeyDown}
+                      slotProps={{
+                        input: { min: 0, max: remainingCap, step: "any" },
+                      }}
+                      sx={{ "--Input-minHeight": "40px" }}
+                      disabled={
+                        isUpdating ||
+                        actionType !== "progress" || // blocks for Idle/Stop
+                        isFullyDone ||
+                        remainingCap <= 0
+                      }
+                    />
+                    <Typography level="body-xs" sx={{ mt: 0.5, opacity: 0.7 }}>
+                      Max today: {remainingCap}{" "}
+                      {progressRow ? getUnit(progressRow) : ""}
+                    </Typography>
+                  </FormControl>
 
-              <Button
-                variant={actionType === "stop" ? "solid" : "soft"}
-                color="danger"
-                onClick={() => submitWith("stop")}
-                disabled={isUpdating}
-              >
-                Mark Stop
-              </Button>
-            </Box>
+                  <Grid xs={12}>
+                    <Typography level="title-sm" sx={{ mb: 0.5 }}>
+                      Remarks{" "}
+                      {remarksRequired
+                        ? "(required for Idle/Stop)"
+                        : "(optional)"}
+                    </Typography>
+                    <Textarea
+                      minRows={2}
+                      placeholder={
+                        remarksRequired
+                          ? "Remarks are required for Idle/Stop…"
+                          : "Any notes about today’s work…"
+                      }
+                      value={progressRemarks}
+                      onChange={(e) => setProgressRemarks(e.target.value)}
+                      disabled={isUpdating}
+                      color={remarksMissing ? "danger" : undefined}
+                    />
+                    {remarksMissing && (
+                      <Typography
+                        level="body-xs"
+                        color="danger"
+                        sx={{ mt: 0.5 }}
+                      >
+                        Please enter remarks when marking Idle or Work Stopped.
+                      </Typography>
+                    )}
+                  </Grid>
 
-            <Box display="flex" gap={1}>
-              <Button variant="plain" onClick={closeProgress} disabled={isUpdating}>
-                Cancel
-              </Button>
-              <Button
-                variant="solid"
-                onClick={() => submitWith()}
-                loading={isUpdating}
-                disabled={
-                  isUpdating ||
-                  isFullyDone || // can't add more progress once completed
-                  (actionType === "progress" &&
-                    (remainingCap <= 0 ||
-                      toNum(progressQty) <= 0 ||
-                      toNum(progressQty) > remainingCap))
-                }
-              >
-                Submit Progress
-              </Button>
-            </Box>
-          </Box>
+                  <Grid xs={12} md={6}>
+                    <Typography level="title-sm" sx={{ mb: 0.5 }}>
+                      Status
+                    </Typography>
+                    <Select
+                      value={actionType}
+                      onChange={(_, v) => v && setActionType(v)}
+                      disabled={isUpdating}
+                      sx={{ "--Select-minHeight": "40px" }}
+                    >
+                      {/* backend enum: progress | idle | stop */}
+                      <Option value="progress">In progress</Option>
+                      <Option value="idle">Idle</Option>
+                      <Option value="stop">Work Stopped</Option>
+                    </Select>
+                  </Grid>
+                </Box>
+
+                <Divider sx={{ my: 1.5 }} />
+
+                {updateErr && (
+                  <Typography color="danger" sx={{ mb: 1 }}>
+                    {updateErr?.data?.message ||
+                      "Failed to submit. Please try again."}
+                  </Typography>
+                )}
+
+                <Box
+                  display="flex"
+                  justifyContent="space-between"
+                  gap={1}
+                  flexWrap="wrap"
+                  sx={{
+                    flexDirection: { xs: "column", sm: "row" },
+                    "& > *": { width: { xs: "100%", sm: "auto" } },
+                  }}
+                >
+                  <Box display="flex" gap={1} flexWrap="wrap">
+                    <Button
+                      variant={actionType === "idle" ? "solid" : "soft"}
+                      color="warning"
+                      onClick={() => submitWith("idle")}
+                      disabled={isUpdating || remarksMissing}
+                    >
+                      Mark Idle
+                    </Button>
+
+                    <Button
+                      variant={actionType === "stop" ? "solid" : "soft"}
+                      color="danger"
+                      onClick={() => submitWith("stop")}
+                      disabled={isUpdating || remarksMissing}
+                    >
+                      Mark Stop
+                    </Button>
+                  </Box>
+
+                  <Box display="flex" gap={1}>
+                    <Button
+                      variant="plain"
+                      onClick={closeProgress}
+                      disabled={isUpdating}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="solid"
+                      onClick={() => submitWith()}
+                      loading={isUpdating}
+                      disabled={
+                        isUpdating ||
+                        isFullyDone ||
+                        // Progress rules
+                        (actionType === "progress" &&
+                          (remainingCap <= 0 ||
+                            toNum(progressQty) <= 0 ||
+                            toNum(progressQty) > remainingCap)) ||
+                        // Remarks required for idle/stop
+                        (remarksRequired && remarksMissing)
+                      }
+                    >
+                      Submit Progress
+                    </Button>
+                  </Box>
+                </Box>
+              </>
+            );
+          })()}
         </ModalDialog>
       </Modal>
     </Box>

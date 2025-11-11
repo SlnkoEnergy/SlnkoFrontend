@@ -54,14 +54,17 @@ const toDate = (v) => {
 
 function normalizeActivitiesFromSummary(raw = []) {
   return raw.map((a, idx) => {
-    const dl = a?.deadline ? toDate(a.deadline) : null;
+    // Use planned_finish from API (previously "deadline")
+    const plannedFinish = a?.planned_finish ? toDate(a.planned_finish) : null;
+    const plannedStart = a?.planned_start ? toDate(a.planned_start) : null;
     const lu = a?.last_update ? toDate(a.last_update) : null;
     return {
       _key: a.activity_id || `row-${idx}`,
       activity_name: a.activity_name || `Activity ${idx + 1}`,
       current_status: String(a?.status || "").toLowerCase(), // "not started" | "in progress" | "completed"
       work_done_percent: Number(a?.work_done_percent || 0),
-      deadline: dl,
+      planned_start: plannedStart,
+      planned_finish: plannedFinish,
       last_update: lu,
       assigned_to: Array.isArray(a?.assigned_to) ? a.assigned_to : [],
     };
@@ -126,7 +129,9 @@ function prepareEngineersFromSummary(activities = []) {
   const map = new Map();
   activities.forEach((act) => {
     const users = Array.isArray(act.assigned_to) ? act.assigned_to : [];
-    const list = users.length ? users : [{ _id: "_unassigned", name: "Unassigned" }];
+    const list = users.length
+      ? users
+      : [{ _id: "_unassigned", name: "Unassigned" }];
 
     list.forEach((u) => {
       const key = u._id || u.user_id || u.email || u.name || "unknown";
@@ -152,7 +157,9 @@ function prepareEngineersFromSummary(activities = []) {
   });
 
   return Array.from(map.values()).map((e) => {
-    const progressPct = e.totalPlanned ? (e.totalActual / e.totalPlanned) * 100 : 0;
+    const progressPct = e.totalPlanned
+      ? (e.totalActual / e.totalPlanned) * 100
+      : 0;
     return {
       ...e,
       progressPct,
@@ -170,10 +177,18 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
   const projectId = propProjectId || routeProjectId || qsProjectId || "";
 
   // URL-backed activity filter (?af=...)
-  const validFilters = new Set(["all", "completed", "in_progress", "in_progress_risk", "not_started"]);
+  const validFilters = new Set([
+    "all",
+    "completed",
+    "in_progress",
+    "past_deadline",        // overdue if planned_finish < today && not completed
+    "not_started",
+    "progress_or_completed",
+  ]);
   const initialFilter = (() => {
-    const f = (searchParams.get("af") || "in_progress").toLowerCase();
-    return validFilters.has(f) ? f : "in_progress";
+    // Default to progress_or_completed
+    const f = (searchParams.get("af") || "progress_or_completed").toLowerCase();
+    return validFilters.has(f) ? f : "progress_or_completed";
   })();
   const [activityFilter, setActivityFilter] = React.useState(initialFilter);
 
@@ -189,16 +204,19 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
   );
 
   React.useEffect(() => {
-    const f = (searchParams.get("af") || "in_progress").toLowerCase();
+    const f = (searchParams.get("af") || "progress_or_completed").toLowerCase();
     if (validFilters.has(f) && f !== activityFilter) setActivityFilter(f);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  const { data, isLoading, isError } = useGetProjectSummaryByIdQuery(projectId, {
-    skip: !projectId,
-    refetchOnFocus: true,
-    refetchOnReconnect: true,
-  });
+  const { data, isLoading, isError } = useGetProjectSummaryByIdQuery(
+    projectId,
+    {
+      skip: !projectId,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+    }
+  );
 
   const activities = React.useMemo(
     () => normalizeActivitiesFromSummary(data?.activities || []),
@@ -214,11 +232,13 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
     const today = new Date();
     return activities.filter((a) => {
       const status = a.current_status; // "not started" | "in progress" | "completed"
-      const deadline = a.deadline || null;
+      const pf = a.planned_finish || null;
 
+      if (activityFilter === "progress_or_completed")
+        return status === "in progress" || status === "completed";
       if (activityFilter === "completed") return status === "completed";
-      if (activityFilter === "in_progress_risk")
-        return status === "in progress" && deadline && deadline < today;
+      if (activityFilter === "past_deadline")
+        return pf && pf < today && status !== "completed"; // overdue if past planned_finish and not completed
       if (activityFilter === "in_progress") return status === "in progress";
       if (activityFilter === "not_started") return status === "not started";
       return true; // "all"
@@ -227,7 +247,8 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
 
   const project_detail = {
     code: data?.project_code || data?.project_id || projectId || "",
-    name: data?.project_name || `Project ${data?.project_id || projectId || ""}`,
+    name:
+      data?.project_name || `Project ${data?.project_id || projectId || ""}`,
     site_address: "",
     number: "",
     status: "",
@@ -279,7 +300,14 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
             title="Work Done (Project)"
             value={formatPct(Number(data?.work_done_percent || 0))}
             subtitle="Total progress"
-            onClick={() => setFilter("completed")}
+            onClick={() => {
+              // Remove AF before setting status
+              const sp = new URLSearchParams(searchParams);
+              sp.delete("af");
+              sp.set("status", "in progress,completed"); // reflect both in URL
+              setSearchParams(sp, { replace: true });
+              setFilter("progress_or_completed");
+            }}
           />
         </Grid>
         <Grid xs={12} md={4}>
@@ -289,7 +317,14 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
             title="Activities Past Deadline"
             value={`${Number(data?.activities_past_deadline || 0)} (At Risk)`}
             subtitle="Requires attention"
-            onClick={() => setFilter("in_progress_risk")}
+            onClick={() => {
+              // Remove status before setting AF
+              const sp = new URLSearchParams(searchParams);
+              sp.delete("status");
+              sp.set("af", "past_deadline");
+              setSearchParams(sp, { replace: true });
+              setFilter("past_deadline");
+            }}
           />
         </Grid>
         <Grid xs={12} md={4}>
@@ -299,7 +334,14 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
             title="Remain Work"
             value={`${Number(data?.not_started_activities || 0)}`}
             subtitle="Not Started Activities"
-            onClick={() => setFilter("not_started")}
+            onClick={() => {
+              // Remove status before setting AF
+              const sp = new URLSearchParams(searchParams);
+              sp.delete("status");
+              sp.set("af", "not_started");
+              setSearchParams(sp, { replace: true });
+              setFilter("not_started");
+            }}
           />
         </Grid>
       </Grid>
@@ -332,11 +374,12 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
             </Box>
 
             <ActivityFinishLineChart
-              apiData={activities}
-              projectId={project_detail.code}
-              title={project_detail.name}
-              height={350}
-            />
+  apiData={activities}
+  projectId={projectId}             
+  title={project_detail.name}
+  height={350}
+/>
+
           </Card>
         </Grid>
 
@@ -375,7 +418,11 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
           </Typography>
           <Box display="flex" gap={1} alignItems="center">
             <Tooltip title="Show all">
-              <IconButton variant="plain" size="sm" onClick={() => setFilter("all")}>
+              <IconButton
+                variant="plain"
+                size="sm"
+                onClick={() => setFilter("all")}
+              >
                 <MoreHoriz />
               </IconButton>
             </Tooltip>
@@ -390,7 +437,8 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
             borderAxis="bothBetween"
             stickyHeader
             sx={{
-              "--TableCell-headBackground": "var(--joy-palette-background-level1)",
+              "--TableCell-headBackground":
+                "var(--joy-palette-background-level1)",
               "--TableCell-paddingX": "12px",
               "--TableCell-paddingY": "10px",
               "& th": { fontWeight: 600 },
@@ -400,17 +448,29 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
               <tr>
                 <th style={{ width: 320 }}>Activity</th>
                 <th>Assigned To</th>
-                <th style={{ width: 120 }}>Deadline</th>
+                <th style={{ width: 140 }}>Planned Finish</th>
+                <th style={{ width: 120 }}>Delay (days)</th>
                 <th style={{ width: 180 }}>Work Done %</th>
                 <th style={{ width: 120, textAlign: "right" }}>Last Update</th>
-                <th style={{ width: 56 }}></th>
               </tr>
             </thead>
             <tbody>
               {filteredActivities.map((a) => {
                 const pct = Number(a.work_done_percent || 0);
-                const deadline = a.deadline || null;
-                const overdue = deadline ? deadline < new Date() : false;
+                const plannedFinish = a.planned_finish || null;
+                const isCompleted = a.current_status === "completed";
+                const today = new Date();
+
+                const overdue =
+                  plannedFinish ? plannedFinish < today && !isCompleted : false;
+
+                // Delay count in whole days (ceil)
+                let delayDays = 0;
+                if (overdue) {
+                  const ms = today.getTime() - plannedFinish.getTime();
+                  delayDays = Math.ceil(ms / (24 * 60 * 60 * 1000));
+                }
+
                 const lastDate = a.last_update || null;
 
                 const assignedName =
@@ -420,8 +480,8 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
                       "Engineer"
                     : "Unassigned";
 
-                const deadlineLabel = deadline
-                  ? deadline.toLocaleDateString("en-IN", {
+                const plannedFinishLabel = plannedFinish
+                  ? plannedFinish.toLocaleDateString("en-IN", {
                       day: "2-digit",
                       month: "short",
                     })
@@ -439,16 +499,27 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
                     <td>
                       <Box display="flex" alignItems="center" gap={1}>
                         <Person fontSize="sm" />
-                        <Typography level="body-sm">{a.activity_name}</Typography>
+                        <Typography level="body-sm">
+                          {a.activity_name}
+                        </Typography>
                       </Box>
                     </td>
                     <td>
                       <Typography level="body-sm">{assignedName}</Typography>
                     </td>
                     <td>
-                      <Chip size="sm" variant="soft" color={overdue ? "danger" : "primary"}>
-                        {deadlineLabel}
+                      <Chip
+                        size="sm"
+                        variant="soft"
+                        color={overdue ? "danger" : "primary"}
+                      >
+                        {plannedFinishLabel}
                       </Chip>
+                    </td>
+                    <td>
+                      <Typography level="body-sm" color={overdue ? "danger" : "neutral"}>
+                        {overdue ? `${delayDays}` : "0"}
+                      </Typography>
                     </td>
                     <td>
                       <Box position="relative" pr={5}>
@@ -479,13 +550,6 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
                     </td>
                     <td style={{ textAlign: "right" }}>
                       <Typography level="body-sm">{lastUpdateLabel}</Typography>
-                    </td>
-                    <td>
-                      <Tooltip title="Actions">
-                        <IconButton variant="soft" size="sm">
-                          <MoreHoriz />
-                        </IconButton>
-                      </Tooltip>
                     </td>
                   </tr>
                 );
@@ -535,7 +599,10 @@ function KPIBox({ color, icon, title, value, subtitle, onClick }) {
         >
           <Icon />
         </Box>
-        <Typography level="title-sm" sx={{ color: `${color}.softColor`, fontWeight: 500 }}>
+        <Typography
+          level="title-sm"
+          sx={{ color: `${color}.softColor`, fontWeight: 500 }}
+        >
           {title}
         </Typography>
       </Box>

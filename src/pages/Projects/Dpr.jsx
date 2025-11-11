@@ -22,6 +22,7 @@ function DprManagement() {
   const { data: dropdownRaw, isLoading: isDropdownLoading } =
     useGetProjectDropdownQuery();
 
+  // Build options: label = project code, value = projectId
   const projectOptions = useMemo(() => {
     const list =
       (Array.isArray(dropdownRaw?.data) && dropdownRaw.data) ||
@@ -39,34 +40,42 @@ function DprManagement() {
           it.value ||
           it.id ||
           "";
-        if (!code) return null;
-        return { label: String(code), value: String(code) };
+        const id =
+          it._id ||
+          it.projectId ||
+          it.id ||
+          it.value_id ||
+          it.project_id ||
+          "";
+        if (!id || !code) return null;
+        return { label: String(code), value: String(id) };
       })
       .filter(Boolean);
   }, [dropdownRaw]);
 
-  const projectCodeFromUrl = searchParams.get("project_code") || "";
+  // Read filters from URL
+  const projectIdFromUrl = searchParams.get("projectId") || "";
   const statusFromUrl = searchParams.get("status") || "";
   const fromFromUrl = searchParams.get("from") || undefined;
   const toFromUrl = searchParams.get("to") || undefined;
 
-  // Optional: clean invalid project_code from URL if dropdown no longer has it
+  // If URL has a projectId that's not in dropdown, clean it up
   useEffect(() => {
     if (
-      projectCodeFromUrl &&
-      !projectOptions.some((o) => o.value === projectCodeFromUrl)
+      projectIdFromUrl &&
+      !projectOptions.some((o) => o.value === projectIdFromUrl)
     ) {
       setSearchParams((prev) => {
         const p = new URLSearchParams(prev);
-        p.delete("project_code");
+        p.delete("projectId");
         return p;
       });
     }
-  }, [projectCodeFromUrl, projectOptions, setSearchParams]);
+  }, [projectIdFromUrl, projectOptions, setSearchParams]);
 
   const FILTER_FIELDS = [
     {
-      key: "project_code",
+      key: "projectId", // << use projectId in the filter
       label: "Project Code",
       type: "select",
       options: projectOptions,
@@ -77,9 +86,9 @@ function DprManagement() {
       label: "Status",
       type: "select",
       options: [
-       { label: "In progress", value: "in progress" },
+        { label: "In progress", value: "in progress" },
         { label: "Idle", value: "idle" },
-         { label: "Work Stopped", value: "work stopped" },
+        { label: "Work Stopped", value: "work stopped" },
         { label: "Completed", value: "completed" },
       ],
     },
@@ -88,10 +97,13 @@ function DprManagement() {
   const handleApplyFilters = (vals) => {
     const next = new URLSearchParams(searchParams);
 
-    next.delete("project_name"); // ensure never present
+    // Remove legacy/unused keys
+    next.delete("project_code");
+    next.delete("project_name");
 
-    if (vals.project_code) next.set("project_code", String(vals.project_code));
-    else next.delete("project_code");
+    // Write projectId (not code) into the URL
+    if (vals.projectId) next.set("projectId", String(vals.projectId));
+    else next.delete("projectId");
 
     const dr = vals.deadline;
     if (dr?.from) next.set("from", dr.from);
@@ -112,7 +124,8 @@ function DprManagement() {
   const handleResetFilters = () => {
     setSearchParams((prev) => {
       const p = new URLSearchParams(prev);
-      p.delete("project_code");
+      p.delete("projectId");      // << clear projectId
+      p.delete("project_code");   // safety: clear any legacy key too
       p.delete("project_name");
       p.delete("from");
       p.delete("to");
@@ -211,7 +224,7 @@ function DprManagement() {
               onOpenChange={setFilterOpen}
               fields={FILTER_FIELDS}
               initialValues={{
-                project_code: projectCodeFromUrl || undefined,
+                projectId: projectIdFromUrl || undefined, // << use projectId here
                 status: statusFromUrl || undefined,
                 deadline:
                   fromFromUrl || toFromUrl
