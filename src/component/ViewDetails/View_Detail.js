@@ -177,7 +177,7 @@ export default function CustomerPaymentSummary() {
       { key: "billedTotal", label: "Billed Total (₹)" },
 
       { key: "remainingSales", label: "Remaining Sales Closure(w/o GST)" },
-      {key: "remainingSalesGST", label: "Remaining Sales Closure(inc GST)"},
+      { key: "remainingSalesGST", label: "Remaining Sales Closure(inc GST)" },
       { key: "status", label: "Status" },
       { key: "select", label: "Select checkbox" },
     ],
@@ -240,7 +240,12 @@ export default function CustomerPaymentSummary() {
 
   const canDelete =
     user?.name &&
-    !["Chandan Singh", "Deepak Kumar Maurya", "Sachin Raghav", "Kailash Chand"].includes(user.name);
+    ![
+      "Chandan Singh",
+      "Deepak Kumar Maurya",
+      "Sachin Raghav",
+      "Kailash Chand",
+    ].includes(user.name);
 
   // --- Sales table column config & visibility ---
   const SALES_COLUMNS = useMemo(
@@ -1263,7 +1268,8 @@ export default function CustomerPaymentSummary() {
         "6",
         "Bills received, yet to be invoiced to customer",
         safeRound(
-          responseData?.clientHistory?.meta?.total_remaining_sales_value_with_gst
+          responseData?.clientHistory?.meta
+            ?.total_remaining_sales_value_with_gst
         ),
         "#FFF",
       ],
@@ -1273,7 +1279,8 @@ export default function CustomerPaymentSummary() {
         safeRound(
           responseData?.total_advance_paid -
             responseData?.total_sales_value -
-            responseData?.clientHistory?.meta?.total_remaining_sales_value_with_gst
+            responseData?.clientHistory?.meta
+              ?.total_remaining_sales_value_with_gst
         ),
         "#FFF",
       ],
@@ -1289,10 +1296,12 @@ export default function CustomerPaymentSummary() {
         safeRound(
           responseData?.netBalance -
             responseData?.total_sales_value -
-            responseData?.clientHistory?.meta?.total_remaining_sales_value_with_gst -
+            responseData?.clientHistory?.meta
+              ?.total_remaining_sales_value_with_gst -
             (responseData?.total_advance_paid -
               responseData?.total_sales_value -
-              responseData?.clientHistory?.meta?.total_remaining_sales_value_with_gst) -
+              responseData?.clientHistory?.meta
+                ?.total_remaining_sales_value_with_gst) -
             responseData?.total_adjustment
         ),
         "#FFECB3",
@@ -1760,7 +1769,7 @@ export default function CustomerPaymentSummary() {
                 <Table borderAxis="both" stickyHeader sx={{ minWidth: "100%" }}>
                   <thead>
                     <tr>
-                      <th>Credit Date</th>
+                      <th>Credit Date / Details</th>
                       <th>Credit Mode</th>
                       <th>Credited Amount (₹)</th>
                       <th style={{ textAlign: "center" }}>
@@ -1781,6 +1790,7 @@ export default function CustomerPaymentSummary() {
                       </th>
                     </tr>
                   </thead>
+
                   <tbody>
                     {isLoading ? (
                       <tr>
@@ -1800,12 +1810,73 @@ export default function CustomerPaymentSummary() {
                       CreditSummary.map((row) => (
                         <tr key={row._id || row.id}>
                           <td>
-                            {formatDateTime(row.cr_date || row.createdAt)}
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 6,
+                              }}
+                            >
+                              <Typography level="body-sm" fontWeight="lg">
+                                {formatDateTime(row.cr_date || row.createdAt)}
+                              </Typography>
+
+                              {/* SUBMITTED BY (Chip) */}
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 8,
+                                }}
+                              >
+                                <Typography
+                                  level="body-xs"
+                                  sx={{ color: "text.tertiary" }}
+                                >
+                                  By:
+                                </Typography>
+
+                                {(() => {
+                                  const submitName =
+                                    row.submitted_by_name ||
+                                    (typeof row.submitted_by === "string" &&
+                                    row.submitted_by.trim()
+                                      ? row.submitted_by
+                                      : null);
+
+                                  return (
+                                    <Chip
+                                      size="sm"
+                                      variant="soft"
+                                      color={submitName ? "primary" : "neutral"}
+                                      sx={{ px: 0.75 }}
+                                    >
+                                      {submitName || "Not Defined"}
+                                    </Chip>
+                                  );
+                                })()}
+                              </div>
+
+                              {/* COMMENT */}
+                              <Typography
+                                level="body-xs"
+                                sx={{ color: "text.tertiary" }}
+                              >
+                                Comment:&nbsp;
+                                {row.comment?.trim() ? row.comment : "—"}
+                              </Typography>
+                            </div>
                           </td>
+
+                          {/* MODE */}
                           <td>{row.cr_mode || "—"}</td>
+
+                          {/* AMOUNT */}
                           <td>
                             <RupeeValue value={row.cr_amount ?? 0} />
                           </td>
+
+                          {/* SELECT CHECKBOX */}
                           <td style={{ textAlign: "center" }}>
                             <Checkbox
                               color="primary"
@@ -1834,6 +1905,7 @@ export default function CustomerPaymentSummary() {
                       </tr>
                     )}
                   </tbody>
+
                   {CreditSummary.length > 0 && (
                     <tfoot>
                       <tr
@@ -2313,7 +2385,6 @@ export default function CustomerPaymentSummary() {
                         </th>
                       )}
 
-
                       {show("status") && (
                         <th rowSpan={2} className="text">
                           Status
@@ -2464,7 +2535,9 @@ export default function CustomerPaymentSummary() {
                           {show("remainingSalesGST") && (
                             <td className="num">
                               <RupeeValue
-                                value={client.remaining_sales_value_with_gst || 0}
+                                value={
+                                  client.remaining_sales_value_with_gst || 0
+                                }
                               />
                             </td>
                           )}
