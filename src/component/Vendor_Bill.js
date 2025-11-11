@@ -436,7 +436,7 @@ const VendorBillSummary = forwardRef((props, ref) => {
                 "Bill Date",
                 "Bill Value",
                 "Total Billed",
-                "Category",
+                "Po Category",
                 "Project ID",
                 "PO NO.",
                 "Vendor",
