@@ -47,6 +47,7 @@ import {
   useUpdateStatusOfPlanMutation,
   useUpdateReorderfromActivityMutation,
   useUpdateActivityInProjectMutation,
+  useAssignResourcesMutation,
 } from "../../redux/projectsSlice";
 import AppSnackbar from "../../component/AppSnackbar";
 import { ArrowDownUp } from "lucide-react";
@@ -81,19 +82,23 @@ function AssignModal({ open, onClose, isAssigning, onSubmit }) {
     isLoading: isLoadingUsers,
   } = useGetAllUserQuery({ department: "Projects" });
 
-  const userOptions = useMemo(() => pickUsersArray(projectUsers), [projectUsers]);
+  const userOptions = useMemo(
+    () => pickUsersArray(projectUsers),
+    [projectUsers]
+  );
 
-  // state
   const [completionValue, setCompletionValue] = useState("");
-  const [completionUnit, setCompletionUnit] = useState("Percentage");
+  const [completionUnit, setCompletionUnit] = useState("percentage");
 
-  // NOTE: role value must match ROLE_OPTIONS values (no underscore)
   const [resources, setResources] = useState([
     { role: "civil engineer", number: 1, user_ids: [] },
   ]);
 
   const addResourceRow = () => {
-    setResources((prev) => [...prev, { role: "civil engineer", number: 1, user_ids: [] }]);
+    setResources((prev) => [
+      ...prev,
+      { role: "civil engineer", number: 1, user_ids: [] },
+    ]);
   };
 
   const removeResourceRow = (idx) => {
@@ -170,7 +175,13 @@ function AssignModal({ open, onClose, isAssigning, onSubmit }) {
       <ModalDialog
         variant="soft"
         color="neutral"
-        sx={{ maxWidth: 800, width: "100%", borderRadius: "xl", boxShadow: "lg", p: 2 }}
+        sx={{
+          maxWidth: 800,
+          width: "100%",
+          borderRadius: "xl",
+          boxShadow: "lg",
+          p: 2,
+        }}
       >
         <DialogTitle sx={{ pb: 0.5 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -179,7 +190,9 @@ function AssignModal({ open, onClose, isAssigning, onSubmit }) {
           </Box>
         </DialogTitle>
 
-        <DialogContent sx={{ pt: 0.5, display: "flex", flexDirection: "column", gap: 2 }}>
+        <DialogContent
+          sx={{ pt: 0.5, display: "flex", flexDirection: "column", gap: 2 }}
+        >
           <FormControl>
             <FormLabel>Resources</FormLabel>
 
@@ -198,7 +211,8 @@ function AssignModal({ open, onClose, isAssigning, onSubmit }) {
             <Box
               sx={{
                 display: "grid",
-                gridTemplateColumns: "minmax(180px, 1fr) 120px minmax(260px, 1.6fr) 52px",
+                gridTemplateColumns:
+                  "minmax(180px, 1fr) 120px minmax(260px, 1.6fr) 52px",
                 gap: 1.5,
                 alignItems: "start",
               }}
@@ -228,7 +242,9 @@ function AssignModal({ open, onClose, isAssigning, onSubmit }) {
                       size="sm"
                       variant="soft"
                       value={row.role}
-                      onChange={(_e, newValue) => updateRow(idx, { role: newValue })}
+                      onChange={(_e, newValue) =>
+                        updateRow(idx, { role: newValue })
+                      }
                       disabled={isAssigning}
                     >
                       {ROLE_OPTIONS.map((r) => (
@@ -246,7 +262,9 @@ function AssignModal({ open, onClose, isAssigning, onSubmit }) {
                       size="sm"
                       variant="soft"
                       disabled={isAssigning}
-                      slotProps={{ input: { min: 1, style: { textAlign: "center" } } }}
+                      slotProps={{
+                        input: { min: 1, style: { textAlign: "center" } },
+                      }}
                     />
 
                     {/* Users Multi Select */}
@@ -257,30 +275,44 @@ function AssignModal({ open, onClose, isAssigning, onSubmit }) {
                       disableCloseOnSelect
                       clearOnBlur={false}
                       autoHighlight
-                      placeholder={loadingUsers ? "Loading users..." : "Select users"}
+                      placeholder={
+                        loadingUsers ? "Loading users..." : "Select users"
+                      }
                       options={userOptions}
                       getOptionLabel={(opt) => opt?.name ?? ""}
-                      // 🔑 very important so selected values match options by _id
                       isOptionEqualToValue={(opt, val) =>
                         String(opt?._id) === String(val?._id)
                       }
                       value={valueUsers}
-                      onChange={(_e, newPicked) => handleUsersPick(idx, newPicked)}
+                      onChange={(_e, newPicked) =>
+                        handleUsersPick(idx, newPicked)
+                      }
                       loading={loadingUsers}
                       loadingText="Loading users…"
-                      // ✅ Only disable *extra* names when at cap; keep selected options enabled.
                       getOptionDisabled={(option) => {
                         const atCap = selectedIds.length >= cap;
-                        const isSelected = selectedIds.includes(String(option._id));
+                        const isSelected = selectedIds.includes(
+                          String(option._id)
+                        );
                         return atCap && !isSelected;
                       }}
                       renderOption={(props, option) => (
-                        <li {...props} key={option._id}>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                        <li {...props} key={option._id} style={{ mt: 1 }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 2,
+                              cursor: "pointer",
+                              mt: 1,
+                            }}
+                          >
                             <Avatar src={option.attachment_url} size="sm">
                               {option?.name?.[0] ?? "U"}
                             </Avatar>
-                            <Typography level="body-sm">{option.name}</Typography>
+                            <Typography level="body-sm">
+                              {option.name}
+                            </Typography>
                           </Box>
                         </li>
                       )}
@@ -336,7 +368,10 @@ function AssignModal({ open, onClose, isAssigning, onSubmit }) {
                     {/* Cap hint */}
                     <Box />
                     <Box />
-                    <Typography level="body-xs" sx={{ color: "neutral.500", mt: -0.5 }}>
+                    <Typography
+                      level="body-xs"
+                      sx={{ color: "neutral.500", mt: -0.5 }}
+                    >
                       Max {cap} user{cap > 1 ? "s" : ""} can be assigned.
                     </Typography>
                     <Box />
@@ -370,9 +405,10 @@ function AssignModal({ open, onClose, isAssigning, onSubmit }) {
                 disabled={isAssigning}
                 sx={{ maxWidth: 180 }}
               >
-                <Option value="Percentage">Percentage</Option>
-                <Option value="Units">Units</Option>
-                <Option value="Hours">Hours</Option>
+                <Option value="m">m</Option>
+                <Option value="kg">kg</Option>
+                <Option value="percentage">Percentage</Option>
+                <Option value="number">Number</Option>
               </Select>
             </Box>
           </FormControl>
@@ -389,7 +425,11 @@ function AssignModal({ open, onClose, isAssigning, onSubmit }) {
           </Button>
           <Button
             startDecorator={
-              isAssigning ? <CircularProgress size="sm" thickness={3} /> : <Save />
+              isAssigning ? (
+                <CircularProgress size="sm" thickness={3} />
+              ) : (
+                <Save />
+              )
             }
             onClick={handleSave}
             loading={isAssigning}
@@ -411,7 +451,7 @@ function ViewProjectManagement() {
   const selectedView = searchParams.get("view") || "week";
   const [snack, setSnack] = useState({ open: false, msg: "" });
   const ganttRef = useRef(null);
-  const [assignOpen, setAssignOpen] = useState(false); 
+  const [assignOpen, setAssignOpen] = useState(false);
   const timeline = searchParams.get("timeline");
   const type = searchParams.get("type");
   const [loading, setLoading] = useState(false);
@@ -421,8 +461,8 @@ function ViewProjectManagement() {
 
   const [hasSelection, setHasSelection] = useState(false);
   const [selectedActivityIds, setSelectedActivityIds] = useState([]);
-  const [updateActivityInProject, { isLoading: isAssigning }] =
-    useUpdateActivityInProjectMutation();
+   const [assignResources, { isLoading: isAssigning }] =
+  useAssignResourcesMutation();
 
   const handlePlanStatusFromChild = useCallback((statusObj) => {
     const s = (statusObj?.status || "").toLowerCase();
@@ -449,40 +489,36 @@ function ViewProjectManagement() {
     }
   };
 
-  const handleAssign = async ({
-    role,
-    completionValue,
-    completionUnit,
-    assignedUsers,
-  }) => {
-    if (!projectId || selectedActivityIds.length === 0) {
-      setSnack({
-        open: true,
-        msg: "Error: No project or activities selected.",
-      });
-      return;
-    }
+  const handleAssign = async ({ resources, work_completion }) => {
+  if (!projectId || selectedActivityIds.length === 0) {
+    setSnack({ open: true, msg: "Error: No project or activities selected." });
+    return;
+  }
 
-    try {
-      const payload = {
-        projectId,
-        activityIds: selectedActivityIds,
-        role,
-        completionValue: parseFloat(completionValue),
-        completionUnit,
-        assignedUsers: assignedUsers,
-      };
+  try {
+    const payload = {
+      projectId,
+      activityId: selectedActivityIds,
+      work_completion_unit: work_completion?.unit,
+      work_completion_value: Number(work_completion?.value || 0),
+      resources: (resources || []).map((r) => ({
+        type: r.role,
+        number: Number(r.number) || 1,
+        user_id: Array.isArray(r.user_ids) ? r.user_ids : [],
+      })),
+    };
 
-      await updateActivityInProject(payload).unwrap();
+    await assignResources(payload).unwrap();
 
-      setSnack({ open: true, msg: "Resources assigned successfully." });
-      setAssignOpen(false);
-      ganttRef.current?.refetch?.(); 
-    } catch (e) {
-      const msg = e?.data?.message || "Failed to assign resources.";
-      setSnack({ open: true, msg: `Error: ${msg}` });
-    }
-  };
+    setSnack({ open: true, msg: "Resources assigned successfully." });
+    setAssignOpen(false);
+    ganttRef.current?.refetch?.();
+  } catch (e) {
+    const msg = e?.data?.message || "Failed to assign resources.";
+    setSnack({ open: true, msg: `Error: ${msg}` });
+  }
+};
+
 
   // ====== Filters ======
   const [open, setOpen] = useState(false);
@@ -556,7 +592,7 @@ function ViewProjectManagement() {
     if (!projectId) return;
     try {
       await reorderFromActivity({ projectId }).unwrap();
-      ganttRef.current?.refetch?.(); 
+      ganttRef.current?.refetch?.();
       setSnack({ open: true, msg: "Activities reordered successfully." });
     } catch (e) {
       const msg =

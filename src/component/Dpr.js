@@ -420,7 +420,6 @@ function DPRTable() {
             ? "Work Stopped"
             : "In progress";
 
-    // completed -> green, idle -> grey, in progress -> orange, stop -> red
     const color =
       st === "completed"
         ? "success"

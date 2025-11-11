@@ -586,7 +586,7 @@ export const projectsApi = createApi({
       providesTags: ["Project"],
     }),
 
- getDprStatusCardsById: builder.query({
+    getDprStatusCardsById: builder.query({
       query: (projectId) => ({
         url: `projectactivity/${encodeURIComponent(projectId)}/dprStatus`,
         method: "GET",
@@ -625,6 +625,27 @@ export const projectsApi = createApi({
 }),
 
 
+     assignResources: builder.mutation({
+      query: ({
+        projectId,
+        activityId,
+        work_completion_unit,
+        work_completion_value,
+        resources,
+      }) => ({
+        url: `/projectactivity/assign-resources/${encodeURIComponent(projectId)}`,
+        method: "PATCH",
+        body: {
+          activityId,
+          work_completion_unit,
+          work_completion_value,
+          resources,
+        },
+      }),
+      invalidatesTags: (result, error, arg) => [
+        { type: "Project", id: arg.projectId },
+      ],
+    }),
   }),
 });
 
@@ -690,4 +711,5 @@ export const {
   useGetDprStatusCardsByIdQuery,
   useGetProjectSummaryByIdQuery,
 
+  useAssignResourcesMutation
 } = projectsApi;
