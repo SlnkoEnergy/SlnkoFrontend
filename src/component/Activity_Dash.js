@@ -25,8 +25,7 @@ import Person from "@mui/icons-material/Person";
 import LocationOn from "@mui/icons-material/LocationOn";
 import { useParams, useSearchParams } from "react-router-dom";
 import ActivityFinishLineChart from "../../src/component/ActivityFinishLineChart";
-import { useGetDprStatusCardsByIdQuery } from "../../src/redux/projectsSlice";
-
+import { useGetProjectSummaryByIdQuery } from "../../src/redux/projectsSlice";
 
 /* ------------------- theme helpers ------------------- */
 const cardSx = {
@@ -53,86 +52,23 @@ const toDate = (v) => {
   return Number.isNaN(d.getTime()) ? null : d;
 };
 
-const extractDeadline = (deadline) => {
-  if (!deadline) return null;
-  if (typeof deadline === "string") return toDate(deadline);
-  if (typeof deadline === "object") {
-    return toDate(deadline.to || deadline.from || null);
-  }
-  return null;
-};
-
-const sumProgress = (logs = []) =>
-  logs.reduce((acc, l) => acc + Number(l?.todays_progress || 0), 0);
-
-function normalizeActivities(rawActivities = []) {
-  return rawActivities.map((a, idx) => {
-    const deadlineDate = extractDeadline(a?.work_completion?.deadline);
+function normalizeActivitiesFromSummary(raw = []) {
+  return raw.map((a, idx) => {
+    const dl = a?.deadline ? toDate(a.deadline) : null;
+    const lu = a?.last_update ? toDate(a.last_update) : null;
     return {
       _key: a.activity_id || `row-${idx}`,
-      activity_name: a.activity_id || `Activity ${idx + 1}`,
-      assigned_user: [], // no owners in this payload
-      current_status: (a?.current_status?.status || "").toLowerCase(),
-      work_completion: {
-        unit: a?.work_completion?.unit || null,
-        value: Number(a?.work_completion?.value || 0),
-        deadline: deadlineDate,
-      },
-      dpr_logs: (a?.dpr_log || []).map((l) => ({
-        today_progress: l?.todays_progress ?? "0",
-        date: l?.date ? new Date(l.date) : null,
-        remarks: l?.remarks ?? "",
-        status: l?.status ?? "",
-        user: l?.user ?? null,
-        _id: l?._id,
-      })),
-      planned_start: toDate(a?.planned_start),
-      planned_finish: toDate(a?.planned_finish),
-      actual_start: toDate(a?.actual_start),
-      actualfinsh: toDate(a?.actual_finish),
+      activity_name: a.activity_name || `Activity ${idx + 1}`,
+      current_status: String(a?.status || "").toLowerCase(), // "not started" | "in progress" | "completed"
+      work_done_percent: Number(a?.work_done_percent || 0),
+      deadline: dl,
+      last_update: lu,
+      assigned_to: Array.isArray(a?.assigned_to) ? a.assigned_to : [],
     };
   });
 }
 
-/* ------------------- client calculations ------------------- */
-function CalculateWork(activities = []) {
-  let actualDone = 0;
-  let totalQty = 0;
-  activities.forEach((act) => {
-    actualDone += sumProgress(act.dpr_logs);
-    totalQty += Number(act.work_completion?.value || 0);
-  });
-  if (totalQty === 0) return 0;
-  return (actualDone / totalQty) * 100;
-}
-
-function calcActivityPercent(act) {
-  const actual = sumProgress(act.dpr_logs);
-  const total = Number(act.work_completion?.value || 0);
-  if (!total) return 0;
-  return (actual / total) * 100;
-}
-
-function CalculateAtRisk(activities = []) {
-  let count = 0;
-  const today = new Date();
-  activities.forEach((act) => {
-    const deadline = act.work_completion?.deadline || null;
-    if (deadline && deadline < today && act.current_status !== "completed")
-      count++;
-  });
-  return count;
-}
-
-function CalculateNotStarted(activities = []) {
-  let count = 0;
-  activities.forEach((act) => {
-    count += act.current_status === "not started" ? 1 : 0;
-  });
-  return count;
-}
-
-/* ------------------- engineers (optional; empty if none) ------------------- */
+/* ------------------- engineers panel ------------------- */
 function EngineerRow({ e }) {
   const statusIcon =
     e.status === "ok" ? (
@@ -186,56 +122,37 @@ function EngineerRow({ e }) {
   );
 }
 
-function prepareEngineers(activities = []) {
-  const map = {};
+function prepareEngineersFromSummary(activities = []) {
+  const map = new Map();
   activities.forEach((act) => {
-    const users = Array.isArray(act.assigned_user) ? act.assigned_user : [];
-    if (users.length === 0) {
-      const id = "_unassigned";
-      if (!map[id]) {
-        map[id] = {
-          id,
-          name: "Unassigned",
-          assigned: 0,
-          completed: 0,
-          totalPlanned: 0,
-          totalActual: 0,
-        };
-      }
-      map[id].assigned += 1;
-      const actual = sumProgress(act.dpr_logs);
-      const planned = Number(act.work_completion?.value || 0);
-      map[id].totalActual += actual;
-      map[id].totalPlanned += planned;
-      if (planned && actual >= planned) map[id].completed += 1;
-      return;
-    }
+    const users = Array.isArray(act.assigned_to) ? act.assigned_to : [];
+    const list = users.length ? users : [{ _id: "_unassigned", name: "Unassigned" }];
 
-    users.forEach((u) => {
-      const key = u._id || u.id || u.user_id || u.email || u.name || "unknown";
-      if (!map[key]) {
-        map[key] = {
+    list.forEach((u) => {
+      const key = u._id || u.user_id || u.email || u.name || "unknown";
+      if (!map.has(key)) {
+        map.set(key, {
           id: key,
           name: u.user_name || u.name || "Engineer",
           assigned: 0,
           completed: 0,
           totalPlanned: 0,
           totalActual: 0,
-        };
+        });
       }
-      map[key].assigned += 1;
-      const actual = sumProgress(act.dpr_logs);
-      const planned = Number(act.work_completion?.value || 0);
-      map[key].totalActual += actual;
-      map[key].totalPlanned += planned;
-      if (planned && actual >= planned) map[key].completed += 1;
+      const row = map.get(key);
+      row.assigned += 1;
+
+      // Approximate contribution using work_done_percent (0–100)
+      const pct = Number(act.work_done_percent || 0);
+      row.totalPlanned += 100;
+      row.totalActual += Math.max(0, Math.min(100, pct));
+      if (pct >= 100) row.completed += 1;
     });
   });
 
-  return Object.values(map).map((e) => {
-    const progressPct = e.totalPlanned
-      ? (e.totalActual / e.totalPlanned) * 100
-      : 0;
+  return Array.from(map.values()).map((e) => {
+    const progressPct = e.totalPlanned ? (e.totalActual / e.totalPlanned) * 100 : 0;
     return {
       ...e,
       progressPct,
@@ -248,52 +165,73 @@ function prepareEngineers(activities = []) {
 export default function DashboardProjectView({ projectId: propProjectId }) {
   // Resolve projectId from: prop -> route param -> query param
   const { projectId: routeProjectId } = useParams();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const qsProjectId = searchParams.get("projectId");
-
   const projectId = propProjectId || routeProjectId || qsProjectId || "";
 
-  const [activityFilter, setActivityFilter] = React.useState("in_progress");
+  // URL-backed activity filter (?af=...)
+  const validFilters = new Set(["all", "completed", "in_progress", "in_progress_risk", "not_started"]);
+  const initialFilter = (() => {
+    const f = (searchParams.get("af") || "in_progress").toLowerCase();
+    return validFilters.has(f) ? f : "in_progress";
+  })();
+  const [activityFilter, setActivityFilter] = React.useState(initialFilter);
 
-  const { data, isLoading, isError } = useGetDprStatusCardsByIdQuery(
-    projectId,
-    {
-      skip: !projectId, // do not call until we have an id
-    }
+  const setFilter = React.useCallback(
+    (f) => {
+      const next = validFilters.has(f) ? f : "all";
+      setActivityFilter(next);
+      const sp = new URLSearchParams(searchParams);
+      sp.set("af", next);
+      setSearchParams(sp, { replace: true });
+    },
+    [searchParams, setSearchParams]
   );
 
+  React.useEffect(() => {
+    const f = (searchParams.get("af") || "in_progress").toLowerCase();
+    if (validFilters.has(f) && f !== activityFilter) setActivityFilter(f);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const { data, isLoading, isError } = useGetProjectSummaryByIdQuery(projectId, {
+    skip: !projectId,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  });
+
   const activities = React.useMemo(
-    () => normalizeActivities(data?.activities || []),
+    () => normalizeActivitiesFromSummary(data?.activities || []),
     [data]
   );
 
   const ENGINEERS = React.useMemo(
-    () => prepareEngineers(activities),
+    () => prepareEngineersFromSummary(activities),
     [activities]
   );
 
   const filteredActivities = React.useMemo(() => {
     const today = new Date();
     return activities.filter((a) => {
-      const status = a.current_status;
-      const deadline = a.work_completion?.deadline || null;
+      const status = a.current_status; // "not started" | "in progress" | "completed"
+      const deadline = a.deadline || null;
 
       if (activityFilter === "completed") return status === "completed";
       if (activityFilter === "in_progress_risk")
         return status === "in progress" && deadline && deadline < today;
       if (activityFilter === "in_progress") return status === "in progress";
-      return true;
+      if (activityFilter === "not_started") return status === "not started";
+      return true; // "all"
     });
   }, [activityFilter, activities]);
 
   const project_detail = {
     code: data?.project_code || data?.project_id || projectId || "",
-    name:
-      data?.project_name || `Project ${data?.project_id || projectId || ""}`,
+    name: data?.project_name || `Project ${data?.project_id || projectId || ""}`,
     site_address: "",
     number: "",
     status: "",
-    customer: "",
+    customer: data?.customer_name || "",
   };
 
   if (!projectId) {
@@ -339,9 +277,9 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
             color="success"
             icon={DoneAll}
             title="Work Done (Project)"
-            value={formatPct(CalculateWork(activities))}
+            value={formatPct(Number(data?.work_done_percent || 0))}
             subtitle="Total progress"
-            onClick={() => setActivityFilter("completed")}
+            onClick={() => setFilter("completed")}
           />
         </Grid>
         <Grid xs={12} md={4}>
@@ -349,9 +287,9 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
             color="warning"
             icon={AccessTime}
             title="Activities Past Deadline"
-            value={`${CalculateAtRisk(activities)} (At Risk)`}
+            value={`${Number(data?.activities_past_deadline || 0)} (At Risk)`}
             subtitle="Requires attention"
-            onClick={() => setActivityFilter("in_progress_risk")}
+            onClick={() => setFilter("in_progress_risk")}
           />
         </Grid>
         <Grid xs={12} md={4}>
@@ -359,9 +297,9 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
             color="primary"
             icon={TrendingUp}
             title="Remain Work"
-            value={` ${CalculateNotStarted(activities)}`}
+            value={`${Number(data?.not_started_activities || 0)}`}
             subtitle="Not Started Activities"
-            onClick={() => setActivityFilter("not started")}
+            onClick={() => setFilter("not_started")}
           />
         </Grid>
       </Grid>
@@ -437,11 +375,7 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
           </Typography>
           <Box display="flex" gap={1} alignItems="center">
             <Tooltip title="Show all">
-              <IconButton
-                variant="plain"
-                size="sm"
-                onClick={() => setActivityFilter("all")}
-              >
+              <IconButton variant="plain" size="sm" onClick={() => setFilter("all")}>
                 <MoreHoriz />
               </IconButton>
             </Tooltip>
@@ -456,8 +390,7 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
             borderAxis="bothBetween"
             stickyHeader
             sx={{
-              "--TableCell-headBackground":
-                "var(--joy-palette-background-level1)",
+              "--TableCell-headBackground": "var(--joy-palette-background-level1)",
               "--TableCell-paddingX": "12px",
               "--TableCell-paddingY": "10px",
               "& th": { fontWeight: 600 },
@@ -475,17 +408,15 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
             </thead>
             <tbody>
               {filteredActivities.map((a) => {
-                const pct = calcActivityPercent(a);
-                const deadline = a.work_completion?.deadline || null;
+                const pct = Number(a.work_done_percent || 0);
+                const deadline = a.deadline || null;
                 const overdue = deadline ? deadline < new Date() : false;
-                const lastDate = a.dpr_logs.length
-                  ? a.dpr_logs[a.dpr_logs.length - 1].date
-                  : null;
+                const lastDate = a.last_update || null;
 
                 const assignedName =
-                  Array.isArray(a.assigned_user) && a.assigned_user.length
-                    ? a.assigned_user[0].user_name ||
-                      a.assigned_user[0].name ||
+                  Array.isArray(a.assigned_to) && a.assigned_to.length
+                    ? a.assigned_to[0].user_name ||
+                      a.assigned_to[0].name ||
                       "Engineer"
                     : "Unassigned";
 
@@ -508,20 +439,14 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
                     <td>
                       <Box display="flex" alignItems="center" gap={1}>
                         <Person fontSize="sm" />
-                        <Typography level="body-sm">
-                          {a.activity_name}
-                        </Typography>
+                        <Typography level="body-sm">{a.activity_name}</Typography>
                       </Box>
                     </td>
                     <td>
                       <Typography level="body-sm">{assignedName}</Typography>
                     </td>
                     <td>
-                      <Chip
-                        size="sm"
-                        variant="soft"
-                        color={overdue ? "danger" : "primary"}
-                      >
+                      <Chip size="sm" variant="soft" color={overdue ? "danger" : "primary"}>
                         {deadlineLabel}
                       </Chip>
                     </td>
@@ -610,10 +535,7 @@ function KPIBox({ color, icon, title, value, subtitle, onClick }) {
         >
           <Icon />
         </Box>
-        <Typography
-          level="title-sm"
-          sx={{ color: `${color}.softColor`, fontWeight: 500 }}
-        >
+        <Typography level="title-sm" sx={{ color: `${color}.softColor`, fontWeight: 500 }}>
           {title}
         </Typography>
       </Box>

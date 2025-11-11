@@ -596,6 +596,35 @@ export const projectsApi = createApi({
       ],
     }),
 
+    getProjectSummaryById: builder.query({
+  query: (projectId) => ({
+    url: `projectactivity/${encodeURIComponent(projectId)}/summary`,
+    method: "GET",
+  }),
+  // Optional: normalize/guard the response so UI never breaks
+  transformResponse: (res) => {
+    const data = res?.data ?? {};
+    return {
+      success: !!res?.success,
+      project_id: data.project_id ?? null,
+      project_code: data.project_code ?? null,
+      project_name: data.project_name ?? null,
+      customer_name: data.customer_name ?? null,
+      work_done_percent: Number(data.work_done_percent ?? 0),
+      activities_past_deadline: Number(data.activities_past_deadline ?? 0),
+      not_started_activities: Number(data.not_started_activities ?? 0),
+      assigned_engineers: Array.isArray(data.assigned_engineers)
+        ? data.assigned_engineers
+        : [],
+      activities: Array.isArray(data.activities) ? data.activities : [],
+    };
+  },
+  providesTags: (_res, _err, projectId) => [
+    { type: "Project", id: projectId ?? "default" },
+  ],
+}),
+
+
   }),
 });
 
@@ -659,4 +688,6 @@ export const {
   useUpdateDprLogMutation,
   useGetAllDprQuery,
   useGetDprStatusCardsByIdQuery,
+  useGetProjectSummaryByIdQuery,
+
 } = projectsApi;
