@@ -16,18 +16,20 @@ import {
   Typography,
   Checkbox,
   CircularProgress,
-  Select, // Added for AssignModal
-  Option, // Added for AssignModal
-  Chip, // Added for AssignModal
-  IconButton, // Added for AssignModal
+  Select,
+  Option,
+  Chip,
+  IconButton,
+  Autocomplete,
+  Avatar,
 } from "@mui/joy";
 import {
   Save,
   ContentPasteGo,
   PersonAdd,
-  Close as CloseIcon, // Added for AssignModal
-  Add as AddIcon, // Added for AssignModal
-  Delete as DeleteIcon, // Added for AssignModal
+  Close as CloseIcon,
+  Add as AddIcon,
+  Delete as DeleteIcon,
 } from "@mui/icons-material";
 import Sidebar from "../../component/Partials/Sidebar";
 import SubHeader from "../../component/Partials/SubHeader";
@@ -48,68 +50,109 @@ import {
 } from "../../redux/projectsSlice";
 import AppSnackbar from "../../component/AppSnackbar";
 import { ArrowDownUp } from "lucide-react";
+import { useGetAllUserQuery } from "../../redux/globalTaskSlice";
 
-// Mock data for the AssignModal (Replace with actual data/API calls)
-const mockRoles = [
-  { label: "Civil Engineer", value: "civil_engineer" },
-  { label: "Architect", value: "architect" },
-  { label: "Project Manager", value: "project_manager" },
-];
-const mockUsers = [
-  "Abhay Singh",
-  "Abhishek Singh",
-  "Abhishek Yadav",
-  "Aman Kumar",
-  "Bhavya Sharma",
-  "Chirag Jain",
+const ROLE_OPTIONS = [
+  { label: "Surveyor", value: "surveyor" },
+  { label: "Civil Engineer", value: "civil engineer" },
+  { label: "Civil I&C", value: "civil i&c" },
+  { label: "Electric Engineer", value: "electric engineer" },
+  { label: "Electric I&C", value: "electric i&c" },
+  { label: "Soil Testing Team", value: "soil testing team" },
+  { label: "Tline Engineer", value: "tline engineer" },
+  { label: "Tline Subcontractor", value: "tline subcontractor" },
 ];
 
-// NOTE: This is a placeholder function to simulate selecting a user.
-const mockSelectUser = (current) => {
-    const availableUsers = mockUsers.filter(u => !current.includes(u));
-    if (availableUsers.length > 0) {
-        return availableUsers[Math.floor(Math.random() * availableUsers.length)];
-    }
-    return null;
-}
+/* --------------------------------- helpers --------------------------------- */
+const pickUsersArray = (projectUsers) => {
+  if (Array.isArray(projectUsers?.data)) return projectUsers.data;
+  if (Array.isArray(projectUsers)) return projectUsers;
+  return [];
+};
 
-/**
- * 🛠️ AssignModal Component: Implements the UI seen in the user's image.
- */
+const findUserById = (options, id) =>
+  options.find((u) => String(u?._id) === String(id));
+
+/* -------------------------------- component -------------------------------- */
 function AssignModal({ open, onClose, isAssigning, onSubmit }) {
-  // States initialized with values from the user's screenshot
-  const [role, setRole] = useState("civil_engineer");
-  const [completionValue, setCompletionValue] = useState("23");
+  const {
+    data: projectUsers = [],
+    isFetching: isFetchingUsers,
+    isLoading: isLoadingUsers,
+  } = useGetAllUserQuery({ department: "Projects" });
+
+  const userOptions = useMemo(() => pickUsersArray(projectUsers), [projectUsers]);
+
+  // state
+  const [completionValue, setCompletionValue] = useState("");
   const [completionUnit, setCompletionUnit] = useState("Percentage");
-  const [assignedUsers, setAssignedUsers] = useState([
-    "Abhay Singh",
-    "Abhishek Singh",
-    "Abhishek Yadav",
-    "Aman Kumar",
+
+  // NOTE: role value must match ROLE_OPTIONS values (no underscore)
+  const [resources, setResources] = useState([
+    { role: "civil engineer", number: 1, user_ids: [] },
   ]);
 
-  // Handlers
-  const handleUserRemove = (userToRemove) => {
-    setAssignedUsers(assignedUsers.filter((u) => u !== userToRemove));
+  const addResourceRow = () => {
+    setResources((prev) => [...prev, { role: "civil engineer", number: 1, user_ids: [] }]);
   };
 
-  const handleUserAdd = () => {
-    // This should eventually open your SearchPickerModal for users
-    const newUser = mockSelectUser(assignedUsers);
-    if (newUser && !assignedUsers.includes(newUser)) {
-        setAssignedUsers([...assignedUsers, newUser]);
-    }
+  const removeResourceRow = (idx) => {
+    setResources((prev) => prev.filter((_, i) => i !== idx));
   };
+
+  const updateRow = (idx, patch) => {
+    setResources((prev) => {
+      const next = [...prev];
+      next[idx] = { ...next[idx], ...patch };
+      return next;
+    });
+  };
+
+  const handleNumberChange = (idx, nRaw) => {
+    const n = Math.max(1, Number(nRaw) || 1);
+    setResources((prev) => {
+      const next = [...prev];
+      const row = { ...next[idx] };
+      if (Array.isArray(row.user_ids) && row.user_ids.length > n) {
+        row.user_ids = row.user_ids.slice(0, n);
+      }
+      row.number = n;
+      next[idx] = row;
+      return next;
+    });
+  };
+
+  // Autocomplete returns USER OBJECTS
+  const handleUsersPick = (idx, pickedUsers) => {
+    setResources((prev) => {
+      const next = [...prev];
+      const row = { ...next[idx] };
+      const cap = Math.max(1, Number(row.number) || 1);
+      const pickedIds = (pickedUsers || []).map((u) => String(u?._id));
+      row.user_ids = pickedIds.slice(0, cap);
+      next[idx] = row;
+      return next;
+    });
+  };
+
+  const hasAtLeastOneUser =
+    resources.reduce((sum, r) => sum + (r.user_ids?.length || 0), 0) > 0;
 
   const handleSave = () => {
     onSubmit({
-      role: role,
-      completionValue: completionValue,
-      completionUnit: completionUnit,
-      assignedUsers: assignedUsers,
+      resources: resources.map((r) => ({
+        role: r.role,
+        number: Number(r.number) || 1,
+        user_ids: r.user_ids,
+      })),
+      work_completion: {
+        value: Number(completionValue || 0),
+        unit: completionUnit,
+      },
     });
-    // State reset on close/success is handled by parent's setAssignOpen(false)
   };
+
+  const loadingUsers = isLoadingUsers || isFetchingUsers;
 
   return (
     <Modal
@@ -127,13 +170,7 @@ function AssignModal({ open, onClose, isAssigning, onSubmit }) {
       <ModalDialog
         variant="soft"
         color="neutral"
-        sx={{
-          maxWidth: 600,
-          width: "100%",
-          borderRadius: "xl",
-          boxShadow: "lg",
-          p: 2,
-        }}
+        sx={{ maxWidth: 800, width: "100%", borderRadius: "xl", boxShadow: "lg", p: 2 }}
       >
         <DialogTitle sx={{ pb: 0.5 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -142,109 +179,179 @@ function AssignModal({ open, onClose, isAssigning, onSubmit }) {
           </Box>
         </DialogTitle>
 
-        <DialogContent
-          sx={{
-            pt: 0.5,
-            display: "flex",
-            flexDirection: "column",
-            gap: 2,
-          }}
-        >
-          {/* Resources Section */}
+        <DialogContent sx={{ pt: 0.5, display: "flex", flexDirection: "column", gap: 2 }}>
           <FormControl>
             <FormLabel>Resources</FormLabel>
+
+            <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1 }}>
+              <Button
+                size="sm"
+                variant="soft"
+                startDecorator={<AddIcon />}
+                onClick={addResourceRow}
+                disabled={isAssigning}
+              >
+                Add Resource
+              </Button>
+            </Box>
+
             <Box
               sx={{
                 display: "grid",
-                gridTemplateColumns: "1fr 0.3fr 1.5fr auto", // Role | Number | Users | Add/Delete
+                gridTemplateColumns: "minmax(180px, 1fr) 120px minmax(260px, 1.6fr) 52px",
                 gap: 1.5,
-                alignItems: "center",
+                alignItems: "start",
               }}
             >
-              {/* Role Select (Civil Engineer) */}
-              <Select
-                value={role}
-                onChange={(_e, newValue) => setRole(newValue)}
-                size="sm"
-                variant="soft"
-                disabled={isAssigning}
-              >
-                {mockRoles.map((r) => (
-                  <Option key={r.value} value={r.value}>
-                    {r.label}
-                  </Option>
-                ))}
-              </Select>
+              <Typography level="body-sm" sx={{ fontWeight: 600 }}>
+                Role
+              </Typography>
+              <Typography level="body-sm" sx={{ fontWeight: 600 }}>
+                Number
+              </Typography>
+              <Typography level="body-sm" sx={{ fontWeight: 600 }}>
+                Users
+              </Typography>
+              <Box />
 
-              {/* Number Input (12) */}
-              <Input
-                value="12"
-                size="sm"
-                variant="soft"
-                disabled
-                sx={{ textAlign: "center" }}
-              />
+              {resources.map((row, idx) => {
+                const cap = Math.max(1, Number(row.number) || 1);
+                const selectedIds = (row.user_ids || []).map(String);
+                const valueUsers = selectedIds
+                  .map((id) => findUserById(userOptions, id))
+                  .filter(Boolean);
 
-              {/* Users Multi-Select/Chip Display */}
-              <Box
-                sx={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: 0.5,
-                  p: 0.5,
-                  border: "1px solid",
-                  borderColor: "neutral.outlinedBorder",
-                  borderRadius: "sm",
-                  minHeight: "34px",
-                  alignItems: "center",
-                }}
-              >
-                {assignedUsers.map((user) => (
-                  <Chip
-                    key={user}
-                    size="sm"
-                    variant="soft"
-                    endDecorator={
+                return (
+                  <Box key={`res-${idx}`} sx={{ display: "contents" }}>
+                    {/* Role */}
+                    <Select
+                      size="sm"
+                      variant="soft"
+                      value={row.role}
+                      onChange={(_e, newValue) => updateRow(idx, { role: newValue })}
+                      disabled={isAssigning}
+                    >
+                      {ROLE_OPTIONS.map((r) => (
+                        <Option key={r.value} value={r.value}>
+                          {r.label}
+                        </Option>
+                      ))}
+                    </Select>
+
+                    {/* Number (cap) */}
+                    <Input
+                      type="number"
+                      value={row.number}
+                      onChange={(e) => handleNumberChange(idx, e.target.value)}
+                      size="sm"
+                      variant="soft"
+                      disabled={isAssigning}
+                      slotProps={{ input: { min: 1, style: { textAlign: "center" } } }}
+                    />
+
+                    {/* Users Multi Select */}
+                    <Autocomplete
+                      size="sm"
+                      multiple
+                      variant="soft"
+                      disableCloseOnSelect
+                      clearOnBlur={false}
+                      autoHighlight
+                      placeholder={loadingUsers ? "Loading users..." : "Select users"}
+                      options={userOptions}
+                      getOptionLabel={(opt) => opt?.name ?? ""}
+                      // 🔑 very important so selected values match options by _id
+                      isOptionEqualToValue={(opt, val) =>
+                        String(opt?._id) === String(val?._id)
+                      }
+                      value={valueUsers}
+                      onChange={(_e, newPicked) => handleUsersPick(idx, newPicked)}
+                      loading={loadingUsers}
+                      loadingText="Loading users…"
+                      // ✅ Only disable *extra* names when at cap; keep selected options enabled.
+                      getOptionDisabled={(option) => {
+                        const atCap = selectedIds.length >= cap;
+                        const isSelected = selectedIds.includes(String(option._id));
+                        return atCap && !isSelected;
+                      }}
+                      renderOption={(props, option) => (
+                        <li {...props} key={option._id}>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                            <Avatar src={option.attachment_url} size="sm">
+                              {option?.name?.[0] ?? "U"}
+                            </Avatar>
+                            <Typography level="body-sm">{option.name}</Typography>
+                          </Box>
+                        </li>
+                      )}
+                      renderTags={(tagValue, getTagProps) =>
+                        tagValue.map((option, index) => (
+                          <Chip
+                            {...getTagProps({ index })}
+                            key={option._id}
+                            size="sm"
+                            variant="soft"
+                            startDecorator={
+                              <Avatar src={option.attachment_url} size="sm">
+                                {option?.name?.[0] ?? "U"}
+                              </Avatar>
+                            }
+                            endDecorator={
+                              <IconButton
+                                size="sm"
+                                variant="plain"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const next = (row.user_ids || []).filter(
+                                    (id) => String(id) !== String(option._id)
+                                  );
+                                  updateRow(idx, { user_ids: next });
+                                }}
+                                disabled={isAssigning}
+                              >
+                                <CloseIcon fontSize="inherit" />
+                              </IconButton>
+                            }
+                          >
+                            {option.name}
+                          </Chip>
+                        ))
+                      }
+                    />
+
+                    {/* Delete row */}
+                    <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
                       <IconButton
                         size="sm"
-                        variant="plain"
-                        onClick={() => handleUserRemove(user)}
-                        disabled={isAssigning}
+                        variant="soft"
+                        color="danger"
+                        title="Delete Resources"
+                        onClick={() => removeResourceRow(idx)}
+                        disabled={isAssigning || resources.length === 1}
                       >
-                        <CloseIcon fontSize="inherit" />
+                        <DeleteIcon fontSize="small" />
                       </IconButton>
-                    }
-                  >
-                    {user}
-                  </Chip>
-                ))}
-                {/* Placeholder for 'Select...' which opens the picker */}
-                <Typography
-                  level="body-sm"
-                  color="text.tertiary"
-                  sx={{ cursor: "pointer" }}
-                  onClick={handleUserAdd}
-                >
-                  {assignedUsers.length === 0 ? "Select..." : "Add..."}
-                </Typography>
-              </Box>
+                    </Box>
 
-              {/* Delete Icon (Trash) */}
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <IconButton size="sm" variant="soft" color="danger" title="Delete Resources">
-                    <DeleteIcon fontSize="small" />
-                </IconButton>
-              </Box>
+                    {/* Cap hint */}
+                    <Box />
+                    <Box />
+                    <Typography level="body-xs" sx={{ color: "neutral.500", mt: -0.5 }}>
+                      Max {cap} user{cap > 1 ? "s" : ""} can be assigned.
+                    </Typography>
+                    <Box />
+                  </Box>
+                );
+              })}
             </Box>
           </FormControl>
 
           <hr />
 
-          {/* Work Completion Section */}
+          {/* Work Completion */}
           <FormControl>
             <FormLabel>Work Completion</FormLabel>
             <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
-              {/* Completion Value Input (23) */}
               <Input
                 type="number"
                 value={completionValue}
@@ -253,16 +360,15 @@ function AssignModal({ open, onClose, isAssigning, onSubmit }) {
                 size="sm"
                 variant="soft"
                 disabled={isAssigning}
-                sx={{ maxWidth: 100 }}
+                sx={{ maxWidth: 120 }}
               />
-
-              {/* Percentage/Units Select (Percentage) */}
               <Select
                 value={completionUnit}
                 onChange={(_e, newValue) => setCompletionUnit(newValue)}
                 size="sm"
                 variant="soft"
                 disabled={isAssigning}
+                sx={{ maxWidth: 180 }}
               >
                 <Option value="Percentage">Percentage</Option>
                 <Option value="Units">Units</Option>
@@ -287,7 +393,7 @@ function AssignModal({ open, onClose, isAssigning, onSubmit }) {
             }
             onClick={handleSave}
             loading={isAssigning}
-            disabled={isAssigning || assignedUsers.length === 0}
+            disabled={isAssigning || !hasAtLeastOneUser}
           >
             Save
           </Button>
@@ -297,7 +403,6 @@ function AssignModal({ open, onClose, isAssigning, onSubmit }) {
   );
 }
 
-
 function ViewProjectManagement() {
   const navigate = useNavigate();
   const [selectionCount, setSelectionCount] = useState(0);
@@ -306,7 +411,7 @@ function ViewProjectManagement() {
   const selectedView = searchParams.get("view") || "week";
   const [snack, setSnack] = useState({ open: false, msg: "" });
   const ganttRef = useRef(null);
-  const [assignOpen, setAssignOpen] = useState(false); // 🔑 Controls the AssignModal
+  const [assignOpen, setAssignOpen] = useState(false); 
   const timeline = searchParams.get("timeline");
   const type = searchParams.get("type");
   const [loading, setLoading] = useState(false);
@@ -314,9 +419,7 @@ function ViewProjectManagement() {
   const [updatePlanStatus, { isLoading: isUpdatingPlanStatus }] =
     useUpdateStatusOfPlanMutation();
 
-  // NEW: track if any row is selected in child
   const [hasSelection, setHasSelection] = useState(false);
-  // track selected Gantt activity DB ids
   const [selectedActivityIds, setSelectedActivityIds] = useState([]);
   const [updateActivityInProject, { isLoading: isAssigning }] =
     useUpdateActivityInProjectMutation();
@@ -346,35 +449,40 @@ function ViewProjectManagement() {
     }
   };
 
-  // 🔑 NEW: Handler for the Assign Modal's Save button
-  const handleAssign = async ({ role, completionValue, completionUnit, assignedUsers }) => {
+  const handleAssign = async ({
+    role,
+    completionValue,
+    completionUnit,
+    assignedUsers,
+  }) => {
     if (!projectId || selectedActivityIds.length === 0) {
-      setSnack({ open: true, msg: "Error: No project or activities selected." });
+      setSnack({
+        open: true,
+        msg: "Error: No project or activities selected.",
+      });
       return;
     }
 
     try {
-      // NOTE: You must ensure 'assignedUsers' are converted to IDs if your API expects them.
       const payload = {
         projectId,
         activityIds: selectedActivityIds,
-        role, // e.g., 'civil_engineer'
-        completionValue: parseFloat(completionValue), // e.g., 23
-        completionUnit, // e.g., 'Percentage'
-        assignedUsers: assignedUsers, // e.g., ['Abhay Singh', ...]
+        role,
+        completionValue: parseFloat(completionValue),
+        completionUnit,
+        assignedUsers: assignedUsers,
       };
 
       await updateActivityInProject(payload).unwrap();
 
       setSnack({ open: true, msg: "Resources assigned successfully." });
-      setAssignOpen(false); // Close the modal
-      ganttRef.current?.refetch?.(); // Refresh data
+      setAssignOpen(false);
+      ganttRef.current?.refetch?.(); 
     } catch (e) {
       const msg = e?.data?.message || "Failed to assign resources.";
       setSnack({ open: true, msg: `Error: ${msg}` });
     }
   };
-
 
   // ====== Filters ======
   const [open, setOpen] = useState(false);
@@ -448,7 +556,7 @@ function ViewProjectManagement() {
     if (!projectId) return;
     try {
       await reorderFromActivity({ projectId }).unwrap();
-      ganttRef.current?.refetch?.(); // refresh the gantt
+      ganttRef.current?.refetch?.(); 
       setSnack({ open: true, msg: "Activities reordered successfully." });
     } catch (e) {
       const msg =
@@ -659,6 +767,47 @@ function ViewProjectManagement() {
               </Button>
 
               <Button
+                size="sm"
+                variant="outlined"
+                onClick={() => navigate(`/dpr?projectId=${projectId}`)}
+                sx={{
+                  color: "#3366a3",
+                  borderColor: "#3366a3",
+                  backgroundColor: "transparent",
+                  "--Button-hoverBg": "#e0e0e0",
+                  "--Button-hoverBorderColor": "#3366a3",
+                  "&:hover": { color: "#3366a3" },
+                  height: "8px",
+                }}
+              >
+                DPR
+              </Button>
+
+              {/* Assign to (only when any checkbox is ticked) */}
+              {hasSelection && (
+                <Button
+                  variant="outlined"
+                  size="sm"
+                  startDecorator={<PersonAdd />}
+                  onClick={() => setAssignOpen(true)}
+                  sx={{
+                    color: "#3366a3",
+                    borderColor: "#3366a3",
+                    backgroundColor: "transparent",
+                    "--Button-hoverBg": "#e0e0e0",
+                    "--Button-hoverBorderColor": "#3366a3",
+                    "&:hover": { color: "#3366a3" },
+                    height: "8px",
+                  }}
+                  title={
+                    selectionCount ? `${selectionCount} row(s) selected` : ""
+                  }
+                >
+                  Assign to
+                </Button>
+              )}
+
+              <Button
                 variant="solid"
                 size="sm"
                 startDecorator={<ContentPasteGo />}
@@ -672,35 +821,6 @@ function ViewProjectManagement() {
               >
                 Fetch From Template
               </Button>
-               <Button
-                            size="sm"
-                            onClick={() => navigate(`/dpr?projectId=${projectId}`)}
-                            sx={{
-                  backgroundColor: "#3366a3",
-                  color: "#fff",
-                  "&:hover": { backgroundColor: "#285680" },
-                  height: "8px",
-                }}
-                        >
-                            DPR
-                        </Button>
-
-              {/* Assign to (only when any checkbox is ticked) */}
-              {hasSelection && (
-                <Button
-                  variant="solid"
-                  color="primary"
-                  size="sm"
-                  startDecorator={<PersonAdd />}
-                  onClick={() => setAssignOpen(true)} // 🔑 Opens the new modal
-                  sx={{ height: "8px" }}
-                  title={
-                    selectionCount ? `${selectionCount} row(s) selected` : ""
-                  }
-                >
-                  Assign to
-                </Button>
-              )}
 
               <Filter
                 open={open}
@@ -752,7 +872,7 @@ function ViewProjectManagement() {
               // ⬅️ include ids
               setHasSelection(!!any);
               setSelectionCount(Number(count || 0));
-              setSelectedActivityIds(Array.isArray(ids) ? ids : []); // ⬅️ store ids
+              setSelectedActivityIds(Array.isArray(ids) ? ids : []);
             }}
           />
         </Box>
@@ -765,7 +885,6 @@ function ViewProjectManagement() {
         isAssigning={isAssigning}
         onSubmit={handleAssign}
       />
-
 
       {/* Save as Template Modal */}
       <Modal
