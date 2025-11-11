@@ -128,7 +128,7 @@ function DprManagement() {
       <Box sx={{ display: "flex", minHeight: "100dvh", flexDirection: "column" }}>
         <Sidebar />
 
-        <MainHeader title="DPR" sticky>
+        <MainHeader title="Projects" sticky>
           <Box display="flex" gap={1}>
             <Button
               size="sm"
@@ -202,7 +202,7 @@ function DprManagement() {
         </MainHeader>
 
         <SubHeader
-          title="Daily Progress Reports"
+          title="Site DPR"
           isBackEnabled={false}
           sticky
           rightSlot={
