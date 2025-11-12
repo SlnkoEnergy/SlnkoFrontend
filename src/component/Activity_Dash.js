@@ -550,6 +550,26 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
     setSearchParams(sp, { replace: true });
   };
 
+  const norm = (s = "") =>
+    String(s).trim().toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+
+  const pretty = (s = "") =>
+    norm(s).replace(/\b[a-z]/g, (c) => c.toUpperCase());
+
+  const titleForFilter = (raw, { pastDeadlineFlag = false } = {}) => {
+    const v = norm(raw);
+
+    if (pastDeadlineFlag || ["past deadline", "past deadlines"].includes(v))
+      return "Activities Past Deadline";
+
+    if (v === "progress or completed") return "Work Done (Assigned)";
+
+    if (v === "idle") return "Idle Site Engineers";
+    if (v === "not started") return "Remaining Work";
+
+    return pretty(raw);
+  };
+
   return (
     <Box
       sx={{
@@ -564,7 +584,7 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
           <KPIBox
             color="success"
             icon={DoneAll}
-            title="Work Done (Project)"
+            title="Work Done (Assigned)"
             value={formatPct(Number(data?.work_done_percent || 0))}
             subtitle="Total progress"
             onClick={() => {
@@ -596,7 +616,7 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
           <KPIBox
             color="primary"
             icon={TrendingUp}
-            title="Remain Work"
+            title="Remaining Work"
             value={`${Number(data?.not_started_activities || 0)}`}
             subtitle="Not Started Activities"
             onClick={() => {
@@ -701,7 +721,7 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
           <Typography level="title-lg">
             Activity Tracking
             {activityFilter !== "all"
-              ? ` — ${activityFilter.replaceAll("_", " ")}`
+              ? ` — ${titleForFilter(activityFilter)}`
               : ""}
           </Typography>
           <Box display="flex" gap={1} alignItems="center">

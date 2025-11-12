@@ -119,7 +119,7 @@ function DPRTable() {
     "Activity",
     "Work Detail",
     "Deadline",
-    "Delay", // NEW COLUMN
+    "Delay",
     "Status",
     "Actions",
   ];
@@ -143,8 +143,7 @@ function DPRTable() {
   const toFromUrl = searchParams.get("to") || undefined;
   const onlyWithDeadlineFromUrl =
     searchParams.get("onlyWithDeadline") || undefined;
-   const categoryFromUrl = searchParams.get("category") || undefined;
-
+  const categoryFromUrl = searchParams.get("category") || undefined;
 
   const [currentPage, setCurrentPage] = useState(pageFromUrl);
   const [rowsPerPage, setRowsPerPage] = useState(pageSizeFromUrl);
@@ -163,8 +162,6 @@ function DPRTable() {
     setRowsPerPage(ps);
     setSearchQuery(s);
   }, [searchParams]);
-
-    
 
   /** ===== Selection ===== */
   const [selected, setSelected] = useState([]);
@@ -285,13 +282,12 @@ function DPRTable() {
         project_name: r.project_name || "-",
         activity_name: r.activity_name || "-",
         category:
-  r.category ??
-  r.activity_category ??
-  r.category_name ??
-  r.categoryType ??
-  r.category_type ??
-  "-",   // safe fallback
-
+          r.category ??
+          r.activity_category ??
+          r.category_name ??
+          r.categoryType ??
+          r.category_type ??
+          "-", // safe fallback
 
         // total target:
         work_completion: { value: total ?? null, unit: r.unit ?? "" },
@@ -344,8 +340,7 @@ function DPRTable() {
         (r.activity_name || "").toLowerCase().includes(q) ||
         (r.project_code || "").toLowerCase().includes(q) ||
         (r.project_name || "").toLowerCase().includes(q) ||
-        (r.category || "").toLowerCase().includes(q)||
-
+        (r.category || "").toLowerCase().includes(q) ||
         unit.toLowerCase().includes(q) ||
         val.includes(q)
       );
@@ -1082,9 +1077,14 @@ function DPRTable() {
                   >
                     {row.project_name || "-"}
                   </td>
-                  <td style={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
-  {row.category || "-"}
-</td>
+                  <td
+                    style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+                  >
+                    {row.category
+                      ? row.category.charAt(0).toUpperCase() +
+                        row.category.slice(1)
+                      : "-"}
+                  </td>
 
                   <td
                     style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
@@ -1223,7 +1223,10 @@ function DPRTable() {
 
                 {expandedCard === row._id && (
                   <Box mt={2} pl={1}>
-                    <Typography level="body-sm"><strong>Category:</strong>{row.category || "-"}</Typography>
+                    <Typography level="body-sm">
+                      <strong>Category:</strong>
+                      {row.category || "-"}
+                    </Typography>
                     <Typography level="body-sm">
                       <strong>Activity:</strong> {row.activity_name}
                     </Typography>

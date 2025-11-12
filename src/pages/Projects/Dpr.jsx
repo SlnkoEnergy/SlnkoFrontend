@@ -88,17 +88,17 @@ function DprManagement() {
       ],
     },
     {
-  key: "category",
-  label: "Category",
-  type: "select",
-  options: [
-    { label: "Civil", value: "civil" },
-    { label: "Electrical", value: "electrical" },
-    { label: "I&C", value: "i&c" },
-    { label: "Mechanical", value: "mechanical" },
-  ],
-},
-{
+      key: "category",
+      label: "Category",
+      type: "select",
+      options: [
+        { label: "Civil", value: "civil" },
+        { label: "Electrical", value: "electrical" },
+        { label: "I&C", value: "i&c" },
+        { label: "Mechanical", value: "mechanical" },
+      ],
+    },
+    {
       key: "hide_status",
       label: "Hide Status",
       type: "select",
@@ -130,9 +130,9 @@ function DprManagement() {
     else next.delete("status");
 
     if (vals.category) next.set("category", String(vals.category));
-else next.delete("category");
+    else next.delete("category");
 
-     if (vals.hide_status) next.set("hide_status", String(vals.hide_status));
+    if (vals.hide_status) next.set("hide_status", String(vals.hide_status));
     else next.delete("hide_status");
 
     next.set("page", "1");
@@ -145,8 +145,8 @@ else next.delete("category");
   const handleResetFilters = () => {
     setSearchParams((prev) => {
       const p = new URLSearchParams(prev);
-      p.delete("projectId"); 
-      p.delete("project_code"); 
+      p.delete("projectId");
+      p.delete("project_code");
       p.delete("project_name");
       p.delete("from");
       p.delete("to");
