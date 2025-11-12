@@ -91,6 +91,7 @@ function DPRTable() {
   const HEADERS = [
     "Project Code",
     "Project Name",
+    "Category",
     "Activity",
     "Work Detail",
     "Deadline",
@@ -118,6 +119,8 @@ function DPRTable() {
   const toFromUrl = searchParams.get("to") || undefined;
   const onlyWithDeadlineFromUrl =
     searchParams.get("onlyWithDeadline") || undefined;
+   const categoryFromUrl = searchParams.get("category") || undefined;
+
 
   const [currentPage, setCurrentPage] = useState(pageFromUrl);
   const [rowsPerPage, setRowsPerPage] = useState(pageSizeFromUrl);
@@ -156,6 +159,7 @@ function DPRTable() {
       from: fromFromUrl,
       to: toFromUrl,
       onlyWithDeadline: onlyWithDeadlineFromUrl,
+      category: categoryFromUrl,
     });
 
   // mutation
@@ -253,6 +257,14 @@ function DPRTable() {
         project_code: r.project_code || "-",
         project_name: r.project_name || "-",
         activity_name: r.activity_name || "-",
+        category:
+  r.category ??
+  r.activity_category ??
+  r.category_name ??
+  r.categoryType ??
+  r.category_type ??
+  "-",   // safe fallback
+
 
         // total target:
         work_completion: { value: total ?? null, unit: r.unit ?? "" },
@@ -278,11 +290,11 @@ function DPRTable() {
   }, [data]);
 
   // prefer server-provided pagination
-  const totalPages = Number(data?.pagination?.totalPages || data?.totalPages || 1);
-  const hasNextPage =
-    data?.pagination?.hasNextPage ?? (currentPage < totalPages);
-  const hasPrevPage =
-    data?.pagination?.hasPrevPage ?? (currentPage > 1);
+  const totalPages = Number(
+    data?.pagination?.totalPages || data?.totalPages || 1
+  );
+  const hasNextPage = data?.pagination?.hasNextPage ?? currentPage < totalPages;
+  const hasPrevPage = data?.pagination?.hasPrevPage ?? currentPage > 1;
 
   /** ===== numbers helpers ===== */
   const toNum = (v) => {
@@ -305,6 +317,8 @@ function DPRTable() {
         (r.activity_name || "").toLowerCase().includes(q) ||
         (r.project_code || "").toLowerCase().includes(q) ||
         (r.project_name || "").toLowerCase().includes(q) ||
+        (r.category || "").toLowerCase().includes(q)||
+
         unit.toLowerCase().includes(q) ||
         val.includes(q)
       );
@@ -1039,6 +1053,10 @@ function DPRTable() {
                   >
                     {row.project_name || "-"}
                   </td>
+                  <td style={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
+  {row.category || "-"}
+</td>
+
                   <td
                     style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
                   >
@@ -1176,6 +1194,7 @@ function DPRTable() {
 
                 {expandedCard === row._id && (
                   <Box mt={2} pl={1}>
+                    <Typography level="body-sm"><strong>Category:</strong>{row.category || "-"}</Typography>
                     <Typography level="body-sm">
                       <strong>Activity:</strong> {row.activity_name}
                     </Typography>
@@ -1205,6 +1224,13 @@ function DPRTable() {
                         row.delay_text,
                         row.status
                       )}
+                    </Box>
+
+                    <Box mt={1}>
+                      <Typography level="body-sm" sx={{ mb: 0.5 }}>
+                        <strong>Status:</strong>
+                      </Typography>
+                      {renderStatusChipCell(row.status)}
                     </Box>
 
                     <Box mt={1.5}>

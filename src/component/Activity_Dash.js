@@ -13,6 +13,11 @@ import {
   Table,
   Sheet,
   Tooltip,
+  Modal,
+  ModalDialog,
+  ModalClose,
+  List,
+  ListItem,
 } from "@mui/joy";
 import CheckCircle from "@mui/icons-material/CheckCircle";
 import WarningAmber from "@mui/icons-material/WarningAmber";
@@ -25,7 +30,10 @@ import Person from "@mui/icons-material/Person";
 import LocationOn from "@mui/icons-material/LocationOn";
 import { useParams, useSearchParams } from "react-router-dom";
 import ActivityFinishLineChart from "../../src/component/ActivityFinishLineChart";
-import { useGetProjectSummaryByIdQuery } from "../../src/redux/projectsSlice";
+import {
+  useGetProjectSummaryByIdQuery,
+  useGetDprStatusCardsByIdQuery,
+} from "../../src/redux/projectsSlice";
 
 /* ------------------- theme helpers ------------------- */
 const cardSx = {
@@ -45,21 +53,101 @@ const bandColor = (pct) => {
 
 const formatPct = (v) => `${Math.round(Number(v || 0))}%`;
 
-/* ------------------- data normalizers ------------------- */
+/* ------------------- small helpers ------------------- */
 const toDate = (v) => {
   if (!v) return null;
   const d = new Date(v);
   return Number.isNaN(d.getTime()) ? null : d;
 };
 
+const ceilDaysBetween = (fromDate, toDate = new Date()) => {
+  if (!fromDate) return 0;
+  const ms = Math.max(0, toDate.getTime() - fromDate.getTime());
+  return Math.ceil(ms / (24 * 60 * 60 * 1000));
+};
+
+function groupLogsByDate(logs = []) {
+  const map = new Map();
+  logs.forEach((l) => {
+    const d = l?.date ? new Date(l.date) : null;
+    if (!d || Number.isNaN(d.getTime())) return;
+    const key = d.toISOString().slice(0, 10); // YYYY-MM-DD
+    const qty = Number(
+      l?.todays_progress ?? l?.today_progress ?? l?.progress ?? 0
+    );
+    const entry = map.get(key) || { dateISO: key, total: 0, items: [] };
+    entry.total += Number.isFinite(qty) ? qty : 0;
+    entry.items.push(l);
+    map.set(key, entry);
+  });
+  return Array.from(map.values()).sort((a, b) =>
+    a.dateISO.localeCompare(b.dateISO)
+  );
+}
+
+/** Build a map of activity_id -> { status, date, userName } where status/date is from latest log */
+function buildLatestStatusMap(dprActivities = []) {
+  const latest = new Map();
+  for (const a of Array.isArray(dprActivities) ? dprActivities : []) {
+    const actId = String(a?.activity_id || "");
+    const logs = Array.isArray(a?.dpr_log) ? a.dpr_log : [];
+    if (!actId || logs.length === 0) continue;
+
+    let best = null;
+    for (const l of logs) {
+      const d = l?.date ? new Date(l.date) : null;
+      if (!d || Number.isNaN(d.getTime())) continue;
+      if (!best || d > best.date) {
+        best = {
+          status: String(l?.status || "").toLowerCase(),
+          date: d,
+          userName:
+            l?.user_name ||
+            l?.user?.name ||
+            l?.user?.user_name ||
+            l?.user?.email ||
+            null,
+        };
+      }
+    }
+    if (best) latest.set(actId, best);
+  }
+  return latest;
+}
+
+/** Count unique engineers whose latest status is 'idle' (based on assigned_to primary engineer if present) */
+function countIdleEngineers(dprActivities = []) {
+  const latest = buildLatestStatusMap(dprActivities);
+  const ids = new Set();
+
+  for (const a of Array.isArray(dprActivities) ? dprActivities : []) {
+    const actId = String(a?.activity_id || "");
+    const ls = latest.get(actId);
+    if (!ls || ls.status !== "idle") continue;
+
+    const assignedList = Array.isArray(a?.assigned_to) ? a.assigned_to : [];
+    const primary = assignedList[0] || {};
+    const uid =
+      primary?._id ||
+      primary?.user_id ||
+      primary?.email ||
+      primary?.user_name ||
+      "unknown";
+    ids.add(String(uid));
+  }
+
+  return ids.size;
+}
+
+/* ------------------- data normalizers ------------------- */
 function normalizeActivitiesFromSummary(raw = []) {
   return raw.map((a, idx) => {
-    // Use planned_finish from API (previously "deadline")
     const plannedFinish = a?.planned_finish ? toDate(a.planned_finish) : null;
     const plannedStart = a?.planned_start ? toDate(a.planned_start) : null;
     const lu = a?.last_update ? toDate(a.last_update) : null;
     return {
       _key: a.activity_id || `row-${idx}`,
+      id: a.activity_id || null, // <-- keep original id for lookups
       activity_name: a.activity_name || `Activity ${idx + 1}`,
       current_status: String(a?.status || "").toLowerCase(), // "not started" | "in progress" | "completed"
       work_done_percent: Number(a?.work_done_percent || 0),
@@ -148,7 +236,6 @@ function prepareEngineersFromSummary(activities = []) {
       const row = map.get(key);
       row.assigned += 1;
 
-      // Approximate contribution using work_done_percent (0–100)
       const pct = Number(act.work_done_percent || 0);
       row.totalPlanned += 100;
       row.totalActual += Math.max(0, Math.min(100, pct));
@@ -181,16 +268,64 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
     "all",
     "completed",
     "in_progress",
-    "past_deadline",        // overdue if planned_finish < today && not completed
+    "past_deadline",
     "not_started",
     "progress_or_completed",
+    "idle", // NEW
   ]);
   const initialFilter = (() => {
-    // Default to progress_or_completed
     const f = (searchParams.get("af") || "progress_or_completed").toLowerCase();
     return validFilters.has(f) ? f : "progress_or_completed";
   })();
   const [activityFilter, setActivityFilter] = React.useState(initialFilter);
+
+  // DPR log modal state
+  const [logOpen, setLogOpen] = React.useState(false);
+  const [activeActivity, setActiveActivity] = React.useState(null); // { id, activity_name, ... }
+
+  const {
+    data: dprCards,
+    isLoading: isLogsLoading,
+    isError: isLogsError,
+  } = useGetDprStatusCardsByIdQuery(projectId, {
+    skip: !projectId,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  });
+
+  // Build maps & counts from DPR logs
+  const latestStatusMap = React.useMemo(
+    () => buildLatestStatusMap(dprCards?.activities || []),
+    [dprCards]
+  );
+  const idleEngineersCount = React.useMemo(
+    () => countIdleEngineers(dprCards?.activities || []),
+    [dprCards]
+  );
+
+  // Build map: activityId -> logs[]
+  const actLogsMap = React.useMemo(() => {
+    const map = new Map();
+    const arr = Array.isArray(dprCards?.activities) ? dprCards.activities : [];
+    arr.forEach((a) => {
+      const id = String(a?.activity_id || "");
+      const logs = Array.isArray(a?.dpr_log) ? a.dpr_log : [];
+      map.set(id, logs);
+    });
+    return map;
+  }, [dprCards]);
+
+  // Selected activity's raw logs
+  const logsRaw = React.useMemo(() => {
+    if (!activeActivity?.id) return [];
+    return actLogsMap.get(String(activeActivity.id)) || [];
+  }, [activeActivity, actLogsMap]);
+
+  // Grouped logs for modal
+  const groupedLogs = React.useMemo(
+    () => groupLogsByDate(Array.isArray(logsRaw) ? logsRaw : []),
+    [logsRaw]
+  );
 
   const setFilter = React.useCallback(
     (f) => {
@@ -228,6 +363,7 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
     [activities]
   );
 
+  // Filter activities (including the new 'idle' filter using latestStatusMap)
   const filteredActivities = React.useMemo(() => {
     const today = new Date();
     return activities.filter((a) => {
@@ -238,12 +374,16 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
         return status === "in progress" || status === "completed";
       if (activityFilter === "completed") return status === "completed";
       if (activityFilter === "past_deadline")
-        return pf && pf < today && status !== "completed"; // overdue if past planned_finish and not completed
+        return pf && pf < today && status !== "completed";
       if (activityFilter === "in_progress") return status === "in progress";
       if (activityFilter === "not_started") return status === "not started";
+      if (activityFilter === "idle") {
+        const ls = latestStatusMap.get(String(a.id || ""));
+        return ls?.status === "idle";
+      }
       return true; // "all"
     });
-  }, [activityFilter, activities]);
+  }, [activityFilter, activities, latestStatusMap]);
 
   const project_detail = {
     code: data?.project_code || data?.project_id || projectId || "",
@@ -253,6 +393,17 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
     number: "",
     status: "",
     customer: data?.customer_name || "",
+  };
+
+  const openDprModal = (act) => {
+    // act should include id & activity_name from normalized data
+    setActiveActivity(act);
+    setLogOpen(true);
+  };
+
+  const closeDprModal = () => {
+    setLogOpen(false);
+    setActiveActivity(null);
   };
 
   if (!projectId) {
@@ -283,6 +434,15 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
     );
   }
 
+  // Click handler for Idle KPI
+  const onClickIdleKPI = () => {
+    const sp = new URLSearchParams(searchParams);
+    sp.set("status", "idle"); // requested: push status=idle to searchParams
+    sp.set("af", "idle"); // also reflect the filter mode
+    setSearchParams(sp, { replace: true });
+    setFilter("idle");
+  };
+
   return (
     <Box
       sx={{
@@ -293,7 +453,7 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
     >
       {/* KPI Row */}
       <Grid container spacing={2} columns={12}>
-        <Grid xs={12} md={4}>
+        <Grid xs={12} md={3}>
           <KPIBox
             color="success"
             icon={DoneAll}
@@ -301,16 +461,15 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
             value={formatPct(Number(data?.work_done_percent || 0))}
             subtitle="Total progress"
             onClick={() => {
-              // Remove AF before setting status
               const sp = new URLSearchParams(searchParams);
               sp.delete("af");
-              sp.set("status", "in progress,completed"); // reflect both in URL
+              sp.set("status", "in progress,completed");
               setSearchParams(sp, { replace: true });
               setFilter("progress_or_completed");
             }}
           />
         </Grid>
-        <Grid xs={12} md={4}>
+        <Grid xs={12} md={3}>
           <KPIBox
             color="warning"
             icon={AccessTime}
@@ -318,7 +477,6 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
             value={`${Number(data?.activities_past_deadline || 0)} (At Risk)`}
             subtitle="Requires attention"
             onClick={() => {
-              // Remove status before setting AF
               const sp = new URLSearchParams(searchParams);
               sp.delete("status");
               sp.set("af", "past_deadline");
@@ -327,7 +485,7 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
             }}
           />
         </Grid>
-        <Grid xs={12} md={4}>
+        <Grid xs={12} md={3}>
           <KPIBox
             color="primary"
             icon={TrendingUp}
@@ -335,13 +493,24 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
             value={`${Number(data?.not_started_activities || 0)}`}
             subtitle="Not Started Activities"
             onClick={() => {
-              // Remove status before setting AF
               const sp = new URLSearchParams(searchParams);
               sp.delete("status");
               sp.set("af", "not_started");
               setSearchParams(sp, { replace: true });
               setFilter("not_started");
             }}
+          />
+        </Grid>
+
+        {/* NEW: Idle Site Engineers */}
+        <Grid xs={12} md={3}>
+          <KPIBox
+            color="neutral"
+            icon={ErrorOutline}
+            title="Idle Site Engineers"
+            value={`${idleEngineersCount}`}
+            subtitle="Latest status = idle"
+            onClick={onClickIdleKPI}
           />
         </Grid>
       </Grid>
@@ -374,12 +543,11 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
             </Box>
 
             <ActivityFinishLineChart
-  apiData={activities}
-  projectId={projectId}             
-  title={project_detail.name}
-  height={350}
-/>
-
+              apiData={activities}
+              projectId={projectId}
+              title={project_detail.name}
+              height={350}
+            />
           </Card>
         </Grid>
 
@@ -450,6 +618,7 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
                 <th>Assigned To</th>
                 <th style={{ width: 140 }}>Planned Finish</th>
                 <th style={{ width: 120 }}>Delay (days)</th>
+                <th style={{ width: 140 }}>Idle (days)</th>{/* NEW */}
                 <th style={{ width: 180 }}>Work Done %</th>
                 <th style={{ width: 120, textAlign: "right" }}>Last Update</th>
               </tr>
@@ -461,8 +630,9 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
                 const isCompleted = a.current_status === "completed";
                 const today = new Date();
 
-                const overdue =
-                  plannedFinish ? plannedFinish < today && !isCompleted : false;
+                const overdue = plannedFinish
+                  ? plannedFinish < today && !isCompleted
+                  : false;
 
                 // Delay count in whole days (ceil)
                 let delayDays = 0;
@@ -494,12 +664,27 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
                     })
                   : "-";
 
+                // NEW: Idle days from latestStatusMap (only if latest status is idle)
+                const latest = latestStatusMap.get(String(a.id || ""));
+                const isIdle = latest?.status === "idle";
+                const idleDays = isIdle ? ceilDaysBetween(latest?.date, today) : "-";
+
                 return (
                   <tr key={a._key}>
                     <td>
-                      <Box display="flex" alignItems="center" gap={1}>
+                      <Box
+                        display="flex"
+                        alignItems="center"
+                        gap={1}
+                        sx={{ cursor: "pointer" }}
+                        onClick={() => openDprModal(a)}
+                        title="View DPR log"
+                      >
                         <Person fontSize="sm" />
-                        <Typography level="body-sm">
+                        <Typography
+                          level="body-sm"
+                          sx={{ textDecoration: "underline" }}
+                        >
                           {a.activity_name}
                         </Typography>
                       </Box>
@@ -517,8 +702,19 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
                       </Chip>
                     </td>
                     <td>
-                      <Typography level="body-sm" color={overdue ? "danger" : "neutral"}>
+                      <Typography
+                        level="body-sm"
+                        color={overdue ? "danger" : "neutral"}
+                      >
                         {overdue ? `${delayDays}` : "0"}
+                      </Typography>
+                    </td>
+                    <td>
+                      <Typography
+                        level="body-sm"
+                        color={isIdle ? "warning" : "neutral"}
+                      >
+                        {idleDays}
                       </Typography>
                     </td>
                     <td>
@@ -558,6 +754,135 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
           </Table>
         </Sheet>
       </Card>
+
+      {/* ---------------- DPR Log Modal ---------------- */}
+      <Modal open={logOpen} onClose={closeDprModal} keepMounted>
+        <ModalDialog
+          aria-labelledby="dpr-log-title"
+          sx={{ width: { xs: "100%", sm: 720 }, maxWidth: "95vw" }}
+        >
+          <ModalClose />
+          <Typography id="dpr-log-title" level="h5" fontWeight="lg" mb={0.5}>
+            DPR Log — {activeActivity?.activity_name || "-"}
+          </Typography>
+          <Typography level="body-sm" color="neutral" mb={1}>
+            Project: {project_detail.code} — {project_detail.name}
+          </Typography>
+
+          <Divider sx={{ mb: 1.5 }} />
+
+          {isLogsLoading ? (
+            <Typography level="body-sm">Loading logs…</Typography>
+          ) : isLogsError ? (
+            <Typography level="body-sm" color="danger">
+              Failed to load DPR logs.
+            </Typography>
+          ) : groupedLogs.length === 0 ? (
+            <Typography level="body-sm" color="neutral">
+              No DPR logs found for this activity.
+            </Typography>
+          ) : (
+            <Box sx={{ maxHeight: "60vh", overflow: "auto" }}>
+              <List sx={{ "--List-gap": "10px" }}>
+                {groupedLogs.map((g) => {
+                  const dateLabel = new Date(g.dateISO).toLocaleDateString(
+                    "en-IN",
+                    { day: "2-digit", month: "short", year: "numeric" }
+                  );
+                  return (
+                    <ListItem
+                      key={g.dateISO}
+                      sx={{
+                        display: "block",
+                        p: 1,
+                        borderRadius: "md",
+                        bgcolor: "background.level1",
+                      }}
+                    >
+                      <Box
+                        display="flex"
+                        justifyContent="space-between"
+                        mb={0.5}
+                      >
+                        <Typography level="title-sm">{dateLabel}</Typography>
+                        <Chip size="sm" variant="soft" color="primary">
+                          Total: <b style={{ marginLeft: 6 }}>{g.total}</b>
+                        </Chip>
+                      </Box>
+
+                      <Table
+                        size="sm"
+                        variant="plain"
+                        sx={{
+                          "--TableCell-paddingX": "8px",
+                          "--TableCell-paddingY": "6px",
+                        }}
+                      >
+                        <thead>
+                          <tr>
+                            <th style={{ width: 120, textAlign: "left" }}>
+                              Qty
+                            </th>
+                            <th style={{ width: 120, textAlign: "left" }}>
+                              Status
+                            </th>
+                            <th style={{ textAlign: "left" }}>Remarks</th>
+                            <th style={{ width: 160, textAlign: "left" }}>
+                              By
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {g.items.map((l, idx) => {
+                            const qty =
+                              l?.todays_progress ??
+                              l?.today_progress ??
+                              l?.progress ??
+                              0;
+                            const status = String(l?.status || "")
+                              .toLowerCase()
+                              .replace(/_/g, " ");
+                            const by =
+                              l?.user_name ||
+                              l?.user?.name ||
+                              l?.user?.user_name ||
+                              l?.user?.email ||
+                              "-";
+                            const chipColor =
+                              status === "completed"
+                                ? "success"
+                                : status === "idle"
+                                ? "neutral"
+                                : status === "work stopped" ||
+                                  status === "stopped" ||
+                                  status === "stop"
+                                ? "danger"
+                                : "warning";
+
+                            return (
+                              <tr key={idx}>
+                                <td>{qty}</td>
+                                <td>
+                                  <Chip size="sm" variant="soft" color={chipColor}>
+                                    {status || "progress"}
+                                  </Chip>
+                                </td>
+                                <td>{l?.remarks || "-"}</td>
+                                <td>{by}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </Table>
+                    </ListItem>
+                  );
+                })}
+              </List>
+            </Box>
+          )}
+        </ModalDialog>
+      </Modal>
+      {/* -------------- /DPR Log Modal -------------- */}
     </Box>
   );
 }

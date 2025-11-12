@@ -562,7 +562,8 @@ export const projectsApi = createApi({
         from,
         to,
         onlyWithDeadline,
-        status, // ✅ ADD THIS
+        status, 
+        category,
       }) => {
         const params = new URLSearchParams();
 
@@ -577,6 +578,7 @@ export const projectsApi = createApi({
         if (to) params.set("to", to);
         if (onlyWithDeadline) params.set("onlyWithDeadline", onlyWithDeadline);
         if (status) params.set("status", status); // ✅ pass-through
+        if (category) params.set("category", category);
 
         return {
           url: `projectActivity/alldpr?${params.toString()}`,

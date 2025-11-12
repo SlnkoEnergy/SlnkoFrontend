@@ -56,6 +56,7 @@ function DprManagement() {
   // Read filters from URL
   const projectIdFromUrl = searchParams.get("projectId") || "";
   const statusFromUrl = searchParams.get("status") || "";
+  const categoryFromUrl = searchParams.get("category") || "";
   const fromFromUrl = searchParams.get("from") || undefined;
   const toFromUrl = searchParams.get("to") || undefined;
 
@@ -92,6 +93,18 @@ function DprManagement() {
         { label: "Completed", value: "completed" },
       ],
     },
+    {
+  key: "category",
+  label: "Category",
+  type: "select",
+  options: [
+    { label: "Civil", value: "civil" },
+    { label: "Electrical", value: "electrical" },
+    { label: "I&C", value: "i&c" },
+    { label: "Mechanical", value: "mechanical" },
+  ],
+},
+
   ];
 
   const handleApplyFilters = (vals) => {
@@ -114,6 +127,10 @@ function DprManagement() {
     if (vals.status) next.set("status", String(vals.status));
     else next.delete("status");
 
+    if (vals.category) next.set("category", String(vals.category));
+else next.delete("category");
+
+
     next.set("page", "1");
     if (!next.get("pageSize")) next.set("pageSize", "10");
 
@@ -130,6 +147,7 @@ function DprManagement() {
       p.delete("from");
       p.delete("to");
       p.delete("status");
+      p.delete("category");
       p.set("page", "1");
       return p;
     });
@@ -226,6 +244,8 @@ function DprManagement() {
               initialValues={{
                 projectId: projectIdFromUrl || undefined, // << use projectId here
                 status: statusFromUrl || undefined,
+                category: categoryFromUrl || undefined,
+
                 deadline:
                   fromFromUrl || toFromUrl
                     ? { from: fromFromUrl, to: toFromUrl }
