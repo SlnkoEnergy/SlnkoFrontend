@@ -715,20 +715,17 @@ const View_Project_Management = forwardRef(
           .toLowerCase()
           .trim();
 
-        // 🔹 CATEGORY detection (robust):
         const rawCategory =
           master?.category ??
           pa?.category ??
           "";
         const categoryLabel = toTitle(rawCategory || "");
 
-        // Baseline dates
         const baseStartISO = pa.planned_start || pa.start_date || null;
         const baseEndISO = pa.planned_finish || pa.end_date || null;
         const baseStartObj = baseStartISO ? parseISOAsLocalDate(baseStartISO) : null;
         const baseEndObj = baseEndISO ? parseISOAsLocalDate(baseEndISO) : null;
 
-        // Duration
         let duration = 0;
         if (baseStartObj && baseEndObj) {
           duration = durationFromStartFinish(baseStartObj, baseEndObj);
