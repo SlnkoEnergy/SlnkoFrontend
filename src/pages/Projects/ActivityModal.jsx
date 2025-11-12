@@ -57,6 +57,8 @@ export default function AddActivityModal({
       scmEnabled: false,
       scmItems: [],
     },
+    work_completion_unit: "",
+    category: "",
   });
   const [form, setForm] = useState(makeInitialForm());
 
@@ -90,7 +92,6 @@ export default function AddActivityModal({
     setOpenActivityPicker(false);
     setOpenModulePicker(false);
     setOpenScmPicker(false);
-    // predecessors
     setPredRows([]);
     setOpenPredecessorPicker(false);
     setPredPickerIndex(null);
@@ -571,9 +572,15 @@ export default function AddActivityModal({
     // Only attach completion_formula for global scope (empty is allowed, server decides)
     const payload =
       scope === "global"
-        ? { ...base, completion_formula: form.completion_formula ?? "" }
+        ? {
+            ...base,
+            completion_formula: form.completion_formula ?? "",
+            work_completion_unit: form.work_completion_unit || "",
+            category: form.category || "",
+          }
         : base;
-console.log(payload);
+
+    console.log(payload);
     return Promise.resolve(onCreate?.(payload))
       .then(() => {
         resetForm();
@@ -1005,7 +1012,9 @@ console.log(payload);
                       description: opt.description || "",
                       // prefill completion_formula if backend supplied it on activity
                       completion_formula: opt.completion_formula || "",
-                      order: Number.isFinite(+opt.order) ? Number(opt.order) : null,
+                      order: Number.isFinite(+opt.order)
+                        ? Number(opt.order)
+                        : null,
                       dependencies: {
                         ...p.dependencies,
                         engineeringEnabled: engOpts.length > 0,
@@ -1162,7 +1171,50 @@ console.log(payload);
                   </Box>
                 ))}
 
-                {/* ✅ Completion Formula (GLOBAL only) */}
+                {/* NEW: Global-only meta fields */}
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+                    gap: 1,
+                    mb: 1,
+                  }}
+                >
+                  <FormControl size="sm">
+                    <FormLabel>Work Completion Unit</FormLabel>
+                    <Select
+                      size="sm"
+                      placeholder="Select unit"
+                      value={form.work_completion_unit || ""}
+                      onChange={(_, v) =>
+                        v && setForm((p) => ({ ...p, work_completion_unit: v }))
+                      }
+                    >
+                      <Option value="m">m</Option>
+                      <Option value="kg">kg</Option>
+                      <Option value="number">Number</Option>
+                      <Option value="percentage">Percentage</Option>
+                    </Select>
+                  </FormControl>
+
+                  <FormControl size="sm">
+                    <FormLabel>Category</FormLabel>
+                    <Select
+                      size="sm"
+                      placeholder="Select category"
+                      value={form.category || ""}
+                      onChange={(_, v) =>
+                        v && setForm((p) => ({ ...p, category: v }))
+                      }
+                    >
+                      <Option value="civil">Civil</Option>
+                      <Option value="mechanical">Mechanical</Option>
+                      <Option value="i&c">I&C</Option>
+                      <Option value="electrical">Electrical</Option>
+                    </Select>
+                  </FormControl>
+                </Box>
+
                 <FormControl size="sm" sx={{ mt: 1 }}>
                   <FormLabel>Completion Formula (Global)</FormLabel>
                   <Textarea
@@ -1409,7 +1461,7 @@ console.log(payload);
                     onMenuScrollToBottom={(e) => e.stopPropagation()}
                     styles={{
                       menuPortal: (base) => ({ ...base, zIndex: 2400 }),
-                      menu: (base) => ({ ...base, zIndex: 2400 }), 
+                      menu: (base) => ({ ...base, zIndex: 2400 }),
                       control: (base) => ({ ...base, minHeight: 36 }),
                     }}
                   />

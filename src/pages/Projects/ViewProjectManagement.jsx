@@ -905,7 +905,6 @@ function ViewProjectManagement() {
             viewModeParam={selectedView}
             onPlanStatus={handlePlanStatusFromChild}
             onSelectionChange={({ any, count, ids }) => {
-              // ⬅️ include ids
               setHasSelection(!!any);
               setSelectionCount(Number(count || 0));
               setSelectedActivityIds(Array.isArray(ids) ? ids : []);

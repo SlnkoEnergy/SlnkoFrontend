@@ -564,14 +564,14 @@ export const projectsApi = createApi({
         onlyWithDeadline,
         status, 
         category,
+        hide_status,
+        status, 
       }) => {
         const params = new URLSearchParams();
 
-        // ✅ pagination
         params.set("page", String(page));
         params.set("limit", String(limit));
 
-        // ✅ filters
         if (projectId) params.set("projectId", projectId);
         if (search) params.set("search", search);
         if (from) params.set("from", from);
@@ -580,6 +580,9 @@ export const projectsApi = createApi({
         if (status) params.set("status", status); // ✅ pass-through
         if (category) params.set("category", category);
 
+        if (status) params.set("status", status); 
+        if(hide_status) params.set("hide_status", hide_status)
+        
         return {
           url: `projectActivity/alldpr?${params.toString()}`,
           method: "GET",
@@ -599,35 +602,34 @@ export const projectsApi = createApi({
     }),
 
     getProjectSummaryById: builder.query({
-  query: (projectId) => ({
-    url: `projectactivity/${encodeURIComponent(projectId)}/summary`,
-    method: "GET",
-  }),
-  // Optional: normalize/guard the response so UI never breaks
-  transformResponse: (res) => {
-    const data = res?.data ?? {};
-    return {
-      success: !!res?.success,
-      project_id: data.project_id ?? null,
-      project_code: data.project_code ?? null,
-      project_name: data.project_name ?? null,
-      customer_name: data.customer_name ?? null,
-      work_done_percent: Number(data.work_done_percent ?? 0),
-      activities_past_deadline: Number(data.activities_past_deadline ?? 0),
-      not_started_activities: Number(data.not_started_activities ?? 0),
-      assigned_engineers: Array.isArray(data.assigned_engineers)
-        ? data.assigned_engineers
-        : [],
-      activities: Array.isArray(data.activities) ? data.activities : [],
-    };
-  },
-  providesTags: (_res, _err, projectId) => [
-    { type: "Project", id: projectId ?? "default" },
-  ],
-}),
+      query: (projectId) => ({
+        url: `projectactivity/${encodeURIComponent(projectId)}/summary`,
+        method: "GET",
+      }),
+      // Optional: normalize/guard the response so UI never breaks
+      transformResponse: (res) => {
+        const data = res?.data ?? {};
+        return {
+          success: !!res?.success,
+          project_id: data.project_id ?? null,
+          project_code: data.project_code ?? null,
+          project_name: data.project_name ?? null,
+          customer_name: data.customer_name ?? null,
+          work_done_percent: Number(data.work_done_percent ?? 0),
+          activities_past_deadline: Number(data.activities_past_deadline ?? 0),
+          not_started_activities: Number(data.not_started_activities ?? 0),
+          assigned_engineers: Array.isArray(data.assigned_engineers)
+            ? data.assigned_engineers
+            : [],
+          activities: Array.isArray(data.activities) ? data.activities : [],
+        };
+      },
+      providesTags: (_res, _err, projectId) => [
+        { type: "Project", id: projectId ?? "default" },
+      ],
+    }),
 
-
-     assignResources: builder.mutation({
+    assignResources: builder.mutation({
       query: ({
         projectId,
         activityId,
@@ -635,7 +637,9 @@ export const projectsApi = createApi({
         work_completion_value,
         resources,
       }) => ({
-        url: `/projectactivity/assign-resources/${encodeURIComponent(projectId)}`,
+        url: `/projectactivity/assign-resources/${encodeURIComponent(
+          projectId
+        )}`,
         method: "PATCH",
         body: {
           activityId,
@@ -713,5 +717,5 @@ export const {
   useGetDprStatusCardsByIdQuery,
   useGetProjectSummaryByIdQuery,
 
-  useAssignResourcesMutation
+  useAssignResourcesMutation,
 } = projectsApi;
