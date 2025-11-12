@@ -1818,7 +1818,7 @@ export default function CustomerPaymentSummary() {
                   }}
                 >
                   <FormControl sx={{ minWidth: 350 }}>
-                    {/* <FormLabel>Search Paid For</FormLabel> */}
+                   
                     <Input
                       placeholder="Enter PO Number, Item or Vendor..."
                       value={searchDebit}
