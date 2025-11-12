@@ -4,34 +4,44 @@ import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import SearchIcon from "@mui/icons-material/Search";
-import { CircularProgress, Modal, ModalClose, ModalDialog, Option, Select, Sheet, Stack, Tooltip } from "@mui/joy";
+import {
+  CircularProgress,
+  Modal,
+  ModalClose,
+  ModalDialog,
+  Option,
+  Select,
+  Sheet,
+  Stack,
+  Tooltip,
+} from "@mui/joy";
 import Checkbox from "@mui/joy/Checkbox";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Chip from "@mui/joy/Chip";
 import FormControl from "@mui/joy/FormControl";
-import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Typography from "@mui/joy/Typography";
 import ArrowBack from "@mui/icons-material/ArrowBack";
 import ArrowForward from "@mui/icons-material/ArrowForward";
-import Visibility from "@mui/icons-material/Visibility";
 import { useSnackbar } from "notistack";
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useExportBillsMutation, useGetAllBillsQuery } from "../redux/billsSlice";
 import Axios from "../utils/Axios";
 import dayjs from "dayjs";
 
-
+/* ===========================================
+   VendorBillSummary
+=========================================== */
 const VendorBillSummary = forwardRef((props, ref) => {
-
   const { onSelectionChange, setSelected } = props;
   useImperativeHandle(ref, () => ({
     handleExport,
     selectedIds,
-  }))
+  }));
+
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -67,11 +77,8 @@ const VendorBillSummary = forwardRef((props, ref) => {
     onSelectionChange?.(selectedIds.length, selectedIds);
   }, [selectedIds, onSelectionChange]);
 
-
   const {
-    data: billsData = [],
     total = 0,
-    count = 0,
     page = 0,
     pageSize = 0,
     totalPages = 0,
@@ -84,10 +91,9 @@ const VendorBillSummary = forwardRef((props, ref) => {
 
   const [exportBills, { isLoading: isExporting }] = useExportBillsMutation();
 
-  const handleExport = async (isExportAll) => {
+  const handleExport = async () => {
     try {
       const res = await exportBills({ Ids: selectedIds }).unwrap();
-
       const url = URL.createObjectURL(res);
       const link = document.createElement("a");
       link.href = url;
@@ -100,15 +106,14 @@ const VendorBillSummary = forwardRef((props, ref) => {
     }
   };
 
-
   useEffect(() => {
     setSelectedIds([]);
-    setSelected([]);
+    setSelected?.([]);
   }, [bills, currentPage, perPage]);
 
   useEffect(() => {
-    setCurrentPage(initialPage)
-  }, [initialPage])
+    setCurrentPage(initialPage);
+  }, [initialPage]);
 
   // Pagination
   const startIndex = (page - 1) * pageSize + 1;
@@ -133,7 +138,6 @@ const VendorBillSummary = forwardRef((props, ref) => {
       return next;
     });
   };
-
 
   const getPaginationRange = () => {
     const siblings = 1;
@@ -165,34 +169,38 @@ const VendorBillSummary = forwardRef((props, ref) => {
 
   const toggleSelectAll = (checked) => {
     if (checked) {
-      setSelectedIds(allIdsOnPage)
-      setSelected(allIdsOnPage)
+      setSelectedIds(allIdsOnPage);
+      setSelected?.(allIdsOnPage);
+    } else {
+      setSelectedIds([]);
+      setSelected?.([]);
     }
-    else {
-      setSelectedIds([])
-      setSelected([])
-    };
   };
   const toggleRow = (id) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    setSelected?.((prev) =>
+      prev?.includes?.(id) ? prev.filter((x) => x !== id) : [...(prev || []), id]
     );
   };
 
+  // Helpers
   const capitalize = (s = "") =>
     s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 
+  const fmtINR = (n) => (isFinite(n) ? `₹${Number(n).toFixed(2)}` : "₹0.00");
+  const fmtDate = (d) => (d ? dayjs(d).format("DD/MM/YYYY") : "-");
+
+  // Components used in columns
   const BillingStatusChip = ({ status, balance }) => {
     const isFullyBilled = status === "fully billed";
     const isPending = status === "waiting bills";
     const rawLabel = isFullyBilled
       ? "Fully Billed"
       : isPending
-        ? `${balance} - Waiting Bills`
-        : status;
+      ? `${balance} - Waiting Bills`
+      : status;
     return (
       <Chip
         variant="soft"
@@ -211,12 +219,7 @@ const VendorBillSummary = forwardRef((props, ref) => {
     );
   };
 
-  const BillAcceptance = ({
-    billNumber,
-    poNumber,
-    approvedBy,
-    currentUser,
-  }) => {
+  const BillAcceptance = ({ billNumber, poNumber, approvedBy, currentUser }) => {
     const { enqueueSnackbar } = useSnackbar();
     const [isAccepted, setIsAccepted] = useState(Boolean(approvedBy));
     const [loading, setLoading] = useState(false);
@@ -247,7 +250,6 @@ const VendorBillSummary = forwardRef((props, ref) => {
       return "error";
     };
 
-    // --- normalize array or string -> string
     const firstNonEmpty = (val) => {
       if (Array.isArray(val)) {
         const first = val.find((x) => x && String(x).trim().length > 0);
@@ -267,15 +269,11 @@ const VendorBillSummary = forwardRef((props, ref) => {
         const bill_number = firstNonEmpty(billNumber);
 
         if (!po_number) {
-          enqueueSnackbar("PO number is missing/empty.", {
-            variant: "warning",
-          });
+          enqueueSnackbar("PO number is missing/empty.", { variant: "warning" });
           return;
         }
         if (!bill_number) {
-          enqueueSnackbar("Bill number is missing/empty.", {
-            variant: "warning",
-          });
+          enqueueSnackbar("Bill number is missing/empty.", { variant: "warning" });
           return;
         }
 
@@ -290,8 +288,7 @@ const VendorBillSummary = forwardRef((props, ref) => {
           enqueueSnackbar(
             pickSuccessMessage(
               res,
-              `Bill accepted successfully${currentUser?.name ? ` by ${currentUser.name}` : ""
-              }.`
+              `Bill accepted successfully${currentUser?.name ? ` by ${currentUser.name}` : ""}.`
             ),
             { variant: "success" }
           );
@@ -314,8 +311,7 @@ const VendorBillSummary = forwardRef((props, ref) => {
       <Box>
         {isAccepted ? (
           <Tooltip
-            title={`Approved by: ${approvedBy || currentUser?.name || "Unknown"
-              }`}
+            title={`Approved by: ${approvedBy || currentUser?.name || "Unknown"}`}
             variant="soft"
           >
             <Typography
@@ -357,83 +353,268 @@ const VendorBillSummary = forwardRef((props, ref) => {
     );
   };
 
-// type checks
-const isImage = (s = "") => /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(s);
-const isPdf   = (s = "") => /\.pdf(\?|$)/i.test(s);
-const isOffice = (s = "") => /\.(docx?|xlsx?|pptx?)(\?|$)/i.test(s);
+  /* ===============================
+     Attachments Preview - Google Docs ONLY
+     - images rendered directly
+     - docs/pdf via Google viewer with fallback
+  ================================ */
+  const isImage = (s = "") => /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(s);
 
-// Office Web Viewer URL
-const officeViewer = (url) =>
-  `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(url)}`;
-const [previewOpen, setPreviewOpen] = useState(false);
-const [previewName, setPreviewName] = useState("");
-const [viewerUrl, setViewerUrl] = useState(""); // what <img>/<iframe> uses
-const [loading, setLoading] = useState(false);
+  const buildGdocUrls = (rawUrl = "") => [
+    `https://drive.google.com/viewerng/viewer?embedded=1&url=${encodeURIComponent(rawUrl)}`,
+    `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(rawUrl)}`,
+  ];
 
-// cache object URLs so we don't fetch the same PDF repeatedly
-const [blobCache] = useState(() => new Map());
-useEffect(() => () => {
-  // revoke blobs when component unmounts
-  blobCache.forEach((u) => URL.revokeObjectURL(u));
-  blobCache.clear();
-}, [blobCache]);
-const previewAttachment = async (att) => {
-  if (!att) return;
-  const url = att.attachment_url || "";
-  const name = att.attachment_name || "Attachment";
-  if (!url) return;
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewName, setPreviewName] = useState("");
+  const [viewerUrls, setViewerUrls] = useState([]); // [primary, fallback]
+  const [viewerIdx, setViewerIdx] = useState(0);
+  const [loadingViewer, setLoadingViewer] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
 
-  setPreviewName(name);
+  const previewAttachment = (att) => {
+    if (!att) return;
+    const url = att.attachment_url || "";
+    const name = att.attachment_name || "Attachment";
+    if (!url) return;
 
-  // IMAGES: show directly
-  if (isImage(url) || isImage(name)) {
-    setViewerUrl(url);
-    setPreviewOpen(true);
-    return;
-  }
+    setPreviewName(name);
 
-  // PDFs: fetch as blob -> object URL (won't download)
-  if (isPdf(url) || isPdf(name)) {
-    try {
-      setLoading(true);
-      if (blobCache.has(url)) {
-        setViewerUrl(blobCache.get(url));
-      } else {
-        const res = await fetch(url, { mode: "cors" }); // ensure Azure CORS allows your origin
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const blob = await res.blob();
-        const pdfBlob = blob.type === "application/pdf"
-          ? blob
-          : new Blob([blob], { type: "application/pdf" });
-        const objUrl = URL.createObjectURL(pdfBlob);
-        blobCache.set(url, objUrl);
-        setViewerUrl(objUrl);
-      }
-    } catch (err) {
-      // last resort fallback: open new tab
-      setViewerUrl(url);
-    } finally {
-      setLoading(false);
+    // images -> render raw
+    if (isImage(`${url} ${name}`)) {
+      setViewerUrls([url]);
+      setViewerIdx(0);
       setPreviewOpen(true);
+      setLoadingViewer(false);
+      setLoadFailed(false);
+      return;
     }
-    return;
-  }
 
-  // Office docs: use Microsoft Office Web Viewer (works in iframe)
-  if (isOffice(url) || isOffice(name)) {
-    setViewerUrl(officeViewer(url));
+    const candidates = buildGdocUrls(url);
+    setViewerUrls(candidates);
+    setViewerIdx(0);
     setPreviewOpen(true);
-    return;
-  }
+    setLoadingViewer(true);
+    setLoadFailed(false);
+  };
 
-  // Plain text / csv / rtf, etc.: try inline iframe directly
-  setViewerUrl(url);
-  setPreviewOpen(true);
-};
+  const VIEWER_TIMEOUT_MS = 6000;
+  useEffect(() => {
+    if (!previewOpen) return;
+    if (!viewerUrls.length) return;
 
+    setLoadingViewer(true);
+    setLoadFailed(false);
 
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      if (cancelled) return;
+      // fallback once
+      if (viewerIdx === 0 && viewerUrls[1]) {
+        setViewerIdx(1);
+      } else {
+        setLoadFailed(true);
+        setLoadingViewer(false);
+      }
+    }, VIEWER_TIMEOUT_MS);
 
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [previewOpen, viewerIdx, viewerUrls]);
 
+  /* ===============================
+     Column Visibility Config
+  ================================ */
+  const LS_KEY = "billTable.columns.v1";
+  const PRESET_ESSENTIAL = ["bill_no", "bill_date", "bill_value", "po_no", "vendor", "po_status", "attachments"];
+  const PRESET_FINANCE = ["bill_no", "bill_date", "bill_value", "total_billed", "po_value", "po_status", "created_on"];
+  const PRESET_LOGISTICS = ["bill_no", "po_no", "vendor", "delivery_status", "attachments", "created_on"];
+
+  // columns config: id, label, render(row)
+  const COLUMN_DEFS = [
+    {
+      id: "bill_no",
+      label: "Bill No.",
+      render: (bill) => (
+        <Chip
+          variant="outlined"
+          color="primary"
+          sx={{ cursor: "pointer" }}
+          onClick={() => navigate(`/add_bill?mode=edit&_id=${bill._id}`)}
+        >
+          {bill.bill_no}
+        </Chip>
+      ),
+    },
+    { id: "bill_date", label: "Bill Date", render: (b) => fmtDate(b.bill_date) },
+    { id: "bill_value", label: "Bill Value", render: (b) => fmtINR(b.bill_value) },
+    { id: "total_billed", label: "Total Billed", render: (b) => fmtINR(b.total_billed) },
+    {
+      id: "category",
+      label: "Category",
+      render: (bill) => {
+        if (Array.isArray(bill.item) && bill.item.length) {
+          const unique = [...new Set(bill.item.map((it) => it?.category_name).filter(Boolean))];
+          const first = unique[0];
+          const remaining = unique.slice(1);
+          return (
+            <>
+              {first || "-"}
+              {remaining.length > 0 && (
+                <Tooltip title={remaining.join(", ")} arrow>
+                  <Box
+                    component="span"
+                    sx={{
+                      ml: 1,
+                      px: 1,
+                      borderRadius: "50%",
+                      backgroundColor: "primary.solidBg",
+                      color: "white",
+                      fontSize: "12px",
+                      fontWeight: 500,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      minWidth: "22px",
+                      height: "22px",
+                      lineHeight: 1,
+                      cursor: "pointer",
+                    }}
+                  >
+                    +{remaining.length}
+                  </Box>
+                </Tooltip>
+              )}
+            </>
+          );
+        }
+        return bill.item?.category_name || "-";
+      },
+    },
+    { id: "project_id", label: "Project ID", render: (b) => b.project_id || "-" },
+    { id: "po_no", label: "PO No.", render: (b) => b.po_no || "-" },
+    { id: "vendor", label: "Vendor", render: (b) => b.vendor || "-" },
+    { id: "po_value", label: "PO Value", render: (b) => fmtINR(b.po_value || 0) },
+    {
+      id: "po_status",
+      label: "PO Status",
+      render: (b) => (
+        <BillingStatusChip
+          status={b.po_status}
+          balance={(Number(b.po_value || 0) - Number(b.total_billed || 0)).toFixed(2)}
+        />
+      ),
+    },
+    {
+      id: "delivery_status",
+      label: "Delivery Status",
+      render: (b) => (
+        <Chip
+          size="sm"
+          variant={b.delivery_status === "delivered" ? "solid" : "soft"}
+          color={b.delivery_status === "delivered" ? "success" : "neutral"}
+        >
+          {b.delivery_status || "-"}
+        </Chip>
+      ),
+    },
+    {
+      id: "attachments",
+      label: "Attachments",
+      render: (bill) =>
+        Array.isArray(bill.attachments) && bill.attachments.length ? (
+          <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+            {bill.attachments.slice(0, 3).map((att, i) => (
+              <Chip
+                key={att._id || `${bill._id}-att-${i}`}
+                size="sm"
+                variant="soft"
+                color="primary"
+                onClick={() => previewAttachment(att)}
+                sx={{
+                  cursor: "pointer",
+                  maxWidth: 200,
+                  "& .MuiChip-label": {
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  },
+                }}
+              >
+                {att.attachment_name || "Attachment"}
+              </Chip>
+            ))}
+            {bill.attachments.length > 3 && (
+              <Chip
+                size="sm"
+                variant="soft"
+                color="neutral"
+                onClick={() => previewAttachment(bill.attachments[3])}
+                sx={{ cursor: "pointer" }}
+              >
+                +{bill.attachments.length - 3} more
+              </Chip>
+            )}
+          </Box>
+        ) : (
+          "—"
+        ),
+    },
+    {
+      id: "received",
+      label: "Received",
+      render: (b) => (
+        <BillAcceptance
+          billNumber={b.bill_no || []}
+          poNumber={b.po_no || []}
+          approvedBy={b.approved_by_name}
+          currentUser={user}
+        />
+      ),
+    },
+    { id: "created_on", label: "Created On", render: (b) => fmtDate(b.created_on) },
+  ];
+
+  // presets
+  const PRESET_ALL = COLUMN_DEFS.map((c) => c.id);
+
+  const loadVisibility = () => {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (raw) {
+        const arr = JSON.parse(raw);
+        return Array.isArray(arr) && arr.length ? arr : PRESET_ESSENTIAL;
+      }
+    } catch {}
+    return PRESET_ESSENTIAL;
+  };
+
+  const [visibleCols, setVisibleCols] = useState(loadVisibility());
+  useEffect(() => {
+    localStorage.setItem(LS_KEY, JSON.stringify(visibleCols));
+  }, [visibleCols]);
+
+  const applyPreset = (ids) => setVisibleCols(ids);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 900px)");
+    const handle = () => {
+      if (mq.matches) setVisibleCols((prev) => prev.filter((id) => PRESET_ESSENTIAL.includes(id)));
+    };
+    handle();
+    mq.addEventListener?.("change", handle);
+    return () => mq.removeEventListener?.("change", handle);
+  }, []);
+
+  const [colModalOpen, setColModalOpen] = useState(false);
+
+  /* ===========================================
+     RENDER
+  =========================================== */
+  const visibleDefs = COLUMN_DEFS.filter((c) => visibleCols.includes(c.id));
+  const dynamicColSpan = 1 + visibleDefs.length; // checkbox + visible columns
 
   return (
     <Box
@@ -443,10 +624,10 @@ const previewAttachment = async (att) => {
         width: { xs: "100%", lg: "calc(100% - var(--Sidebar-width))" },
       }}
     >
-      {/* Search only */}
+      {/* Search + Columns */}
       <Box
         display="flex"
-        justifyContent="flex-end"
+        justifyContent="space-between"
         alignItems="center"
         pb={0.5}
         flexWrap="wrap"
@@ -471,6 +652,26 @@ const previewAttachment = async (att) => {
             />
           </FormControl>
         </Box>
+
+        <Stack direction="row" spacing={1}>
+          <Button
+            size="sm"
+            variant="outlined"
+            color="neutral"
+            onClick={() => setColModalOpen(true)}
+          >
+            Columns
+          </Button>
+          <Button
+            size="sm"
+            variant="outlined"
+            color="neutral"
+            disabled={!selectedIds.length || isExporting}
+            onClick={handleExport}
+          >
+            Export Selected
+          </Button>
+        </Stack>
       </Box>
 
       <Sheet
@@ -482,6 +683,9 @@ const previewAttachment = async (att) => {
           borderRadius: "sm",
           maxHeight: { xs: "66vh", xl: "75vh" },
           overflow: "auto",
+          "& table tbody tr:nth-of-type(odd)": {
+            backgroundColor: "var(--joy-palette-neutral-softBg)",
+          },
         }}
       >
         <Box
@@ -512,25 +716,11 @@ const previewAttachment = async (att) => {
                 />
               </Box>
 
-              {[
-                "Bill No.",
-                "Bill Date",
-                "Bill Value",
-                "Total Billed",
-                "Category",
-                "Project ID",
-                "PO NO.",
-                "Vendor",
-                "PO Value",
-                "PO Status",
-                "Delivery Status",
-                "Attachments",
-                "Received",
-                "Created On",
-              ].map((h, i) => (
+              {/* Dynamic headers */}
+              {visibleDefs.map((col) => (
                 <Box
                   component="th"
-                  key={i}
+                  key={col.id}
                   sx={{
                     position: "sticky",
                     top: 0,
@@ -540,9 +730,10 @@ const previewAttachment = async (att) => {
                     padding: "8px",
                     textAlign: "left",
                     fontWeight: "bold",
+                    whiteSpace: "nowrap",
                   }}
                 >
-                  {h}
+                  {col.label}
                 </Box>
               ))}
             </Box>
@@ -553,7 +744,7 @@ const previewAttachment = async (att) => {
               <Box component="tr">
                 <Box
                   component="td"
-                  colSpan={15}
+                  colSpan={dynamicColSpan}
                   sx={{ py: 5, textAlign: "center" }}
                 >
                   <Box
@@ -589,6 +780,10 @@ const previewAttachment = async (att) => {
                         borderBottom: "1px solid #ddd",
                         padding: "8px",
                         width: 44,
+                        position: "sticky",
+                        left: 0,
+                        background: "var(--joy-palette-background-surface)",
+                        zIndex: 1,
                       }}
                     >
                       <Checkbox
@@ -598,206 +793,16 @@ const previewAttachment = async (att) => {
                       />
                     </Box>
 
-                    <Box
-                      component="td"
-                      sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}
-                    >
-                      <Chip
-                        variant="outlined"
-                        color="primary"
-                        sx={{ cursor: "pointer" }}
-                        onClick={() =>
-                          navigate(`/add_bill?mode=edit&_id=${bill._id}`)
-                        }
+                    {/* Dynamic data cells */}
+                    {visibleDefs.map((col) => (
+                      <Box
+                        key={`${id}-${col.id}`}
+                        component="td"
+                        sx={{ borderBottom: "1px solid #ddd", padding: "8px", verticalAlign: "top" }}
                       >
-                        {bill.bill_no}
-                      </Chip>
-                    </Box>
-
-                    <Box
-                      component="td"
-                      sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}
-                    >
-                      {dayjs(bill.bill_date).format("DD/MM/YYYY")}
-                    </Box>
-
-                    <Box
-                      component="td"
-                      sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}
-                    >
-                      ₹{Number(bill.bill_value).toFixed(2)}
-                    </Box>
-
-                    <Box
-                      component="td"
-                      sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}
-                    >
-                      ₹{Number(bill.total_billed).toFixed(2)}
-                    </Box>
-
-                    <Box
-                      component="td"
-                      sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}
-                    >
-                      {Array.isArray(bill.item) && bill.item.length
-                        ? (() => {
-                          const unique = [
-                            ...new Set(
-                              bill.item
-                                .map((it) => it?.category_name)
-                                .filter(Boolean)
-                            ),
-                          ];
-                          const first = unique[0];
-                          const remaining = unique.slice(1);
-                          return (
-                            <>
-                              {first}
-                              {remaining.length > 0 && (
-                                <Tooltip title={remaining.join(", ")} arrow>
-                                  <Box
-                                    component="span"
-                                    sx={{
-                                      ml: 1,
-                                      px: 1,
-                                      borderRadius: "50%",
-                                      backgroundColor: "primary.solidBg",
-                                      color: "white",
-                                      fontSize: "12px",
-                                      fontWeight: 500,
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      minWidth: "22px",
-                                      height: "22px",
-                                      lineHeight: 1,
-                                      cursor: "pointer",
-                                    }}
-                                  >
-                                    +{remaining.length}
-                                  </Box>
-                                </Tooltip>
-                              )}
-                            </>
-                          );
-                        })()
-                        : bill.item?.category_name || "-"}
-                    </Box>
-
-                    <Box
-                      component="td"
-                      sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}
-                    >
-                      {bill.project_id}
-                    </Box>
-
-                    <Box
-                      component="td"
-                      sx={{ borderBottom: "1px solid #ddd", padding: "12px" }}
-                    >
-                      {bill.po_no}
-                    </Box>
-
-                    <Box
-                      component="td"
-                      sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}
-                    >
-                      {bill.vendor}
-                    </Box>
-
-                    <Box
-                      component="td"
-                      sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}
-                    >
-                      ₹{Number(bill.po_value || 0).toFixed(2)}
-                    </Box>
-
-                    <Box
-                      component="td"
-                      sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}
-                    >
-                      <BillingStatusChip
-                        status={bill.po_status}
-                        balance={(bill.po_value - bill.total_billed).toFixed(2)}
-                      />
-                    </Box>
-
-                     {/* Delivery Status */}
-<Box
-  component="td"
-  sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}
->
-  <Chip
-    size="sm"
-    variant={bill.delivery_status === "delivered" ? "solid" : "soft"}
-    color={bill.delivery_status === "delivered" ? "success" : "neutral"}
-  >
-    {bill.delivery_status || "-"}
-  </Chip>
-</Box>
-
-<Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
-  {Array.isArray(bill.attachments) && bill.attachments.length ? (
-    <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
-      {bill.attachments.slice(0, 3).map((att, i) => (
-        <Chip
-          key={att._id || `${bill._id}-att-${i}`}
-          size="sm"
-          variant="soft"
-          color="primary"
-          onClick={() => previewAttachment(att)}
-          sx={{
-            cursor: "pointer",
-            maxWidth: 200,
-            "& .MuiChip-label": {
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            },
-          }}
-        >
-          {att.attachment_name || "Attachment"}
-        </Chip>
-      ))}
-      {bill.attachments.length > 3 && (
-        <Chip
-          size="sm"
-          variant="soft"
-          color="neutral"
-          onClick={() => previewAttachment(bill.attachments[3])}
-          sx={{ cursor: "pointer" }}
-        >
-          +{bill.attachments.length - 3} more
-        </Chip>
-      )}
-    </Box>
-  ) : (
-    "—"
-  )}
-</Box>
-
-
-
-
-
-                    <Box
-                      component="td"
-                      sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}
-                    >
-                      <BillAcceptance
-                        billNumber={bill.bill_no || []}
-                        poNumber={bill.po_no || []}
-                        approvedBy={bill.approved_by_name}
-                        currentUser={user}
-                      />
-                    </Box>
-
-                    <Box
-                      component="td"
-                      sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}
-                    >
-                      {dayjs(bill.created_on).format("DD/MM/YYYY")}
-                    </Box>
+                        {col.render(bill)}
+                      </Box>
+                    ))}
                   </Box>
                 );
               })
@@ -805,7 +810,7 @@ const previewAttachment = async (att) => {
               <Box component="tr">
                 <Box
                   component="td"
-                  colSpan={15}
+                  colSpan={dynamicColSpan}
                   sx={{ textAlign: "center", p: 2 }}
                 >
                   No bills found.
@@ -840,29 +845,26 @@ const previewAttachment = async (att) => {
         </Button>
 
         <Box>
-          {/* Showing page {currentPage} of {totalPages} ({total} results) */}
           <Typography level="body-sm">
             Showing {startIndex}–{endIndex} of {total} results
           </Typography>
         </Box>
 
-        <Box
-          sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}
-        >
-          {getPaginationRange()?.map((page, idx) =>
-            page === "..." ? (
+        <Box sx={{ flex: 1, display: "flex", justifyContent: "center", gap: 1 }}>
+          {getPaginationRange()?.map((p, idx) =>
+            p === "..." ? (
               <Box key={`ellipsis-${idx}`} sx={{ px: 1 }}>
                 ...
               </Box>
             ) : (
               <IconButton
-                key={page}
+                key={p}
                 size="sm"
-                variant={page === currentPage ? "contained" : "outlined"}
+                variant={p === currentPage ? "contained" : "outlined"}
                 color="neutral"
-                onClick={() => handlePageChange(page)}
+                onClick={() => handlePageChange(p)}
               >
-                {page}
+                {p}
               </IconButton>
             )
           )}
@@ -890,62 +892,161 @@ const previewAttachment = async (att) => {
         </Button>
       </Box>
 
-<Modal open={previewOpen} onClose={() => setPreviewOpen(false)}>
-  <ModalDialog
-    variant="soft"
-    sx={{ width: "min(1000px, 96vw)", maxHeight: "92vh", p: 0, overflow: "hidden" }}
-  >
-    <Sheet sx={{ px: 2, py: 1, borderBottom: "1px solid var(--joy-palette-neutral-outlinedBorder)" }}>
-      <ModalClose />
-      <Typography level="title-md" noWrap>{previewName}</Typography>
-    </Sheet>
+      {/* Column Visibility Modal */}
+      <Modal open={colModalOpen} onClose={() => setColModalOpen(false)}>
+        <ModalDialog sx={{ width: 520 }}>
+          <Typography level="title-md" sx={{ mb: 1 }}>
+            Visible Columns
+          </Typography>
 
-    <Sheet sx={{ flex: 1, p: 2, backgroundColor: "neutral.softBg" }}>
-      {loading ? (
-        <Typography level="body-sm">Loading…</Typography>
-      ) : isImage(`${viewerUrl} ${previewName}`) ? (
-        <img
-          src={viewerUrl}
-          alt={previewName}
-          style={{ maxWidth: "100%", maxHeight: "80vh", objectFit: "contain", borderRadius: 8 }}
-        />
-      ) : isPdf(previewName) || /^blob:/.test(viewerUrl) ? (
-        // PDF via object URL (or blob:)
-        <iframe
-          title={previewName}
-          src={viewerUrl}
-          style={{ width: "100%", height: "80vh", border: "none", borderRadius: 8, background: "#fff" }}
-        />
-      ) : (
-        // Office or other types
-        <iframe
-          title={previewName}
-          src={viewerUrl}
-          style={{ width: "100%", height: "80vh", border: "none", borderRadius: 8, background: "#fff" }}
-          referrerPolicy="no-referrer"
-        />
-      )}
-    </Sheet>
+          <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", mb: 1 }}>
+            <Chip onClick={() => applyPreset(PRESET_ESSENTIAL)} variant="soft">
+              Essential
+            </Chip>
+            <Chip onClick={() => applyPreset(PRESET_FINANCE)} variant="soft">
+              Finance
+            </Chip>
+            <Chip onClick={() => applyPreset(PRESET_LOGISTICS)} variant="soft">
+              Logistics
+            </Chip>
+            <Chip onClick={() => applyPreset(PRESET_ALL)} variant="soft">
+              All
+            </Chip>
+          </Stack>
 
-    <Sheet sx={{ px: 2, py: 1, borderTop: "1px solid var(--joy-palette-neutral-outlinedBorder)" }}>
-      <Chip
-        component="a"
-        href={viewerUrl.startsWith("blob:") ? undefined : viewerUrl}
-        target={viewerUrl.startsWith("blob:") ? undefined : "_blank"}
-        rel="noopener noreferrer"
-        variant="soft"
-        color="neutral"
-      >
-        Open in new tab
-      </Chip>
-    </Sheet>
-  </ModalDialog>
-</Modal>
+          <Sheet
+            variant="outlined"
+            sx={{ p: 1, borderRadius: "sm", maxHeight: 300, overflow: "auto" }}
+          >
+            <Stack spacing={0.5}>
+              {COLUMN_DEFS.map((col) => {
+                const checked = visibleCols.includes(col.id);
+                return (
+                  <Box key={col.id} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Checkbox
+                      size="sm"
+                      checked={checked}
+                      onChange={(e) => {
+                        setVisibleCols((prev) =>
+                          e.target.checked ? [...prev, col.id] : prev.filter((x) => x !== col.id)
+                        );
+                      }}
+                    />
+                    <Typography level="body-sm">{col.label}</Typography>
+                  </Box>
+                );
+              })}
+            </Stack>
+          </Sheet>
 
+          <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ mt: 1 }}>
+            <Button size="sm" variant="plain" onClick={() => setColModalOpen(false)}>
+              Close
+            </Button>
+          </Stack>
+        </ModalDialog>
+      </Modal>
 
+      {/* Attachments Viewer Modal (Google Docs only; images raw) */}
+      <Modal open={previewOpen} onClose={() => setPreviewOpen(false)}>
+        <ModalDialog
+          variant="soft"
+          sx={{ width: "min(1000px, 96vw)", maxHeight: "92vh", p: 0, overflow: "hidden" }}
+        >
+          <Sheet
+            sx={{
+              px: 2,
+              py: 1,
+              borderBottom: "1px solid var(--joy-palette-neutral-outlinedBorder)",
+            }}
+          >
+            <ModalClose />
+            <Typography level="title-md" noWrap>
+              {previewName}
+            </Typography>
+          </Sheet>
 
+          <Sheet sx={{ flex: 1, p: 2, backgroundColor: "neutral.softBg" }}>
+            {/* Images directly */}
+            {viewerUrls.length === 1 && isImage(viewerUrls[0]) ? (
+              <img
+                src={viewerUrls[0]}
+                alt={previewName}
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "80vh",
+                  objectFit: "contain",
+                  borderRadius: 8,
+                }}
+              />
+            ) : (
+              <>
+                {loadingViewer && !loadFailed && (
+                  <Typography level="body-sm">Loading…</Typography>
+                )}
+                {loadFailed ? (
+                  <Typography level="body-sm">
+                    Viewer blocked or unavailable. Try opening in a new tab.
+                  </Typography>
+                ) : (
+                  <iframe
+                    title={previewName}
+                    src={viewerUrls[viewerIdx]}
+                    style={{
+                      width: "100%",
+                      height: "80vh",
+                      border: "none",
+                      borderRadius: 8,
+                      background: "#fff",
+                    }}
+                    onLoad={() => setLoadingViewer(false)}
+                    onError={() => {
+                      // fallback once
+                      if (viewerIdx === 0 && viewerUrls[1]) {
+                        setViewerIdx(1);
+                      } else {
+                        setLoadFailed(true);
+                        setLoadingViewer(false);
+                      }
+                    }}
+                    referrerPolicy="no-referrer"
+                  />
+                )}
+              </>
+            )}
+          </Sheet>
+
+          <Sheet
+            sx={{
+              px: 2,
+              py: 1,
+              borderTop: "1px solid var(--joy-palette-neutral-outlinedBorder)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 1,
+            }}
+          >
+            <Typography level="body-sm" color="neutral">
+              View only
+            </Typography>
+            {!loadFailed && viewerUrls[viewerIdx] && (
+              <Chip
+                component="a"
+                href={viewerUrls[viewerIdx]}
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="soft"
+                color="neutral"
+              >
+                Open in new tab
+              </Chip>
+            )}
+          </Sheet>
+        </ModalDialog>
+      </Modal>
     </Box>
   );
-})
+});
 
 export default VendorBillSummary;
