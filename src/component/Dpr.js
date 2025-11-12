@@ -1491,21 +1491,6 @@ function DPRTable() {
                 >
                   <FormControl>
                     <Typography level="title-sm" sx={{ mb: 0.5 }}>
-                      Date
-                    </Typography>
-                    <Input
-                      type="date"
-                      value={progressDate}
-                      onChange={(e) => setProgressDate(e.target.value)}
-                      readOnly
-                      slotProps={{ input: { readOnly: true } }}
-                      sx={{ "--Input-minHeight": "40px" }}
-                      disabled={isUpdating}
-                    />
-                  </FormControl>
-
-                  <FormControl>
-                    <Typography level="title-sm" sx={{ mb: 0.5 }}>
                       Today’s Progress (
                       {progressRow ? getUnit(progressRow) : ""})
                     </Typography>
@@ -1534,36 +1519,6 @@ function DPRTable() {
                     </Typography>
                   </FormControl>
 
-                  <Grid xs={12}>
-                    <Typography level="title-sm" sx={{ mb: 0.5 }}>
-                      Remarks{" "}
-                      {remarksRequired
-                        ? "(required for Idle/Stop)"
-                        : "(optional)"}
-                    </Typography>
-                    <Textarea
-                      minRows={2}
-                      placeholder={
-                        remarksRequired
-                          ? "Remarks are required for Idle/Stop…"
-                          : "Any notes about today’s work…"
-                      }
-                      value={progressRemarks}
-                      onChange={(e) => setProgressRemarks(e.target.value)}
-                      disabled={isUpdating}
-                      color={remarksMissing ? "danger" : undefined}
-                    />
-                    {remarksMissing && (
-                      <Typography
-                        level="body-xs"
-                        color="danger"
-                        sx={{ mt: 0.5 }}
-                      >
-                        Please enter remarks when marking Idle or Work Stopped.
-                      </Typography>
-                    )}
-                  </Grid>
-
                   <Grid xs={12} md={6}>
                     <Typography level="title-sm" sx={{ mb: 0.5 }}>
                       Status
@@ -1582,6 +1537,32 @@ function DPRTable() {
                   </Grid>
                 </Box>
 
+                <Grid xs={12} md={12}>
+                  <Typography level="title-sm" sx={{ mb: 0.5 }}>
+                    Remarks{" "}
+                    {remarksRequired
+                      ? "(required for Idle/Stop)"
+                      : "(optional)"}
+                  </Typography>
+                  <Textarea
+                    minRows={2}
+                    placeholder={
+                      remarksRequired
+                        ? "Remarks are required for Idle/Stop…"
+                        : "Any notes about today’s work…"
+                    }
+                    value={progressRemarks}
+                    onChange={(e) => setProgressRemarks(e.target.value)}
+                    disabled={isUpdating}
+                    color={remarksMissing ? "danger" : undefined}
+                  />
+                  {remarksMissing && (
+                    <Typography level="body-xs" color="danger" sx={{ mt: 0.5 }}>
+                      Please enter remarks when marking Idle or Work Stopped.
+                    </Typography>
+                  )}
+                </Grid>
+
                 <Divider sx={{ my: 1.5 }} />
 
                 {updateErr && (
@@ -1593,7 +1574,7 @@ function DPRTable() {
 
                 <Box
                   display="flex"
-                  justifyContent="space-between"
+                  justifyContent="flex-end"
                   gap={1}
                   flexWrap="wrap"
                   sx={{
@@ -1601,29 +1582,9 @@ function DPRTable() {
                     "& > *": { width: { xs: "100%", sm: "auto" } },
                   }}
                 >
-                  <Box display="flex" gap={1} flexWrap="wrap">
-                    <Button
-                      variant={actionType === "idle" ? "solid" : "soft"}
-                      color="warning"
-                      onClick={() => submitWith("idle")}
-                      disabled={isUpdating || remarksMissing}
-                    >
-                      Mark Idle
-                    </Button>
-
-                    <Button
-                      variant={actionType === "stop" ? "solid" : "soft"}
-                      color="danger"
-                      onClick={() => submitWith("stop")}
-                      disabled={isUpdating || remarksMissing}
-                    >
-                      Mark Stop
-                    </Button>
-                  </Box>
-
                   <Box display="flex" gap={1}>
                     <Button
-                      variant="plain"
+                      variant="outlined"
                       onClick={closeProgress}
                       disabled={isUpdating}
                     >
