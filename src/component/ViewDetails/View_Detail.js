@@ -178,7 +178,6 @@ export default function CustomerPaymentSummary() {
 
       { key: "remainingSales", label: "Remaining Sales Closure(w/o GST)" },
       { key: "remainingSalesGST", label: "Remaining Sales Closure(inc GST)" },
-      { key: "status", label: "Status" },
       { key: "select", label: "Select checkbox" },
     ],
     []
@@ -451,7 +450,7 @@ export default function CustomerPaymentSummary() {
     return isNaN(x) ? "—" : `${x.toLocaleDateString()}`;
   };
 
-    const getItemLabel = (row) => {
+  const getItemLabel = (row) => {
     if (typeof row?.item_name === "string") return row.item_name;
     if (Array.isArray(row?.item_name)) {
       return row.item_name
@@ -497,8 +496,6 @@ export default function CustomerPaymentSummary() {
       })
       .filter((a) => a.url);
   };
-
-
 
   // Debounced refetch on filter changes
   useEffect(() => {
@@ -829,73 +826,71 @@ export default function CustomerPaymentSummary() {
   const [salesAmounts, setSalesAmounts] = useState({});
   const [salesInvoice, setSalesInvoice] = useState("");
 
-
   const handleSalesConvert = async () => {
-  try {
-    // Need at least one PO
-    if (!Array.isArray(selectedPO) || selectedPO.length === 0) {
-      toast.error("Select at least one PO.");
-      return;
+    try {
+      // Need at least one PO
+      if (!Array.isArray(selectedPO) || selectedPO.length === 0) {
+        toast.error("Select at least one PO.");
+        return;
+      }
+
+      // Simple required: invoice must exist (no regex)
+      const inv = String(salesInvoice || "").trim();
+      if (!inv) {
+        toast.error("Sales Invoice No. is required.");
+        return;
+      }
+
+      // Fire conversions for all selected POs
+      const results = await Promise.allSettled(
+        selectedPO.map(async (po) => {
+          const id = po?._id;
+          const poNumber = po?.po_number;
+
+          // Use provided values; fall back to 0 if absent
+          const basic = Number(salesAmounts?.[id]?.basic ?? 0);
+          const gst = Number(salesAmounts?.[id]?.gst ?? 0);
+
+          return await updateSalesPO({
+            id,
+            po_number: poNumber,
+            remarks: String(salesRemarks || "").trim(), // optional
+            basic_sales: basic,
+            gst_on_sales: gst,
+            sales_invoice: inv,
+            isSales: "true", // always true
+            files: salesFiles || [],
+          }).unwrap();
+        })
+      );
+
+      // Summarize
+      const ok = results.filter((r) => r.status === "fulfilled").length;
+      const fail = results.filter((r) => r.status === "rejected").length;
+
+      if (ok) toast.success(`Converted ${ok} PO(s).`);
+      if (fail) toast.warning(`Failed ${fail} PO(s).`);
+
+      // Reset on any success
+      if (ok) {
+        setSalesOpen(false);
+        setSelectedPO([]);
+        setSelectedClients?.([]);
+        setSalesFiles([]);
+        setSalesRemarks("");
+        setSalesInvoice("");
+        setSalesAmounts({});
+        refetch?.();
+      }
+    } catch (err) {
+      const msg =
+        err?.data?.message ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "Sales conversion failed.";
+      toast.error(msg);
     }
-
-    // Simple required: invoice must exist (no regex)
-    const inv = String(salesInvoice || "").trim();
-    if (!inv) {
-      toast.error("Sales Invoice No. is required.");
-      return;
-    }
-
-    // Fire conversions for all selected POs
-    const results = await Promise.allSettled(
-      selectedPO.map(async (po) => {
-        const id = po?._id;
-        const poNumber = po?.po_number;
-
-        // Use provided values; fall back to 0 if absent
-        const basic = Number(salesAmounts?.[id]?.basic ?? 0);
-        const gst   = Number(salesAmounts?.[id]?.gst   ?? 0);
-
-        return await updateSalesPO({
-          id,
-          po_number: poNumber,
-          remarks: String(salesRemarks || "").trim(), // optional
-          basic_sales: basic,
-          gst_on_sales: gst,
-          sales_invoice: inv,
-          isSales: "true",          // always true
-          files: salesFiles || [],
-        }).unwrap();
-      })
-    );
-
-    // Summarize
-    const ok   = results.filter(r => r.status === "fulfilled").length;
-    const fail = results.filter(r => r.status === "rejected").length;
-
-    if (ok)   toast.success(`Converted ${ok} PO(s).`);
-    if (fail) toast.warning(`Failed ${fail} PO(s).`);
-
-    // Reset on any success
-    if (ok) {
-      setSalesOpen(false);
-      setSelectedPO([]);
-      setSelectedClients?.([]);
-      setSalesFiles([]);
-      setSalesRemarks("");
-      setSalesInvoice("");
-      setSalesAmounts({});
-      refetch?.();
-    }
-  } catch (err) {
-    const msg =
-      err?.data?.message ||
-      err?.response?.data?.message ||
-      err?.message ||
-      "Sales conversion failed.";
-    toast.error(msg);
-  }
-};
-
+  };
 
   const addFiles = (files) => {
     const newFiles = Array.from(files).map((file) => ({ file }));
@@ -1072,94 +1067,6 @@ export default function CustomerPaymentSummary() {
     );
   }
 
-  // Shared footer
-  const PaginationFooter = ({ totalHint }) => {
-    const pageSizeOptions = [10, 25, 50, 100];
-
-    const handlePageSizeChange = (newSize) => {
-      const parsed = Number(newSize);
-      if (!Number.isFinite(parsed) || parsed <= 0) return;
-
-      // Reset to page 1 when changing size
-      setPage(1);
-      setPageSize(parsed);
-
-      const next = new URLSearchParams(searchParams);
-      next.set("tab", activeTab);
-      next.set("page", "1");
-      next.set("pageSize", String(parsed));
-      if (p_id) next.set("p_id", p_id);
-      setSearchParams(next);
-    };
-
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 1.5,
-          flexWrap: "wrap",
-          justifyContent: "space-between",
-          mt: 1.5,
-        }}
-      >
-        {/* Left side: page and total hint */}
-        <Typography level="body-sm">
-          Page {page}
-          {totalHint ? ` • ${totalHint}` : ""}
-        </Typography>
-
-        {/* Right side: pagination controls */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1.5,
-            flexWrap: "wrap",
-          }}
-        >
-          {/* Page size selection */}
-          <Stack direction="row" spacing={0.5} alignItems="center">
-            <Typography level="body-sm">Rows per page:</Typography>
-            <Select
-              size="sm"
-              value={pageSize}
-              onChange={(_, val) => handlePageSizeChange(val)}
-              sx={{ minWidth: 80 }}
-            >
-              {pageSizeOptions.map((size) => (
-                <Option key={size} value={size}>
-                  {size}/page
-                </Option>
-              ))}
-            </Select>
-          </Stack>
-
-          {/* Prev / Next */}
-          <Stack direction="row" alignItems="center" spacing={0.5}>
-            <Button
-              size="sm"
-              variant="plain"
-              disabled={page <= 1}
-              onClick={onPrev}
-            >
-              Prev
-            </Button>
-            <Typography level="body-sm">/</Typography>
-            <Button
-              size="sm"
-              variant="plain"
-              disabled={!canNext || isLoading}
-              onClick={onNext}
-            >
-              Next
-            </Button>
-          </Stack>
-        </Box>
-      </Box>
-    );
-  };
-
   const RupeeValue = ({ value, showSymbol = true }) => {
     const n = Number(value);
     if (!isFinite(n)) return "—";
@@ -1226,13 +1133,8 @@ export default function CustomerPaymentSummary() {
       ],
       [
         "7",
-        "Advances left after bills received [4 - 5 - 6]",
-        safeRound(
-          responseData?.total_advance_paid -
-            responseData?.total_sales_value -
-            responseData?.clientHistory?.meta
-              ?.total_remaining_sales_value_with_gst
-        ),
+        "Total Advance Remaining",
+        safeRound(responseData?.clientHistory?.meta?.total_remaining_advance),
         "#FFF",
       ],
       [
@@ -1244,17 +1146,7 @@ export default function CustomerPaymentSummary() {
       [
         "9",
         "Balance With Slnko [3 - 5 - 6 - 7 - 8]",
-        safeRound(
-          responseData?.netBalance -
-            responseData?.total_sales_value -
-            responseData?.clientHistory?.meta
-              ?.total_remaining_sales_value_with_gst -
-            (responseData?.total_advance_paid -
-              responseData?.total_sales_value -
-              responseData?.clientHistory?.meta
-                ?.total_remaining_sales_value_with_gst) -
-            responseData?.total_adjustment
-        ),
+        safeRound(responseData?.balance_with_slnko),
         "#FFECB3",
         true,
       ],
@@ -1267,13 +1159,14 @@ export default function CustomerPaymentSummary() {
       4: "Advance lying with vendors",
       5: "Value of material delivered (PO Closed) & Sales Invoice issued (including Sales GST)",
       6: "Value of material delivered (PO Closed) including Purchase GST",
-      7: "Advance left after bills received [4-5-6] ",
+      7: "Sum of (Advance Paid − Total Billed) for POs not Fully Sold (Fully Sold counted as 0)",
       8: "Adjustments (Debit / Credit)",
       9: "",
     };
 
     const summaryData = [
       ["Total PO Value", safeRound(responseData?.total_po_with_gst)],
+      ["Net Sales Closure", safeRound(responseData?.net_billing_balance)],
       ["Billed Value", safeRound(responseData?.aggregate_billed_value)],
       ["Advance Paid", safeRound(responseData?.total_advance_paid)],
       [
@@ -1464,37 +1357,52 @@ export default function CustomerPaymentSummary() {
                   </th>
                 </tr>
               </thead>
-              <tbody>
-                {summaryData.map(([desc, value, tone]) => (
-                  <Tooltip
-                    key={desc}
-                    title={
-                      desc === "Remaining to Pay"
-                        ? "If Billed > Advance → (PO with GST − Billed - Balance with slnko), else = (PO with GST − Total Advance Paid - Balance with slnko)"
-                        : ""
-                    }
-                    arrow
-                    placement="top-start"
-                  >
-                    <tr
-                      style={{
-                        background:
-                          desc === "Remaining to Pay"
-                            ? tone === "success"
-                              ? "#E8F5E9"
-                              : "#FFF9C4"
-                            : "#FFFFFF",
-                        fontWeight: desc === "Remaining to Pay" ? 700 : 400,
-                      }}
-                    >
-                      <td>{desc}</td>
-                      <td className="num">
-                        {isLoading ? "• • •" : value?.toLocaleString("en-IN")}
-                      </td>
-                    </tr>
-                  </Tooltip>
-                ))}
-              </tbody>
+           <tbody>
+  {summaryData.map(([desc, value, tone]) => (
+    <Tooltip
+      key={desc}
+      title={
+        desc === "Remaining to Pay" ? (
+          <Box sx={{ whiteSpace: "pre-line" }}>
+            {[
+              "If Billed > Advance:",
+              "  Remaining to Pay = Net Sales Closure − (PO with GST − Billed − Balance with Slnko)",
+              "",
+              "Else:",
+              "  Remaining to Pay = Net Sales Closure − (PO with GST − Total Advance Paid − Balance with Slnko)",
+            ].join("\n")}
+          </Box>
+        ) : desc === "Net Sales Closure" ? (
+          <Box sx={{ whiteSpace: "pre-line" }}>
+            {"Net Sales Closure = Total Sales (with GST) − Remaining Sales (with GST)"}
+          </Box>
+        ) : (
+          ""
+        )
+      }
+      arrow
+      placement="top-start"
+    >
+      <tr
+        style={{
+          background:
+            desc === "Remaining to Pay"
+              ? tone === "success"
+                ? "#E8F5E9"
+                : "#FFF9C4"
+              : "#FFFFFF",
+          fontWeight: desc === "Remaining to Pay" ? 700 : 400,
+        }}
+      >
+        <td>{desc}</td>
+        <td className="num">
+          {isLoading ? "• • •" : value?.toLocaleString("en-IN")}
+        </td>
+      </tr>
+    </Tooltip>
+  ))}
+</tbody>
+
             </Table>
           </Sheet>
         </Grid>
@@ -2268,7 +2176,6 @@ export default function CustomerPaymentSummary() {
                     {show("remainingSalesGST") && (
                       <col style={{ minWidth: "200px" }} />
                     )}
-                    {show("status") && <col style={{ minWidth: "150px" }} />}
                     {show("select") && <col style={{ minWidth: "100px" }} />}
                   </colgroup>
 
@@ -2336,12 +2243,6 @@ export default function CustomerPaymentSummary() {
                         </th>
                       )}
 
-                      {show("status") && (
-                        <th rowSpan={2} className="text">
-                          Status
-                        </th>
-                      )}
-
                       {show("select") && (
                         <th rowSpan={2} style={{ textAlign: "center" }}>
                           <Checkbox
@@ -2388,7 +2289,7 @@ export default function CustomerPaymentSummary() {
                     {isLoading ? (
                       <tr>
                         <td
-                          colSpan={14}
+                          colSpan={13}
                           style={{ textAlign: "center", padding: 20 }}
                         >
                           <Typography
@@ -2402,7 +2303,35 @@ export default function CustomerPaymentSummary() {
                     ) : ClientSummary.length > 0 ? (
                       ClientSummary.map((client) => (
                         <tr key={client._id}>
-                          <td className="text">{client.po_number || "N/A"}</td>
+                          <td className="text">
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 4,
+                              }}
+                            >
+                              <Typography level="body-sm" fontWeight={600}>
+                                {client.po_number || "N/A"}
+                              </Typography>
+
+                              <Chip
+                                size="sm"
+                                variant="soft"
+                                color={
+                                  client.sales_status === "Fully Sold"
+                                    ? "success"
+                                    : client.sales_status === "Pending"
+                                    ? "error"
+                                    : client.sales_status === "Partially Sold"
+                                    ? "warning"
+                                    : "neutral"
+                                }
+                              >
+                                {client.sales_status || "—"}
+                              </Chip>
+                            </div>
+                          </td>
 
                           {show("vendor") && (
                             <td className="text">{client.vendor || "N/A"}</td>
@@ -2452,7 +2381,7 @@ export default function CustomerPaymentSummary() {
                           {show("advanceRemaining") && (
                             <td className="num">
                               <RupeeValue
-                                value={client.remaining_amount || 0}
+                                value={client.remaining_advance || 0}
                               />
                             </td>
                           )}
@@ -2492,28 +2421,6 @@ export default function CustomerPaymentSummary() {
                               />
                             </td>
                           )}
-
-                          <td style={{ textAlign: "center" }}>
-                            <Chip
-                              color={
-                                client.remaining_sales_value === 0 &&
-                                client.po_basic === client.bill_basic
-                                  ? "success"
-                                  : client.bill_basic ===
-                                    client.remaining_sales_value
-                                  ? "error"
-                                  : "warning"
-                              }
-                            >
-                              {client.remaining_sales_value === 0 &&
-                              client.po_basic === client.bill_basic
-                                ? "Fully Sold"
-                                : client.bill_basic ===
-                                  client.remaining_sales_value
-                                ? "Pending"
-                                : "Partially Sold"}
-                            </Chip>
-                          </td>
 
                           {show("select") && (
                             <td style={{ textAlign: "center" }}>
@@ -2594,7 +2501,8 @@ export default function CustomerPaymentSummary() {
                           <td className="num">
                             <RupeeValue
                               value={
-                                clientHistory?.meta?.total_remaining_amount || 0
+                                clientHistory?.meta?.total_remaining_advance ||
+                                0
                               }
                             />
                           </td>
@@ -3885,7 +3793,6 @@ export default function CustomerPaymentSummary() {
                           sx={{
                             width: 100,
                             ml: "auto",
-                            
                           }}
                         />
 
