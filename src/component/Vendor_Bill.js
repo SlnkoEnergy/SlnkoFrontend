@@ -1036,7 +1036,7 @@ const VendorBillSummary = forwardRef((props, ref) => {
           <Sheet
             sx={{
               px: 2,
-              py: 1,
+              py:0,
               borderTop: "1px solid var(--joy-palette-neutral-outlinedBorder)",
               display: "flex",
               justifyContent: "space-between",
