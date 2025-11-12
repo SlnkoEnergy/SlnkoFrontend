@@ -108,6 +108,7 @@ const AddLogisticForm = () => {
     },
   ]);
 
+
   const [totalWeight, setTotalWeight] = useState(0);
   const [vehicleCost, setVehicleCost] = useState(0);
 
@@ -174,6 +175,7 @@ const AddLogisticForm = () => {
     }
   );
 
+
   // existing attachments + optional history (if backend sends it)
   const existingAttachments = useMemo(() => {
     const a = byIdData?.data?.attachment_url;
@@ -213,6 +215,7 @@ const AddLogisticForm = () => {
   useEffect(() => {
     if (!byIdData?.data || !(isEdit || isView)) return;
     const doc = byIdData.data;
+
 
     setFormData((prev) => ({
       ...prev,
@@ -268,6 +271,7 @@ const AddLogisticForm = () => {
             ? it.category_id
             : null;
 
+
         return {
           po_id: poObj?._id || it.material_po || "",
           po_item_id: it.po_item_id || null,
@@ -275,7 +279,7 @@ const AddLogisticForm = () => {
           // fill from PO
           po_number: poObj?.po_number || "",
           project_id: poObj?.p_id || doc.p_id || "",
-          vendor: poObj?.vendor || doc.vendor || "",
+          vendor: poObj?.vendor.name || doc.vendor.name || "",
 
           // product/category fields
           product_name: it.product_name || "",
