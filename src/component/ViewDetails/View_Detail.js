@@ -1826,23 +1826,7 @@ export default function CustomerPaymentSummary() {
                     />
                   </FormControl>
 
-                  {/* <FormControl sx={{ minWidth: 200 }}>
-                    <FormLabel>Start Date</FormLabel>
-                    <Input
-                      type="date"
-                      value={startDate}
-                       onChange={handleStartDateChange}
-                    />
-                  </FormControl>
-
-                  <FormControl sx={{ minWidth: 200 }}>
-                    <FormLabel>End Date</FormLabel>
-                    <Input
-                      type="date"
-                      value={endDate}
-                      onChange={handleEndDateChange}
-                    />
-                  </FormControl> */}
+                 
                 </Box>
 
                 {(user?.name === "IT Team" ||
