@@ -50,13 +50,13 @@ export const billsApi = createApi({
 
 
     exportBills: builder.mutation({
-      query: ({ from, to, exportAll, Ids }) => {
+      query: ({ status, from, to, exportAll, Ids }) => {
 
         const params = new URLSearchParams();
 
         if (exportAll) {
           params.set("export", "all");
-        } else {
+          params.set("status", status);
           params.set("from", from);
           params.set("to", to);
         }
