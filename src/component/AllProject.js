@@ -106,13 +106,11 @@ function AllProjects() {
   const Projects = getProjects?.data || [];
 
   const ProjectOverView = ({ currentPage, project_id, code }) => (
-    <span
-      style={{
+    <Chip
+      variant="outlined"
+      color="primary"
+      sx={{
         cursor: "pointer",
-        color: theme.vars.palette.text.primary,
-        textDecoration: "underline",
-        textDecorationStyle: "dotted",
-        fontSize: "14px",
       }}
       onClick={() => {
         navigate(
@@ -121,7 +119,7 @@ function AllProjects() {
       }}
     >
       {code || "-"}
-    </span>
+    </Chip>
   );
 
   // ======== Search: update URL on every keystroke and reset page to 1 ========
@@ -443,14 +441,18 @@ function AllProjects() {
                       <Dropdown>
                         <MenuButton
                           slots={{ root: IconButton }}
-                          slotProps={{ root: { variant: "outlined", size: "sm" } }}
+                          slotProps={{
+                            root: { variant: "outlined", size: "sm" },
+                          }}
                         >
                           <MoreHorizRoundedIcon />
                         </MenuButton>
                         <Menu placement="bottom-end" size="sm">
                           <MenuItem
                             onClick={() =>
-                              navigate(`/view_pm?project_id=${projectIdForLinks}`)
+                              navigate(
+                                `/view_pm?project_id=${projectIdForLinks}`
+                              )
                             }
                           >
                             Schedule

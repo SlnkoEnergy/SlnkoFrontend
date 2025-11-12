@@ -41,25 +41,19 @@ function DprManagement() {
           it.id ||
           "";
         const id =
-          it._id ||
-          it.projectId ||
-          it.id ||
-          it.value_id ||
-          it.project_id ||
-          "";
+          it._id || it.projectId || it.id || it.value_id || it.project_id || "";
         if (!id || !code) return null;
         return { label: String(code), value: String(id) };
       })
       .filter(Boolean);
   }, [dropdownRaw]);
 
-  // Read filters from URL
   const projectIdFromUrl = searchParams.get("projectId") || "";
   const statusFromUrl = searchParams.get("status") || "";
   const fromFromUrl = searchParams.get("from") || undefined;
   const toFromUrl = searchParams.get("to") || undefined;
+  const hidestatusFromUrl = searchParams.get("hide_status") || "";
 
-  // If URL has a projectId that's not in dropdown, clean it up
   useEffect(() => {
     if (
       projectIdFromUrl &&
@@ -75,7 +69,7 @@ function DprManagement() {
 
   const FILTER_FIELDS = [
     {
-      key: "projectId", // << use projectId in the filter
+      key: "projectId",
       label: "Project Code",
       type: "select",
       options: projectOptions,
@@ -92,16 +86,25 @@ function DprManagement() {
         { label: "Completed", value: "completed" },
       ],
     },
+    {
+      key: "hide_status",
+      label: "Hide Status",
+      type: "select",
+      options: [
+        { label: "In progress", value: "in progress" },
+        { label: "Idle", value: "idle" },
+        { label: "Work Stopped", value: "work stopped" },
+        { label: "Completed", value: "completed" },
+      ],
+    },
   ];
 
   const handleApplyFilters = (vals) => {
     const next = new URLSearchParams(searchParams);
 
-    // Remove legacy/unused keys
     next.delete("project_code");
     next.delete("project_name");
 
-    // Write projectId (not code) into the URL
     if (vals.projectId) next.set("projectId", String(vals.projectId));
     else next.delete("projectId");
 
@@ -114,6 +117,9 @@ function DprManagement() {
     if (vals.status) next.set("status", String(vals.status));
     else next.delete("status");
 
+     if (vals.hide_status) next.set("hide_status", String(vals.hide_status));
+    else next.delete("hide_status");
+
     next.set("page", "1");
     if (!next.get("pageSize")) next.set("pageSize", "10");
 
@@ -124,8 +130,8 @@ function DprManagement() {
   const handleResetFilters = () => {
     setSearchParams((prev) => {
       const p = new URLSearchParams(prev);
-      p.delete("projectId");      // << clear projectId
-      p.delete("project_code");   // safety: clear any legacy key too
+      p.delete("projectId"); 
+      p.delete("project_code"); 
       p.delete("project_name");
       p.delete("from");
       p.delete("to");
@@ -138,7 +144,9 @@ function DprManagement() {
   return (
     <CssVarsProvider disableTransitionOnChange>
       <CssBaseline />
-      <Box sx={{ display: "flex", minHeight: "100dvh", flexDirection: "column" }}>
+      <Box
+        sx={{ display: "flex", minHeight: "100dvh", flexDirection: "column" }}
+      >
         <Sidebar />
 
         <MainHeader title="Projects" sticky>
@@ -224,8 +232,9 @@ function DprManagement() {
               onOpenChange={setFilterOpen}
               fields={FILTER_FIELDS}
               initialValues={{
-                projectId: projectIdFromUrl || undefined, // << use projectId here
+                projectId: projectIdFromUrl || undefined,
                 status: statusFromUrl || undefined,
+                hide_status: hidestatusFromUrl || undefined,
                 deadline:
                   fromFromUrl || toFromUrl
                     ? { from: fromFromUrl, to: toFromUrl }
