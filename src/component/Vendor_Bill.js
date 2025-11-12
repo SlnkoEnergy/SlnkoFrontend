@@ -354,11 +354,13 @@ const VendorBillSummary = forwardRef((props, ref) => {
   };
 
   /* ===============================
-     Attachments Preview - Google Docs ONLY
+     Attachments Preview
      - images rendered directly
-     - docs/pdf via Google viewer with fallback
+     - docs/pdf via Google viewer
+     - if PDF cannot be viewed -> show Download action
   ================================ */
   const isImage = (s = "") => /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(s);
+  const isPdf = (s = "") => /\.pdf(\?|$)/i.test(s);
 
   const buildGdocUrls = (rawUrl = "") => [
     `https://drive.google.com/viewerng/viewer?embedded=1&url=${encodeURIComponent(rawUrl)}`,
@@ -372,12 +374,29 @@ const VendorBillSummary = forwardRef((props, ref) => {
   const [loadingViewer, setLoadingViewer] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
 
+  // keep original file details to decide download option
+  const [srcUrl, setSrcUrl] = useState("");
+  const [srcName, setSrcName] = useState("");
+
+  const downloadFile = (url, filename = "file") => {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
   const previewAttachment = (att) => {
     if (!att) return;
     const url = att.attachment_url || "";
     const name = att.attachment_name || "Attachment";
     if (!url) return;
 
+    setSrcUrl(url);
+    setSrcName(name);
     setPreviewName(name);
 
     // images -> render raw
@@ -390,6 +409,7 @@ const VendorBillSummary = forwardRef((props, ref) => {
       return;
     }
 
+    // use Google viewers first
     const candidates = buildGdocUrls(url);
     setViewerUrls(candidates);
     setViewerIdx(0);
@@ -400,8 +420,7 @@ const VendorBillSummary = forwardRef((props, ref) => {
 
   const VIEWER_TIMEOUT_MS = 6000;
   useEffect(() => {
-    if (!previewOpen) return;
-    if (!viewerUrls.length) return;
+    if (!previewOpen || !viewerUrls.length) return;
 
     setLoadingViewer(true);
     setLoadFailed(false);
@@ -409,11 +428,10 @@ const VendorBillSummary = forwardRef((props, ref) => {
     let cancelled = false;
     const timer = setTimeout(() => {
       if (cancelled) return;
-      // fallback once
       if (viewerIdx === 0 && viewerUrls[1]) {
-        setViewerIdx(1);
+        setViewerIdx(1); // try gview if viewerng failed
       } else {
-        setLoadFailed(true);
+        setLoadFailed(true); // will show Download if pdf
         setLoadingViewer(false);
       }
     }, VIEWER_TIMEOUT_MS);
@@ -947,7 +965,7 @@ const VendorBillSummary = forwardRef((props, ref) => {
         </ModalDialog>
       </Modal>
 
-      {/* Attachments Viewer Modal (Google Docs only; images raw) */}
+      {/* Attachments Viewer Modal (Google-first; images raw; download-on-fail for PDFs) */}
       <Modal open={previewOpen} onClose={() => setPreviewOpen(false)}>
         <ModalDialog
           variant="soft"
@@ -986,7 +1004,7 @@ const VendorBillSummary = forwardRef((props, ref) => {
                 )}
                 {loadFailed ? (
                   <Typography level="body-sm">
-                    Viewer blocked or unavailable. Try opening in a new tab.
+                    Viewer blocked or unavailable.
                   </Typography>
                 ) : (
                   <iframe
@@ -1001,9 +1019,8 @@ const VendorBillSummary = forwardRef((props, ref) => {
                     }}
                     onLoad={() => setLoadingViewer(false)}
                     onError={() => {
-                      // fallback once
                       if (viewerIdx === 0 && viewerUrls[1]) {
-                        setViewerIdx(1);
+                        setViewerIdx(1); // try second viewer
                       } else {
                         setLoadFailed(true);
                         setLoadingViewer(false);
@@ -1030,17 +1047,30 @@ const VendorBillSummary = forwardRef((props, ref) => {
             <Typography level="body-sm" color="neutral">
               View only
             </Typography>
-            {!loadFailed && viewerUrls[viewerIdx] && (
+
+            {loadFailed && isPdf(`${srcUrl} ${srcName}`) ? (
               <Chip
-                component="a"
-                href={viewerUrls[viewerIdx]}
-                target="_blank"
-                rel="noopener noreferrer"
+                onClick={() => downloadFile(srcUrl, srcName || "document.pdf")}
                 variant="soft"
-                color="neutral"
+                color="primary"
+                sx={{ cursor: "pointer" }}
               >
-                Open in new tab
+                Download PDF
               </Chip>
+            ) : (
+              !loadFailed &&
+              viewerUrls[viewerIdx] && (
+                <Chip
+                  component="a"
+                  href={viewerUrls[viewerIdx]}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="soft"
+                  color="neutral"
+                >
+                  Open in new tab
+                </Chip>
+              )
             )}
           </Sheet>
         </ModalDialog>
