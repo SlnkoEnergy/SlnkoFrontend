@@ -33,6 +33,7 @@ import NoData from "../assets/alert-bell.svg";
 
 // RTK Query hooks
 import {
+  useGetActivityLineByProjectIdQuery,
   useGetAllDprQuery,
   useUpdateDprLogMutation,
 } from "../../src/redux/projectsSlice";
@@ -162,6 +163,8 @@ function DPRTable() {
     setRowsPerPage(ps);
     setSearchQuery(s);
   }, [searchParams]);
+
+    
 
   /** ===== Selection ===== */
   const [selected, setSelected] = useState([]);

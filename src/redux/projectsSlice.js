@@ -565,7 +565,7 @@ export const projectsApi = createApi({
         status, 
         category,
         hide_status,
-        status, 
+        
       }) => {
         const params = new URLSearchParams();
 

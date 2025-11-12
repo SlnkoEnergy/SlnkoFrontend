@@ -30,9 +30,11 @@ import Person from "@mui/icons-material/Person";
 import LocationOn from "@mui/icons-material/LocationOn";
 import { useParams, useSearchParams } from "react-router-dom";
 import ActivityFinishLineChart from "../../src/component/ActivityFinishLineChart";
+import ExpandMore from "@mui/icons-material/ExpandMore";
 import {
   useGetProjectSummaryByIdQuery,
   useGetDprStatusCardsByIdQuery,
+  useGetActivityLineByProjectIdQuery,
 } from "../../src/redux/projectsSlice";
 
 /* ------------------- theme helpers ------------------- */
@@ -161,6 +163,8 @@ function normalizeActivitiesFromSummary(raw = []) {
 
 /* ------------------- engineers panel ------------------- */
 function EngineerRow({ e }) {
+  const [open, setOpen] = React.useState(false);
+
   const statusIcon =
     e.status === "ok" ? (
       <CheckCircle color="success" />
@@ -172,15 +176,42 @@ function EngineerRow({ e }) {
 
   const pct = Math.round(e.progressPct || 0);
 
+  const chipColor = (s) =>
+    s === "completed" ? "success" : s === "in progress" ? "primary" : "neutral";
+
+  const activities = Array.isArray(e.assignedActivities)
+    ? e.assignedActivities
+    : [];
+
+  const toggle = () => setOpen((v) => !v);
+
   return (
     <Card sx={{ ...cardSx, mb: 1.5 }}>
-      <Box display="flex" alignItems="center" gap={1.5}>
+      {/* Header — click to expand/collapse */}
+      <Box
+        display="flex"
+        alignItems="center"
+        gap={1.5}
+        sx={{ cursor: "pointer" }}
+        onClick={toggle}
+        onKeyDown={(ev) => {
+          if (ev.key === "Enter" || ev.key === " ") {
+            ev.preventDefault();
+            toggle();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-expanded={open}
+      >
         <Avatar>{e.name?.[0] || "?"}</Avatar>
+
         <Box flex={1}>
-          <Typography level="title-sm">{e.name || "Unassigned"}</Typography>
+          <Typography level="title-sm">{e.name || "Engineer"}</Typography>
           <Typography level="body-xs" color="neutral">
             {e.assigned} Assigned / {e.completed} Completed
           </Typography>
+
           <Box mt={1} pr={5} position="relative">
             <LinearProgress
               determinate
@@ -207,8 +238,61 @@ function EngineerRow({ e }) {
             </Typography>
           </Box>
         </Box>
-        {statusIcon}
+
+        <Box display="flex" alignItems="center" gap={0.75}>
+          <ExpandMore
+            sx={{
+              transition: "transform .2s",
+              transform: open ? "rotate(180deg)" : "rotate(0deg)",
+            }}
+          />
+          {statusIcon}
+        </Box>
       </Box>
+
+      {/* Collapsible body — show nothing when closed, all when open */}
+      {activities.length > 0 && (
+        <Box sx={{ mt: 1, display: open ? "block" : "none" }}>
+          <List variant="soft" size="sm" sx={{ "--List-gap": "6px" }}>
+            {activities.map((a) => (
+              <ListItem
+                key={a.id}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  cursor: "default", // no modal
+                }}
+              >
+                <Typography level="body-sm" sx={{ flex: 1 }}>
+                  {a.name}
+                </Typography>
+                <Chip size="sm" variant="soft" color={chipColor(a.status)}>
+                  {String(a.status || "").replaceAll("_", " ")}
+                </Chip>
+                <Typography
+                  level="body-xs"
+                  sx={{ width: 36, textAlign: "right" }}
+                >
+                  {a.pct ?? 0}%
+                </Typography>
+              </ListItem>
+            ))}
+          </List>
+        </Box>
+      )}
+
+      {/* Toggle hint line */}
+      {activities.length > 0 && (
+        <Typography
+          level="body-xs"
+          color="neutral"
+          sx={{ mt: 0.75, cursor: "pointer", userSelect: "none" }}
+          onClick={toggle}
+        >
+          {open ? "Hide activities" : `Show ${activities.length} activities`}
+        </Typography>
+      )}
     </Card>
   );
 }
@@ -217,9 +301,7 @@ function prepareEngineersFromSummary(activities = []) {
   const map = new Map();
   activities.forEach((act) => {
     const users = Array.isArray(act.assigned_to) ? act.assigned_to : [];
-    const list = users.length
-      ? users
-      : [{ _id: "_unassigned", name: "Unassigned" }];
+    const list = users.length ? users : [];
 
     list.forEach((u) => {
       const key = u._id || u.user_id || u.email || u.name || "unknown";
@@ -231,6 +313,7 @@ function prepareEngineersFromSummary(activities = []) {
           completed: 0,
           totalPlanned: 0,
           totalActual: 0,
+          assignedActivities: [], // <— NEW
         });
       }
       const row = map.get(key);
@@ -240,6 +323,14 @@ function prepareEngineersFromSummary(activities = []) {
       row.totalPlanned += 100;
       row.totalActual += Math.max(0, Math.min(100, pct));
       if (pct >= 100) row.completed += 1;
+
+      // <— NEW: keep a compact summary of this activity for this engineer
+      row.assignedActivities.push({
+        id: act.id || act._key,
+        name: act.activity_name,
+        status: act.current_status, // "not started" | "in progress" | "completed"
+        pct: Math.round(Math.max(0, Math.min(100, pct))),
+      });
     });
   });
 
@@ -273,6 +364,15 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
     "progress_or_completed",
     "idle", // NEW
   ]);
+
+  const projectIds = [projectId];
+  const {
+    data: LineData,
+    isLoading: isLoadingLineData,
+    isFetching: isFetchingLineData,
+  } = useGetActivityLineByProjectIdQuery(projectIds, {
+    skip: projectIds.length === 0,
+  });
   const initialFilter = (() => {
     const f = (searchParams.get("af") || "progress_or_completed").toLowerCase();
     return validFilters.has(f) ? f : "progress_or_completed";
@@ -443,6 +543,13 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
     setFilter("idle");
   };
 
+  const handleProjectChangeSingle = (pid) => {
+    if (!pid) return;
+    const sp = new URLSearchParams(searchParams);
+    sp.set("projectId", String(pid));
+    setSearchParams(sp, { replace: true });
+  };
+
   return (
     <Box
       sx={{
@@ -523,31 +630,44 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
               {project_detail.name}
             </Typography>
 
-            <Box
-              display="grid"
-              gridTemplateColumns={{ xs: "1fr", sm: "1fr 1fr" }}
-              gap={1}
-            >
+            <Box display="flex" justifyContent={"space-between"} gap={1}>
               <Typography level="body-sm">
                 <strong>Project Code:</strong> {project_detail.code}
               </Typography>
               <Typography level="body-sm">
                 <strong>Customer Name:</strong> {project_detail.customer || "-"}
               </Typography>
-              <Box display="flex" alignItems="center" gap={0.75}>
-                <LocationOn fontSize="sm" />
-                <Typography level="body-sm">
-                  {project_detail.site_address || "-"}
-                </Typography>
-              </Box>
+              {project_detail?.site_address && (
+                <Box display="flex" alignItems="center" gap={0.75}>
+                  <LocationOn fontSize="sm" />
+                  <Typography level="body-sm">
+                    {project_detail.site_address || "-"}
+                  </Typography>
+                </Box>
+              )}
             </Box>
 
-            <ActivityFinishLineChart
-              apiData={activities}
-              projectId={projectId}
-              title={project_detail.name}
-              height={350}
-            />
+            {isLoadingLineData || isFetchingLineData ? (
+              <Typography level="body-sm">Loading charts…</Typography>
+            ) : Array.isArray(LineData?.rows) && LineData.rows.length ? (
+              <Grid container spacing={1}>
+                {LineData.rows.map((row) => (
+                  <Grid key={row.project_id} xs={12}>
+                    <ActivityFinishLineChart
+                      apiData={row}
+                      projectId={row.project_id}
+                      domain={row.domain}
+                      title={row.project_name}
+                      onProjectChange={handleProjectChangeSingle}
+                    />
+                  </Grid>
+                ))}
+              </Grid>
+            ) : (
+              <Typography level="body-sm" color="neutral">
+                No activity line data found.
+              </Typography>
+            )}
           </Card>
         </Grid>
 
@@ -557,8 +677,8 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
             sx={{
               ...cardSx,
               overflow: "auto",
-              maxHeight: "500px",
-              minHeight: "500px",
+              maxHeight: "618px",
+              minHeight: "618px",
             }}
           >
             <Typography level="title-lg" mb={1}>
@@ -618,7 +738,8 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
                 <th>Assigned To</th>
                 <th style={{ width: 140 }}>Planned Finish</th>
                 <th style={{ width: 120 }}>Delay (days)</th>
-                <th style={{ width: 140 }}>Idle (days)</th>{/* NEW */}
+                <th style={{ width: 140 }}>Idle (days)</th>
+                {/* NEW */}
                 <th style={{ width: 180 }}>Work Done %</th>
                 <th style={{ width: 120, textAlign: "right" }}>Last Update</th>
               </tr>
@@ -667,7 +788,9 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
                 // NEW: Idle days from latestStatusMap (only if latest status is idle)
                 const latest = latestStatusMap.get(String(a.id || ""));
                 const isIdle = latest?.status === "idle";
-                const idleDays = isIdle ? ceilDaysBetween(latest?.date, today) : "-";
+                const idleDays = isIdle
+                  ? ceilDaysBetween(latest?.date, today)
+                  : "-";
 
                 return (
                   <tr key={a._key}>
@@ -863,7 +986,11 @@ export default function DashboardProjectView({ projectId: propProjectId }) {
                               <tr key={idx}>
                                 <td>{qty}</td>
                                 <td>
-                                  <Chip size="sm" variant="soft" color={chipColor}>
+                                  <Chip
+                                    size="sm"
+                                    variant="soft"
+                                    color={chipColor}
+                                  >
                                     {status || "progress"}
                                   </Chip>
                                 </td>
