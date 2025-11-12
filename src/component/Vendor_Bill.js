@@ -4,7 +4,7 @@ import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import SearchIcon from "@mui/icons-material/Search";
-import { CircularProgress, Option, Select, Sheet, Tooltip } from "@mui/joy";
+import { CircularProgress, Modal, ModalClose, ModalDialog, Option, Select, Sheet, Stack, Tooltip } from "@mui/joy";
 import Checkbox from "@mui/joy/Checkbox";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
@@ -14,6 +14,9 @@ import FormLabel from "@mui/joy/FormLabel";
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Typography from "@mui/joy/Typography";
+import ArrowBack from "@mui/icons-material/ArrowBack";
+import ArrowForward from "@mui/icons-material/ArrowForward";
+import Visibility from "@mui/icons-material/Visibility";
 import { useSnackbar } from "notistack";
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -372,6 +375,84 @@ const VendorBillSummary = forwardRef((props, ref) => {
     );
   };
 
+// type checks
+const isImage = (s = "") => /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(s);
+const isPdf   = (s = "") => /\.pdf(\?|$)/i.test(s);
+const isOffice = (s = "") => /\.(docx?|xlsx?|pptx?)(\?|$)/i.test(s);
+
+// Office Web Viewer URL
+const officeViewer = (url) =>
+  `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(url)}`;
+const [previewOpen, setPreviewOpen] = useState(false);
+const [previewName, setPreviewName] = useState("");
+const [viewerUrl, setViewerUrl] = useState(""); // what <img>/<iframe> uses
+const [loading, setLoading] = useState(false);
+
+// cache object URLs so we don't fetch the same PDF repeatedly
+const [blobCache] = useState(() => new Map());
+useEffect(() => () => {
+  // revoke blobs when component unmounts
+  blobCache.forEach((u) => URL.revokeObjectURL(u));
+  blobCache.clear();
+}, [blobCache]);
+const previewAttachment = async (att) => {
+  if (!att) return;
+  const url = att.attachment_url || "";
+  const name = att.attachment_name || "Attachment";
+  if (!url) return;
+
+  setPreviewName(name);
+
+  // IMAGES: show directly
+  if (isImage(url) || isImage(name)) {
+    setViewerUrl(url);
+    setPreviewOpen(true);
+    return;
+  }
+
+  // PDFs: fetch as blob -> object URL (won't download)
+  if (isPdf(url) || isPdf(name)) {
+    try {
+      setLoading(true);
+      if (blobCache.has(url)) {
+        setViewerUrl(blobCache.get(url));
+      } else {
+        const res = await fetch(url, { mode: "cors" }); // ensure Azure CORS allows your origin
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        const pdfBlob = blob.type === "application/pdf"
+          ? blob
+          : new Blob([blob], { type: "application/pdf" });
+        const objUrl = URL.createObjectURL(pdfBlob);
+        blobCache.set(url, objUrl);
+        setViewerUrl(objUrl);
+      }
+    } catch (err) {
+      // last resort fallback: open new tab
+      setViewerUrl(url);
+    } finally {
+      setLoading(false);
+      setPreviewOpen(true);
+    }
+    return;
+  }
+
+  // Office docs: use Microsoft Office Web Viewer (works in iframe)
+  if (isOffice(url) || isOffice(name)) {
+    setViewerUrl(officeViewer(url));
+    setPreviewOpen(true);
+    return;
+  }
+
+  // Plain text / csv / rtf, etc.: try inline iframe directly
+  setViewerUrl(url);
+  setPreviewOpen(true);
+};
+
+
+
+
+
   return (
     <Box
       sx={{
@@ -460,6 +541,8 @@ const VendorBillSummary = forwardRef((props, ref) => {
                 "Vendor",
                 "PO Value",
                 "PO Status",
+                "Delivery Status",
+                "Attachments",
                 "Received",
                 "Created On",
               ].map((h, i) => (
@@ -657,6 +740,64 @@ const VendorBillSummary = forwardRef((props, ref) => {
                       />
                     </Box>
 
+                     {/* Delivery Status */}
+<Box
+  component="td"
+  sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}
+>
+  <Chip
+    size="sm"
+    variant={bill.delivery_status === "delivered" ? "solid" : "soft"}
+    color={bill.delivery_status === "delivered" ? "success" : "neutral"}
+  >
+    {bill.delivery_status || "-"}
+  </Chip>
+</Box>
+
+<Box component="td" sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}>
+  {Array.isArray(bill.attachments) && bill.attachments.length ? (
+    <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+      {bill.attachments.slice(0, 3).map((att, i) => (
+        <Chip
+          key={att._id || `${bill._id}-att-${i}`}
+          size="sm"
+          variant="soft"
+          color="primary"
+          onClick={() => previewAttachment(att)}
+          sx={{
+            cursor: "pointer",
+            maxWidth: 200,
+            "& .MuiChip-label": {
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            },
+          }}
+        >
+          {att.attachment_name || "Attachment"}
+        </Chip>
+      ))}
+      {bill.attachments.length > 3 && (
+        <Chip
+          size="sm"
+          variant="soft"
+          color="neutral"
+          onClick={() => previewAttachment(bill.attachments[3])}
+          sx={{ cursor: "pointer" }}
+        >
+          +{bill.attachments.length - 3} more
+        </Chip>
+      )}
+    </Box>
+  ) : (
+    "—"
+  )}
+</Box>
+
+
+
+
+
                     <Box
                       component="td"
                       sx={{ borderBottom: "1px solid #ddd", padding: "8px" }}
@@ -766,6 +907,61 @@ const VendorBillSummary = forwardRef((props, ref) => {
           Next
         </Button>
       </Box>
+
+<Modal open={previewOpen} onClose={() => setPreviewOpen(false)}>
+  <ModalDialog
+    variant="soft"
+    sx={{ width: "min(1000px, 96vw)", maxHeight: "92vh", p: 0, overflow: "hidden" }}
+  >
+    <Sheet sx={{ px: 2, py: 1, borderBottom: "1px solid var(--joy-palette-neutral-outlinedBorder)" }}>
+      <ModalClose />
+      <Typography level="title-md" noWrap>{previewName}</Typography>
+    </Sheet>
+
+    <Sheet sx={{ flex: 1, p: 2, backgroundColor: "neutral.softBg" }}>
+      {loading ? (
+        <Typography level="body-sm">Loading…</Typography>
+      ) : isImage(`${viewerUrl} ${previewName}`) ? (
+        <img
+          src={viewerUrl}
+          alt={previewName}
+          style={{ maxWidth: "100%", maxHeight: "80vh", objectFit: "contain", borderRadius: 8 }}
+        />
+      ) : isPdf(previewName) || /^blob:/.test(viewerUrl) ? (
+        // PDF via object URL (or blob:)
+        <iframe
+          title={previewName}
+          src={viewerUrl}
+          style={{ width: "100%", height: "80vh", border: "none", borderRadius: 8, background: "#fff" }}
+        />
+      ) : (
+        // Office or other types
+        <iframe
+          title={previewName}
+          src={viewerUrl}
+          style={{ width: "100%", height: "80vh", border: "none", borderRadius: 8, background: "#fff" }}
+          referrerPolicy="no-referrer"
+        />
+      )}
+    </Sheet>
+
+    <Sheet sx={{ px: 2, py: 1, borderTop: "1px solid var(--joy-palette-neutral-outlinedBorder)" }}>
+      <Chip
+        component="a"
+        href={viewerUrl.startsWith("blob:") ? undefined : viewerUrl}
+        target={viewerUrl.startsWith("blob:") ? undefined : "_blank"}
+        rel="noopener noreferrer"
+        variant="soft"
+        color="neutral"
+      >
+        Open in new tab
+      </Chip>
+    </Sheet>
+  </ModalDialog>
+</Modal>
+
+
+
     </Box>
   );
 })
