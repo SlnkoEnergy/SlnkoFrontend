@@ -307,8 +307,8 @@ function Dash_project({ projectIds }) {
   const [paFilter, setPaFilter] = useState("all");
   const apiFilter =
     paFilter === "baseline" ||
-    paFilter === "actual_ontime" ||
-    paFilter === "actual_late"
+      paFilter === "actual_ontime" ||
+      paFilter === "actual_late"
       ? paFilter
       : undefined;
 
@@ -334,7 +334,7 @@ function Dash_project({ projectIds }) {
     e.setHours(0, 0, 0, 0);
     setRange((prev) =>
       prev.startDate.getTime() === s.getTime() &&
-      prev.endDate.getTime() === e.getTime()
+        prev.endDate.getTime() === e.getTime()
         ? prev
         : { startDate: s, endDate: e }
     );
@@ -483,7 +483,7 @@ function Dash_project({ projectIds }) {
   const safeSetResRange = useCallback((s, e) => {
     setResRange((prev) =>
       prev.startDate.getTime() === s.getTime() &&
-      prev.endDate.getTime() === e.getTime()
+        prev.endDate.getTime() === e.getTime()
         ? prev
         : { startDate: s, endDate: e }
     );
@@ -688,7 +688,7 @@ function Dash_project({ projectIds }) {
             logs={resourceLogs}
             initialRange={resRange}
             onRangeChange={handleResRangeChange}
-            onBarClick={() => {}}
+            onBarClick={() => { }}
           />
         </Grid>
       </Grid>

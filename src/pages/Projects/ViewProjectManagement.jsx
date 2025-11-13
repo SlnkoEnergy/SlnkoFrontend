@@ -16,41 +16,453 @@ import {
   Typography,
   Checkbox,
   CircularProgress,
+  Select,
+  Option,
+  Chip,
+  IconButton,
+  Autocomplete,
+  Avatar,
 } from "@mui/joy";
-import { Save, ContentPasteGo } from "@mui/icons-material";
+import {
+  Save,
+  ContentPasteGo,
+  PersonAdd,
+  Close as CloseIcon,
+  Add as AddIcon,
+  Delete as DeleteIcon,
+} from "@mui/icons-material";
 import Sidebar from "../../component/Partials/Sidebar";
 import SubHeader from "../../component/Partials/SubHeader";
 import MainHeader from "../../component/Partials/MainHeader";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useRef, useState, useMemo, useCallback } from "react";
 import View_Project_Management from "../../component/ViewProjectManagement";
 import Filter from "../../component/Partials/Filter";
 import SearchPickerModal from "../../component/SearchPickerModal";
 import {
   useExportProjectScheduleMutation,
-  useExportProjectSchedulePdfQuery,
   useLazyExportProjectSchedulePdfQuery,
   useLazyGetAllTemplateNameSearchQuery,
   useUpdateProjectActivityFromTemplateMutation,
   useUpdateStatusOfPlanMutation,
   useUpdateReorderfromActivityMutation,
+  useUpdateActivityInProjectMutation,
+  useAssignResourcesMutation,
 } from "../../redux/projectsSlice";
 import AppSnackbar from "../../component/AppSnackbar";
 import { ArrowDownUp } from "lucide-react";
+import { useGetAllUserQuery } from "../../redux/globalTaskSlice";
+
+const ROLE_OPTIONS = [
+  { label: "Surveyor", value: "surveyor" },
+  { label: "Civil Engineer", value: "civil engineer" },
+  { label: "Civil I&C", value: "civil i&c" },
+  { label: "Electric Engineer", value: "electric engineer" },
+  { label: "Electric I&C", value: "electric i&c" },
+  { label: "Soil Testing Team", value: "soil testing team" },
+  { label: "Tline Engineer", value: "tline engineer" },
+  { label: "Tline Subcontractor", value: "tline subcontractor" },
+];
+
+/* --------------------------------- helpers --------------------------------- */
+const pickUsersArray = (projectUsers) => {
+  if (Array.isArray(projectUsers?.data)) return projectUsers.data;
+  if (Array.isArray(projectUsers)) return projectUsers;
+  return [];
+};
+
+const findUserById = (options, id) =>
+  options.find((u) => String(u?._id) === String(id));
+
+/* -------------------------------- component -------------------------------- */
+function AssignModal({ open, onClose, isAssigning, onSubmit }) {
+  const {
+    data: projectUsers = [],
+    isFetching: isFetchingUsers,
+    isLoading: isLoadingUsers,
+  } = useGetAllUserQuery({ department: "Projects" });
+
+  const userOptions = useMemo(
+    () => pickUsersArray(projectUsers),
+    [projectUsers]
+  );
+
+  const [completionValue, setCompletionValue] = useState("");
+  const [completionUnit, setCompletionUnit] = useState("percentage");
+
+  const [resources, setResources] = useState([
+    { role: "civil engineer", number: 1, user_ids: [] },
+  ]);
+
+  const addResourceRow = () => {
+    setResources((prev) => [
+      ...prev,
+      { role: "civil engineer", number: 1, user_ids: [] },
+    ]);
+  };
+
+  const removeResourceRow = (idx) => {
+    setResources((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const updateRow = (idx, patch) => {
+    setResources((prev) => {
+      const next = [...prev];
+      next[idx] = { ...next[idx], ...patch };
+      return next;
+    });
+  };
+
+  const handleNumberChange = (idx, nRaw) => {
+    const n = Math.max(1, Number(nRaw) || 1);
+    setResources((prev) => {
+      const next = [...prev];
+      const row = { ...next[idx] };
+      if (Array.isArray(row.user_ids) && row.user_ids.length > n) {
+        row.user_ids = row.user_ids.slice(0, n);
+      }
+      row.number = n;
+      next[idx] = row;
+      return next;
+    });
+  };
+
+  // Autocomplete returns USER OBJECTS
+  const handleUsersPick = (idx, pickedUsers) => {
+    setResources((prev) => {
+      const next = [...prev];
+      const row = { ...next[idx] };
+      const cap = Math.max(1, Number(row.number) || 1);
+      const pickedIds = (pickedUsers || []).map((u) => String(u?._id));
+      row.user_ids = pickedIds.slice(0, cap);
+      next[idx] = row;
+      return next;
+    });
+  };
+
+  const hasAtLeastOneUser =
+    resources.reduce((sum, r) => sum + (r.user_ids?.length || 0), 0) > 0;
+
+  const handleSave = () => {
+    onSubmit({
+      resources: resources.map((r) => ({
+        role: r.role,
+        number: Number(r.number) || 1,
+        user_ids: r.user_ids,
+      })),
+      work_completion: {
+        value: Number(completionValue || 0),
+        unit: completionUnit,
+      },
+    });
+  };
+
+  const loadingUsers = isLoadingUsers || isFetchingUsers;
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      slotProps={{
+        backdrop: {
+          sx: {
+            backgroundColor: "rgba(15, 18, 24, 0.55)",
+            backdropFilter: "blur(2px)",
+          },
+        },
+      }}
+    >
+      <ModalDialog
+        variant="soft"
+        color="neutral"
+        sx={{
+          maxWidth: 800,
+          width: "100%",
+          borderRadius: "xl",
+          boxShadow: "lg",
+          p: 2,
+        }}
+      >
+        <DialogTitle sx={{ pb: 0.5 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <PersonAdd fontSize="small" />
+            Assign Resources
+          </Box>
+        </DialogTitle>
+
+        <DialogContent
+          sx={{ pt: 0.5, display: "flex", flexDirection: "column", gap: 2 }}
+        >
+          <FormControl>
+            <FormLabel>Resources</FormLabel>
+
+            <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1 }}>
+              <Button
+                size="sm"
+                variant="soft"
+                startDecorator={<AddIcon />}
+                onClick={addResourceRow}
+                disabled={isAssigning}
+              >
+                Add Resource
+              </Button>
+            </Box>
+
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns:
+                  "minmax(180px, 1fr) 120px minmax(260px, 1.6fr) 52px",
+                gap: 1.5,
+                alignItems: "start",
+              }}
+            >
+              <Typography level="body-sm" sx={{ fontWeight: 600 }}>
+                Role
+              </Typography>
+              <Typography level="body-sm" sx={{ fontWeight: 600 }}>
+                Number
+              </Typography>
+              <Typography level="body-sm" sx={{ fontWeight: 600 }}>
+                Users
+              </Typography>
+              <Box />
+
+              {resources.map((row, idx) => {
+                const cap = Math.max(1, Number(row.number) || 1);
+                const selectedIds = (row.user_ids || []).map(String);
+                const valueUsers = selectedIds
+                  .map((id) => findUserById(userOptions, id))
+                  .filter(Boolean);
+
+                return (
+                  <Box key={`res-${idx}`} sx={{ display: "contents" }}>
+                    {/* Role */}
+                    <Select
+                      size="sm"
+                      variant="soft"
+                      value={row.role}
+                      onChange={(_e, newValue) =>
+                        updateRow(idx, { role: newValue })
+                      }
+                      disabled={isAssigning}
+                    >
+                      {ROLE_OPTIONS.map((r) => (
+                        <Option key={r.value} value={r.value}>
+                          {r.label}
+                        </Option>
+                      ))}
+                    </Select>
+
+                    {/* Number (cap) */}
+                    <Input
+                      type="number"
+                      value={row.number}
+                      onChange={(e) => handleNumberChange(idx, e.target.value)}
+                      size="sm"
+                      variant="soft"
+                      disabled={isAssigning}
+                      slotProps={{
+                        input: { min: 1, style: { textAlign: "center" } },
+                      }}
+                    />
+
+                    {/* Users Multi Select */}
+                    <Autocomplete
+                      size="sm"
+                      multiple
+                      variant="soft"
+                      disableCloseOnSelect
+                      clearOnBlur={false}
+                      autoHighlight
+                      placeholder={
+                        loadingUsers ? "Loading users..." : "Select users"
+                      }
+                      options={userOptions}
+                      getOptionLabel={(opt) => opt?.name ?? ""}
+                      isOptionEqualToValue={(opt, val) =>
+                        String(opt?._id) === String(val?._id)
+                      }
+                      value={valueUsers}
+                      onChange={(_e, newPicked) =>
+                        handleUsersPick(idx, newPicked)
+                      }
+                      loading={loadingUsers}
+                      loadingText="Loading users…"
+                      getOptionDisabled={(option) => {
+                        const atCap = selectedIds.length >= cap;
+                        const isSelected = selectedIds.includes(
+                          String(option._id)
+                        );
+                        return atCap && !isSelected;
+                      }}
+                      renderOption={(props, option) => (
+                        <li {...props} key={option._id} style={{ mt: 1 }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 2,
+                              cursor: "pointer",
+                              mt: 1,
+                            }}
+                          >
+                            <Avatar src={option.attachment_url} size="sm">
+                              {option?.name?.[0] ?? "U"}
+                            </Avatar>
+                            <Typography level="body-sm">
+                              {option.name}
+                            </Typography>
+                          </Box>
+                        </li>
+                      )}
+                      renderTags={(tagValue, getTagProps) =>
+                        tagValue.map((option, index) => (
+                          <Chip
+                            {...getTagProps({ index })}
+                            key={option._id}
+                            size="sm"
+                            variant="soft"
+                            startDecorator={
+                              <Avatar src={option.attachment_url} size="sm">
+                                {option?.name?.[0] ?? "U"}
+                              </Avatar>
+                            }
+                            endDecorator={
+                              <IconButton
+                                size="sm"
+                                variant="plain"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const next = (row.user_ids || []).filter(
+                                    (id) => String(id) !== String(option._id)
+                                  );
+                                  updateRow(idx, { user_ids: next });
+                                }}
+                                disabled={isAssigning}
+                              >
+                                <CloseIcon fontSize="inherit" />
+                              </IconButton>
+                            }
+                          >
+                            {option.name}
+                          </Chip>
+                        ))
+                      }
+                    />
+
+                    {/* Delete row */}
+                    <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+                      <IconButton
+                        size="sm"
+                        variant="soft"
+                        color="danger"
+                        title="Delete Resources"
+                        onClick={() => removeResourceRow(idx)}
+                        disabled={isAssigning || resources.length === 1}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+
+                    {/* Cap hint */}
+                    <Box />
+                    <Box />
+                    <Typography
+                      level="body-xs"
+                      sx={{ color: "neutral.500", mt: -0.5 }}
+                    >
+                      Max {cap} user{cap > 1 ? "s" : ""} can be assigned.
+                    </Typography>
+                    <Box />
+                  </Box>
+                );
+              })}
+            </Box>
+          </FormControl>
+
+          <hr />
+
+          {/* Work Completion */}
+          <FormControl>
+            <FormLabel>Work Completion</FormLabel>
+            <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
+              <Input
+                type="number"
+                value={completionValue}
+                onChange={(e) => setCompletionValue(e.target.value)}
+                placeholder="0"
+                size="sm"
+                variant="soft"
+                disabled={isAssigning}
+                sx={{ maxWidth: 120 }}
+              />
+              <Select
+                value={completionUnit}
+                onChange={(_e, newValue) => setCompletionUnit(newValue)}
+                size="sm"
+                variant="soft"
+                disabled={isAssigning}
+                sx={{ maxWidth: 180 }}
+              >
+                <Option value="m">m</Option>
+                <Option value="kg">kg</Option>
+                <Option value="percentage">Percentage</Option>
+                <Option value="number">Number</Option>
+              </Select>
+            </Box>
+          </FormControl>
+        </DialogContent>
+
+        <DialogActions sx={{ pt: 1 }}>
+          <Button
+            variant="outlined"
+            color="neutral"
+            onClick={onClose}
+            disabled={isAssigning}
+          >
+            Close
+          </Button>
+          <Button
+            startDecorator={
+              isAssigning ? (
+                <CircularProgress size="sm" thickness={3} />
+              ) : (
+                <Save />
+              )
+            }
+            onClick={handleSave}
+            loading={isAssigning}
+            disabled={isAssigning || !hasAtLeastOneUser}
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </ModalDialog>
+    </Modal>
+  );
+}
 
 function ViewProjectManagement() {
+  const navigate = useNavigate();
+  const [selectionCount, setSelectionCount] = useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
   const projectId = searchParams.get("project_id") || "";
   const selectedView = searchParams.get("view") || "week";
   const [snack, setSnack] = useState({ open: false, msg: "" });
   const ganttRef = useRef(null);
-
+  const [assignOpen, setAssignOpen] = useState(false);
   const timeline = searchParams.get("timeline");
   const type = searchParams.get("type");
   const [loading, setLoading] = useState(false);
   const [planStatus, setPlanStatus] = useState(null);
   const [updatePlanStatus, { isLoading: isUpdatingPlanStatus }] =
     useUpdateStatusOfPlanMutation();
+
+  const [hasSelection, setHasSelection] = useState(false);
+  const [selectedActivityIds, setSelectedActivityIds] = useState([]);
+   const [assignResources, { isLoading: isAssigning }] =
+  useAssignResourcesMutation();
 
   const handlePlanStatusFromChild = useCallback((statusObj) => {
     const s = (statusObj?.status || "").toLowerCase();
@@ -76,6 +488,37 @@ function ViewProjectManagement() {
       setSnack({ open: true, msg: "Failed to update status:" });
     }
   };
+
+  const handleAssign = async ({ resources, work_completion }) => {
+  if (!projectId || selectedActivityIds.length === 0) {
+    setSnack({ open: true, msg: "Error: No project or activities selected." });
+    return;
+  }
+
+  try {
+    const payload = {
+      projectId,
+      activityId: selectedActivityIds,
+      work_completion_unit: work_completion?.unit,
+      work_completion_value: Number(work_completion?.value || 0),
+      resources: (resources || []).map((r) => ({
+        type: r.role,
+        number: Number(r.number) || 1,
+        user_id: Array.isArray(r.user_ids) ? r.user_ids : [],
+      })),
+    };
+
+    await assignResources(payload).unwrap();
+
+    setSnack({ open: true, msg: "Resources assigned successfully." });
+    setAssignOpen(false);
+    ganttRef.current?.refetch?.();
+  } catch (e) {
+    const msg = e?.data?.message || "Failed to assign resources.";
+    setSnack({ open: true, msg: `Error: ${msg}` });
+  }
+};
+
 
   // ====== Filters ======
   const [open, setOpen] = useState(false);
@@ -149,7 +592,7 @@ function ViewProjectManagement() {
     if (!projectId) return;
     try {
       await reorderFromActivity({ projectId }).unwrap();
-      ganttRef.current?.refetch?.(); // refresh the gantt
+      ganttRef.current?.refetch?.();
       setSnack({ open: true, msg: "Activities reordered successfully." });
     } catch (e) {
       const msg =
@@ -190,9 +633,9 @@ function ViewProjectManagement() {
     return {
       rows: Array.isArray(rows)
         ? rows.map((r, i) => ({
-          _id: r._id || r.id || String(i),
-          ...r,
-        }))
+            _id: r._id || r.id || String(i),
+            ...r,
+          }))
         : [],
       total,
     };
@@ -231,7 +674,8 @@ function ViewProjectManagement() {
     ? { variant: "solid", color: "danger" }
     : { variant: "outlined", color: "success" };
 
-  const [triggerExport, { loading: isExporting }] = useExportProjectScheduleMutation();
+  const [triggerExport, { loading: isExporting }] =
+    useExportProjectScheduleMutation();
 
   const handleExportCsv = async () => {
     try {
@@ -247,14 +691,13 @@ function ViewProjectManagement() {
       console.log("Export Failed", error);
       alert("Failed to export Project Schedule");
     }
-  }
+  };
 
   const [fetchPdf, { isFetching: isExportingPdf, isLoading, error, data }] =
     useLazyExportProjectSchedulePdfQuery();
 
   const handleExportPdf = async () => {
     try {
-
       const blob = await fetchPdf({ projectId, type, timeline }).unwrap();
 
       const url = URL.createObjectURL(blob);
@@ -267,7 +710,7 @@ function ViewProjectManagement() {
       console.log("Export Failed", error);
       alert("Failed to Export Project Schedule");
     }
-  }
+  };
 
   return (
     <CssVarsProvider disableTransitionOnChange>
@@ -283,7 +726,6 @@ function ViewProjectManagement() {
           sticky
           rightSlot={
             <>
-              {/* Freeze / Unfreeze button */}
               <Button
                 size="sm"
                 color="danger"
@@ -307,12 +749,7 @@ function ViewProjectManagement() {
                 color="primary"
                 onClick={handleReorderFromActivity}
                 disabled={isReordering || !projectId}
-                sx={{
-                  width: 36,
-                  height: 36,
-                  p: 0,
-                  minWidth: 36,
-                }}
+                sx={{ width: 36, height: 36, p: 0, minWidth: 36 }}
                 title={
                   isReordering
                     ? "Reordering…"
@@ -336,11 +773,11 @@ function ViewProjectManagement() {
                   height: "8px",
                   ...(freezeBtnProps.variant === "outlined"
                     ? {
-                      borderColor: "success.outlinedBorder",
-                      color: "success.plainColor",
-                      "--Button-hoverBorderColor":
-                        "success.outlinedHoverBorder",
-                    }
+                        borderColor: "success.outlinedBorder",
+                        color: "success.plainColor",
+                        "--Button-hoverBorderColor":
+                          "success.outlinedHoverBorder",
+                      }
                     : {}),
                 }}
               >
@@ -364,6 +801,47 @@ function ViewProjectManagement() {
               >
                 Save as Template
               </Button>
+
+              <Button
+                size="sm"
+                variant="outlined"
+                onClick={() => navigate(`/dpr?projectId=${projectId}`)}
+                sx={{
+                  color: "#3366a3",
+                  borderColor: "#3366a3",
+                  backgroundColor: "transparent",
+                  "--Button-hoverBg": "#e0e0e0",
+                  "--Button-hoverBorderColor": "#3366a3",
+                  "&:hover": { color: "#3366a3" },
+                  height: "8px",
+                }}
+              >
+                DPR
+              </Button>
+
+              {/* Assign to (only when any checkbox is ticked) */}
+              {hasSelection && (
+                <Button
+                  variant="outlined"
+                  size="sm"
+                  startDecorator={<PersonAdd />}
+                  onClick={() => setAssignOpen(true)}
+                  sx={{
+                    color: "#3366a3",
+                    borderColor: "#3366a3",
+                    backgroundColor: "transparent",
+                    "--Button-hoverBg": "#e0e0e0",
+                    "--Button-hoverBorderColor": "#3366a3",
+                    "&:hover": { color: "#3366a3" },
+                    height: "8px",
+                  }}
+                  title={
+                    selectionCount ? `${selectionCount} row(s) selected` : ""
+                  }
+                >
+                  Assign to
+                </Button>
+              )}
 
               <Button
                 variant="solid"
@@ -426,9 +904,22 @@ function ViewProjectManagement() {
             ref={ganttRef}
             viewModeParam={selectedView}
             onPlanStatus={handlePlanStatusFromChild}
+            onSelectionChange={({ any, count, ids }) => {
+              setHasSelection(!!any);
+              setSelectionCount(Number(count || 0));
+              setSelectedActivityIds(Array.isArray(ids) ? ids : []);
+            }}
           />
         </Box>
       </Box>
+
+      {/* 🔑 Assign to Modal */}
+      <AssignModal
+        open={assignOpen}
+        onClose={() => setAssignOpen(false)}
+        isAssigning={isAssigning}
+        onSubmit={handleAssign}
+      />
 
       {/* Save as Template Modal */}
       <Modal
@@ -636,7 +1127,6 @@ function ViewProjectManagement() {
           </DialogActions>
         </ModalDialog>
       </Modal>
-
       <AppSnackbar
         color={isError ? "danger" : "success"}
         open={!!snack.open}

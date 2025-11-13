@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import {
   Modal,
   ModalDialog,
@@ -12,6 +12,7 @@ import {
   IconButton,
   CircularProgress,
   Divider,
+  Checkbox,
 } from "@mui/joy";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
@@ -36,7 +37,13 @@ export default function SearchPickerModal({
   searchKey = "name",
   pageSize = 7,
   rowKey = "_id",
-  multi = false,
+
+  // NEW props
+  multi = false,                 // enable multi-select
+  showSubmit = false,            // show/hide submit button
+  onSubmit,                      // callback on submit
+  submitLabel = "Submit",        // submit button label
+
   backdropSx = { backdropFilter: "none", bgcolor: "rgba(0,0,0,0.1)" },
 }) {
   const [search, setSearch] = useState("");
@@ -47,23 +54,29 @@ export default function SearchPickerModal({
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  const [selectedRows, setSelectedRows] = useState([]);
+  // selected ids (persist across pages)
+  const [selectedIds, setSelectedIds] = useState([]);
 
   const fetchPageRef = useRef(fetchPage);
   useEffect(() => {
     fetchPageRef.current = fetchPage;
   }, [fetchPage]);
 
+  // reset when (re)opening
   useEffect(() => {
     if (!open) return;
     setPage(1);
-    setSelectedRows([]);
+    setSelectedIds([]);
+    setSearch("");
   }, [open]);
+
+  // refetch when search changes
   useEffect(() => {
     if (!open) return;
     setPage(1);
   }, [debounced, open]);
 
+  // fetch
   useEffect(() => {
     let cancelled = false;
     async function run() {
@@ -110,28 +123,70 @@ export default function SearchPickerModal({
     </Box>
   );
 
-  const isSelected = (id) => selectedRows.includes(id);
+  const isSelected = (id) => selectedIds.includes(id);
 
   const toggleSelect = (row) => {
-    const id = row[rowKey];
+    const id = row?.[rowKey];
     if (id == null) return;
-
     if (multi) {
-      setSelectedRows((prev) =>
+      setSelectedIds((prev) =>
         prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
       );
     } else {
-      setSelectedRows([id]);
+      setSelectedIds([id]);
     }
   };
 
   const handleRowClick = (row) => {
-    toggleSelect(row);
-    onPick?.(row);
-    if (!multi) {
+    if (multi) {
+      // only toggle in multi mode
+      toggleSelect(row);
+    } else {
+      // single-pick: behave exactly like before
+      toggleSelect(row);
+      onPick?.(row);
       onClose?.();
     }
   };
+
+  const currentPageIds = useMemo(
+    () => rows.map((r) => r?.[rowKey]).filter(Boolean),
+    [rows, rowKey]
+  );
+
+  const allOnPageSelected =
+    multi &&
+    currentPageIds.length > 0 &&
+    currentPageIds.every((id) => selectedIds.includes(id));
+
+  const someOnPageSelected =
+    multi &&
+    currentPageIds.some((id) => selectedIds.includes(id)) &&
+    !allOnPageSelected;
+
+  const toggleSelectAllOnPage = () => {
+    if (!multi) return;
+    if (allOnPageSelected) {
+      // unselect all on current page
+      setSelectedIds((prev) => prev.filter((id) => !currentPageIds.includes(id)));
+    } else {
+      // select all on current page (merge)
+      setSelectedIds((prev) => Array.from(new Set([...prev, ...currentPageIds])));
+    }
+  };
+
+  const handleSubmit = () => {
+    if (!multi || !showSubmit) return;
+    const selectedRowsFull = rowsFromIds(selectedIds, rowKey, rows, fetchPageRef);
+    onSubmit?.({ ids: selectedIds, rows: selectedRowsFull });
+    // do not auto-close; parent can close after API call
+  };
+
+  // Try to return full rows for currently visible items first; parent still gets ids
+  function rowsFromIds(ids, key, visibleRows, fetchRef) {
+    const dict = new Map(visibleRows.map((r) => [r?.[key], r]));
+    return ids.map((id) => dict.get(id)).filter(Boolean);
+  }
 
   return (
     <Modal
@@ -217,6 +272,15 @@ export default function SearchPickerModal({
           >
             <thead>
               <tr>
+                {multi && (
+                  <th style={{ width: 44 }}>
+                    <Checkbox
+                      checked={allOnPageSelected}
+                      indeterminate={someOnPageSelected}
+                      onChange={toggleSelectAllOnPage}
+                    />
+                  </th>
+                )}
                 {columns.map((c) => (
                   <th key={c.key} style={{ width: c.width ?? "auto" }}>
                     {c.label}
@@ -227,7 +291,7 @@ export default function SearchPickerModal({
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={columns.length}>
+                  <td colSpan={(multi ? 1 : 0) + columns.length}>
                     <Box sx={{ p: 2, color: "neutral.500" }}>
                       No records found.
                     </Box>
@@ -235,8 +299,8 @@ export default function SearchPickerModal({
                 </tr>
               ) : (
                 rows.map((r) => {
-                  const id = r[rowKey] ?? JSON.stringify(r);
-                  const selected = isSelected(r[rowKey]);
+                  const id = r?.[rowKey] ?? JSON.stringify(r);
+                  const selected = isSelected(r?.[rowKey]);
                   return (
                     <tr
                       key={id}
@@ -254,11 +318,22 @@ export default function SearchPickerModal({
                           e.currentTarget.style.backgroundColor = "";
                       }}
                     >
+                      {multi && (
+                        <td
+                          style={{ width: 44 }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Checkbox
+                            checked={selected}
+                            onChange={() => toggleSelect(r)}
+                          />
+                        </td>
+                      )}
                       {columns.map((c) => (
                         <td key={c.key} style={{ width: c.width ?? "auto" }}>
                           {typeof c.render === "function"
                             ? c.render(r)
-                            : String(r[c.key] ?? "-")}
+                            : String(r?.[c.key] ?? "-")}
                         </td>
                       ))}
                     </tr>
@@ -269,7 +344,15 @@ export default function SearchPickerModal({
           </Table>
         </Sheet>
 
-        <Box sx={{ display: "flex", justifyContent: "flex-start", mt: 1.5 }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: showSubmit && multi ? "space-between" : "flex-start",
+            alignItems: "center",
+            mt: 1.5,
+            gap: 1,
+          }}
+        >
           <Button
             variant="solid"
             onClick={onClose}
@@ -281,6 +364,22 @@ export default function SearchPickerModal({
           >
             Close
           </Button>
+
+          {showSubmit && multi && (
+            <Box sx={{ ml: "auto", display: "flex", alignItems: "center", gap: 1 }}>
+              <Typography level="body-sm" sx={{ color: "neutral.600" }}>
+                Selected: {selectedIds.length}
+              </Typography>
+              <Button
+                variant="solid"
+                color="primary"
+                onClick={handleSubmit}
+                disabled={selectedIds.length === 0}
+              >
+                {submitLabel}
+              </Button>
+            </Box>
+          )}
         </Box>
       </ModalDialog>
     </Modal>

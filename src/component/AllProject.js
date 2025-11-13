@@ -1,6 +1,6 @@
-// component/AllProjects.jsx
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
+import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
@@ -21,12 +21,14 @@ import Textarea from "@mui/joy/Textarea";
 import Select from "@mui/joy/Select";
 import Option from "@mui/joy/Option";
 import CircularProgress from "@mui/joy/CircularProgress";
+import Dropdown from "@mui/joy/Dropdown";
+import Menu from "@mui/joy/Menu";
+import MenuButton from "@mui/joy/MenuButton";
+import MenuItem from "@mui/joy/MenuItem";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Tab, TabList, Tabs } from "@mui/joy";
 import NoData from "../assets/alert-bell.svg";
 import { useTheme } from "@emotion/react";
-import { Add } from "@mui/icons-material";
 import {
   useGetAllProjectsQuery,
   useUpdateProjectStatusMutation,
@@ -82,7 +84,7 @@ function AllProjects() {
     if (t === "completed") return "completed";
     if (t === "on hold") return "on hold";
     if (t === "dead") return "dead";
-    if(t === "books closed") return "books closed";
+    if (t === "books closed") return "books closed";
     return t;
   }, [selectedTab]);
 
@@ -93,7 +95,7 @@ function AllProjects() {
   } = useGetAllProjectsQuery({
     page: currentPage,
     status: statusFilter,
-    search: searchQuery, // <- always in sync with URL
+    search: searchQuery,
     limit: rowsPerPage,
     sort: "-createdAt",
   });
@@ -104,13 +106,11 @@ function AllProjects() {
   const Projects = getProjects?.data || [];
 
   const ProjectOverView = ({ currentPage, project_id, code }) => (
-    <span
-      style={{
+    <Chip
+      variant="outlined"
+      color="primary"
+      sx={{
         cursor: "pointer",
-        color: theme.vars.palette.text.primary,
-        textDecoration: "underline",
-        textDecorationStyle: "dotted",
-        fontSize: "14px",
       }}
       onClick={() => {
         navigate(
@@ -119,7 +119,7 @@ function AllProjects() {
       }}
     >
       {code || "-"}
-    </span>
+    </Chip>
   );
 
   // ======== Search: update URL on every keystroke and reset page to 1 ========
@@ -304,7 +304,7 @@ function AllProjects() {
                 "State",
                 "Capacity(AC/DC)",
                 "Status",
-                "Schedule",
+                "Action",
               ].map((header) => (
                 <th
                   key={header}
@@ -327,7 +327,7 @@ function AllProjects() {
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={9} style={{ padding: "8px" }}>
+                <td colSpan={8} style={{ padding: "8px" }}>
                   <Box
                     sx={{
                       fontStyle: "italic",
@@ -434,27 +434,45 @@ function AllProjects() {
                       </Tooltip>
                     </td>
 
-                    {/* Open PM schedule */}
+                    {/* Action menu */}
                     <td
                       style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
                     >
-                      <IconButton
-                        onClick={() =>
-                          navigate(`/view_pm?project_id=${projectIdForLinks}`)
-                        }
-                        size="sm"
-                        variant="outlined"
-                        color="primary"
-                      >
-                        <Add />
-                      </IconButton>
+                      <Dropdown>
+                        <MenuButton
+                          slots={{ root: IconButton }}
+                          slotProps={{
+                            root: { variant: "outlined", size: "sm" },
+                          }}
+                        >
+                          <MoreHorizRoundedIcon />
+                        </MenuButton>
+                        <Menu placement="bottom-end" size="sm">
+                          <MenuItem
+                            onClick={() =>
+                              navigate(
+                                `/view_pm?project_id=${projectIdForLinks}`
+                              )
+                            }
+                          >
+                            Schedule
+                          </MenuItem>
+                          <MenuItem
+                            onClick={() =>
+                              navigate(`/dpr?projectId=${projectIdForLinks}`)
+                            }
+                          >
+                            View DPR
+                          </MenuItem>
+                        </Menu>
+                      </Dropdown>
                     </td>
                   </tr>
                 );
               })
             ) : (
               <tr>
-                <td colSpan={9} style={{ padding: "8px", textAlign: "left" }}>
+                <td colSpan={8} style={{ padding: "8px", textAlign: "left" }}>
                   <Box
                     sx={{
                       fontStyle: "italic",
