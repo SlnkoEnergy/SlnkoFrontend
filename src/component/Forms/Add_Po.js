@@ -208,6 +208,8 @@ const AddPurchaseOrder = ({
   const [etdModalOpen, setEtdModalOpen] = useState(false);
   const [etd, setEtd] = useState("");
 
+  const [description, setDescription] = useState("");
+
   const { data: categoryResponse } = useGetAllCategoriesQuery({
     page: 1,
     pageSize: 7,
@@ -412,10 +414,10 @@ const AddPurchaseOrder = ({
   const [lines, setLines] = useState(() =>
     Array.isArray(initialLines) && initialLines.length
       ? initialLines.map((l) => ({
-          ...makeEmptyLine(),
-          ...l,
-          id: crypto.randomUUID(),
-        }))
+        ...makeEmptyLine(),
+        ...l,
+        id: crypto.randomUUID(),
+      }))
       : [makeEmptyLine()]
   );
 
@@ -476,27 +478,27 @@ const AddPurchaseOrder = ({
     const arr = Array.isArray(po?.items)
       ? po.items
       : Array.isArray(po?.item)
-      ? po.item
-      : [];
+        ? po.item
+        : [];
     return arr.length
       ? arr.map((it) => ({
-          ...makeEmptyLine(),
-          isShow: true,
-          productCategoryId:
-            typeof it?.category === "object"
-              ? it?.category?._id ?? ""
-              : it?.category ?? "",
-          productCategoryName:
-            typeof it?.category === "object" ? it?.category?.name ?? "" : "",
-          productName: it?.product_name ?? "",
-          make: isValidMake(it?.product_make) ? it.product_make : "",
-          makeQ: isValidMake(it?.product_make) ? it.product_make : "",
-          briefDescription: it?.description ?? "",
-          uom: it?.uom ?? "",
-          quantity: Number(it?.quantity ?? 0),
-          unitPrice: Number(it?.cost ?? 0),
-          taxPercent: Number(it?.gst_percent ?? it?.gst ?? 0),
-        }))
+        ...makeEmptyLine(),
+        isShow: true,
+        productCategoryId:
+          typeof it?.category === "object"
+            ? it?.category?._id ?? ""
+            : it?.category ?? "",
+        productCategoryName:
+          typeof it?.category === "object" ? it?.category?.name ?? "" : "",
+        productName: it?.product_name ?? "",
+        make: isValidMake(it?.product_make) ? it.product_make : "",
+        makeQ: isValidMake(it?.product_make) ? it.product_make : "",
+        briefDescription: it?.description ?? "",
+        uom: it?.uom ?? "",
+        quantity: Number(it?.quantity ?? 0),
+        unitPrice: Number(it?.cost ?? 0),
+        taxPercent: Number(it?.gst_percent ?? it?.gst ?? 0),
+      }))
       : [makeEmptyLine()];
   };
 
@@ -553,6 +555,7 @@ const AddPurchaseOrder = ({
           po_value: String(po?.po_value ?? prev.po_value ?? ""),
           delivery_type: String(po?.delivery_type ?? prev.delivery_type ?? ""),
         }));
+        setDescription(po?.description)
         setLines(mapPOtoLines(po));
       } catch (err) {
         console.error("Failed to load PO:", err);
@@ -852,9 +855,9 @@ const AddPurchaseOrder = ({
         note: doc.message || "",
         attachments: Array.isArray(doc?.attachments)
           ? doc.attachments.map((a) => ({
-              name: a?.name || a?.attachment_name,
-              url: a?.url || a?.attachment_url,
-            }))
+            name: a?.name || a?.attachment_name,
+            url: a?.url || a?.attachment_url,
+          }))
           : [],
       };
     }
@@ -925,19 +928,19 @@ const AddPurchaseOrder = ({
     } else if (itemShape.kind === "amount_change") {
       const changes = Array.isArray(itemShape.changes)
         ? itemShape.changes.map((c, idx) => ({
-            label: c.label || c.path || `field_${idx + 1}`,
-            path: c.path,
-            from: Number(c.from ?? 0),
-            to: Number(c.to ?? 0),
-          }))
+          label: c.label || c.path || `field_${idx + 1}`,
+          path: c.path,
+          from: Number(c.from ?? 0),
+          to: Number(c.to ?? 0),
+        }))
         : [
-            {
-              label: itemShape.label || itemShape.field || "amount",
-              path: itemShape.path,
-              from: Number(itemShape.from || 0),
-              to: Number(itemShape.to || 0),
-            },
-          ];
+          {
+            label: itemShape.label || itemShape.field || "amount",
+            path: itemShape.path,
+            from: Number(itemShape.from || 0),
+            to: Number(itemShape.to || 0),
+          },
+        ];
 
       normalized = {
         ...base,
@@ -1030,8 +1033,8 @@ const AddPurchaseOrder = ({
           typeof l.productCategoryId === "object" && l.productCategoryId?._id
             ? String(l.productCategoryId._id)
             : l.productCategoryId != null
-            ? String(l.productCategoryId)
-            : "";
+              ? String(l.productCategoryId)
+              : "";
         return {
           category: String(categoryId),
           category_name: String(l.productCategoryName || ""),
@@ -1067,6 +1070,7 @@ const AddPurchaseOrder = ({
           gst: String(amounts.tax ?? 0),
           po_value: Number(amounts.total ?? 0),
           item,
+          description: description,
         };
         await Axios.put(`/edit-pO-IT/${formData._id}`, body, {
           headers: { "x-auth-token": token },
@@ -1222,6 +1226,7 @@ const AddPurchaseOrder = ({
             gst: String(amounts.tax ?? 0),
             po_value: Number(amounts.total ?? 0),
             item,
+            description: description,
             initial_status: "approval_pending",
           };
           await Axios.post("/Add-purchase-ordeR-IT", dataToPost, {
@@ -1246,6 +1251,7 @@ const AddPurchaseOrder = ({
             gst: String(amounts.tax ?? 0),
             po_value: Number(amounts.total ?? 0),
             item,
+            description: description,
           };
           await Axios.put(`/edit-pO-IT/${formData._id}`, body, {
             headers: { "x-auth-token": token },
@@ -1297,6 +1303,7 @@ const AddPurchaseOrder = ({
           gst: String(amounts.tax ?? 0),
           po_value: Number(amounts.total ?? 0),
           item,
+          description: description,
           initial_status,
         };
 
@@ -1443,7 +1450,7 @@ const AddPurchaseOrder = ({
   const vendorOptions = useMemo(
     () => [
       ...(formData.vendor_id &&
-      !vendorRows.some((v) => v._id === formData.vendor_id)
+        !vendorRows.some((v) => v._id === formData.vendor_id)
         ? [{ value: formData.vendor_id, label: formData.name }]
         : []),
       ...vendorRows.map((v) => ({ value: v._id, label: v.name, _raw: v })),
@@ -1610,11 +1617,11 @@ const AddPurchaseOrder = ({
           },
           attachments: last
             ? [
-                {
-                  name: last.attachment_name,
-                  url: last.attachment_url,
-                },
-              ]
+              {
+                name: last.attachment_name,
+                url: last.attachment_url,
+              },
+            ]
             : [],
         }).unwrap();
       } catch (e) {
@@ -1699,7 +1706,7 @@ const AddPurchaseOrder = ({
                   {/* Send Approval Button */}
                   {(effectiveMode === "edit" &&
                     statusNow === "approval_rejected") ||
-                  fromModal ? (
+                    fromModal ? (
                     <Button
                       component="button"
                       type="submit"
@@ -1798,17 +1805,17 @@ const AddPurchaseOrder = ({
                       user?.name === "Guddu Rani Dubey" ||
                       user?.name === "Varun Mishra" ||
                       user?.name === "IT Team") && (
-                      <Box>
-                        <Button
-                          variant={manualEdit ? "outlined" : "solid"}
-                          color={manualEdit ? "neutral" : "primary"}
-                          onClick={() => setManualEdit((s) => !s)}
-                          sx={{ width: "fit-content" }}
-                        >
-                          {manualEdit ? "Cancel Edit" : "Edit"}
-                        </Button>
-                      </Box>
-                    )}
+                        <Box>
+                          <Button
+                            variant={manualEdit ? "outlined" : "solid"}
+                            color={manualEdit ? "neutral" : "primary"}
+                            onClick={() => setManualEdit((s) => !s)}
+                            sx={{ width: "fit-content" }}
+                          >
+                            {manualEdit ? "Cancel Edit" : "Edit"}
+                          </Button>
+                        </Box>
+                      )}
                   </Box>
                 )}
             </Box>
@@ -2155,14 +2162,14 @@ const AddPurchaseOrder = ({
                     value={
                       formData.delivery_type
                         ? {
-                            value: formData.delivery_type,
-                            label:
-                              formData.delivery_type === "for"
-                                ? "For"
-                                : formData.delivery_type === "slnko"
+                          value: formData.delivery_type,
+                          label:
+                            formData.delivery_type === "for"
+                              ? "For"
+                              : formData.delivery_type === "slnko"
                                 ? "Slnko"
                                 : "",
-                          }
+                        }
                         : null
                     }
                     onChange={(selected) =>
@@ -2629,7 +2636,7 @@ const AddPurchaseOrder = ({
                             ₹{" "}
                             {(
                               Number(l.quantity || 0) *
-                                Number(l.unitPrice || 0) +
+                              Number(l.unitPrice || 0) +
                               ((Number(l.quantity || 0) *
                                 Number(l.unitPrice || 0) *
                                 Number(l.taxPercent || 0)) /
@@ -2672,8 +2679,19 @@ const AddPurchaseOrder = ({
 
               <Divider sx={{ my: 2 }} />
 
+              <Typography level="body-sm" sx={{ mb: 0.5 }}>
+                Description…
+              </Typography>
+              <Textarea
+                minRows={3}
+                placeholder="Write Description of Purchase Order"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                {...(effectiveMode === "view" ? disabledTextareaProps : {})}
+              />
+
               {/* Totals */}
-              <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+              <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
                 <Sheet
                   variant="soft"
                   sx={{ borderRadius: "lg", p: 2, minWidth: 320 }}
@@ -2872,8 +2890,8 @@ const AddPurchaseOrder = ({
                 } catch (e) {
                   toast.error(
                     e?.data?.message ||
-                      e?.error ||
-                      "Failed to submit inspection request"
+                    e?.error ||
+                    "Failed to submit inspection request"
                   );
                 }
               }}
