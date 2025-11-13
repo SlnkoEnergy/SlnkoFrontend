@@ -91,9 +91,28 @@ const VendorBillSummary = forwardRef((props, ref) => {
 
   const [exportBills, { isLoading: isExporting }] = useExportBillsMutation();
 
-  const handleExport = async () => {
+    const handleExport = async (isExportAll) => {
     try {
+
+      if (isExportAll) {
+
+
+        const status = searchParams.get("status") || "";
+        const from = searchParams.get("from") || "";
+        const to = searchParams.get("to") || "";
+
+        const res = await exportBills({ status, from, to, exportAll: isExportAll }).unwrap();
+
+        const url = URL.createObjectURL(res);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "bills_export.csv";
+        link.click();
+        URL.revokeObjectURL(url);
+        return;
+      }
       const res = await exportBills({ Ids: selectedIds }).unwrap();
+
       const url = URL.createObjectURL(res);
       const link = document.createElement("a");
       link.href = url;
@@ -105,6 +124,7 @@ const VendorBillSummary = forwardRef((props, ref) => {
       alert("Failed to export bills");
     }
   };
+
 
   useEffect(() => {
     setSelectedIds([]);
