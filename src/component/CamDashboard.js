@@ -171,18 +171,18 @@ function Dash_cam({ selected, setSelected }) {
   };
   const HandOverSheet = Array.isArray(getHandOverSheet?.data)
     ? getHandOverSheet.data.map((entry) => {
-        return {
-          ...entry,
-          _id: entry._id,
-          ...entry.customer_details,
-          ...entry.order_details,
-          ...entry.project_detail,
-          ...entry.commercial_details,
-          ...entry.other_details,
-          ...entry?.scheme,
-          is_locked: entry.is_locked,
-        };
-      })
+      return {
+        ...entry,
+        _id: entry._id,
+        ...entry.customer_details,
+        ...entry.order_details,
+        ...entry.project_detail,
+        ...entry.commercial_details,
+        ...entry.other_details,
+        ...entry?.scheme,
+        is_locked: entry.is_locked,
+      };
+    })
     : [];
 
   useEffect(() => {
@@ -387,7 +387,7 @@ function Dash_cam({ selected, setSelected }) {
     baseHeaders.push("Action");
   }
   if (!cannotSeePR) baseHeaders.push("Purchsase Request");
-  
+
 
   const totalCols = 1 + baseHeaders.length;
 
@@ -591,7 +591,7 @@ function Dash_cam({ selected, setSelected }) {
                     }}
                   >
                     {project.is_locked === "locked" &&
-                    project.status_of_handoversheet === "Approved" ? (
+                      project.status_of_handoversheet === "Approved" ? (
                       <Tooltip title="View Project Detail" arrow>
                         <span>
                           <ProjectOverView
@@ -724,8 +724,8 @@ function Dash_cam({ selected, setSelected }) {
                       }}
                     >
                       {project.is_locked === "locked" &&
-                      project.scope_status !== "open" &&
-                      project.status_of_handoversheet === "Approved" ? (
+                        project.scope_status !== "open" &&
+                        project.status_of_handoversheet === "Approved" ? (
                         <Button
                           size="xs"
                           variant="soft"

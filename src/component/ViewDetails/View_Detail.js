@@ -176,8 +176,8 @@ export default function CustomerPaymentSummary() {
       { key: "billGst", label: "Billed GST (₹)" },
       { key: "billedTotal", label: "Billed Total (₹)" },
 
-      { key: "remainingSales", label: "Remaining Sales Closure (incl. GST)" },
-      { key: "status", label: "Status" },
+      { key: "remainingSales", label: "Remaining Sales Closure(w/o GST)" },
+      { key: "remainingSalesGST", label: "Remaining Sales Closure(inc GST)" },
       { key: "select", label: "Select checkbox" },
     ],
     []
@@ -231,6 +231,7 @@ export default function CustomerPaymentSummary() {
     "Prachi Singh",
     "admin",
     "Chandan Singh",
+    "Deepak Kumar Maurya",
     "Gagan Tayal",
     "Sachin Raghav",
     "Kailash Chand",
@@ -238,7 +239,12 @@ export default function CustomerPaymentSummary() {
 
   const canDelete =
     user?.name &&
-    !["Chandan Singh", "Sachin Raghav", "Kailash Chand"].includes(user.name);
+    ![
+      "Chandan Singh",
+      "Deepak Kumar Maurya",
+      "Sachin Raghav",
+      "Kailash Chand",
+    ].includes(user.name);
 
   // --- Sales table column config & visibility ---
   const SALES_COLUMNS = useMemo(
@@ -444,6 +450,19 @@ export default function CustomerPaymentSummary() {
     return isNaN(x) ? "—" : `${x.toLocaleDateString()}`;
   };
 
+  const getItemLabel = (row) => {
+    if (typeof row?.item_name === "string") return row.item_name;
+    if (Array.isArray(row?.item_name)) {
+      return row.item_name
+        .map(
+          (it) => it?.product_name || it?.category?.name || it?.category || ""
+        )
+        .filter(Boolean)
+        .join(", ");
+    }
+    return row?.item_name || "-";
+  };
+
   const filteredSales = useMemo(() => {
     const q = (searchSales || "").trim().toLowerCase();
     if (!q) return SalesSummary || [];
@@ -476,19 +495,6 @@ export default function CustomerPaymentSummary() {
         return { url, name };
       })
       .filter((a) => a.url);
-  };
-
-  const getItemLabel = (row) => {
-    if (typeof row?.item_name === "string") return row.item_name;
-    if (Array.isArray(row?.item_name)) {
-      return row.item_name
-        .map(
-          (it) => it?.product_name || it?.category?.name || it?.category || ""
-        )
-        .filter(Boolean)
-        .join(", ");
-    }
-    return row?.item_name || "-";
   };
 
   // Debounced refetch on filter changes
@@ -819,105 +825,53 @@ export default function CustomerPaymentSummary() {
   const [selectedPO, setSelectedPO] = useState([]);
   const [salesAmounts, setSalesAmounts] = useState({});
   const [salesInvoice, setSalesInvoice] = useState("");
-  const [completeSales, setCompleteSales] = useState({});
+
   const handleSalesConvert = async () => {
     try {
-      // 1) Must have PO(s)
-      if (!selectedPO?.length) {
-        toast.error("No PO(s) selected.");
+      // Need at least one PO
+      if (!Array.isArray(selectedPO) || selectedPO.length === 0) {
+        toast.error("Select at least one PO.");
         return;
       }
 
-      // 2) Only convert POs with billed value > 0
-      const validPOs = selectedPO.filter(
-        (po) => Number(po.total_billed_value || 0) > 0
-      );
-      if (!validPOs.length) {
-        toast.error(
-          "Only POs with billed value greater than 0 can be converted."
-        );
-        return;
-      }
-
-      // 3) Remarks required
-      if (!salesRemarks.trim()) {
-        toast.error("Remarks are required.");
-        return;
-      }
-
-      // 4) Invoice required + format
-      const inv = (salesInvoice || "").trim();
+      // Simple required: invoice must exist (no regex)
+      const inv = String(salesInvoice || "").trim();
       if (!inv) {
         toast.error("Sales Invoice No. is required.");
         return;
       }
-      const invoiceOk = /^[A-Za-z0-9\/\-.]+$/.test(inv);
-      if (!invoiceOk) {
-        toast.error(
-          "Sales Invoice No. can contain letters, numbers, '/', '-' or '.'."
-        );
-        return;
-      }
 
-      // 5) Each valid PO must have Basic Sales
-      const invalidPOs = validPOs.filter((po) => {
-        const id = po._id;
-        const basic = salesAmounts[id]?.basic;
-        return basic === undefined || basic === "" || isNaN(Number(basic));
-      });
-      if (invalidPOs.length) {
-        const poList = invalidPOs.map((p) => p.po_number).join(", ");
-        toast.error(`Please enter Basic Sales value for: ${poList}`);
-        return;
-      }
-
-      // 6) Guard: Basic Sales <= Bill Basic
-      const capErrors = validPOs.filter((po) => {
-        const id = po._id;
-        const billBasic = Number(po.bill_basic || 0);
-        const basic = Number(salesAmounts[id]?.basic || 0);
-        return basic < 0 || basic > billBasic;
-      });
-      if (capErrors.length) {
-        const poList = capErrors.map((p) => p.po_number).join(", ");
-        toast.error(
-          `Basic Sales must not exceed Billed Basic Value for: ${poList}`
-        );
-        return;
-      }
-
-      // 7) Fire conversions (per-row isSales from toggle)
+      // Fire conversions for all selected POs
       const results = await Promise.allSettled(
-        validPOs.map(async (po) => {
-          const id = po._id;
-          const poNumber = po.po_number;
-          const basic = Number(salesAmounts[id]?.basic || 0);
-          const gst = Number(salesAmounts[id]?.gst || 0);
+        selectedPO.map(async (po) => {
+          const id = po?._id;
+          const poNumber = po?.po_number;
 
-          const isComplete = completeSales[id] ?? true; // default complete
-          const isSalesValue = isComplete ? "true" : "partial";
+          // Use provided values; fall back to 0 if absent
+          const basic = Number(salesAmounts?.[id]?.basic ?? 0);
+          const gst = Number(salesAmounts?.[id]?.gst ?? 0);
 
           return await updateSalesPO({
             id,
             po_number: poNumber,
-            remarks: salesRemarks.trim(),
+            remarks: String(salesRemarks || "").trim(), // optional
             basic_sales: basic,
             gst_on_sales: gst,
             sales_invoice: inv,
-            isSales: isSalesValue, // 👈 drives backend
-            files: salesFiles,
+            isSales: "true", // always true
+            files: salesFiles || [],
           }).unwrap();
         })
       );
 
-      // 8) Summarize results
+      // Summarize
       const ok = results.filter((r) => r.status === "fulfilled").length;
       const fail = results.filter((r) => r.status === "rejected").length;
 
-      if (ok) toast.success(`Converted ${ok} PO(s) successfully.`);
+      if (ok) toast.success(`Converted ${ok} PO(s).`);
       if (fail) toast.warning(`Failed ${fail} PO(s).`);
 
-      // 9) Reset on success
+      // Reset on any success
       if (ok) {
         setSalesOpen(false);
         setSelectedPO([]);
@@ -926,7 +880,6 @@ export default function CustomerPaymentSummary() {
         setSalesRemarks("");
         setSalesInvoice("");
         setSalesAmounts({});
-        setCompleteSales({});
         refetch?.();
       }
     } catch (err) {
@@ -1114,94 +1067,6 @@ export default function CustomerPaymentSummary() {
     );
   }
 
-  // Shared footer
-  const PaginationFooter = ({ totalHint }) => {
-    const pageSizeOptions = [10, 25, 50, 100];
-
-    const handlePageSizeChange = (newSize) => {
-      const parsed = Number(newSize);
-      if (!Number.isFinite(parsed) || parsed <= 0) return;
-
-      // Reset to page 1 when changing size
-      setPage(1);
-      setPageSize(parsed);
-
-      const next = new URLSearchParams(searchParams);
-      next.set("tab", activeTab);
-      next.set("page", "1");
-      next.set("pageSize", String(parsed));
-      if (p_id) next.set("p_id", p_id);
-      setSearchParams(next);
-    };
-
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 1.5,
-          flexWrap: "wrap",
-          justifyContent: "space-between",
-          mt: 1.5,
-        }}
-      >
-        {/* Left side: page and total hint */}
-        <Typography level="body-sm">
-          Page {page}
-          {totalHint ? ` • ${totalHint}` : ""}
-        </Typography>
-
-        {/* Right side: pagination controls */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1.5,
-            flexWrap: "wrap",
-          }}
-        >
-          {/* Page size selection */}
-          <Stack direction="row" spacing={0.5} alignItems="center">
-            <Typography level="body-sm">Rows per page:</Typography>
-            <Select
-              size="sm"
-              value={pageSize}
-              onChange={(_, val) => handlePageSizeChange(val)}
-              sx={{ minWidth: 80 }}
-            >
-              {pageSizeOptions.map((size) => (
-                <Option key={size} value={size}>
-                  {size}/page
-                </Option>
-              ))}
-            </Select>
-          </Stack>
-
-          {/* Prev / Next */}
-          <Stack direction="row" alignItems="center" spacing={0.5}>
-            <Button
-              size="sm"
-              variant="plain"
-              disabled={page <= 1}
-              onClick={onPrev}
-            >
-              Prev
-            </Button>
-            <Typography level="body-sm">/</Typography>
-            <Button
-              size="sm"
-              variant="plain"
-              disabled={!canNext || isLoading}
-              onClick={onNext}
-            >
-              Next
-            </Button>
-          </Stack>
-        </Box>
-      </Box>
-    );
-  };
-
   const RupeeValue = ({ value, showSymbol = true }) => {
     const n = Number(value);
     if (!isFinite(n)) return "—";
@@ -1261,18 +1126,15 @@ export default function CustomerPaymentSummary() {
         "6",
         "Bills received, yet to be invoiced to customer",
         safeRound(
-          responseData?.clientHistory?.meta?.total_remaining_sales_value
+          responseData?.clientHistory?.meta
+            ?.total_remaining_sales_value_with_gst
         ),
         "#FFF",
       ],
       [
         "7",
-        "Advances left after bills received [4 - 5 - 6]",
-        safeRound(
-          responseData?.total_advance_paid -
-            responseData?.total_sales_value -
-            responseData?.clientHistory?.meta?.total_remaining_sales_value
-        ),
+        "Total Advance Remaining",
+        safeRound(responseData?.clientHistory?.meta?.total_remaining_advance),
         "#FFF",
       ],
       [
@@ -1284,15 +1146,7 @@ export default function CustomerPaymentSummary() {
       [
         "9",
         "Balance With Slnko [3 - 5 - 6 - 7 - 8]",
-        safeRound(
-          responseData?.netBalance -
-            responseData?.total_sales_value -
-            responseData?.clientHistory?.meta?.total_remaining_sales_value -
-            (responseData?.total_advance_paid -
-              responseData?.total_sales_value -
-              responseData?.clientHistory?.meta?.total_remaining_sales_value) -
-            responseData?.total_adjustment
-        ),
+        safeRound(responseData?.balance_with_slnko),
         "#FFECB3",
         true,
       ],
@@ -1305,13 +1159,14 @@ export default function CustomerPaymentSummary() {
       4: "Advance lying with vendors",
       5: "Value of material delivered (PO Closed) & Sales Invoice issued (including Sales GST)",
       6: "Value of material delivered (PO Closed) including Purchase GST",
-      7: "Advance left after bills received [4-5-6] ",
+      7: "Sum of (Advance Paid − Total Billed) for POs not Fully Sold (Fully Sold counted as 0)",
       8: "Adjustments (Debit / Credit)",
       9: "",
     };
 
     const summaryData = [
       ["Total PO Value", safeRound(responseData?.total_po_with_gst)],
+      ["Net Sales Closure", safeRound(responseData?.net_billing_balance)],
       ["Billed Value", safeRound(responseData?.aggregate_billed_value)],
       ["Advance Paid", safeRound(responseData?.total_advance_paid)],
       [
@@ -1507,9 +1362,25 @@ export default function CustomerPaymentSummary() {
                   <Tooltip
                     key={desc}
                     title={
-                      desc === "Remaining to Pay"
-                        ? "If Billed > Advance → (PO with GST − Billed), else = (PO with GST − Total Advance Paid)"
-                        : ""
+                      desc === "Remaining to Pay" ? (
+                        <Box sx={{ whiteSpace: "pre-line" }}>
+                          {[
+                            "If Billed > Advance:",
+                            "  Remaining to Pay = Net Sales Closure − (PO with GST − Billed − Balance with Slnko)",
+                            "",
+                            "Else:",
+                            "  Remaining to Pay = Net Sales Closure − (PO with GST − Total Advance Paid − Balance with Slnko)",
+                          ].join("\n")}
+                        </Box>
+                      ) : desc === "Net Sales Closure" ? (
+                        <Box sx={{ whiteSpace: "pre-line" }}>
+                          {
+                            "Net Sales Closure = Total Sales (with GST) − Remaining Sales (with GST)"
+                          }
+                        </Box>
+                      ) : (
+                        ""
+                      )
                     }
                     arrow
                     placement="top-start"
@@ -1758,7 +1629,7 @@ export default function CustomerPaymentSummary() {
                 <Table borderAxis="both" stickyHeader sx={{ minWidth: "100%" }}>
                   <thead>
                     <tr>
-                      <th>Credit Date</th>
+                      <th>Credit Date / Details</th>
                       <th>Credit Mode</th>
                       <th>Credited Amount (₹)</th>
                       <th style={{ textAlign: "center" }}>
@@ -1779,6 +1650,7 @@ export default function CustomerPaymentSummary() {
                       </th>
                     </tr>
                   </thead>
+
                   <tbody>
                     {isLoading ? (
                       <tr>
@@ -1798,12 +1670,73 @@ export default function CustomerPaymentSummary() {
                       CreditSummary.map((row) => (
                         <tr key={row._id || row.id}>
                           <td>
-                            {formatDateTime(row.cr_date || row.createdAt)}
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 6,
+                              }}
+                            >
+                              <Typography level="body-sm" fontWeight="lg">
+                                {formatDateTime(row.cr_date || row.createdAt)}
+                              </Typography>
+
+                              {/* SUBMITTED BY (Chip) */}
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 8,
+                                }}
+                              >
+                                <Typography
+                                  level="body-xs"
+                                  sx={{ color: "text.tertiary" }}
+                                >
+                                  By:
+                                </Typography>
+
+                                {(() => {
+                                  const submitName =
+                                    row.submitted_by_name ||
+                                    (typeof row.submitted_by === "string" &&
+                                    row.submitted_by.trim()
+                                      ? row.submitted_by
+                                      : null);
+
+                                  return (
+                                    <Chip
+                                      size="sm"
+                                      variant="soft"
+                                      color={submitName ? "primary" : "neutral"}
+                                      sx={{ px: 0.75 }}
+                                    >
+                                      {submitName || "Not Defined"}
+                                    </Chip>
+                                  );
+                                })()}
+                              </div>
+
+                              {/* COMMENT */}
+                              <Typography
+                                level="body-xs"
+                                sx={{ color: "text.tertiary" }}
+                              >
+                                Comment:&nbsp;
+                                {row.comment?.trim() ? row.comment : "—"}
+                              </Typography>
+                            </div>
                           </td>
+
+                          {/* MODE */}
                           <td>{row.cr_mode || "—"}</td>
+
+                          {/* AMOUNT */}
                           <td>
                             <RupeeValue value={row.cr_amount ?? 0} />
                           </td>
+
+                          {/* SELECT CHECKBOX */}
                           <td style={{ textAlign: "center" }}>
                             <Checkbox
                               color="primary"
@@ -1832,6 +1765,7 @@ export default function CustomerPaymentSummary() {
                       </tr>
                     )}
                   </tbody>
+
                   {CreditSummary.length > 0 && (
                     <tfoot>
                       <tr
@@ -1885,31 +1819,12 @@ export default function CustomerPaymentSummary() {
                   }}
                 >
                   <FormControl sx={{ minWidth: 350 }}>
-                    {/* <FormLabel>Search Paid For</FormLabel> */}
                     <Input
                       placeholder="Enter PO Number, Item or Vendor..."
                       value={searchDebit}
                       onChange={(e) => setSearchDebit(e.target.value)}
                     />
                   </FormControl>
-
-                  {/* <FormControl sx={{ minWidth: 200 }}>
-                    <FormLabel>Start Date</FormLabel>
-                    <Input
-                      type="date"
-                      value={startDate}
-                       onChange={handleStartDateChange}
-                    />
-                  </FormControl>
-
-                  <FormControl sx={{ minWidth: 200 }}>
-                    <FormLabel>End Date</FormLabel>
-                    <Input
-                      type="date"
-                      value={endDate}
-                      onChange={handleEndDateChange}
-                    />
-                  </FormControl> */}
                 </Box>
 
                 {(user?.name === "IT Team" ||
@@ -2119,17 +2034,44 @@ export default function CustomerPaymentSummary() {
                         Column visibility
                       </MenuItem>
                       <Divider />
-                      {COLUMN_CONFIG.map((c) => (
-                        <MenuItem key={c.key} onClick={() => toggle(c.key)}>
-                          <Checkbox
-                            checked={!!vis[c.key]}
-                            readOnly
-                            size="sm"
-                            sx={{ mr: 1 }}
-                          />
-                          {c.label}
-                        </MenuItem>
-                      ))}
+                      <Sheet
+                        variant="outlined"
+                        sx={{
+                          p: 1.5,
+                          borderRadius: "md",
+                          boxShadow: "sm",
+                          minWidth: 220,
+                          maxHeight: 320,
+                          overflow: "auto",
+                        }}
+                      >
+                        <Typography
+                          level="body-sm"
+                          sx={{ mb: 1, fontWeight: 600 }}
+                        >
+                          Columns
+                        </Typography>
+
+                        {COLUMN_CONFIG.map((c) => (
+                          <Box
+                            key={c.key}
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                              py: 0.5,
+                            }}
+                          >
+                            <Checkbox
+                              checked={!!vis[c.key]}
+                              size="sm"
+                              onChange={() => toggle(c.key)}
+                            />
+                            <Typography level="body-sm">{c.label}</Typography>
+                          </Box>
+                        ))}
+                      </Sheet>
+
                       <Divider />
                       <MenuItem>
                         <Button
@@ -2240,7 +2182,9 @@ export default function CustomerPaymentSummary() {
                     {show("remainingSales") && (
                       <col style={{ minWidth: "200px" }} />
                     )}
-                    {show("status") && <col style={{ minWidth: "150px" }} />}
+                    {show("remainingSalesGST") && (
+                      <col style={{ minWidth: "200px" }} />
+                    )}
                     {show("select") && <col style={{ minWidth: "100px" }} />}
                   </colgroup>
 
@@ -2299,13 +2243,12 @@ export default function CustomerPaymentSummary() {
 
                       {show("remainingSales") && (
                         <th rowSpan={2} className="num">
-                          Remaining Sales Closure(incl. gst)
+                          Remaining Sales Closure(w/o GST)
                         </th>
                       )}
-
-                      {show("status") && (
-                        <th rowSpan={2} className="text">
-                          Status
+                      {show("remainingSalesGST") && (
+                        <th rowSpan={2} className="num">
+                          Remaining Sales Closure(inc GST)
                         </th>
                       )}
 
@@ -2355,7 +2298,7 @@ export default function CustomerPaymentSummary() {
                     {isLoading ? (
                       <tr>
                         <td
-                          colSpan={14}
+                          colSpan={13}
                           style={{ textAlign: "center", padding: 20 }}
                         >
                           <Typography
@@ -2369,7 +2312,35 @@ export default function CustomerPaymentSummary() {
                     ) : ClientSummary.length > 0 ? (
                       ClientSummary.map((client) => (
                         <tr key={client._id}>
-                          <td className="text">{client.po_number || "N/A"}</td>
+                          <td className="text">
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 4,
+                              }}
+                            >
+                              <Typography level="body-sm" fontWeight={600}>
+                                {client.po_number || "N/A"}
+                              </Typography>
+
+                              <Chip
+                                size="sm"
+                                variant="soft"
+                                color={
+                                  client.sales_status === "Fully Sold"
+                                    ? "success"
+                                    : client.sales_status === "Pending"
+                                    ? "error"
+                                    : client.sales_status === "Partially Sold"
+                                    ? "warning"
+                                    : "neutral"
+                                }
+                              >
+                                {client.sales_status || "—"}
+                              </Chip>
+                            </div>
+                          </td>
 
                           {show("vendor") && (
                             <td className="text">{client.vendor || "N/A"}</td>
@@ -2419,7 +2390,7 @@ export default function CustomerPaymentSummary() {
                           {show("advanceRemaining") && (
                             <td className="num">
                               <RupeeValue
-                                value={client.remaining_amount || 0}
+                                value={client.remaining_advance || 0}
                               />
                             </td>
                           )}
@@ -2450,27 +2421,15 @@ export default function CustomerPaymentSummary() {
                             </td>
                           )}
 
-                          <td style={{ textAlign: "center" }}>
-                            <Chip
-                              color={
-                                client.remaining_sales_value === 0 &&
-                                client.po_basic === client.bill_basic
-                                  ? "success"
-                                  : client.bill_basic ===
-                                    client.remaining_sales_value
-                                  ? "error"
-                                  : "warning"
-                              }
-                            >
-                              {client.remaining_sales_value === 0 &&
-                              client.po_basic === client.bill_basic
-                                ? "Fully Sold"
-                                : client.bill_basic ===
-                                  client.remaining_sales_value
-                                ? "Pending"
-                                : "Partially Sold"}
-                            </Chip>
-                          </td>
+                          {show("remainingSalesGST") && (
+                            <td className="num">
+                              <RupeeValue
+                                value={
+                                  client.remaining_sales_value_with_gst || 0
+                                }
+                              />
+                            </td>
+                          )}
 
                           {show("select") && (
                             <td style={{ textAlign: "center" }}>
@@ -2551,7 +2510,8 @@ export default function CustomerPaymentSummary() {
                           <td className="num">
                             <RupeeValue
                               value={
-                                clientHistory?.meta?.total_remaining_amount || 0
+                                clientHistory?.meta?.total_remaining_advance ||
+                                0
                               }
                             />
                           </td>
@@ -2587,6 +2547,17 @@ export default function CustomerPaymentSummary() {
                               value={
                                 clientHistory?.meta
                                   ?.total_remaining_sales_value || 0
+                              }
+                            />
+                          </td>
+                        )}
+
+                        {show("remainingSalesGST") && (
+                          <td className="num em">
+                            <RupeeValue
+                              value={
+                                clientHistory?.meta
+                                  ?.total_remaining_sales_value_with_gst || 0
                               }
                             />
                           </td>
@@ -2638,17 +2609,44 @@ export default function CustomerPaymentSummary() {
                       Column visibility
                     </MenuItem>
                     <Divider />
-                    {SALES_COLUMNS.map((c) => (
-                      <MenuItem key={c.key} onClick={() => toggle(c.key)}>
-                        <Checkbox
-                          checked={!!vis[c.key]}
-                          readOnly
-                          size="sm"
-                          sx={{ mr: 1 }}
-                        />
-                        {c.label}
-                      </MenuItem>
-                    ))}
+                    <Sheet
+                      variant="outlined"
+                      sx={{
+                        p: 1.5,
+                        borderRadius: "md",
+                        boxShadow: "sm",
+                        minWidth: 220,
+                        maxHeight: 320,
+                        overflow: "auto",
+                      }}
+                    >
+                      <Typography
+                        level="body-sm"
+                        sx={{ mb: 1, fontWeight: 600 }}
+                      >
+                        Sales Columns
+                      </Typography>
+
+                      {SALES_COLUMNS.map((c) => (
+                        <Box
+                          key={c.key}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                            py: 0.4,
+                          }}
+                        >
+                          <Checkbox
+                            checked={!!vis[c.key]} // same state you used earlier
+                            size="sm"
+                            onChange={() => toggle(c.key)} // same toggle you used earlier
+                          />
+                          <Typography level="body-sm">{c.label}</Typography>
+                        </Box>
+                      ))}
+                    </Sheet>
+
                     <Divider />
                     <MenuItem>
                       <Button
@@ -3258,51 +3256,6 @@ export default function CustomerPaymentSummary() {
                         </Box>
                       </Stack>
 
-                      {/* Live preview */}
-                      {/* {(() => {
-          const basicNum = parseFloat(form.basic_sales || "0");
-          const gstP = parseFloat(form.gst_on_sales || "0");
-
-          // If either value is invalid, show the default message
-          if (isNaN(basicNum) || basicNum <= 0) {
-            return (
-              <Typography level="body-sm" sx={{ color: "error.main" }}>
-                Please enter a valid Basic Sales amount (positive number).
-              </Typography>
-            );
-          }
-
-          if (isNaN(gstP) || gstP < 0) {
-            return (
-              <Typography level="body-sm" sx={{ color: "error.main" }}>
-                Please enter a valid GST percentage.
-              </Typography>
-            );
-          }
-
-          const gstAmt = (basicNum * gstP) / 100;
-          const totalWithGst = basicNum + gstAmt;
-
-          const fmt = (n) => Number.isFinite(n) ? Math.round(n).toLocaleString("en-IN") : "—";
-
-          return (
-            <Sheet variant="soft" sx={{ p: 1, borderRadius: "md", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1 }}>
-              <Box>
-                <Typography level="body-xs" color="neutral">GST Amount (₹)</Typography>
-                <Typography level="title-sm" sx={{ fontWeight: 600 }}>{fmt(gstAmt)}</Typography>
-              </Box>
-              <Box>
-                <Typography level="body-xs" color="neutral">GST %</Typography>
-                <Typography level="title-sm">{gstP}%</Typography>
-              </Box>
-              <Box sx={{ textAlign: "right" }}>
-                <Typography level="body-xs" color="neutral">Total (₹)</Typography>
-                <Typography level="title-sm" sx={{ fontWeight: 700 }}>{fmt(totalWithGst)}</Typography>
-              </Box>
-            </Sheet>
-          );
-        })()} */}
-
                       <Box>
                         <Typography level="body-xs" sx={{ mb: 0.25 }}>
                           Sales Invoice No.
@@ -3317,7 +3270,9 @@ export default function CustomerPaymentSummary() {
                         <Typography level="body-xs" sx={{ mb: 0.25 }}>
                           Remarks
                         </Typography>
-                        <Input
+                        <Textarea
+                          minRows={2}
+                          maxRows={4}
                           value={form.remarks}
                           onChange={onChange("remarks")}
                         />
@@ -3740,7 +3695,7 @@ export default function CustomerPaymentSummary() {
                     { label: "PO Value", align: "right" },
                     { label: "Bill Basic", align: "right" },
                     { label: "Advance Paid", align: "right" },
-                    { label: "Remaining Sales Value", align: "right" },
+                    { label: "Remaining Sales Value(w/o GST)", align: "right" },
                     { label: "Basic Sales", align: "right" },
                     { label: "GST on Sales(%)", align: "right" },
                     // { label: "Complete Sales", align: "center" }, // NEW
@@ -3767,8 +3722,8 @@ export default function CustomerPaymentSummary() {
                     const basic = Number(salesAmounts[id]?.basic || 0);
                     const gst = Number(salesAmounts[id]?.gst || 0);
                     const remaining_sales = Number(po.remaining_sales_value);
-                    const basicExceeds = basic > remaining_sales;
-                    const showInfo = billBasic > totalAdvance;
+                    // const basicExceeds = basic > remaining_sales;
+                    // const showInfo = billBasic > totalAdvance;
                     return (
                       <Box
                         key={id}
@@ -3804,14 +3759,14 @@ export default function CustomerPaymentSummary() {
                         <Typography
                           level="body-sm"
                           textAlign="right"
-                          color={showInfo ? "danger.plainColor" : "neutral"}
+                          // color={showInfo ? "danger.plainColor" : "neutral"}
                         >
                           {totalAdvance.toLocaleString()}
                         </Typography>
                         <Typography
                           level="body-sm"
                           textAlign="right"
-                          color={showInfo ? "danger.plainColor" : "neutral"}
+                          // color={showInfo ? "danger.plainColor" : "neutral"}
                         >
                           {remaining_sales.toLocaleString()}
                         </Typography>
@@ -3831,9 +3786,6 @@ export default function CustomerPaymentSummary() {
                           sx={{
                             width: 100,
                             ml: "auto",
-                            borderColor: basicExceeds
-                              ? "danger.solidBg"
-                              : undefined,
                           }}
                         />
 
@@ -4038,15 +3990,15 @@ export default function CustomerPaymentSummary() {
                   variant="solid"
                   color="primary"
                   loading={isConverting}
-                  disabled={
-                    !salesRemarks.trim() ||
-                    selectedPO.some((po) => {
-                      const id = po._id;
-                      const billBasic = Number(po.bill_basic || 0);
-                      const basic = Number(salesAmounts[id]?.basic || 0);
-                      return basic < 0 || basic > billBasic;
-                    })
-                  }
+                  // disabled={
+                  //   !salesRemarks.trim() ||
+                  //   selectedPO.some((po) => {
+                  //     const id = po._id;
+                  //     const billBasic = Number(po.bill_basic || 0);
+                  //     const basic = Number(salesAmounts[id]?.basic || 0);
+                  //     return basic < 0 || basic > billBasic;
+                  //   })
+                  // }
                   onClick={handleSalesConvert}
                 >
                   Convert

@@ -24,9 +24,9 @@ function Bill_History() {
   const canExport = selectedCount > 0;
   const [selected, setSelected] = useState([]);
 
-  const exportData = () => {
+  const exportData = (isExportAll) => {
     if (vendorRef.current) {
-      vendorRef.current.handleExport();
+      vendorRef.current.handleExport(isExportAll);
     }
   };
 
@@ -260,6 +260,19 @@ function Bill_History() {
                 Export
               </Button>
             )}
+            {
+              canExport && (
+                <Button
+                  variant="outlined"
+                  size="sm"
+                  color="primary"
+                  onClick={() => exportData(true)}
+                  startDecorator={<CalendarMonthIcon />}
+                >
+                  Export All
+                </Button>
+              )
+            }
 
             {selected.length > 0 &&
               (user?.name === "Guddu Rani Dubey" ||
