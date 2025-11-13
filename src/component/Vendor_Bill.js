@@ -39,6 +39,7 @@ const VendorBillSummary = forwardRef((props, ref) => {
   useImperativeHandle(ref, () => ({
     handleExport,
     selectedIds,
+     openColumnModal: () => setColModalOpen(true),
   }));
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -654,7 +655,7 @@ const VendorBillSummary = forwardRef((props, ref) => {
       {/* Search + Columns */}
       <Box
         display="flex"
-        justifyContent="space-between"
+        justifyContent="flex-end"
         alignItems="center"
         pb={0.5}
         flexWrap="wrap"
@@ -679,18 +680,6 @@ const VendorBillSummary = forwardRef((props, ref) => {
             />
           </FormControl>
         </Box>
-
-       <Stack direction="row" spacing={1}>
-  <Button
-    size="sm"
-    variant="outlined"
-    color="neutral"
-    startDecorator={<ViewColumnIcon />}  
-    onClick={() => setColModalOpen(true)}
-  >
-    Columns
-  </Button>
-</Stack>
       </Box>
 
       <Sheet

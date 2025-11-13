@@ -13,6 +13,7 @@ import { useDeleteBillMutation } from "../../redux/billsSlice";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import { toast } from "react-toastify";
 import DeleteIcon from "@mui/icons-material/Delete";
+import ViewColumnIcon from '@mui/icons-material/ViewColumn';
 import { IconButton, Tooltip } from "@mui/joy";
 
 function Bill_History() {
@@ -288,6 +289,17 @@ function Bill_History() {
                   <DeleteIcon />
                 </IconButton>
               )}
+
+              <Button
+  variant="outlined"
+  size="sm"
+  color="primary"
+  onClick={() => vendorRef.current?.openColumnModal()}
+  startDecorator={<ViewColumnIcon />}
+>
+  Columns
+</Button>
+
 
             <Filter
               open={open}
