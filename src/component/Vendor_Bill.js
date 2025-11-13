@@ -20,6 +20,7 @@ import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Chip from "@mui/joy/Chip";
 import FormControl from "@mui/joy/FormControl";
+import ViewColumnIcon from '@mui/icons-material/ViewColumn';
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Typography from "@mui/joy/Typography";
@@ -32,14 +33,13 @@ import { useExportBillsMutation, useGetAllBillsQuery } from "../redux/billsSlice
 import Axios from "../utils/Axios";
 import dayjs from "dayjs";
 
-/* ===========================================
-   VendorBillSummary
-=========================================== */
+
 const VendorBillSummary = forwardRef((props, ref) => {
   const { onSelectionChange, setSelected } = props;
   useImperativeHandle(ref, () => ({
     handleExport,
     selectedIds,
+     openColumnModal: () => setColModalOpen(true),
   }));
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -212,7 +212,7 @@ const VendorBillSummary = forwardRef((props, ref) => {
   const fmtINR = (n) => (isFinite(n) ? `₹${Number(n).toFixed(2)}` : "₹0.00");
   const fmtDate = (d) => (d ? dayjs(d).format("DD/MM/YYYY") : "-");
 
-  // Components used in columns
+
   const BillingStatusChip = ({ status, balance }) => {
     const isFullyBilled = status === "fully billed";
     const isPending = status === "waiting bills";
@@ -373,12 +373,6 @@ const VendorBillSummary = forwardRef((props, ref) => {
     );
   };
 
-  /* ===============================
-     Attachments Preview
-     - images rendered directly
-     - docs/pdf via Google viewer
-     - if PDF cannot be viewed -> show Download action
-  ================================ */
   const isImage = (s = "") => /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(s);
   const isPdf = (s = "") => /\.pdf(\?|$)/i.test(s);
 
@@ -389,12 +383,12 @@ const VendorBillSummary = forwardRef((props, ref) => {
 
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewName, setPreviewName] = useState("");
-  const [viewerUrls, setViewerUrls] = useState([]); // [primary, fallback]
+  const [viewerUrls, setViewerUrls] = useState([]);
   const [viewerIdx, setViewerIdx] = useState(0);
   const [loadingViewer, setLoadingViewer] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
 
-  // keep original file details to decide download option
+
   const [srcUrl, setSrcUrl] = useState("");
   const [srcName, setSrcName] = useState("");
 
@@ -419,7 +413,7 @@ const VendorBillSummary = forwardRef((props, ref) => {
     setSrcName(name);
     setPreviewName(name);
 
-    // images -> render raw
+    
     if (isImage(`${url} ${name}`)) {
       setViewerUrls([url]);
       setViewerIdx(0);
@@ -429,7 +423,7 @@ const VendorBillSummary = forwardRef((props, ref) => {
       return;
     }
 
-    // use Google viewers first
+    
     const candidates = buildGdocUrls(url);
     setViewerUrls(candidates);
     setViewerIdx(0);
@@ -449,9 +443,9 @@ const VendorBillSummary = forwardRef((props, ref) => {
     const timer = setTimeout(() => {
       if (cancelled) return;
       if (viewerIdx === 0 && viewerUrls[1]) {
-        setViewerIdx(1); // try gview if viewerng failed
+        setViewerIdx(1); 
       } else {
-        setLoadFailed(true); // will show Download if pdf
+        setLoadFailed(true);
         setLoadingViewer(false);
       }
     }, VIEWER_TIMEOUT_MS);
@@ -462,15 +456,13 @@ const VendorBillSummary = forwardRef((props, ref) => {
     };
   }, [previewOpen, viewerIdx, viewerUrls]);
 
-  /* ===============================
-     Column Visibility Config
-  ================================ */
+
   const LS_KEY = "billTable.columns.v1";
   const PRESET_ESSENTIAL = ["bill_no", "bill_date", "bill_value", "po_no", "vendor", "po_status", "attachments"];
   const PRESET_FINANCE = ["bill_no", "bill_date", "bill_value", "total_billed", "po_value", "po_status", "created_on"];
   const PRESET_LOGISTICS = ["bill_no", "po_no", "vendor", "delivery_status", "attachments", "created_on"];
 
-  // columns config: id, label, render(row)
+
   const COLUMN_DEFS = [
     {
       id: "bill_no",
@@ -615,7 +607,7 @@ const VendorBillSummary = forwardRef((props, ref) => {
     { id: "created_on", label: "Created On", render: (b) => fmtDate(b.created_on) },
   ];
 
-  // presets
+
   const PRESET_ALL = COLUMN_DEFS.map((c) => c.id);
 
   const loadVisibility = () => {
@@ -648,11 +640,9 @@ const VendorBillSummary = forwardRef((props, ref) => {
 
   const [colModalOpen, setColModalOpen] = useState(false);
 
-  /* ===========================================
-     RENDER
-  =========================================== */
+
   const visibleDefs = COLUMN_DEFS.filter((c) => visibleCols.includes(c.id));
-  const dynamicColSpan = 1 + visibleDefs.length; // checkbox + visible columns
+  const dynamicColSpan = 1 + visibleDefs.length;
 
   return (
     <Box
@@ -665,7 +655,7 @@ const VendorBillSummary = forwardRef((props, ref) => {
       {/* Search + Columns */}
       <Box
         display="flex"
-        justifyContent="space-between"
+        justifyContent="flex-end"
         alignItems="center"
         pb={0.5}
         flexWrap="wrap"
@@ -690,26 +680,6 @@ const VendorBillSummary = forwardRef((props, ref) => {
             />
           </FormControl>
         </Box>
-
-        <Stack direction="row" spacing={1}>
-          <Button
-            size="sm"
-            variant="outlined"
-            color="neutral"
-            onClick={() => setColModalOpen(true)}
-          >
-            Columns
-          </Button>
-          {/* <Button
-            size="sm"
-            variant="outlined"
-            color="neutral"
-            disabled={!selectedIds.length || isExporting}
-            onClick={handleExport}
-          >
-            Export Selected
-          </Button> */}
-        </Stack>
       </Box>
 
       <Sheet
@@ -985,7 +955,7 @@ const VendorBillSummary = forwardRef((props, ref) => {
         </ModalDialog>
       </Modal>
 
-      {/* Attachments Viewer Modal (Google-first; images raw; download-on-fail for PDFs) */}
+      
       <Modal open={previewOpen} onClose={() => setPreviewOpen(false)}>
         <ModalDialog
           variant="soft"
@@ -1040,7 +1010,7 @@ const VendorBillSummary = forwardRef((props, ref) => {
                     onLoad={() => setLoadingViewer(false)}
                     onError={() => {
                       if (viewerIdx === 0 && viewerUrls[1]) {
-                        setViewerIdx(1); // try second viewer
+                        setViewerIdx(1);
                       } else {
                         setLoadFailed(true);
                         setLoadingViewer(false);

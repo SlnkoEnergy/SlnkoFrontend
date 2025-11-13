@@ -1166,7 +1166,7 @@ export default function CustomerPaymentSummary() {
 
     const summaryData = [
       ["Total PO Value", safeRound(responseData?.total_po_with_gst)],
-      ["Net Sales Closure", safeRound(responseData?.net_billing_balance)],
+      // ["Net Sales Closure", safeRound(responseData?.net_billing_balance)],
       ["Billed Value", safeRound(responseData?.aggregate_billed_value)],
       ["Advance Paid", safeRound(responseData?.total_advance_paid)],
       [
@@ -1366,19 +1366,13 @@ export default function CustomerPaymentSummary() {
                         <Box sx={{ whiteSpace: "pre-line" }}>
                           {[
                             "If Billed > Advance:",
-                            "  Remaining to Pay = Net Sales Closure − (PO with GST − Billed − Balance with Slnko)",
+                            "  Remaining to Pay = (PO with GST − Billed − Balance with Slnko)",
                             "",
                             "Else:",
-                            "  Remaining to Pay = Net Sales Closure − (PO with GST − Total Advance Paid − Balance with Slnko)",
+                            "  Remaining to Pay = (PO with GST − Total Advance Paid − Balance with Slnko)",
                           ].join("\n")}
                         </Box>
-                      ) : desc === "Net Sales Closure" ? (
-                        <Box sx={{ whiteSpace: "pre-line" }}>
-                          {
-                            "Net Sales Closure = Total Sales (with GST) − Remaining Sales (with GST)"
-                          }
-                        </Box>
-                      ) : (
+                      ): (
                         ""
                       )
                     }
