@@ -138,24 +138,24 @@ export const projectsApi = createApi({
       },
       providesTags: ["Project"],
     }),
-     exportLoan: builder.mutation({
+    exportLoan: builder.mutation({
       query: ({
         project_ids,
         type,
-          loan_status,
-          bank_state,
+        loan_status,
+        bank_state,
 
-          expected_disbursement_from,
-          expected_disbursement_to,
+        expected_disbursement_from,
+        expected_disbursement_to,
 
-          expected_sanction_from,
-          expected_sanction_to,
+        expected_sanction_from,
+        expected_sanction_to,
 
-          actual_disbursement_from,
-          actual_disbursement_to,
+        actual_disbursement_from,
+        actual_disbursement_to,
 
-          actual_sanction_from,
-          actual_sanction_to,
+        actual_sanction_from,
+        actual_sanction_to,
       }) => ({
         url: `/export-loan?type=${type}&loan_status=${loan_status}&bank_state=${bank_state}&expected_disbursement_from=${expected_disbursement_from}&expected_disbursement_to=${expected_disbursement_to}&expected_sanction_from=${expected_sanction_from}&expected_sanction_to=${expected_sanction_to}&actual_disbursement_from=${actual_disbursement_from}&actual_sanction_from=${actual_sanction_from}&actual_sanction_to=${actual_sanction_to}&actual_disbursement_to=${actual_disbursement_to}`,
         method: "POST",
@@ -531,6 +531,127 @@ export const projectsApi = createApi({
       }),
       invalidatesTags: ["Project"],
     }),
+
+    updateDprLog: builder.mutation({
+      query: ({
+        projectId,
+        activityId,
+        todays_progress,
+        date,
+        remarks,
+        status,
+      }) => ({
+        url: `projectactivity/${projectId}/updateDprLog/${activityId}`, // Adjust the URL as needed
+        method: "PATCH",
+        body: {
+          todays_progress,
+          date,
+          remarks,
+          status,
+        },
+      }),
+      invalidatesTags: ["Project"],
+    }),
+
+    getAllDpr: builder.query({
+      query: ({
+        page = 1,
+        limit = 10,
+        search = "",
+        projectId,
+        from,
+        to,
+        onlyWithDeadline,
+        status, 
+        category,
+        hide_status,
+        
+      }) => {
+        const params = new URLSearchParams();
+
+        params.set("page", String(page));
+        params.set("limit", String(limit));
+
+        if (projectId) params.set("projectId", projectId);
+        if (search) params.set("search", search);
+        if (from) params.set("from", from);
+        if (to) params.set("to", to);
+        if (onlyWithDeadline) params.set("onlyWithDeadline", onlyWithDeadline);
+        if (status) params.set("status", status); // ✅ pass-through
+        if (category) params.set("category", category);
+
+        if (status) params.set("status", status); 
+        if(hide_status) params.set("hide_status", hide_status)
+        
+        return {
+          url: `projectActivity/alldpr?${params.toString()}`,
+          method: "GET",
+        };
+      },
+      providesTags: ["Project"],
+    }),
+
+    getDprStatusCardsById: builder.query({
+      query: (projectId) => ({
+        url: `projectactivity/${encodeURIComponent(projectId)}/dprStatus`,
+        method: "GET",
+      }),
+      providesTags: (_res, _err, projectId) => [
+        { type: "Project", id: projectId ?? "default" },
+      ],
+    }),
+
+    getProjectSummaryById: builder.query({
+      query: (projectId) => ({
+        url: `projectactivity/${encodeURIComponent(projectId)}/summary`,
+        method: "GET",
+      }),
+      // Optional: normalize/guard the response so UI never breaks
+      transformResponse: (res) => {
+        const data = res?.data ?? {};
+        return {
+          success: !!res?.success,
+          project_id: data.project_id ?? null,
+          project_code: data.project_code ?? null,
+          project_name: data.project_name ?? null,
+          customer_name: data.customer_name ?? null,
+          work_done_percent: Number(data.work_done_percent ?? 0),
+          activities_past_deadline: Number(data.activities_past_deadline ?? 0),
+          not_started_activities: Number(data.not_started_activities ?? 0),
+          assigned_engineers: Array.isArray(data.assigned_engineers)
+            ? data.assigned_engineers
+            : [],
+          activities: Array.isArray(data.activities) ? data.activities : [],
+        };
+      },
+      providesTags: (_res, _err, projectId) => [
+        { type: "Project", id: projectId ?? "default" },
+      ],
+    }),
+
+    assignResources: builder.mutation({
+      query: ({
+        projectId,
+        activityId,
+        work_completion_unit,
+        work_completion_value,
+        resources,
+      }) => ({
+        url: `/projectactivity/assign-resources/${encodeURIComponent(
+          projectId
+        )}`,
+        method: "PATCH",
+        body: {
+          activityId,
+          work_completion_unit,
+          work_completion_value,
+          resources,
+        },
+      }),
+      invalidatesTags: (result, error, arg) => [
+        { type: "Project", id: arg.projectId },
+      ],
+    }),
   }),
 });
 
@@ -591,4 +712,10 @@ export const {
   useExportProjectSchedulePdfQuery,
   useLazyExportProjectSchedulePdfQuery,
   useUpdateReorderfromActivityMutation,
+  useUpdateDprLogMutation,
+  useGetAllDprQuery,
+  useGetDprStatusCardsByIdQuery,
+  useGetProjectSummaryByIdQuery,
+
+  useAssignResourcesMutation,
 } = projectsApi;

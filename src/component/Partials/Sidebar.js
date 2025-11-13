@@ -904,7 +904,7 @@ function Sidebar() {
               </Toggler>
             </ListItem>
 
-            {/* Ops Section */}
+        
             {user?.name === "Prachi Singh" && (
               <ListItem sx={{ mt: 0.5 }}>
                 <ListItemButton onClick={() => navigate("/handover_dash")}>

@@ -90,8 +90,10 @@ import Vendors from "../pages/SCM/Vendors";
 import ViewVendors from "../pages/SCM/ViewVendor";
 import Email from "../pages/Emails/Email";
 import Template from "../pages/Emails/Template";
+import DprManagement from "../pages/Projects/Dpr";
 import Loan from "../pages/CAM/Loan";
 import ViewLoan from "../pages/CAM/ViewLoan";
+import ActivityDashboard from "../pages/Projects/ActivityDashboard";
 
 function index() {
   return (
@@ -364,6 +366,24 @@ function index() {
           </PrivateRoute>
         }
       />
+      <Route
+        path="/dpr_management"
+        element={
+          <PrivateRoute>
+            <DprManagement />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/dpr"
+        element={
+          <PrivateRoute>
+            <ActivityDashboard />
+          </PrivateRoute>
+        }
+      />
+
       <Route
         path="/project_dash"
         element={
