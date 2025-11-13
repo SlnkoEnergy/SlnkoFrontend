@@ -700,7 +700,7 @@ const VendorBillSummary = forwardRef((props, ref) => {
           >
             Columns
           </Button>
-          <Button
+          {/* <Button
             size="sm"
             variant="outlined"
             color="neutral"
@@ -708,7 +708,7 @@ const VendorBillSummary = forwardRef((props, ref) => {
             onClick={handleExport}
           >
             Export Selected
-          </Button>
+          </Button> */}
         </Stack>
       </Box>
 

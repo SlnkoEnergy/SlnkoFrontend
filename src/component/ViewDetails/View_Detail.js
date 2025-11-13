@@ -1357,52 +1357,53 @@ export default function CustomerPaymentSummary() {
                   </th>
                 </tr>
               </thead>
-           <tbody>
-  {summaryData.map(([desc, value, tone]) => (
-    <Tooltip
-      key={desc}
-      title={
-        desc === "Remaining to Pay" ? (
-          <Box sx={{ whiteSpace: "pre-line" }}>
-            {[
-              "If Billed > Advance:",
-              "  Remaining to Pay = Net Sales Closure − (PO with GST − Billed − Balance with Slnko)",
-              "",
-              "Else:",
-              "  Remaining to Pay = Net Sales Closure − (PO with GST − Total Advance Paid − Balance with Slnko)",
-            ].join("\n")}
-          </Box>
-        ) : desc === "Net Sales Closure" ? (
-          <Box sx={{ whiteSpace: "pre-line" }}>
-            {"Net Sales Closure = Total Sales (with GST) − Remaining Sales (with GST)"}
-          </Box>
-        ) : (
-          ""
-        )
-      }
-      arrow
-      placement="top-start"
-    >
-      <tr
-        style={{
-          background:
-            desc === "Remaining to Pay"
-              ? tone === "success"
-                ? "#E8F5E9"
-                : "#FFF9C4"
-              : "#FFFFFF",
-          fontWeight: desc === "Remaining to Pay" ? 700 : 400,
-        }}
-      >
-        <td>{desc}</td>
-        <td className="num">
-          {isLoading ? "• • •" : value?.toLocaleString("en-IN")}
-        </td>
-      </tr>
-    </Tooltip>
-  ))}
-</tbody>
-
+              <tbody>
+                {summaryData.map(([desc, value, tone]) => (
+                  <Tooltip
+                    key={desc}
+                    title={
+                      desc === "Remaining to Pay" ? (
+                        <Box sx={{ whiteSpace: "pre-line" }}>
+                          {[
+                            "If Billed > Advance:",
+                            "  Remaining to Pay = Net Sales Closure − (PO with GST − Billed − Balance with Slnko)",
+                            "",
+                            "Else:",
+                            "  Remaining to Pay = Net Sales Closure − (PO with GST − Total Advance Paid − Balance with Slnko)",
+                          ].join("\n")}
+                        </Box>
+                      ) : desc === "Net Sales Closure" ? (
+                        <Box sx={{ whiteSpace: "pre-line" }}>
+                          {
+                            "Net Sales Closure = Total Sales (with GST) − Remaining Sales (with GST)"
+                          }
+                        </Box>
+                      ) : (
+                        ""
+                      )
+                    }
+                    arrow
+                    placement="top-start"
+                  >
+                    <tr
+                      style={{
+                        background:
+                          desc === "Remaining to Pay"
+                            ? tone === "success"
+                              ? "#E8F5E9"
+                              : "#FFF9C4"
+                            : "#FFFFFF",
+                        fontWeight: desc === "Remaining to Pay" ? 700 : 400,
+                      }}
+                    >
+                      <td>{desc}</td>
+                      <td className="num">
+                        {isLoading ? "• • •" : value?.toLocaleString("en-IN")}
+                      </td>
+                    </tr>
+                  </Tooltip>
+                ))}
+              </tbody>
             </Table>
           </Sheet>
         </Grid>
@@ -1818,15 +1819,12 @@ export default function CustomerPaymentSummary() {
                   }}
                 >
                   <FormControl sx={{ minWidth: 350 }}>
-                   
                     <Input
                       placeholder="Enter PO Number, Item or Vendor..."
                       value={searchDebit}
                       onChange={(e) => setSearchDebit(e.target.value)}
                     />
                   </FormControl>
-
-                 
                 </Box>
 
                 {(user?.name === "IT Team" ||
@@ -2036,17 +2034,44 @@ export default function CustomerPaymentSummary() {
                         Column visibility
                       </MenuItem>
                       <Divider />
-                      {COLUMN_CONFIG.map((c) => (
-                        <MenuItem key={c.key} onClick={() => toggle(c.key)}>
-                          <Checkbox
-                            checked={!!vis[c.key]}
-                            readOnly
-                            size="sm"
-                            sx={{ mr: 1 }}
-                          />
-                          {c.label}
-                        </MenuItem>
-                      ))}
+                      <Sheet
+                        variant="outlined"
+                        sx={{
+                          p: 1.5,
+                          borderRadius: "md",
+                          boxShadow: "sm",
+                          minWidth: 220,
+                          maxHeight: 320,
+                          overflow: "auto",
+                        }}
+                      >
+                        <Typography
+                          level="body-sm"
+                          sx={{ mb: 1, fontWeight: 600 }}
+                        >
+                          Columns
+                        </Typography>
+
+                        {COLUMN_CONFIG.map((c) => (
+                          <Box
+                            key={c.key}
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                              py: 0.5,
+                            }}
+                          >
+                            <Checkbox
+                              checked={!!vis[c.key]}
+                              size="sm"
+                              onChange={() => toggle(c.key)}
+                            />
+                            <Typography level="body-sm">{c.label}</Typography>
+                          </Box>
+                        ))}
+                      </Sheet>
+
                       <Divider />
                       <MenuItem>
                         <Button
@@ -2584,17 +2609,44 @@ export default function CustomerPaymentSummary() {
                       Column visibility
                     </MenuItem>
                     <Divider />
-                    {SALES_COLUMNS.map((c) => (
-                      <MenuItem key={c.key} onClick={() => toggle(c.key)}>
-                        <Checkbox
-                          checked={!!vis[c.key]}
-                          readOnly
-                          size="sm"
-                          sx={{ mr: 1 }}
-                        />
-                        {c.label}
-                      </MenuItem>
-                    ))}
+                    <Sheet
+                      variant="outlined"
+                      sx={{
+                        p: 1.5,
+                        borderRadius: "md",
+                        boxShadow: "sm",
+                        minWidth: 220,
+                        maxHeight: 320,
+                        overflow: "auto",
+                      }}
+                    >
+                      <Typography
+                        level="body-sm"
+                        sx={{ mb: 1, fontWeight: 600 }}
+                      >
+                        Sales Columns
+                      </Typography>
+
+                      {SALES_COLUMNS.map((c) => (
+                        <Box
+                          key={c.key}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                            py: 0.4,
+                          }}
+                        >
+                          <Checkbox
+                            checked={!!vis[c.key]} // same state you used earlier
+                            size="sm"
+                            onChange={() => toggle(c.key)} // same toggle you used earlier
+                          />
+                          <Typography level="body-sm">{c.label}</Typography>
+                        </Box>
+                      ))}
+                    </Sheet>
+
                     <Divider />
                     <MenuItem>
                       <Button
@@ -3204,51 +3256,6 @@ export default function CustomerPaymentSummary() {
                         </Box>
                       </Stack>
 
-                      {/* Live preview */}
-                      {/* {(() => {
-          const basicNum = parseFloat(form.basic_sales || "0");
-          const gstP = parseFloat(form.gst_on_sales || "0");
-
-          // If either value is invalid, show the default message
-          if (isNaN(basicNum) || basicNum <= 0) {
-            return (
-              <Typography level="body-sm" sx={{ color: "error.main" }}>
-                Please enter a valid Basic Sales amount (positive number).
-              </Typography>
-            );
-          }
-
-          if (isNaN(gstP) || gstP < 0) {
-            return (
-              <Typography level="body-sm" sx={{ color: "error.main" }}>
-                Please enter a valid GST percentage.
-              </Typography>
-            );
-          }
-
-          const gstAmt = (basicNum * gstP) / 100;
-          const totalWithGst = basicNum + gstAmt;
-
-          const fmt = (n) => Number.isFinite(n) ? Math.round(n).toLocaleString("en-IN") : "—";
-
-          return (
-            <Sheet variant="soft" sx={{ p: 1, borderRadius: "md", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1 }}>
-              <Box>
-                <Typography level="body-xs" color="neutral">GST Amount (₹)</Typography>
-                <Typography level="title-sm" sx={{ fontWeight: 600 }}>{fmt(gstAmt)}</Typography>
-              </Box>
-              <Box>
-                <Typography level="body-xs" color="neutral">GST %</Typography>
-                <Typography level="title-sm">{gstP}%</Typography>
-              </Box>
-              <Box sx={{ textAlign: "right" }}>
-                <Typography level="body-xs" color="neutral">Total (₹)</Typography>
-                <Typography level="title-sm" sx={{ fontWeight: 700 }}>{fmt(totalWithGst)}</Typography>
-              </Box>
-            </Sheet>
-          );
-        })()} */}
-
                       <Box>
                         <Typography level="body-xs" sx={{ mb: 0.25 }}>
                           Sales Invoice No.
@@ -3263,7 +3270,9 @@ export default function CustomerPaymentSummary() {
                         <Typography level="body-xs" sx={{ mb: 0.25 }}>
                           Remarks
                         </Typography>
-                        <Input
+                        <Textarea
+                          minRows={2}
+                          maxRows={4}
                           value={form.remarks}
                           onChange={onChange("remarks")}
                         />
