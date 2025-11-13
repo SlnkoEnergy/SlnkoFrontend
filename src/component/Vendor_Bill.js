@@ -20,6 +20,7 @@ import Box from "@mui/joy/Box";
 import Button from "@mui/joy/Button";
 import Chip from "@mui/joy/Chip";
 import FormControl from "@mui/joy/FormControl";
+import ViewColumnIcon from '@mui/icons-material/ViewColumn';
 import IconButton, { iconButtonClasses } from "@mui/joy/IconButton";
 import Input from "@mui/joy/Input";
 import Typography from "@mui/joy/Typography";
@@ -679,16 +680,17 @@ const VendorBillSummary = forwardRef((props, ref) => {
           </FormControl>
         </Box>
 
-        <Stack direction="row" spacing={1}>
-          <Button
-            size="sm"
-            variant="outlined"
-            color="neutral"
-            onClick={() => setColModalOpen(true)}
-          >
-            Columns Visibility
-          </Button>
-        </Stack>
+       <Stack direction="row" spacing={1}>
+  <Button
+    size="sm"
+    variant="outlined"
+    color="neutral"
+    startDecorator={<ViewColumnIcon />}  
+    onClick={() => setColModalOpen(true)}
+  >
+    Columns
+  </Button>
+</Stack>
       </Box>
 
       <Sheet
