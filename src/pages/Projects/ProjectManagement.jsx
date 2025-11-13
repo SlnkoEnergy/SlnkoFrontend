@@ -46,15 +46,33 @@ function ProjectManagement() {
       payload,
       "completion_formula"
     );
+    const hasWorkCompletionUnit = Object.prototype.hasOwnProperty.call(
+      payload,
+      "work_completion_unit"
+    );
+    const hasCategory = Object.prototype.hasOwnProperty.call(
+      payload,
+      "category"
+    );
     const completion_formula = hasCompletionFormula
       ? String(payload.completion_formula ?? "")
       : undefined;
+
+    const work_completion_unit = hasWorkCompletionUnit
+      ? String(payload.work_completion_unit ?? "")
+      : undefined;
+
+    const category = hasCategory ? String(payload.category ?? "") : undefined;
 
     return {
       dependencies,
       predecessors,
       hasCompletionFormula,
       completion_formula,
+      hasWorkCompletionUnit,
+      work_completion_unit,
+      hasCategory,
+      category,
     };
   };
 
@@ -65,6 +83,10 @@ function ProjectManagement() {
         predecessors,
         hasCompletionFormula,
         completion_formula,
+        hasWorkCompletionUnit,
+        work_completion_unit,
+        hasCategory,
+        category,
       } = normalizeFromModal(payload || {});
       console.log({ payload });
 
@@ -93,13 +115,16 @@ function ProjectManagement() {
           return;
         }
 
-        // Build update body. Include type & order if present.
         const body = {
           ...(payload.type ? { type: String(payload.type).toLowerCase() } : {}),
           ...(Number.isFinite(+payload.order) ? { order: +payload.order } : {}),
           ...(dependencies.length ? { dependencies } : {}),
           ...(predecessors.length ? { predecessors } : {}),
           ...(isGlobal && hasCompletionFormula ? { completion_formula } : {}),
+          ...(isGlobal && hasWorkCompletionUnit
+            ? { work_completion_unit }
+            : {}),
+          ...(isGlobal && hasCategory ? { category } : {}),
         };
 
         // Guard: truly nothing to update?
@@ -108,7 +133,9 @@ function ProjectManagement() {
           !("order" in body) &&
           !("dependencies" in body) &&
           !("predecessors" in body) &&
-          !("completion_formula" in body)
+          !("completion_formula" in body) &&
+          !("work_completion_unit" in body) &&
+          !("category" in body)
         ) {
           toast.error("Nothing to update.");
           return;
@@ -232,6 +259,24 @@ function ProjectManagement() {
               }}
             >
               Templates
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => navigate(`/dpr_management`)}
+              sx={{
+                color: "white",
+                bgcolor: "transparent",
+                fontWeight: 500,
+                fontSize: "1rem",
+                letterSpacing: 0.5,
+                borderRadius: "6px",
+                px: 1.5,
+                py: 0.5,
+                "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+              }}
+            >
+              Site DPR
             </Button>
           </Box>
         </MainHeader>

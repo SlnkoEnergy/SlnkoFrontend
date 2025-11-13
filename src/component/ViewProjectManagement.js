@@ -7,6 +7,7 @@ import {
   forwardRef,
   useImperativeHandle,
 } from "react";
+
 import "dhtmlx-gantt/codebase/dhtmlxgantt.css";
 import gantt from "dhtmlx-gantt/codebase/dhtmlxgantt";
 import {
@@ -26,12 +27,17 @@ import {
   Autocomplete,
   Tooltip,
   Textarea,
+  Dropdown,
+  Menu,
+  MenuButton,
+  MenuItem,
+  Checkbox,
 } from "@mui/joy";
 import Avatar from "@mui/joy/Avatar";
-
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import EventOutlinedIcon from "@mui/icons-material/EventOutlined";
 import { Timelapse, Add, Delete } from "@mui/icons-material";
+import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
 import {
   useGetProjectActivityByProjectIdQuery,
   useReorderProjectActivitiesMutation,
@@ -41,6 +47,8 @@ import {
 } from "../redux/projectsSlice";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import AppSnackbar from "./AppSnackbar";
+import { toast } from "react-toastify";
+import { useGetAllUserQuery } from "../redux/globalTaskSlice";
 
 /* ---------------- helpers ---------------- */
 const labelToType = { FS: "0", SS: "1", FF: "2" };
@@ -82,57 +90,6 @@ function parseISOAsLocalDate(v) {
   return null;
 }
 
-/* ---------- grid date cells (always baseline) ---------- */
-const startCellTemplate = (task) => task._base_start_dm || "-";
-const endCellTemplate = (task) => task._base_end_dm || "-";
-
-const durationTemplate = (task) =>
-  Number(task.duration) > 0 ? String(task.duration) : "";
-
-const predecessorTemplate = (task) => {
-  const incoming = gantt
-    .getLinks()
-    .filter((l) => String(l.target) === String(task.id));
-  if (!incoming.length) return "";
-  return incoming
-    .map((l) => {
-      const label = typeToLabel[String(l.type)] ?? "FS";
-      const lag = Number(l.lag || 0);
-      const lagStr = lag === 0 ? "" : lag > 0 ? `+${lag}` : `${lag}`;
-      return `${l.source}${label}${lagStr}`;
-    })
-    .join(", ");
-};
-
-const extractBackendError = (err) => {
-  const data = err?.data || err?.response?.data || {};
-  const msg = String(
-    data.message || err?.message || "Failed to update activity."
-  );
-  const details = data.details || {};
-  const parts = [msg];
-  if (details.required_min_start || details.required_min_finish) {
-    const reqStart = details.required_min_start
-      ? new Date(details.required_min_start)
-      : null;
-    const reqFinish = details.required_min_finish
-      ? new Date(details.required_min_finish)
-      : null;
-    const tips = [
-      reqStart ? `Min Start: ${toDMY(reqStart)}` : null,
-      reqFinish ? `Min Finish: ${toDMY(reqFinish)}` : null,
-    ]
-      .filter(Boolean)
-      .join(" • ");
-    if (tips) parts.push(tips);
-  }
-  if (Array.isArray(details.rules) && details.rules.length) {
-    parts.push(details.rules.map(String).join(" | "));
-  }
-  return parts.filter(Boolean).join(" — ");
-};
-
-/* ---------- date math helpers (inclusive) ---------- */
 function addDays(date, days) {
   if (!date) return null;
   const d = new Date(date);
@@ -168,6 +125,15 @@ function earliestStartGivenConstraints(dur, minStart, minFinish) {
   if (needFromFinish) return new Date(needFromFinish);
   return null;
 }
+
+/* ---------- util ---------- */
+const toTitle = (s) => {
+  if (!s) return "";
+  return String(s)
+    .split(/[\s_-]+/)
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : ""))
+    .join(" ");
+};
 
 /* ---------- topo order from predecessors ---------- */
 function topoOrder(paList) {
@@ -214,7 +180,7 @@ function topoOrder(paList) {
   return order.length ? order : Array.from(ids);
 }
 
-/* ---------- client-only "Actual" projection (recursive) ---------- */
+/* ---------- client-only "Actual" projection ---------- */
 function projectClientActuals(paList) {
   const norm = paList.map((pa) => {
     const master = pa.activity_id || pa.master_activity_id || {};
@@ -255,7 +221,6 @@ function projectClientActuals(paList) {
   order.forEach((id) => {
     const node = map.get(id);
     if (!node) return;
-
     if (node.actual_start && node.actual_finish) return;
 
     let minStart = null;
@@ -311,9 +276,9 @@ function projectClientActuals(paList) {
 
   const out = new Map();
   map.forEach((n, id) => {
-    const start = n.actual_start || n._client_start || n.planned_start || null; // real → projected → planned
+    const start = n.actual_start || n._client_start || n.planned_start || null;
     const finish =
-      n.actual_finish || n._client_finish || n.planned_finish || null; // real → projected → planned
+      n.actual_finish || n._client_finish || n.planned_finish || null;
 
     const isCompleted = !!n.actual_finish;
     const onTime =
@@ -445,7 +410,7 @@ const RESOURCE_TYPES = [
   "tline subcontractor",
 ];
 
-/* ---------- row for predecessors ---------- */
+/* ---------- row components (unchanged UI aside from imports) ---------- */
 function DepRow({ title, options, row, onChange, onRemove, disabled = false }) {
   return (
     <Stack
@@ -507,14 +472,43 @@ function DepRow({ title, options, row, onChange, onRemove, disabled = false }) {
   );
 }
 
-/* ---------- row for resources ---------- */
-function ResourceRow({ row, onChange, onRemove, disabled = false }) {
+function ResourceRow({
+  row,
+  onChange,
+  onRemove,
+  assignOptions = [],
+  disabled = false,
+}) {
+  const cap = Math.max(1, Number(row?.number) || 1);
+  const toId = (x) => {
+    if (!x) return "";
+    if (typeof x === "object" && x._id) return String(x._id);
+    return String(x);
+  };
+  const selectedIds = Array.isArray(row?.user_id) ? row.user_id.map(toId) : [];
+  const handlePickChange = (_, values) => {
+    const nextIds = values.map((v) => v.value);
+    const allowed = nextIds.length > cap ? nextIds.slice(0, cap) : nextIds;
+    if (nextIds.length > cap && typeof toast?.warning === "function") {
+      toast.warning(
+        `You can assign up to ${cap} user${cap === 1 ? "" : "s"} for this row.`
+      );
+    }
+    onChange({ ...row, user_id: allowed });
+  };
+  const handleNumberChange = (e) => {
+    const n = Math.max(1, Number(e.target.value) || 1);
+    const trimmed =
+      selectedIds.length > n ? selectedIds.slice(0, n) : selectedIds;
+    onChange({ ...row, number: n, user_id: trimmed });
+  };
+
   return (
     <Stack
       direction="row"
       alignItems="center"
       spacing={1}
-      sx={{ width: "100%" }}
+      sx={{ width: "100%", flexWrap: "wrap" }}
     >
       <Select
         size="sm"
@@ -522,7 +516,7 @@ function ResourceRow({ row, onChange, onRemove, disabled = false }) {
         value={row.type || ""}
         disabled={disabled}
         onChange={(_, v) => onChange({ ...row, type: v || "" })}
-        sx={{ minWidth: "80%" }}
+        sx={{ minWidth: 200, flexShrink: 0 }}
         slotProps={{ listbox: { sx: { zIndex: 1401 } } }}
       >
         {RESOURCE_TYPES.map((t) => (
@@ -540,16 +534,35 @@ function ResourceRow({ row, onChange, onRemove, disabled = false }) {
         type="number"
         inputMode="numeric"
         placeholder="Number"
-        value={row.number ?? ""}
+        value={row.number ?? 1}
         disabled={disabled}
-        onChange={(e) =>
-          onChange({
-            ...row,
-            number: Number(e.target.value) > 1 ? Number(e.target.value) : 1,
-          })
-        }
-        sx={{ width: "100%" }}
+        onChange={handleNumberChange}
+        sx={{ width: 80, flexShrink: 0 }}
       />
+
+      <Stack spacing={0.5} sx={{ minWidth: 320, flex: 1 }}>
+        <Autocomplete
+          multiple
+          size="sm"
+          placeholder={`Select up to ${cap}`}
+          options={assignOptions}
+          getOptionLabel={(o) => o.label}
+          isOptionEqualToValue={(a, b) => a.value === b.value}
+          value={assignOptions.filter((o) => selectedIds.includes(o.value))}
+          onChange={handlePickChange}
+          filterSelectedOptions
+          disableCloseOnSelect
+          disabled={disabled || cap === 0}
+          getOptionDisabled={(opt) =>
+            selectedIds.length >= cap && !selectedIds.includes(opt.value)
+          }
+          slotProps={{
+            listbox: {
+              sx: { zIndex: 1401, maxHeight: 240, overflowY: "auto" },
+            },
+          }}
+        />
+      </Stack>
 
       <IconButton
         color="danger"
@@ -566,14 +579,12 @@ function ResourceRow({ row, onChange, onRemove, disabled = false }) {
 
 /* ---------------- main component ---------------- */
 const View_Project_Management = forwardRef(
-  ({ viewModeParam = "week", onPlanStatus }, ref) => {
+  ({ viewModeParam = "week", onPlanStatus, onSelectionChange }, ref) => {
     const ganttContainer = useRef(null);
     const [viewMode, setViewMode] = useState(viewModeParam);
 
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
-
-    // read initial params
     const projectId = searchParams.get("project_id");
     const initView = (searchParams.get("type") || "site").toLowerCase();
     const initTimeline = (
@@ -587,12 +598,21 @@ const View_Project_Management = forwardRef(
       ["site", "backend", "all"].includes(initView) ? initView : "site"
     ); // site | backend | all
 
-    const [snack, setSnack] = useState({ open: false, msg: "" });
-    const [selectedId, setSelectedId] = useState(null);
-    const [selectedTaskName, setSelectedTaskName] = useState("");
-    const [activeDbId, setActiveDbId] = useState(null);
+    // ▶️ Column visibility state
+    const [visibleCols, setVisibleCols] = useState({
+      activity: true,
+      category: true,
+      duration: true,
+      res: true,
+      bstart: true,
+      bend: true,
+      astart: true,
+      aend: true,
+      pred: true,
+    });
+    const toggleColumn = (key) =>
+      setVisibleCols((s) => ({ ...s, [key]: !s[key] }));
 
-    // keep URL in sync whenever type/timeline change
     const syncURL = (nextType, nextTimeline) => {
       const params = new URLSearchParams(searchParams);
       if (projectId) params.set("project_id", projectId);
@@ -600,20 +620,31 @@ const View_Project_Management = forwardRef(
       params.set("timeline", nextTimeline);
       setSearchParams(params, { replace: true });
     };
-
     useEffect(() => {
-      // ensure URL reflects initial normalized state on first mount
       syncURL(actView, timelineMode);
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // API hooks
+    const [snack, setSnack] = useState({ open: false, msg: "" });
+    const [selectedId, setSelectedId] = useState(null);
+    const [selectedTaskName, setSelectedTaskName] = useState("");
+    const [activeDbId, setActiveDbId] = useState(null);
+
+    const [assignPick, setAssignPick] = useState([]);
+
     const { data: apiData, refetch: refetchAll } =
       useGetProjectActivityByProjectIdQuery(projectId, { skip: !projectId });
     const [reorderProjectActivities] = useReorderProjectActivitiesMutation();
     const [updateActivityInProject, { isLoading: isSaving }] =
       useUpdateActivityInProjectMutation();
     const [createProjectActivity] = useCreateProjectActivityMutation();
+
+    const { data: projectUsers = [], isFetching: isFetchingUsers } =
+      useGetAllUserQuery({ department: "Projects" });
+
+    const assignOptions = Array.isArray(projectUsers?.data)
+      ? projectUsers.data.map((u) => ({ label: u.name, value: u._id }))
+      : [];
 
     const {
       data: activityFetch,
@@ -626,19 +657,17 @@ const View_Project_Management = forwardRef(
       { skip: !activeDbId || !projectId }
     );
 
-    // Send current plan status to parent (freeze/unfreeze)
+    // Send current plan status up
     const lastSentRef = useRef("");
     useEffect(() => {
       const statusObj = apiData?.projectactivity?.current_status ?? null;
       if (!statusObj) return;
-
       const key = JSON.stringify({
         status: statusObj.status ?? null,
         remarks: statusObj.remarks ?? null,
         user_id: statusObj.user_id ?? null,
       });
       if (key === lastSentRef.current) return;
-
       lastSentRef.current = key;
       onPlanStatus?.(statusObj);
     }, [apiData, activityFetch, onPlanStatus]);
@@ -646,7 +675,25 @@ const View_Project_Management = forwardRef(
     const initialStatusRef = useRef("");
     const fetchedRemarksRef = useRef("");
 
-    // Local flag for frozen state
+    // header master checkbox id
+    const masterCheckIdRef = useRef(
+      `gantt-master-${Math.random().toString(36).slice(2)}`
+    );
+
+    const notifySelection = () => {
+      try {
+        let count = 0;
+        const ids = [];
+        gantt.eachTask((t) => {
+          if (t?.checked) {
+            count++;
+            if (t?._dbId) ids.push(String(t._dbId));
+          }
+        });
+        onSelectionChange?.({ any: count > 0, count, ids });
+      } catch {}
+    };
+
     const planStatus =
       apiData?.projectactivity?.current_status?.status ??
       apiData?.current_status?.status ??
@@ -666,12 +713,10 @@ const View_Project_Management = forwardRef(
     const paList = useMemo(() => {
       const mapType = (pa) =>
         (pa?.activity_id?.type || pa?.type || "").toLowerCase();
-      if (actView === "site") {
+      if (actView === "site")
         return paListRaw.filter((pa) => mapType(pa) === "frontend");
-      }
-      if (actView === "backend") {
+      if (actView === "backend")
         return paListRaw.filter((pa) => mapType(pa) === "backend");
-      }
       return paListRaw;
     }, [paListRaw, actView]);
 
@@ -680,18 +725,15 @@ const View_Project_Management = forwardRef(
       [paWrapper, paList]
     );
 
-    /* ---------- build data (mode-aware) ---------- */
+    /* ---------- build data (mode-aware) with CATEGORY ---------- */
     const buildTasksAndLinks = (mode, list) => {
-      const byMasterToSI = new Map();
       const _siToDbId = new Map();
-
       const actualLookup = projectClientActuals(list);
 
       const data = (list || []).map((pa, idx) => {
         const si = String(idx + 1);
         const master = pa.activity_id || pa.master_activity_id || {};
         const masterId = String(master?._id || pa.activity_id || "");
-        if (masterId) byMasterToSI.set(masterId, si);
         if (masterId) _siToDbId.set(si, masterId);
 
         const text = master?.name || pa.name || pa.activity_name || "—";
@@ -699,7 +741,12 @@ const View_Project_Management = forwardRef(
           .toLowerCase()
           .trim();
 
-        // Baseline (planned) dates
+        const rawCategory = master?.category ?? pa?.category ?? "";
+        const categoryLabel = toTitle(rawCategory || "");
+        const categoryRawNorm = String(rawCategory || "")
+          .trim()
+          .toLowerCase();
+
         const baseStartISO = pa.planned_start || pa.start_date || null;
         const baseEndISO = pa.planned_finish || pa.end_date || null;
         const baseStartObj = baseStartISO
@@ -707,7 +754,6 @@ const View_Project_Management = forwardRef(
           : null;
         const baseEndObj = baseEndISO ? parseISOAsLocalDate(baseEndISO) : null;
 
-        // Duration (fallback to calc from baseline if needed)
         let duration = 0;
         if (baseStartObj && baseEndObj) {
           duration = durationFromStartFinish(baseStartObj, baseEndObj);
@@ -717,7 +763,7 @@ const View_Project_Management = forwardRef(
             : 0;
         }
 
-        // Real actuals from backend
+        // Real actuals
         const aSISO =
           pa.actual_start_date || pa.actual_start || pa.actual_start_dt || null;
         const aFISO =
@@ -730,7 +776,7 @@ const View_Project_Management = forwardRef(
         const projActualStartObj = proj?.start || null;
         const projActualEndObj = proj?.finish || null;
 
-        // Grid display: real → projected → planned
+        // Grid display (actual strings)
         const aStartForDisplay =
           aStartObj || projActualStartObj || baseStartObj || null;
         const aEndForDisplay =
@@ -741,7 +787,7 @@ const View_Project_Management = forwardRef(
         const act_start_dm = aStartForDisplay ? toDM(aStartForDisplay) : "-";
         const act_end_dm = aEndForDisplay ? toDM(aEndForDisplay) : "-";
 
-        // === Decide what the Gantt BAR should draw ===
+        // === What to draw
         let timelineStart = null;
         let timelineEndObj = null;
         let drawDuration = duration;
@@ -781,7 +827,6 @@ const View_Project_Management = forwardRef(
           }
         }
 
-        // Status flags
         const isCompletedActual =
           !!aEndObj || pa?.current_status?.status === "completed";
         const onTimeFlag =
@@ -836,13 +881,17 @@ const View_Project_Management = forwardRef(
           _base_start_dm: base_start_dm,
           _base_end_dm: base_end_dm,
 
-          // Actual display strings (real → projected → planned)
+          // Actual display strings
           _a_start_dm: act_start_dm,
           _a_end_dm: act_end_dm,
 
           // Resources
           _resources_total: resourcesTotal,
           _resources_arr: resourcesArray,
+
+          // 🔹 Category (for grid)
+          _category_label: categoryLabel || "—",
+          _category_raw: categoryRawNorm || "",
         };
       });
 
@@ -877,11 +926,11 @@ const View_Project_Management = forwardRef(
         });
       });
 
-      const _dbIdToSi = new Map(
+      const dbIdToSi = new Map(
         Array.from(_siToDbId.entries()).map(([si, db]) => [db, si])
       );
 
-      return { data, links, siToDbId: _siToDbId, dbIdToSi: _dbIdToSi };
+      return { data, links, siToDbId: _siToDbId, dbIdToSi };
     };
 
     const { ganttData, ganttLinks, siToDbId, dbIdToSi } = useMemo(() => {
@@ -931,18 +980,17 @@ const View_Project_Management = forwardRef(
       predecessors: [],
       resources: [],
       remarks: "",
+      assigned_user: [],
+      work_completion_value: "",
+      work_completion_unit: "number",
+      category: "",
     });
 
     const statusChanged = form.status !== initialStatusRef.current;
-
     useEffect(() => {
       if (statusChanged) {
-        // Clear remarks so the user can type a fresh one for the new status
-        if (form.remarks !== "") {
-          setForm((f) => ({ ...f, remarks: "" }));
-        }
+        if (form.remarks !== "") setForm((f) => ({ ...f, remarks: "" }));
       } else {
-        // Status reverted to the original — restore the fetched remarks
         if (form.remarks !== fetchedRemarksRef.current) {
           setForm((f) => ({ ...f, remarks: fetchedRemarksRef.current }));
         }
@@ -968,24 +1016,18 @@ const View_Project_Management = forwardRef(
 
     const recomputeDatesFromPredecessors = (predRows, durationDays) => {
       if (!Array.isArray(predRows) || !predRows.length) return null;
-
       let minStart = null;
       let minFinish = null;
-
       predRows.forEach((r) => {
         const si = String(r.activityId || "");
         if (!si) return;
         const pt = gantt.getTask(si);
         if (!pt) return;
-
         const pStart = pt._base_start_obj || null;
         const pEnd = pt._base_end_obj || null;
-
         if (!pStart && !pEnd) return;
-
         const type = String(r.type || "FS").toUpperCase();
         const lag = Number(r.lag || 0);
-
         if (type === "FS" && pEnd) {
           const req = addDays(pEnd, lag);
           if (!minStart || isAfter(req, minStart)) minStart = req;
@@ -997,7 +1039,6 @@ const View_Project_Management = forwardRef(
           if (!minFinish || isAfter(req, minFinish)) minFinish = req;
         }
       });
-
       const dur = Math.max(1, Number(durationDays) || 0);
       const start = earliestStartGivenConstraints(dur, minStart, minFinish);
       if (!start) return null;
@@ -1005,11 +1046,9 @@ const View_Project_Management = forwardRef(
       return { start, end };
     };
 
-    // Auto-calc start/end whenever predecessors or duration change
     useEffect(() => {
       const hasPreds = (form.predecessors || []).length > 0;
       const dur = Number(form.duration || 0);
-
       if (hasPreds && dur > 0) {
         const res = recomputeDatesFromPredecessors(form.predecessors, dur);
         if (res) {
@@ -1021,8 +1060,6 @@ const View_Project_Management = forwardRef(
           return;
         }
       }
-
-      // No predecessors: keep end in sync from manual start + duration
       if (!hasPreds && form.start && dur > 0) {
         const s = parseISOAsLocalDate(form.start);
         if (s && !Number.isNaN(s)) {
@@ -1033,7 +1070,6 @@ const View_Project_Management = forwardRef(
           }
         }
       }
-
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [form.predecessors, form.duration, form.start]);
 
@@ -1041,7 +1077,6 @@ const View_Project_Management = forwardRef(
       if (!activityFetch || !selectedId) return;
       const act = activityFetch.activity || activityFetch.data || activityFetch;
       const preds = Array.isArray(act?.predecessors) ? act.predecessors : [];
-
       const fetchedStatus = act?.current_status?.status || "not started";
       initialStatusRef.current = fetchedStatus;
       fetchedRemarksRef.current =
@@ -1050,6 +1085,20 @@ const View_Project_Management = forwardRef(
       const updatedBy = act?.current_status?.user_id ?? act?.user_id ?? {};
       const updatedByName = updatedBy?.name || "";
       const updatedByUrl = updatedBy?.attachment_url || "";
+
+      const assignedBy = act?.assigned_by ?? {};
+      const assignedByName = assignedBy?.name || "";
+      const assignedByUrl = assignedBy?.attachment_url || "";
+
+      const wc = act?.work_completion || {};
+      const wcUnit = typeof wc.unit === "string" ? wc.unit : "number";
+      const wcValue = Number.isFinite(Number(wc.value)) ? String(wc.value) : "";
+
+      const category =
+        act?.category ||
+        act?.activity_id?.category ||
+        act?.master_activity_id?.category ||
+        "";
 
       const uiPreds = preds
         .map((p) => {
@@ -1072,11 +1121,11 @@ const View_Project_Management = forwardRef(
         ? String(Number(act.duration))
         : "";
 
-      // Resources: normalize array into UI
       const resArrRaw = Array.isArray(act?.resources) ? act.resources : [];
       const uiResources = resArrRaw.map((r) => ({
         type: r?.type || "",
         number: Number(r?.number) || 0,
+        user_id: Array.isArray(r?.user_id) ? r.user_id : [],
       }));
 
       setForm({
@@ -1089,6 +1138,10 @@ const View_Project_Management = forwardRef(
         remarks: fetchedRemarksRef.current,
         updatedByName,
         updatedByUrl,
+        assigned_user: assignPick || [],
+        work_completion_value: wcValue,
+        work_completion_unit: wcUnit,
+        category,
       });
 
       const durNum = Number(durStr || 0);
@@ -1106,7 +1159,12 @@ const View_Project_Management = forwardRef(
 
     useEffect(() => {
       if (activityFetchError) {
-        setSnack({ open: true, msg: extractBackendError(activityFetchError) });
+        setSnack({
+          open: true,
+          msg: `${
+            activityFetchError?.data?.message || "Failed to fetch activity"
+          }`,
+        });
       }
     }, [activityFetchError]);
 
@@ -1142,6 +1200,7 @@ const View_Project_Management = forwardRef(
             .map((r) => ({
               type: String(r.type),
               number: Number(r.number || 1),
+              user_id: Array.isArray(r?.user_id) ? r.user_id : [],
             }))
         : [];
 
@@ -1153,6 +1212,9 @@ const View_Project_Management = forwardRef(
         predecessors: predsPayload,
         resources: resourcesPayload,
         remarks: form.remarks || "",
+        work_completion_value: form.work_completion_value || 0,
+        work_completion_unit: form.work_completion_unit || "number",
+        category: form.category || null,
       };
 
       try {
@@ -1167,206 +1229,219 @@ const View_Project_Management = forwardRef(
         }
 
         await (refetchAll().unwrap?.() ?? refetchAll());
-        setSnack({ open: true, msg: "Activity updated." });
+        setSnack({ open: true, msg: `Activity updated successfully.` });
         setSelectedId(null);
         setActiveDbId(null);
         setSelectedTaskName("");
       } catch (e) {
-        setSnack({ open: true, msg: extractBackendError(e) });
+        console.error("❌ Update failed:", e);
+        setSnack({
+          open: true,
+          msg: `${
+            e?.data?.message || e?.message || "Failed to update activity."
+          }`,
+        });
       }
     };
 
     useImperativeHandle(ref, () => ({
-      saveAsTemplate: async (meta = {}) => {
-        const { name, description } = meta || {};
-        const rows = [];
-        const siToDb = new Map();
+  saveAsTemplate: async (meta = {}) => {
+    const { name, description } = meta || {};
+    const rows = [];
+    const siToDb = new Map();
 
-        /* --- Build lookups from current dataset (backend data) --- */
-        const orderByDb = new Map();
-        const depByDb = new Map();
+    const orderByDb = new Map();
+    const depByDb = new Map();
+    const wcUnitByDb = new Map(); // 🔹 NEW: work_completion.unit per activity
 
-        (paList || []).forEach((pa) => {
-          const master = pa.activity_id || pa.master_activity_id || {};
-          const dbId = String(master?._id || pa.activity_id || "");
-          if (!dbId) return;
+    (paList || []).forEach((pa) => {
+      const master = pa.activity_id || pa.master_activity_id || {};
+      const dbId = String(master?._id || pa.activity_id || "");
+      if (!dbId) return;
 
-          // order coming from backend
-          const orderNum =
-            Number(pa?.order) ||
-            Number(pa?.order_no) ||
-            Number(pa?.sequence) ||
-            null;
-          if (Number.isFinite(orderNum)) orderByDb.set(dbId, orderNum);
+      // existing order map
+      const orderNum =
+        Number(pa?.order) ||
+        Number(pa?.order_no) ||
+        Number(pa?.sequence) ||
+        null;
+      if (Number.isFinite(orderNum)) orderByDb.set(dbId, orderNum);
 
-          // dependency normalization (array, keep as-is keys)
-          const depsRaw = Array.isArray(pa.dependency)
-            ? pa.dependency
-            : Array.isArray(pa.dependencies)
-            ? pa.dependencies
-            : [];
-          const normalized = depsRaw.map((d) => ({
-            model: d?.model,
-            model_id: d?.model_id,
-            model_id_name: d?.model_id_name,
-            updatedAt: d?.updatedAt || d?.updated_at,
-            updated_by: d?.updated_by,
-          }));
-          depByDb.set(dbId, normalized);
-        });
+      // existing dependency map
+      const depsRaw = Array.isArray(pa.dependency)
+        ? pa.dependency
+        : Array.isArray(pa.dependencies)
+        ? pa.dependencies
+        : [];
+      const normalized = depsRaw.map((d) => ({
+        model: d?.model,
+        model_id: d?.model_id,
+        model_id_name: d?.model_id_name,
+        updatedAt: d?.updatedAt || d?.updated_at,
+        updated_by: d?.updated_by,
+      }));
+      depByDb.set(dbId, normalized);
 
-        // 1) Gather visible tasks in order (current UI order)
-        gantt.eachTask((t) => {
-          const start = t.start_date instanceof Date ? t.start_date : null;
-          const end =
-            t._end_obj ||
-            (start && Number(t.duration) > 0
-              ? gantt.calculateEndDate({
-                  start_date: start,
-                  duration: t.duration,
-                  task: t,
-                })
-              : null);
+      // 🔹 NEW: capture work_completion.unit from current project activities
+      const wc = pa.work_completion || {};
+      if (typeof wc.unit === "string" && wc.unit.trim()) {
+        wcUnitByDb.set(dbId, wc.unit.trim());
+      }
+    });
 
-          const startISO = start ? start.toISOString() : null;
-          const endISO = end ? end.toISOString() : null;
-
-          const order_no = rows.length + 1; // UI order fallback
-          const duration =
-            Number(t.duration || 0) ||
-            (start && end ? durationFromStartFinish(start, end) : 0);
-
-          rows.push({
-            si: String(t.id),
-            dbId: String(t._dbId || ""),
-            order_no,
-            name: t.text || "",
-            act_type: t._type || null,
-            start,
-            end,
-            start_iso: startISO,
-            end_iso: endISO,
-            start_ymd: start ? toYMD(start) : null,
-            end_ymd: end ? toYMD(end) : null,
-            duration,
-            // keep array + computed total for export
-            resources_arr: Array.isArray(t._resources_arr)
-              ? t._resources_arr
-              : [],
-            resources_total: Array.isArray(t._resources_arr)
-              ? t._resources_arr.reduce(
-                  (s, r) => s + (Number(r?.number) || 0),
-                  0
-                )
-              : 0,
-            status: t._status || null,
-            percent_complete:
-              typeof t.progress === "number" ? Math.round(t.progress * 100) : 0,
-          });
-
-          if (t._dbId) siToDb.set(String(t.id), String(t._dbId));
-        });
-
-        // 2) Predecessors/SUCCESSORS based on current links
-        const predsBySi = new Map();
-        const succsBySi = new Map();
-
-        gantt.getLinks().forEach((l) => {
-          const srcSi = String(l.source);
-          const trgSi = String(l.target);
-          const typeLabel = (typeToLabel[String(l.type)] || "FS").toUpperCase();
-          const lag = Number(l.lag || 0);
-
-          const srcDb = siToDb.get(srcSi) || null;
-          const trgDb = siToDb.get(trgSi) || null;
-
-          if (!predsBySi.has(trgSi)) predsBySi.set(trgSi, []);
-          predsBySi.get(trgSi).push({ srcSi, srcDb, type: typeLabel, lag });
-
-          if (!succsBySi.has(srcSi)) succsBySi.set(srcSi, []);
-          succsBySi.get(srcSi).push({ trgSi, trgDb, type: typeLabel, lag });
-        });
-
-        // 3) Final activities payload
-        const activities = rows
-          .filter((r) => r.dbId)
-          .map((t) => {
-            const predecessors = (predsBySi.get(t.si) || [])
-              .map((p) => ({
-                activity_id: p.srcDb,
-                type: p.type,
-                lag: p.lag,
-              }))
-              .filter((x) => !!x.activity_id);
-
-            const successors = (succsBySi.get(t.si) || [])
-              .map((s) => ({
-                activity_id: s.trgDb,
-                type: s.type,
-                lag: s.lag,
-              }))
-              .filter((x) => !!x.activity_id);
-
-            // Map backend order if available, else fallback to UI order_no
-            const mappedOrder =
-              (orderByDb.has(t.dbId) ? orderByDb.get(t.dbId) : null) ??
-              t.order_no;
-
-            return {
-              activity_id: t.dbId,
-              order: mappedOrder, // <-- FIX: use backend order if present
-              planned_start: t.start_iso || null,
-              planned_finish: t.end_iso || null,
-              actual_start: null,
-              actual_finish: null,
+    gantt.eachTask((t) => {
+      const start = t.start_date instanceof Date ? t.start_date : null;
+      const end =
+        t._end_obj ||
+        (start && Number(t.duration) > 0
+          ? gantt.calculateEndDate({
+              start_date: start,
               duration: t.duration,
-              percent_complete: Math.max(
-                0,
-                Math.min(100, Number(t.percent_complete || 0))
-              ),
-              resources: Array.isArray(t.resources_arr)
-                ? t.resources_arr.map((r) => ({
-                    type: String(r?.type || ""),
-                    number: Number(r?.number) || 0,
-                  }))
-                : [],
-              predecessors,
-              successors,
-              // ensure dependency is passed exactly as BE expects
-              dependency: depByDb.get(t.dbId) || [],
-            };
-          });
+              task: t,
+            })
+          : null);
 
-        const payload = {
-          status: "template",
-          ...(name ? { name } : {}),
-          ...(description ? { description } : {}),
-          activities,
+      const startISO = start ? start.toISOString() : null;
+      const endISO = end ? end.toISOString() : null;
+      const order_no = rows.length + 1;
+      const duration =
+        Number(t.duration || 0) ||
+        (start && end ? durationFromStartFinish(start, end) : 0);
+
+      const dbId = String(t._dbId || "");
+      const wcUnit = wcUnitByDb.get(dbId) || "number"; // 🔹 fallback to "number"
+
+      rows.push({
+        si: String(t.id),
+        dbId,
+        order_no,
+        name: t.text || "",
+        act_type: t._type || null,
+        start,
+        end,
+        start_iso: startISO,
+        end_iso: endISO,
+        start_ymd: start ? toYMD(start) : null,
+        end_ymd: end ? toYMD(end) : null,
+        duration,
+        resources_arr: Array.isArray(t._resources_arr)
+          ? t._resources_arr
+          : [],
+        resources_total: Array.isArray(t._resources_arr)
+          ? t._resources_arr.reduce(
+              (s, r) => s + (Number(r?.number) || 0),
+              0
+            )
+          : 0,
+        status: t._status || null,
+        percent_complete:
+          typeof t.progress === "number" ? Math.round(t.progress * 100) : 0,
+        category: t._category_raw || null,        // ✅ category as before
+        work_completion_unit: wcUnit,             // 🔹 NEW: store unit on row
+      });
+
+      if (t._dbId) siToDb.set(String(t.id), String(t._dbId));
+    });
+
+    const predsBySi = new Map();
+    const succsBySi = new Map();
+    gantt.getLinks().forEach((l) => {
+      const srcSi = String(l.source);
+      const trgSi = String(l.target);
+      const typeLabel = (typeToLabel[String(l.type)] || "FS").toUpperCase();
+      const lag = Number(l.lag || 0);
+      const srcDb = siToDb.get(srcSi) || null;
+      const trgDb = siToDb.get(trgSi) || null;
+      if (!predsBySi.has(trgSi)) predsBySi.set(trgSi, []);
+      predsBySi.get(trgSi).push({ srcSi, srcDb, type: typeLabel, lag });
+      if (!succsBySi.has(srcSi)) succsBySi.set(srcSi, []);
+      succsBySi.get(srcSi).push({ trgSi, trgDb, type: typeLabel, lag });
+    });
+
+    const activities = rows
+      .filter((r) => r.dbId)
+      .map((t) => {
+        const predecessors = (predsBySi.get(t.si) || [])
+          .map((p) => ({
+            activity_id: p.srcDb,
+            type: p.type,
+            lag: p.lag,
+          }))
+          .filter((x) => !!x.activity_id);
+
+        const successors = (succsBySi.get(t.si) || [])
+          .map((s) => ({
+            activity_id: s.trgDb,
+            type: s.type,
+            lag: s.lag,
+          }))
+          .filter((x) => !!x.activity_id);
+
+        const mappedOrder =
+          (orderByDb.has(t.dbId) ? orderByDb.get(t.dbId) : null) ??
+          t.order_no;
+
+        const wcUnit =
+          (t.work_completion_unit &&
+            String(t.work_completion_unit).trim()) ||
+          "number";
+
+        return {
+          activity_id: t.dbId,
+          order: mappedOrder,
+          planned_start: t.start_iso || null,
+          planned_finish: t.end_iso || null,
+          actual_start: null,
+          actual_finish: null,
+          duration: t.duration,
+          percent_complete: Math.max(
+            0,
+            Math.min(100, Number(t.percent_complete || 0))
+          ),
+          category: t.category || null,            // ✅ category posted
+          work_completion: {                       // 🔹 NEW: unit posted in template
+            unit: wcUnit,
+            value: 0,
+          },
+          resources: Array.isArray(t.resources_arr)
+            ? t.resources_arr.map((r) => ({
+                type: String(r?.type || ""),
+                number: Number(r?.number) || 0,
+              }))
+            : [],
+          predecessors,
+          successors,
+          dependency: depByDb.get(t.dbId) || [],
         };
+      });
 
-        try {
-          await createProjectActivity(payload).unwrap();
-          setSnack({ open: true, msg: "Template saved successfully" });
-        } catch (e) {
-          setSnack({ open: true, msg: "Failed to save template" });
-        }
-      },
-    }));
+    const payload = {
+      status: "template",
+      ...(name ? { name } : {}),
+      ...(description ? { description } : {}),
+      activities,
+    };
+
+    try {
+      await createProjectActivity(payload).unwrap();
+      setSnack({ open: true, msg: "Template saved successfully" });
+    } catch (e) {
+      setSnack({ open: true, msg: "Failed to save template" });
+    }
+  },
+}));
+
 
     /* ---------- init gantt (once) ---------- */
     useEffect(() => {
-      // base config
       gantt.config.date_format = "%d-%m-%Y";
       gantt.locale.date.day_short = ["S", "M", "T", "W", "T", "F", "S"];
-
-      // scrolling via layout scrollbars (turn off built-ins)
       gantt.config.scroll_on_click = true;
       gantt.config.autoscroll = true;
       gantt.config.preserve_scroll = true;
       gantt.config.show_chart_scroll = false;
       gantt.config.show_grid_scroll = false;
 
-      // behavior
       gantt.config.smart_rendering = true;
       gantt.config.start_on_monday = false;
       gantt.config.limit_view = false;
@@ -1385,7 +1460,6 @@ const View_Project_Management = forwardRef(
       gantt.showLightbox = () => false;
       gantt.config.show_unscheduled = true;
 
-      // layout: separate X for grid/timeline, shared Y, with elastic separator
       gantt.config.layout = {
         css: "gantt_container",
         rows: [
@@ -1422,96 +1496,13 @@ const View_Project_Management = forwardRef(
         ],
       };
 
-      // grid sizing/overflow
       gantt.config.grid_elastic_columns = false;
       gantt.config.min_column_width = 60;
       gantt.config.grid_width = 420;
 
-      // ---------- S.No helper
-      const rowIndex = (t) => {
-        try {
-          return gantt.getTaskIndex(t.id) + 1;
-        } catch {
-          return "";
-        }
-      };
+      // set initial columns (will be updated by effects)
+      gantt.config.columns = [];
 
-      // initial columns (with S.No)
-      gantt.config.columns = [
-        {
-          name: "sno",
-          label: "S.No",
-          width: 60,
-          align: "center",
-          template: (t) => String(rowIndex(t)),
-        },
-        {
-          name: "text",
-          label: "Activity",
-          tree: true,
-          width: 260,
-          resize: true,
-        },
-        {
-          name: "duration",
-          label: timelineMode === "actual" ? "A. Duration" : "Duration",
-          width: 90,
-          align: "center",
-          resize: true,
-          template: durationTemplate,
-        },
-        {
-          name: "resources",
-          label: "Res.",
-          width: 60,
-          align: "center",
-          resize: true,
-          template: (t) =>
-            Number(t._resources_total) > 0 ? String(t._resources_total) : "",
-        },
-        {
-          name: "start",
-          label: "B.Start",
-          width: 100,
-          align: "center",
-          resize: true,
-          template: startCellTemplate,
-        },
-        {
-          name: "end",
-          label: "B.End",
-          width: 100,
-          align: "center",
-          resize: true,
-          template: endCellTemplate,
-        },
-        {
-          name: "a_start",
-          label: "A.Start",
-          width: 100,
-          align: "center",
-          resize: true,
-          template: (t) => t._a_start_dm || "-",
-        },
-        {
-          name: "a_end",
-          label: "A.End",
-          width: 100,
-          align: "center",
-          resize: true,
-          template: (t) => t._a_end_dm || "-",
-        },
-        {
-          name: "pred",
-          label: "Pred.",
-          width: 120,
-          align: "center",
-          resize: true,
-          template: predecessorTemplate,
-        },
-      ];
-
-      // templates / events
       gantt.templates.task_class = () => "";
       gantt.templates.grid_row_class = () => "";
       gantt.attachEvent("onTaskClick", () => true);
@@ -1520,9 +1511,111 @@ const View_Project_Management = forwardRef(
         return false;
       });
 
-      if (ganttContainer.current) {
-        gantt.init(ganttContainer.current);
-      }
+      if (ganttContainer.current) gantt.init(ganttContainer.current);
+
+      // master checkbox + selection sync
+      const syncMasterCheckbox = () => {
+        const input = document.getElementById(masterCheckIdRef.current);
+        if (!input) return;
+        let total = 0,
+          checked = 0;
+        gantt.eachTask((t) => {
+          total += 1;
+          if (t.checked) checked += 1;
+        });
+        if (!total) {
+          input.checked = false;
+          input.indeterminate = false;
+          notifySelection();
+          return;
+        }
+        input.checked = checked === total;
+        input.indeterminate = checked > 0 && checked < total;
+        notifySelection();
+      };
+
+      const injectMasterHeader = () => {
+        const container = gantt.$container;
+        if (!container) return;
+        const headCells = container.querySelectorAll(".gantt_grid_head_cell");
+        let checkHeadCell = null;
+        headCells.forEach((cell) => {
+          const colName = cell.getAttribute("data-column-name");
+          if (colName === "check") checkHeadCell = cell;
+        });
+        if (!checkHeadCell && headCells.length) checkHeadCell = headCells[0];
+        if (!checkHeadCell) return;
+        if (checkHeadCell.querySelector(`#${masterCheckIdRef.current}`)) {
+          syncMasterCheckbox();
+          return;
+        }
+        checkHeadCell.innerHTML = `<input type="checkbox" id="${masterCheckIdRef.current}" />`;
+        const master = checkHeadCell.querySelector(
+          `#${masterCheckIdRef.current}`
+        );
+        if (master) {
+          master.addEventListener("change", onMasterToggle);
+        }
+        setTimeout(syncMasterCheckbox, 0);
+      };
+
+      const onMasterToggle = (e) => {
+        const allChecked = !!e.target.checked;
+        gantt.batchUpdate(() => {
+          gantt.eachTask((t) => {
+            t.checked = allChecked;
+            if (gantt.isTaskVisible(t.id)) gantt.refreshTask(t.id);
+          });
+          gantt.refreshData();
+        });
+        notifySelection();
+      };
+
+      const onChange = (e) => {
+        const target = e?.target;
+        if (!target) return;
+        if (target.classList.contains("gantt-row-checkbox")) {
+          const id = target.getAttribute("data-id");
+          if (id) {
+            const task = gantt.getTask(id);
+            task.checked = !!target.checked;
+            gantt.updateTask(id);
+            notifySelection();
+          }
+        }
+      };
+
+      const container = gantt.$container;
+      if (container) container.addEventListener("change", onChange);
+
+      const readyId = gantt.attachEvent("onGanttReady", () =>
+        setTimeout(injectMasterHeader, 0)
+      );
+      const onParseId = gantt.attachEvent("onParse", () =>
+        setTimeout(injectMasterHeader, 0)
+      );
+      const onScaleId = gantt.attachEvent("onScaleAdjusted", () =>
+        setTimeout(injectMasterHeader, 0)
+      );
+      const onColResize = gantt.attachEvent("onColumnResizeEnd", () =>
+        setTimeout(injectMasterHeader, 0)
+      );
+      const onColReorder = gantt.attachEvent("onColumnReorder", () =>
+        setTimeout(injectMasterHeader, 0)
+      );
+
+      const onAfterAddId = gantt.attachEvent("onAfterTaskAdd", () =>
+        setTimeout(syncMasterCheckbox, 0)
+      );
+      const onAfterUpdId = gantt.attachEvent("onAfterTaskUpdate", () =>
+        setTimeout(syncMasterCheckbox, 0)
+      );
+      const onAfterDelId = gantt.attachEvent("onAfterTaskDelete", () =>
+        setTimeout(syncMasterCheckbox, 0)
+      );
+      const onAfterDragId = gantt.attachEvent("onAfterTaskDrag", () =>
+        setTimeout(syncMasterCheckbox, 0)
+      );
 
       const handleResize = () => {
         const host = gantt.$container;
@@ -1530,18 +1623,30 @@ const View_Project_Management = forwardRef(
         const w = host.clientWidth || 1000;
         gantt.config.grid_width = Math.max(220, Math.floor(w * 0.4));
         gantt.render();
+        setTimeout(injectMasterHeader, 0);
       };
       window.addEventListener("resize", handleResize);
       handleResize();
 
       return () => {
         window.removeEventListener("resize", handleResize);
+        try {
+          gantt.$container?.removeEventListener("change", onChange);
+        } catch {}
+        gantt.detachEvent(readyId);
+        gantt.detachEvent(onParseId);
+        gantt.detachEvent(onScaleId);
+        gantt.detachEvent(onColResize);
+        gantt.detachEvent(onColReorder);
+        gantt.detachEvent(onAfterAddId);
+        gantt.detachEvent(onAfterUpdId);
+        gantt.detachEvent(onAfterDelId);
+        gantt.detachEvent(onAfterDragId);
         gantt.clearAll();
       };
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // ---------- S.No helper accessible here too
     const rowIndex = (t) => {
       try {
         return gantt.getTaskIndex(t.id) + 1;
@@ -1550,114 +1655,175 @@ const View_Project_Management = forwardRef(
       }
     };
 
-    const buildColumns = (mode) => [
-      {
-        name: "sno",
-        label: "S.No",
-        width: 60,
-        align: "center",
-        template: (t) => String(rowIndex(t)),
-      },
-      { name: "text", label: "Activity", tree: true, width: 260, resize: true },
-      {
-        name: "duration",
-        label: mode === "actual" ? "A. Duration" : "Duration",
-        width: 90,
-        align: "center",
-        resize: true,
-        template: durationTemplate,
-      },
-      {
-        name: "resources",
-        label: "Res.",
-        width: 60,
-        align: "center",
-        resize: true,
-        template: (t) =>
-          Number(t._resources_total) > 0 ? String(t._resources_total) : "",
-      },
-      {
-        name: "start",
-        label: "B.Start",
-        width: 100,
-        align: "center",
-        resize: true,
-        template: startCellTemplate,
-      },
-      {
-        name: "end",
-        label: "B.End",
-        width: 100,
-        align: "center",
-        resize: true,
-        template: endCellTemplate,
-      },
-      {
-        name: "a_start",
-        label: "A.Start",
-        width: 100,
-        align: "center",
-        resize: true,
-        template: (t) => t._a_start_dm || "-",
-      },
-      {
-        name: "a_end",
-        label: "A.End",
-        width: 100,
-        align: "center",
-        resize: true,
-        template: (t) => t._a_end_dm || "-",
-      },
-      {
-        name: "pred",
-        label: "Pred.",
-        width: 120,
-        align: "center",
-        resize: true,
-        template: predecessorTemplate,
-      },
-    ];
+    // ▶️ Columns builder honoring visibleCols and adding Category
+    const buildColumns = (mode) => {
+      const cols = [
+        {
+          name: "check",
+          label: "",
+          width: 40,
+          align: "center",
+          template: (task) =>
+            `<input type="checkbox" class="gantt-row-checkbox" data-id="${
+              task.id
+            }" ${task.checked ? "checked" : ""}/>`,
+        },
+        {
+          name: "sno",
+          label: "S.No",
+          width: 60,
+          align: "center",
+          template: (t) => String(rowIndex(t)),
+        },
+      ];
 
-    /* ---------- dim backend when actView === 'all' + COLORS ---------- */
+      if (visibleCols.activity) {
+        cols.push({
+          name: "text",
+          label: "Activity",
+          tree: true,
+          width: 260,
+          resize: true,
+        });
+      }
+
+      if (visibleCols.category) {
+        cols.push({
+          name: "category",
+          label: "Category",
+          width: 140,
+          align: "center",
+          resize: true,
+          template: (t) => t._category_label || "—",
+        });
+      }
+
+      if (visibleCols.duration) {
+        cols.push({
+          name: "duration",
+          label: mode === "actual" ? "A. Duration" : "Duration",
+          width: 90,
+          align: "center",
+          resize: true,
+          template: (task) =>
+            Number(task.duration) > 0 ? String(task.duration) : "",
+        });
+      }
+
+      if (visibleCols.res) {
+        cols.push({
+          name: "resources",
+          label: "Res.",
+          width: 60,
+          align: "center",
+          resize: true,
+          template: (t) =>
+            Number(t._resources_total) > 0 ? String(t._resources_total) : "",
+        });
+      }
+
+      if (visibleCols.bstart) {
+        cols.push({
+          name: "start",
+          label: "B.Start",
+          width: 100,
+          align: "center",
+          resize: true,
+          template: (t) => t._base_start_dm || "-",
+        });
+      }
+
+      if (visibleCols.bend) {
+        cols.push({
+          name: "end",
+          label: "B.End",
+          width: 100,
+          align: "center",
+          resize: true,
+          template: (t) => t._base_end_dm || "-",
+        });
+      }
+
+      if (visibleCols.astart) {
+        cols.push({
+          name: "a_start",
+          label: "A.Start",
+          width: 100,
+          align: "center",
+          resize: true,
+          template: (t) => t._a_start_dm || "-",
+        });
+      }
+
+      if (visibleCols.aend) {
+        cols.push({
+          name: "a_end",
+          label: "A.End",
+          width: 100,
+          align: "center",
+          resize: true,
+          template: (t) => t._a_end_dm || "-",
+        });
+      }
+
+      if (visibleCols.pred) {
+        cols.push({
+          name: "pred",
+          label: "Pred.",
+          width: 140,
+          align: "center",
+          resize: true,
+          template: (task) => {
+            const incoming = gantt
+              .getLinks()
+              .filter((l) => String(l.target) === String(task.id));
+            if (!incoming.length) return "";
+            return incoming
+              .map((l) => {
+                const label = typeToLabel[String(l.type)] ?? "FS";
+                const lag = Number(l.lag || 0);
+                const lagStr = lag === 0 ? "" : lag > 0 ? `+${lag}` : `${lag}`;
+                return `${l.source}${label}${lagStr}`;
+              })
+              .join(", ");
+          },
+        });
+      }
+
+      return cols;
+    };
+
+    /* ---------- visual styling ---------- */
     useEffect(() => {
       gantt.templates.task_class = (_, __, task) => {
         const classes = [];
         if (task._unscheduled) classes.push("gantt-task-unscheduled");
-
         if (task._mode === "actual") {
           if (task._actual_completed) {
-            if (task._actual_on_time === false) {
+            if (task._actual_on_time === false)
               classes.push("gantt-task-running");
-            } else {
-              classes.push("gantt-task-ontime");
-            }
+            else classes.push("gantt-task-ontime");
           } else {
             classes.push("gantt-task-running");
           }
         } else {
           classes.push("gantt-task-baseline");
         }
-
-        if (actView === "all" && task._type === "backend") {
+        if (actView === "all" && task._type === "backend")
           classes.push("gantt-task-dim");
-        }
         return classes.join(" ");
       };
-
       gantt.templates.grid_row_class = (start, end, task) => {
         if (actView === "all" && task._type === "backend")
           return "gantt-grid-dim";
         return "";
       };
-
       gantt.render();
     }, [actView, timelineMode]);
 
-    /* ---------- Task text: late-tail overlay + centered activity name ---------- */
     useEffect(() => {
       gantt.templates.task_text = (start, end, task) => {
         const parts = [];
-
         if (
           task._mode === "actual" &&
           task._actual_completed &&
@@ -1667,12 +1833,10 @@ const View_Project_Management = forwardRef(
         ) {
           const baseEnd = task._base_end_obj;
           const actEnd = task._end_obj || end;
-
           if (actEnd.getTime() > baseEnd.getTime()) {
             const tailStart = addDays(baseEnd, 1);
             const lateDays = durationFromStartFinish(tailStart, actEnd);
             const totalDays = durationFromStartFinish(task.start_date, actEnd);
-
             if (lateDays > 0 && totalDays > 0) {
               const pct = Math.max(
                 0,
@@ -1684,7 +1848,6 @@ const View_Project_Management = forwardRef(
             }
           }
         }
-
         const label = task.text ? String(task.text) : "";
         parts.push(
           `<div class="gantt_bar_label" title="${label.replace(
@@ -1692,17 +1855,14 @@ const View_Project_Management = forwardRef(
             "&quot;"
           )}">${label}</div>`
         );
-
         return parts.join("");
       };
-
       gantt.render();
     }, [timelineMode]);
 
-    /* ---------- handle drag-drop reorder → API ---------- */
+    /* ---------- reorder handler ---------- */
     useEffect(() => {
       if (!gantt.$container) return;
-
       const handlerId = gantt.attachEvent("onAfterTaskMove", async function () {
         if (isPlanFrozen) {
           setSnack({
@@ -1718,31 +1878,26 @@ const View_Project_Management = forwardRef(
           const ordered_activity_ids = ordered.filter(
             (id) => id && !seen.has(id) && seen.add(id)
           );
-
           if (!projectId || !ordered_activity_ids.length) return;
-
           await reorderProjectActivities({
             projectId,
             ordered_activity_ids,
           }).unwrap();
           setSnack({ open: true, msg: "Order updated." });
-        } catch (e) {
+        } catch {
           setSnack({ open: true, msg: "Failed to update order" });
         }
       });
-
-      return () => {
-        gantt.detachEvent(handlerId);
-      };
+      return () => gantt.detachEvent(handlerId);
     }, [projectId, reorderProjectActivities, isPlanFrozen]);
 
+    // apply columns when mode OR visibleCols change
     useEffect(() => {
       if (!gantt.$container) return;
       gantt.config.columns = buildColumns(timelineMode);
       gantt.render();
-    }, [timelineMode]);
+    }, [timelineMode, visibleCols]); // 🔸 include visibleCols
 
-    /* ---------- defensively parse data ---------- */
     const parseSafe = (payload) => {
       const ok =
         payload && Array.isArray(payload.data) && Array.isArray(payload.links);
@@ -1754,18 +1909,20 @@ const View_Project_Management = forwardRef(
       gantt.parse(payload);
     };
 
-    // feed data whenever dataset or mode changes
     useEffect(() => {
       if (!ganttContainer.current || !gantt.$container) return;
-
       const dataArr = Array.isArray(ganttData) ? ganttData : [];
       const linksArr = Array.isArray(ganttLinks) ? ganttLinks : [];
-
       gantt.clearAll();
       parseSafe({ data: dataArr, links: linksArr });
+      const container = gantt.$container;
+      if (container) {
+        const master = container.querySelector(`#${masterCheckIdRef.current}`);
+        if (master) master.indeterminate = false;
+        notifySelection();
+      }
     }, [ganttData, ganttLinks, timelineMode]);
 
-    /* ---------- reset selection when switching tabs ---------- */
     useEffect(() => {
       setSelectedId(null);
       setActiveDbId(null);
@@ -1808,52 +1965,27 @@ const View_Project_Management = forwardRef(
       <Box sx={{ ml: "0px", width: "100%", p: 0 }}>
         <style>{`
         .gantt_task_line.gantt-task-unscheduled{display:none!important;}
-        /* Baseline (grey) */
         .gantt_task_line.gantt-task-baseline { background:#9aa3b2; border-color:#9aa3b2; }
-        /* Actual: on-time (green), late tail overlay (red), running (blue) */
         .gantt_task_line.gantt-task-ontime { background:#22c55e; border-color:#22c55e; }
         .gantt_task_line.gantt-task-running { background:#3b82f6; border-color:#3b82f6; }
 
-        /* Red overlay for the late portion of completed tasks in Actual mode (drawn inside the bar) */
         .gantt_late_tail_overlay{
-          position:absolute;
-          right:0;
-          top:0;
-          height:100%;
-          background:#ef4444;
-          opacity:0.95;
-          border-top-right-radius:4px;
-          border-bottom-right-radius:4px;
-          pointer-events:none;
-          z-index:0;
+          position:absolute; right:0; top:0; height:100%;
+          background:#ef4444; opacity:0.95;
+          border-top-right-radius:4px; border-bottom-right-radius:4px;
+          pointer-events:none; z-index:0;
         }
-
-        /* Centered label printed inside each bar */
         .gantt_bar_label{
-          position:absolute;
-          left:0; right:0; top:50%;
-          transform: translateY(-50%);
-          text-align:center;
-          font-weight:600;
-          color:#fff;
-          white-space:nowrap;
-          overflow:hidden;
-          text-overflow:ellipsis;
-          padding:0 6px;
-          pointer-events:none;
-          z-index:1;
+          position:absolute; left:0; right:0; top:50%;
+          transform: translateY(-50%); text-align:center;
+          font-weight:600; color:#fff; white-space:nowrap;
+          overflow:hidden; text-overflow:ellipsis; padding:0 6px;
+          pointer-events:none; z-index:1;
         }
-
         .gantt_grid_scale, .gantt_task_scale { height: 28px; line-height: 28px; }
-
-        /* Dim backend in "All" */
         .gantt_task_line.gantt-task-dim { opacity: 0.45; }
         .gantt_grid_data .gantt_row.gantt-grid-dim { opacity: 0.6; }
-
-        /* allow either side to shrink to 0 when dragging the resizer */
         .gantt_grid, .gantt_task { min-width: 0 !important; }
-
-        /* elastic resizer handle */
         .gantt_layout_cell.gantt_resizer { background: transparent; cursor: col-resize; }
         .gantt_layout_cell.gantt_resizer::after {
           content:""; display:block; width:2px; height:100%; margin:0 auto;
@@ -1861,7 +1993,6 @@ const View_Project_Management = forwardRef(
           transition: transform .12s ease;
         }
         .gantt_layout_cell.gantt_resizer:hover::after { transform: scaleX(1.6); }
-        
       `}</style>
 
         {/* Header row */}
@@ -1876,7 +2007,7 @@ const View_Project_Management = forwardRef(
             mt: 1,
           }}
         >
-          {/* LEFT: Tabs (Site/Backend/All) + Project Code */}
+          {/* LEFT: Project Code */}
           <Sheet
             variant="outlined"
             sx={{
@@ -1888,7 +2019,6 @@ const View_Project_Management = forwardRef(
               py: 1,
             }}
           >
-            {/* Project code */}
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
               <DescriptionOutlinedIcon fontSize="small" color="primary" />
               <Typography level="body-sm" sx={{ color: "text.secondary" }}>
@@ -1909,6 +2039,8 @@ const View_Project_Management = forwardRef(
               </Chip>
             </Box>
           </Sheet>
+
+          {/* View Tabs */}
           <Sheet
             variant="outlined"
             sx={{
@@ -1960,6 +2092,7 @@ const View_Project_Management = forwardRef(
             </Stack>
           </Sheet>
 
+          {/* Timeline toggle */}
           <Sheet
             variant="outlined"
             sx={{
@@ -2000,6 +2133,7 @@ const View_Project_Management = forwardRef(
             </Chip>
           </Sheet>
 
+          {/* Stats + Remaining */}
           <Sheet
             variant="outlined"
             sx={{
@@ -2050,6 +2184,45 @@ const View_Project_Management = forwardRef(
                 {maxEndDMY}
               </Chip>
             </Box>
+
+            {/* 🔻 Columns visibility menu */}
+            <Dropdown>
+              <MenuButton
+                variant="soft"
+                size="sm"
+                endDecorator={<KeyboardArrowDownRoundedIcon />}
+              >
+                Columns
+              </MenuButton>
+              <Menu placement="bottom-end" sx={{ minWidth: 220 }}>
+                {[
+                  { key: "activity", label: "Activity" },
+                  { key: "category", label: "Category" },
+                  { key: "duration", label: "Duration" },
+                  { key: "res", label: "Res." },
+                  { key: "bstart", label: "B.Start" },
+                  { key: "bend", label: "B.End" },
+                  { key: "astart", label: "A.Start" },
+                  { key: "aend", label: "A.End" },
+                  { key: "pred", label: "Pred." },
+                ].map((c) => (
+                  <MenuItem
+                    key={c.key}
+                    onClick={(e) => {
+                      e.stopPropagation(); // keep menu open
+                      toggleColumn(c.key);
+                    }}
+                  >
+                    <Checkbox
+                      checked={!!visibleCols[c.key]}
+                      readOnly
+                      overlay
+                      label={c.label}
+                    />
+                  </MenuItem>
+                ))}
+              </Menu>
+            </Dropdown>
           </Sheet>
         </Box>
 
@@ -2078,7 +2251,7 @@ const View_Project_Management = forwardRef(
           />
         </Box>
 
-        {/* Right panel: edit drawer (read-only while frozen) */}
+        {/* Right drawer (unchanged behavior, uses updated saveFromModal) */}
         {selectedId && (
           <>
             <Box
@@ -2097,6 +2270,7 @@ const View_Project_Management = forwardRef(
                 animation: "fadeIn 140ms ease-out",
               }}
             />
+
             <Sheet
               variant="outlined"
               sx={{
@@ -2113,6 +2287,10 @@ const View_Project_Management = forwardRef(
                 willChange: "transform, opacity",
               }}
             >
+              {/* ... drawer content stays the same from your last version ... */}
+              {/* (omitted for brevity; unchanged logic for status, preds, dates, resources, save/close) */}
+
+              {/* ---------- STATUS ---------- */}
               <Stack spacing={1.5}>
                 <Typography level="title-sm">
                   Edit Activity
@@ -2149,7 +2327,8 @@ const View_Project_Management = forwardRef(
                   </Select>
                 </FormControl>
 
-                {statusChanged && (
+                {/* remarks logic */}
+                {form.status !== initialStatusRef.current ? (
                   <FormControl>
                     <FormLabel>
                       Remarks{" "}
@@ -2171,8 +2350,7 @@ const View_Project_Management = forwardRef(
                       disabled={disableEditing}
                     />
                   </FormControl>
-                )}
-                {!statusChanged && form.remarks ? (
+                ) : form.remarks ? (
                   <FormControl>
                     <FormLabel>
                       <Stack direction="row" spacing={1} alignItems="center">
@@ -2193,7 +2371,7 @@ const View_Project_Management = forwardRef(
                                 src={form.updatedByUrl || undefined}
                                 alt={form.updatedByName || "User"}
                                 onClick={() => navigate("/user_profile")}
-                                onMouseDown={(e) => e.preventDefault()} // stops label focusing instead of clicking
+                                onMouseDown={(e) => e.preventDefault()}
                                 sx={{
                                   cursor: "pointer",
                                   "&:hover": {
@@ -2223,7 +2401,7 @@ const View_Project_Management = forwardRef(
 
                 <Divider />
 
-                {/* Predecessors */}
+                {/* PREDECESSORS */}
                 <Stack spacing={1}>
                   <Stack
                     direction="row"
@@ -2254,6 +2432,7 @@ const View_Project_Management = forwardRef(
                       Add
                     </Button>
                   </Stack>
+
                   <Stack spacing={1}>
                     {form.predecessors.length === 0 && (
                       <Typography
@@ -2293,6 +2472,7 @@ const View_Project_Management = forwardRef(
 
                 <Divider />
 
+                {/* BASELINE DATES */}
                 <Stack direction="row" spacing={1}>
                   <FormControl sx={{ flex: 1 }}>
                     <FormLabel>
@@ -2315,10 +2495,9 @@ const View_Project_Management = forwardRef(
                       type="date"
                       value={form.start}
                       disabled={disableEditing || !!form.predecessors?.length}
-                      onChange={(e) => {
-                        const startISO = e.target.value;
-                        setForm((f) => ({ ...f, start: startISO }));
-                      }}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, start: e.target.value }))
+                      }
                     />
                   </FormControl>
 
@@ -2330,10 +2509,7 @@ const View_Project_Management = forwardRef(
                       value={form.duration}
                       disabled={disableEditing}
                       onChange={(e) =>
-                        setForm((f) => ({
-                          ...f,
-                          duration: e.target.value,
-                        }))
+                        setForm((f) => ({ ...f, duration: e.target.value }))
                       }
                     />
                   </FormControl>
@@ -2345,6 +2521,8 @@ const View_Project_Management = forwardRef(
                 </FormControl>
 
                 <Divider />
+
+                {/* RESOURCES */}
                 <Stack spacing={1}>
                   <Stack
                     direction="row"
@@ -2381,6 +2559,7 @@ const View_Project_Management = forwardRef(
                       <ResourceRow
                         key={`res-${idx}`}
                         row={r}
+                        assignOptions={assignOptions}
                         onChange={(nr) =>
                           setForm((f) => {
                             const arr = [...f.resources];
@@ -2401,6 +2580,63 @@ const View_Project_Management = forwardRef(
                   </Stack>
                 </Stack>
 
+                <Divider />
+
+                {/* WORK COMPLETION */}
+                <FormControl>
+                  <FormLabel>Work Completion</FormLabel>
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{ alignItems: "center" }}
+                  >
+                    <Input
+                      size="sm"
+                      type="number"
+                      placeholder="Enter value"
+                      value={form.work_completion_value || ""}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          work_completion_value: e.target.value,
+                        }))
+                      }
+                      disabled={disableEditing}
+                      sx={{ width: { xs: "45%", sm: "34%" } }}
+                    />
+                    <Select
+                      size="sm"
+                      value={form.work_completion_unit || "number"}
+                      onChange={(_, v) =>
+                        setForm((f) => ({
+                          ...f,
+                          work_completion_unit: v || "number",
+                        }))
+                      }
+                      disabled
+                      sx={{ width: { xs: "55%", sm: "26%" } }}
+                      slotProps={{
+                        listbox: {
+                          sx: {
+                            zIndex: 1700,
+                            maxHeight: 240,
+                            overflowY: "auto",
+                          },
+                        },
+                        popper: { sx: { zIndex: 1700 } },
+                      }}
+                    >
+                      <Option value="m">m</Option>
+                      <Option value="kg">kg</Option>
+                      <Option value="percentage">Percentage</Option>
+                      <Option value="number">Number</Option>
+                    </Select>
+                  </Stack>
+                </FormControl>
+
+                <Divider />
+
+                {/* ACTIONS */}
                 <Stack direction="row" spacing={1}>
                   <Tooltip
                     title={

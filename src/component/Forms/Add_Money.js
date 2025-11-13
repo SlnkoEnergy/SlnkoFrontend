@@ -30,6 +30,28 @@ const Add_Money = () => {
 
   const [submittedBy, setSubmittedBy] = useState("");
   const [error, setError] = useState("");
+  const [responseMessage, setResponseMessage] = useState("");
+  const [user, setUser] = useState(null);
+
+   useEffect(() => {
+    const userData = getUserData();
+  if (userData && userData.name) {
+    setFormValues((prev) => ({
+      ...prev,
+      submittedBy: userData.name,
+    }));
+  }
+  setUser(userData);
+}, []);
+  
+    const getUserData = () => {
+      const userData = localStorage.getItem("userDetails");
+      console.log("Add money :", userData);
+      if (userData) {
+        return JSON.parse(userData);
+      }
+      return null;
+    };
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
