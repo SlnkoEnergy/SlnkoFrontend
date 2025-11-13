@@ -743,6 +743,9 @@ const View_Project_Management = forwardRef(
 
         const rawCategory = master?.category ?? pa?.category ?? "";
         const categoryLabel = toTitle(rawCategory || "");
+        const categoryRawNorm = String(rawCategory || "")
+          .trim()
+          .toLowerCase();
 
         const baseStartISO = pa.planned_start || pa.start_date || null;
         const baseEndISO = pa.planned_finish || pa.end_date || null;
@@ -888,6 +891,7 @@ const View_Project_Management = forwardRef(
 
           // 🔹 Category (for grid)
           _category_label: categoryLabel || "—",
+          _category_raw: categoryRawNorm || "",
         };
       });
 
@@ -979,6 +983,7 @@ const View_Project_Management = forwardRef(
       assigned_user: [],
       work_completion_value: "",
       work_completion_unit: "number",
+      category: "",
     });
 
     const statusChanged = form.status !== initialStatusRef.current;
@@ -1089,6 +1094,12 @@ const View_Project_Management = forwardRef(
       const wcUnit = typeof wc.unit === "string" ? wc.unit : "number";
       const wcValue = Number.isFinite(Number(wc.value)) ? String(wc.value) : "";
 
+      const category =
+        act?.category ||
+        act?.activity_id?.category ||
+        act?.master_activity_id?.category ||
+        "";
+
       const uiPreds = preds
         .map((p) => {
           const db = String(p.activity_id || "");
@@ -1130,6 +1141,7 @@ const View_Project_Management = forwardRef(
         assigned_user: assignPick || [],
         work_completion_value: wcValue,
         work_completion_unit: wcUnit,
+        category,
       });
 
       const durNum = Number(durStr || 0);
@@ -1202,6 +1214,7 @@ const View_Project_Management = forwardRef(
         remarks: form.remarks || "",
         work_completion_value: form.work_completion_value || 0,
         work_completion_unit: form.work_completion_unit || "number",
+        category: form.category || null,
       };
 
       try {
@@ -1232,157 +1245,192 @@ const View_Project_Management = forwardRef(
     };
 
     useImperativeHandle(ref, () => ({
-      saveAsTemplate: async (meta = {}) => {
-        const { name, description } = meta || {};
-        const rows = [];
-        const siToDb = new Map();
+  saveAsTemplate: async (meta = {}) => {
+    const { name, description } = meta || {};
+    const rows = [];
+    const siToDb = new Map();
 
-        const orderByDb = new Map();
-        const depByDb = new Map();
+    const orderByDb = new Map();
+    const depByDb = new Map();
+    const wcUnitByDb = new Map(); // 🔹 NEW: work_completion.unit per activity
 
-        (paList || []).forEach((pa) => {
-          const master = pa.activity_id || pa.master_activity_id || {};
-          const dbId = String(master?._id || pa.activity_id || "");
-          if (!dbId) return;
-          const orderNum =
-            Number(pa?.order) ||
-            Number(pa?.order_no) ||
-            Number(pa?.sequence) ||
-            null;
-          if (Number.isFinite(orderNum)) orderByDb.set(dbId, orderNum);
+    (paList || []).forEach((pa) => {
+      const master = pa.activity_id || pa.master_activity_id || {};
+      const dbId = String(master?._id || pa.activity_id || "");
+      if (!dbId) return;
 
-          const depsRaw = Array.isArray(pa.dependency)
-            ? pa.dependency
-            : Array.isArray(pa.dependencies)
-            ? pa.dependencies
-            : [];
-          const normalized = depsRaw.map((d) => ({
-            model: d?.model,
-            model_id: d?.model_id,
-            model_id_name: d?.model_id_name,
-            updatedAt: d?.updatedAt || d?.updated_at,
-            updated_by: d?.updated_by,
-          }));
-          depByDb.set(dbId, normalized);
-        });
+      // existing order map
+      const orderNum =
+        Number(pa?.order) ||
+        Number(pa?.order_no) ||
+        Number(pa?.sequence) ||
+        null;
+      if (Number.isFinite(orderNum)) orderByDb.set(dbId, orderNum);
 
-        gantt.eachTask((t) => {
-          const start = t.start_date instanceof Date ? t.start_date : null;
-          const end =
-            t._end_obj ||
-            (start && Number(t.duration) > 0
-              ? gantt.calculateEndDate({
-                  start_date: start,
-                  duration: t.duration,
-                  task: t,
-                })
-              : null);
-          const startISO = start ? start.toISOString() : null;
-          const endISO = end ? end.toISOString() : null;
-          const order_no = rows.length + 1;
-          const duration =
-            Number(t.duration || 0) ||
-            (start && end ? durationFromStartFinish(start, end) : 0);
+      // existing dependency map
+      const depsRaw = Array.isArray(pa.dependency)
+        ? pa.dependency
+        : Array.isArray(pa.dependencies)
+        ? pa.dependencies
+        : [];
+      const normalized = depsRaw.map((d) => ({
+        model: d?.model,
+        model_id: d?.model_id,
+        model_id_name: d?.model_id_name,
+        updatedAt: d?.updatedAt || d?.updated_at,
+        updated_by: d?.updated_by,
+      }));
+      depByDb.set(dbId, normalized);
 
-          rows.push({
-            si: String(t.id),
-            dbId: String(t._dbId || ""),
-            order_no,
-            name: t.text || "",
-            act_type: t._type || null,
-            start,
-            end,
-            start_iso: startISO,
-            end_iso: endISO,
-            start_ymd: start ? toYMD(start) : null,
-            end_ymd: end ? toYMD(end) : null,
-            duration,
-            resources_arr: Array.isArray(t._resources_arr)
-              ? t._resources_arr
-              : [],
-            resources_total: Array.isArray(t._resources_arr)
-              ? t._resources_arr.reduce(
-                  (s, r) => s + (Number(r?.number) || 0),
-                  0
-                )
-              : 0,
-            status: t._status || null,
-            percent_complete:
-              typeof t.progress === "number" ? Math.round(t.progress * 100) : 0,
-          });
+      // 🔹 NEW: capture work_completion.unit from current project activities
+      const wc = pa.work_completion || {};
+      if (typeof wc.unit === "string" && wc.unit.trim()) {
+        wcUnitByDb.set(dbId, wc.unit.trim());
+      }
+    });
 
-          if (t._dbId) siToDb.set(String(t.id), String(t._dbId));
-        });
-
-        const predsBySi = new Map();
-        const succsBySi = new Map();
-        gantt.getLinks().forEach((l) => {
-          const srcSi = String(l.source);
-          const trgSi = String(l.target);
-          const typeLabel = (typeToLabel[String(l.type)] || "FS").toUpperCase();
-          const lag = Number(l.lag || 0);
-          const srcDb = siToDb.get(srcSi) || null;
-          const trgDb = siToDb.get(trgSi) || null;
-          if (!predsBySi.has(trgSi)) predsBySi.set(trgSi, []);
-          predsBySi.get(trgSi).push({ srcSi, srcDb, type: typeLabel, lag });
-          if (!succsBySi.has(srcSi)) succsBySi.set(srcSi, []);
-          succsBySi.get(srcSi).push({ trgSi, trgDb, type: typeLabel, lag });
-        });
-
-        const activities = rows
-          .filter((r) => r.dbId)
-          .map((t) => {
-            const predecessors = (predsBySi.get(t.si) || [])
-              .map((p) => ({ activity_id: p.srcDb, type: p.type, lag: p.lag }))
-              .filter((x) => !!x.activity_id);
-
-            const successors = (succsBySi.get(t.si) || [])
-              .map((s) => ({ activity_id: s.trgDb, type: s.type, lag: s.lag }))
-              .filter((x) => !!x.activity_id);
-
-            const mappedOrder =
-              (orderByDb.has(t.dbId) ? orderByDb.get(t.dbId) : null) ??
-              t.order_no;
-
-            return {
-              activity_id: t.dbId,
-              order: mappedOrder,
-              planned_start: t.start_iso || null,
-              planned_finish: t.end_iso || null,
-              actual_start: null,
-              actual_finish: null,
+    gantt.eachTask((t) => {
+      const start = t.start_date instanceof Date ? t.start_date : null;
+      const end =
+        t._end_obj ||
+        (start && Number(t.duration) > 0
+          ? gantt.calculateEndDate({
+              start_date: start,
               duration: t.duration,
-              percent_complete: Math.max(
-                0,
-                Math.min(100, Number(t.percent_complete || 0))
-              ),
-              resources: Array.isArray(t.resources_arr)
-                ? t.resources_arr.map((r) => ({
-                    type: String(r?.type || ""),
-                    number: Number(r?.number) || 0,
-                  }))
-                : [],
-              predecessors,
-              successors,
-              dependency: depByDb.get(t.dbId) || [],
-            };
-          });
+              task: t,
+            })
+          : null);
 
-        const payload = {
-          status: "template",
-          ...(name ? { name } : {}),
-          ...(description ? { description } : {}),
-          activities,
+      const startISO = start ? start.toISOString() : null;
+      const endISO = end ? end.toISOString() : null;
+      const order_no = rows.length + 1;
+      const duration =
+        Number(t.duration || 0) ||
+        (start && end ? durationFromStartFinish(start, end) : 0);
+
+      const dbId = String(t._dbId || "");
+      const wcUnit = wcUnitByDb.get(dbId) || "number"; // 🔹 fallback to "number"
+
+      rows.push({
+        si: String(t.id),
+        dbId,
+        order_no,
+        name: t.text || "",
+        act_type: t._type || null,
+        start,
+        end,
+        start_iso: startISO,
+        end_iso: endISO,
+        start_ymd: start ? toYMD(start) : null,
+        end_ymd: end ? toYMD(end) : null,
+        duration,
+        resources_arr: Array.isArray(t._resources_arr)
+          ? t._resources_arr
+          : [],
+        resources_total: Array.isArray(t._resources_arr)
+          ? t._resources_arr.reduce(
+              (s, r) => s + (Number(r?.number) || 0),
+              0
+            )
+          : 0,
+        status: t._status || null,
+        percent_complete:
+          typeof t.progress === "number" ? Math.round(t.progress * 100) : 0,
+        category: t._category_raw || null,        // ✅ category as before
+        work_completion_unit: wcUnit,             // 🔹 NEW: store unit on row
+      });
+
+      if (t._dbId) siToDb.set(String(t.id), String(t._dbId));
+    });
+
+    const predsBySi = new Map();
+    const succsBySi = new Map();
+    gantt.getLinks().forEach((l) => {
+      const srcSi = String(l.source);
+      const trgSi = String(l.target);
+      const typeLabel = (typeToLabel[String(l.type)] || "FS").toUpperCase();
+      const lag = Number(l.lag || 0);
+      const srcDb = siToDb.get(srcSi) || null;
+      const trgDb = siToDb.get(trgSi) || null;
+      if (!predsBySi.has(trgSi)) predsBySi.set(trgSi, []);
+      predsBySi.get(trgSi).push({ srcSi, srcDb, type: typeLabel, lag });
+      if (!succsBySi.has(srcSi)) succsBySi.set(srcSi, []);
+      succsBySi.get(srcSi).push({ trgSi, trgDb, type: typeLabel, lag });
+    });
+
+    const activities = rows
+      .filter((r) => r.dbId)
+      .map((t) => {
+        const predecessors = (predsBySi.get(t.si) || [])
+          .map((p) => ({
+            activity_id: p.srcDb,
+            type: p.type,
+            lag: p.lag,
+          }))
+          .filter((x) => !!x.activity_id);
+
+        const successors = (succsBySi.get(t.si) || [])
+          .map((s) => ({
+            activity_id: s.trgDb,
+            type: s.type,
+            lag: s.lag,
+          }))
+          .filter((x) => !!x.activity_id);
+
+        const mappedOrder =
+          (orderByDb.has(t.dbId) ? orderByDb.get(t.dbId) : null) ??
+          t.order_no;
+
+        const wcUnit =
+          (t.work_completion_unit &&
+            String(t.work_completion_unit).trim()) ||
+          "number";
+
+        return {
+          activity_id: t.dbId,
+          order: mappedOrder,
+          planned_start: t.start_iso || null,
+          planned_finish: t.end_iso || null,
+          actual_start: null,
+          actual_finish: null,
+          duration: t.duration,
+          percent_complete: Math.max(
+            0,
+            Math.min(100, Number(t.percent_complete || 0))
+          ),
+          category: t.category || null,            // ✅ category posted
+          work_completion: {                       // 🔹 NEW: unit posted in template
+            unit: wcUnit,
+            value: 0,
+          },
+          resources: Array.isArray(t.resources_arr)
+            ? t.resources_arr.map((r) => ({
+                type: String(r?.type || ""),
+                number: Number(r?.number) || 0,
+              }))
+            : [],
+          predecessors,
+          successors,
+          dependency: depByDb.get(t.dbId) || [],
         };
+      });
 
-        try {
-          await createProjectActivity(payload).unwrap();
-          setSnack({ open: true, msg: "Template saved successfully" });
-        } catch (e) {
-          setSnack({ open: true, msg: "Failed to save template" });
-        }
-      },
-    }));
+    const payload = {
+      status: "template",
+      ...(name ? { name } : {}),
+      ...(description ? { description } : {}),
+      activities,
+    };
+
+    try {
+      await createProjectActivity(payload).unwrap();
+      setSnack({ open: true, msg: "Template saved successfully" });
+    } catch (e) {
+      setSnack({ open: true, msg: "Failed to save template" });
+    }
+  },
+}));
+
 
     /* ---------- init gantt (once) ---------- */
     useEffect(() => {
