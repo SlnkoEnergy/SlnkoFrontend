@@ -678,16 +678,7 @@ const VendorBillSummary = forwardRef((props, ref) => {
             color="neutral"
             onClick={() => setColModalOpen(true)}
           >
-            Columns
-          </Button>
-          <Button
-            size="sm"
-            variant="outlined"
-            color="neutral"
-            disabled={!selectedIds.length || isExporting}
-            onClick={handleExport}
-          >
-            Export Selected
+            Columns Visibility
           </Button>
         </Stack>
       </Box>
