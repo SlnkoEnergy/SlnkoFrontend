@@ -141,6 +141,7 @@ export default function SearchPickerModal({
     if (multi) {
       // only toggle in multi mode
       toggleSelect(row);
+      onPick?.(row);
     } else {
       // single-pick: behave exactly like before
       toggleSelect(row);
@@ -148,6 +149,8 @@ export default function SearchPickerModal({
       onClose?.();
     }
   };
+
+
 
   const currentPageIds = useMemo(
     () => rows.map((r) => r?.[rowKey]).filter(Boolean),
