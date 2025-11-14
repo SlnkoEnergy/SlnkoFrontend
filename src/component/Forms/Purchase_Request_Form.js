@@ -180,16 +180,16 @@ const buildProductDataFromFields = ({
   make,
   uom,
 }) => [
-  { name: "Product Name", values: [{ input_values: String(name ?? "") }] },
-  {
-    name: "Description",
-    values: [{ input_values: String(description ?? "") }],
-  },
-  { name: "Cost", values: [{ input_values: String(cost ?? "") }] },
-  { name: "GST", values: [{ input_values: String(gst ?? "") }] },
-  { name: "Make", values: [{ input_values: String(make ?? "") }] },
-  { name: "UOM", values: [{ input_values: String(uom ?? "") }] },
-];
+    { name: "Product Name", values: [{ input_values: String(name ?? "") }] },
+    {
+      name: "Description",
+      values: [{ input_values: String(description ?? "") }],
+    },
+    { name: "Cost", values: [{ input_values: String(cost ?? "") }] },
+    { name: "GST", values: [{ input_values: String(gst ?? "") }] },
+    { name: "Make", values: [{ input_values: String(make ?? "") }] },
+    { name: "UOM", values: [{ input_values: String(uom ?? "") }] },
+  ];
 
 export default function Purchase_Request_Form() {
   const [searchParams] = useSearchParams();
@@ -368,6 +368,8 @@ export default function Purchase_Request_Form() {
     }));
   };
 
+
+
   useEffect(() => {
     if (!Array.isArray(category) || category.length === 0) return;
     if (!Array.isArray(categoryRows) || categoryRows.length === 0) return;
@@ -465,17 +467,17 @@ export default function Purchase_Request_Form() {
       prev.map((l) =>
         l.id === activeLineId
           ? {
-              ...l,
-              productId: row._id || "",
-              productName: pickedName,
-              briefDescription: pickedDescription,
-              productCategoryId: catId || l.productCategoryId,
-              productCategoryName: catName || l.productCategoryName,
-              unitPrice: pickedCost,
-              taxPercent: pickedGST,
-              make: pickedMake,
-              uom: pickedUOM,
-            }
+            ...l,
+            productId: row._id || "",
+            productName: pickedName,
+            briefDescription: pickedDescription,
+            productCategoryId: catId || l.productCategoryId,
+            productCategoryName: catName || l.productCategoryName,
+            unitPrice: pickedCost,
+            taxPercent: pickedGST,
+            make: pickedMake,
+            uom: pickedUOM,
+          }
           : l
       )
     );
@@ -500,12 +502,11 @@ export default function Purchase_Request_Form() {
     setProjectLocation(
       typeof d?.project_id?.site_address === "string"
         ? d.project_id.site_address
-        : `${d?.project_id?.site_address?.village_name || ""}${
-            d?.project_id?.site_address?.village_name &&
-            d?.project_id?.site_address?.district_name
-              ? ", "
-              : ""
-          }${d?.project_id?.site_address?.district_name || ""}`
+        : `${d?.project_id?.site_address?.village_name || ""}${d?.project_id?.site_address?.village_name &&
+          d?.project_id?.site_address?.district_name
+          ? ", "
+          : ""
+        }${d?.project_id?.site_address?.district_name || ""}`
     );
     setProjectName(d?.project_id?.name || "");
     setDeliverTo(d?.delivery_address || "");
@@ -537,26 +538,26 @@ export default function Purchase_Request_Form() {
     setLines(
       incomingItems.length
         ? incomingItems.map((l) => {
-            const productDoc = l?.item_id || {};
-            const catId = productDoc?._id || "";
-            const catName = productDoc?.name || "";
+          const productDoc = l?.item_id || {};
+          const catId = productDoc?._id || "";
+          const catName = productDoc?.name || "";
 
-            return {
-              id: crypto.randomUUID(),
-              _selected: false,
-              productId: productDoc?._id || "",
-              productName: l.product_name || "",
-              briefDescription: l.description || "",
-              productCategoryId: catId,
-              productCategoryName: catName,
-              make: l.product_make || "",
-              uom: l.uom || "",
-              quantity: Number(l.quantity || 0),
-              unitPrice: Number(l.cost ?? 0),
-              taxPercent: Number(l.gst ?? 0),
-              note: l.note || "",
-            };
-          })
+          return {
+            id: crypto.randomUUID(),
+            _selected: false,
+            productId: productDoc?._id || "",
+            productName: l.product_name || "",
+            briefDescription: l.description || "",
+            productCategoryId: catId,
+            productCategoryName: catName,
+            make: l.product_make || "",
+            uom: l.uom || "",
+            quantity: Number(l.quantity || 0),
+            unitPrice: Number(l.cost ?? 0),
+            taxPercent: Number(l.gst ?? 0),
+            note: l.note || "",
+          };
+        })
         : [EMPTY_LINE()]
     );
   }, [prDataResp]);
@@ -733,7 +734,7 @@ export default function Purchase_Request_Form() {
 
     setPoSeed({
       pr_id: prId || null,
-      pr_no:prno || null,
+      pr_no: prno || null,
       project_id: projectId || null,
       project_code: projectCode || "",
       p_id: pId || "",
@@ -922,17 +923,17 @@ export default function Purchase_Request_Form() {
         prev.map((l) =>
           l.id === prodCreateLineId
             ? {
-                ...l,
-                productId: p?._id || "",
-                productName: name,
-                briefDescription: description,
-                productCategoryId: catId || l.productCategoryId,
-                productCategoryName: catName || l.productCategoryName,
-                unitPrice: cost,
-                taxPercent: gst,
-                make,
-                uom,
-              }
+              ...l,
+              productId: p?._id || "",
+              productName: name,
+              briefDescription: description,
+              productCategoryId: catId || l.productCategoryId,
+              productCategoryName: catName || l.productCategoryName,
+              unitPrice: cost,
+              taxPercent: gst,
+              make,
+              uom,
+            }
             : l
         )
       );
@@ -950,13 +951,13 @@ export default function Purchase_Request_Form() {
           data: Array.isArray(p?.data)
             ? p.data
             : buildProductDataFromFields({
-                name,
-                description,
-                cost,
-                gst,
-                make,
-                uom,
-              }),
+              name,
+              description,
+              cost,
+              gst,
+              make,
+              uom,
+            }),
           sku_code: p?.sku_code || "",
         };
         const ix = current.findIndex((x) => x?._id === normalized._id);
@@ -1551,9 +1552,9 @@ export default function Purchase_Request_Form() {
                               py: 0.25,
                               ...(isView
                                 ? {
-                                    bgcolor: "neutral.softBg",
-                                    color: "text.primary",
-                                  }
+                                  bgcolor: "neutral.softBg",
+                                  color: "text.primary",
+                                }
                                 : {}),
                             },
                           },
