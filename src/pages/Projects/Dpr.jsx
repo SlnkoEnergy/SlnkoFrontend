@@ -13,6 +13,7 @@ import DPRTable from "../../component/Dpr";
 import Filter from "../../component/Partials/Filter";
 
 import { useGetProjectDropdownQuery } from "../../redux/projectsSlice";
+import { get } from "lodash";
 
 function DprManagement() {
   const navigate = useNavigate();
@@ -54,6 +55,7 @@ function DprManagement() {
   const fromFromUrl = searchParams.get("from") || undefined;
   const toFromUrl = searchParams.get("to") || undefined;
   const hidestatusFromUrl = searchParams.get("hide_status") || "";
+
 
   useEffect(() => {
     if (
@@ -109,6 +111,16 @@ function DprManagement() {
         { label: "Completed", value: "completed" },
       ],
     },
+    {
+      key: "dprDate",
+      label: "Filled DPR By Site Engineer",
+      type: "daterange"
+    },
+    {
+      key: "dpr",
+      label: "Filter DPR By Projects",
+      type: "daterange",
+    }
   ];
 
   const handleApplyFilters = (vals) => {
@@ -135,6 +147,21 @@ function DprManagement() {
     if (vals.hide_status) next.set("hide_status", String(vals.hide_status));
     else next.delete("hide_status");
 
+    const dpr = vals.dprDate;
+    if (dpr?.from) next.set("dprDate_from", dpr.from);
+    else next.delete("dprDate_from");
+
+    if (dpr?.to) next.set("dprDate_to", dpr?.to);
+    else next.delete("dprDate_to");
+
+    const dprDate = vals.dpr;
+
+    if (dprDate?.from) next.set("dpr_from", dprDate.from);
+    else next.delete("dpr_from");
+
+    if (dprDate?.to) next.set("dpr_to", dprDate.to);
+    else next.delete("dpr_to");
+
     next.set("page", "1");
     if (!next.get("pageSize")) next.set("pageSize", "10");
 
@@ -152,7 +179,12 @@ function DprManagement() {
       p.delete("to");
       p.delete("status");
       p.delete("category");
+      p.delete("dprDate_from");
+      p.delete("dprDate_to")
+      p.delete("dpr_from");
+      p.delete("dpr_to");
       p.set("page", "1");
+
       return p;
     });
   };
