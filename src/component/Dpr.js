@@ -50,18 +50,7 @@ const ddmmyyyyToISO = (s) => {
 };
 
 /** Detect coarse pointer (touch) to avoid hover-only UX */
-function useCoarsePointer() {
-  const [coarse, setCoarse] = useState(false);
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mq = window.matchMedia("(pointer: coarse)");
-    const handler = (e) => setCoarse(e.matches);
-    setCoarse(mq.matches);
-    mq.addEventListener?.("change", handler);
-    return () => mq.removeEventListener?.("change", handler);
-  }, []);
-  return coarse;
-}
+
 
 function DPRTable() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -74,9 +63,6 @@ function DPRTable() {
       "",
     [searchParams.toString()]
   );
-
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   useEffect(() => {
     if (hide_status) {
@@ -94,28 +80,6 @@ function DPRTable() {
     }
   }, [hide_status, searchParams.toString()]);
 
-  const isTouch = useCoarsePointer();
-  const ddmmyyyyToLocalDate = (s) => {
-    if (!s) return null;
-    const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(String(s).trim());
-    if (!m) return null;
-    const [, dd, mm, yyyy] = m;
-    const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd), 0, 0, 0, 0);
-    return isNaN(d.getTime()) ? null : d;
-  };
-
-  const startOfDay = (d) =>
-    d ? new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0) : null;
-
-  /** ceil days difference a->b, never negative */
-  const daysBetween = (a, b) => {
-    if (!a || !b) return 0;
-    const A = startOfDay(a);
-    const B = startOfDay(b);
-    const ms = B.getTime() - A.getTime();
-    if (ms <= 0) return 0;
-    return Math.ceil(ms / (24 * 60 * 60 * 1000));
-  };
 
   const HEADERS = [
     "Project Code",
@@ -129,8 +93,6 @@ function DPRTable() {
     "Actions",
   ];
 
-  // function DPRTable() {
-  // const [searchParams, setSearchParams] = useSearchParams();
   const prevQueryRef = useRef(null);
 
   /** ===== URL-backed state ===== */
@@ -149,6 +111,11 @@ function DPRTable() {
   const onlyWithDeadlineFromUrl =
     searchParams.get("onlyWithDeadline") || undefined;
   const categoryFromUrl = searchParams.get("category") || undefined;
+
+  const dprDateFrom = searchParams.get("dprDate_from") || "";
+  const dprDateTo = searchParams.get("dprDate_to") || "";
+  const dprFrom = searchParams.get("dpr_from") || "";
+  const dprTo = searchParams.get("dpr_to") || "";
 
   const [currentPage, setCurrentPage] = useState(pageFromUrl);
   const [rowsPerPage, setRowsPerPage] = useState(pageSizeFromUrl);
@@ -189,6 +156,10 @@ function DPRTable() {
       to: toFromUrl,
       onlyWithDeadline: onlyWithDeadlineFromUrl,
       category: categoryFromUrl,
+      dprDateFrom,
+      dprDateTo,
+      dprFrom,
+      dprTo,
     });
 
   // mutation
@@ -204,124 +175,6 @@ function DPRTable() {
     if (x === "idle") return "idle";
     return "progress";
   };
-
-  //   const [pageRows, setPageRows] = useState([]);
-
-  //   // const pageRows = useMemo(() => {
-  //   //   const raw =
-  //   //     (Array.isArray(data?.data) && data.data) ||
-  //   //     (Array.isArray(data?.rows) && data.rows) ||
-  //   //     [];
-  //   //   return raw.map((r, idx) => {
-  //   //     const deadlineStr = r.deadline || null;
-  //   //     const deadlineISO = deadlineStr ? ddmmyyyyToISO(deadlineStr) : null;
-
-  //   //     // totals
-  //   //     const total = Number(r.value ?? 0);
-  //   //     const cumulative = Number(r.cumulative_progress ?? 0); // for bar
-  //   //     const todaysSum = Number(r.todays_progress ?? 0);
-
-  //   //     // latest log status from API (string); we also compute lifecycleCompleted
-  //   //     const apiStatus = (r.dpr_status || r.status || "")
-  //   //       .toString()
-  //   //       .toLowerCase();
-
-  //   //     const lifecycleCompleted = total > 0 && cumulative >= total;
-
-  //   //     const normStatus = lifecycleCompleted
-  //   //       ? "completed"
-  //   //       : apiStatus === "in-progress" || apiStatus === "progress"
-  //   //       ? "progress"
-  //   //       : apiStatus === "work stopped" ||
-  //   //         apiStatus === "stopped" ||
-  //   //         apiStatus === "stop"
-  //   //       ? "stop"
-  //   //       : apiStatus === "idle"
-  //   //       ? "idle"
-  //   //       : "progress";
-
-  //   //     // ids…
-  //   //     const projectId =
-  //   //       r.projectId ||
-  //   //       r.project_id ||
-  //   //       r.project?._id ||
-  //   //       r.project?._idProject ||
-  //   //       null;
-  //   //     const activityId =
-  //   //       r.activityId || r.activity_id || r._id || r.activity?._id || null;
-
-  //   //     // ===== Delay calculation on FE =====
-  //   //     const deadlineLocal = ddmmyyyyToLocalDate(deadlineStr);
-  //   //     const todayLocal = startOfDay(new Date());
-
-  //   //     let delayDays = 0;
-
-  //   //     if (deadlineLocal) {
-  //   //       if (normStatus === "idle" || normStatus === "stop") {
-  //   //         // Not counted in these statuses
-  //   //         delayDays = 0;
-  //   //       } else if (normStatus === "completed") {
-  //   //         // Use the date of completion and keep it fixed
-  //   //         // We take r.dpr_date (dd-mm-yyyy) as the "last log date", which is when it likely completed.
-  //   //         const completedStr = r.dpr_date || null;
-  //   //         const completedLocal = ddmmyyyyToLocalDate(completedStr);
-  //   //         if (completedLocal && completedLocal > deadlineLocal) {
-  //   //           delayDays = daysBetween(deadlineLocal, completedLocal);
-  //   //         } else {
-  //   //           delayDays = 0;
-  //   //         }
-  //   //       } else {
-  //   //         // In progress: compute live delay vs today
-  //   //         if (todayLocal > deadlineLocal) {
-  //   //           delayDays = daysBetween(deadlineLocal, todayLocal);
-  //   //         }
-  //   //       }
-  //   //     }
-
-  //   //     const delayText = r.delay ?? null; // optional reason text if backend ever sends
-
-  //   //     return {
-  //   //       _id:
-  //   //         r._id || `${r.project_code || "p"}|${r.activity_name || "a"}|${idx}`,
-  //   //       projectId,
-  //   //       activityId,
-  //   //       project_code: r.project_code || "-",
-  //   //       project_name: r.project_name || "-",
-  //   //       activity_name: r.activity_name || "-",
-  //   //       category:
-  //   //         r.category ??
-  //   //         r.activity_category ??
-  //   //         r.category_name ??
-  //   //         r.categoryType ??
-  //   //         r.category_type ??
-  //   //         "-", // safe fallback
-
-  //   //       // total target:
-  //   //       work_completion: { value: total ?? null, unit: r.unit ?? "" },
-
-  //   //       // cumulative done (for bar & %):
-  //   //       current_work: { value: cumulative ?? null, unit: r.unit ?? "" },
-
-  //   //       // optional: today's sum
-  //   //       todays_sum: todaysSum,
-
-  //   //       // computed delay
-  //   //       delay_days: delayDays,
-  //   //       delay_text: delayText,
-
-  //   //       milestones: [],
-  //   //       deadlineISO,
-  //   //       deadlineStr,
-
-  //   //       // keep status for chips & "not counted"
-  //   //       status: normStatus,
-  //   //     };
-  //   //   });
-  //   // }, [data]);
-
-  //  useMemo(() => {
-  //     setPageRows(data?.data);
-  //   }, [data])
 
   const pageRows = data?.data ?? [];
 
@@ -436,39 +289,8 @@ function DPRTable() {
       label: "100%",
     },
   ];
-  const getBandFor = (pct) => {
-    for (const b of PROGRESS_BANDS) if (pct <= b.max) return b;
-    return PROGRESS_BANDS[PROGRESS_BANDS.length - 1];
-  };
-  const clamp02 = (x) => Math.max(0, Math.min(1, x));
 
-  /** Build the explanatory text used in tooltip/inline */
-  const buildWorkDetailText = (completed, total, unit, deadline) => {
-    const pct = clamp02(total > 0 ? completed / total : 0);
-    const pct100 = Math.round(pct * 100);
 
-    const days = diffInDays(deadline);
-    const daysText =
-      days == null
-        ? "No deadline"
-        : days > 0
-          ? `${days} day${days === 1 ? "" : "s"} left`
-          : days === 0
-            ? "Due today"
-            : `Overdue by ${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"}`;
-
-    return {
-      pct100,
-      summary: `${completed} / ${total} ${unit || ""}`.trim(),
-      daysText,
-    };
-  };
-
-  /**
-   * Render progress UI
-   * - When inlineDetails === true (mobile), prints details under the bar (no hover)
-   * - When inlineDetails === false (desktop), shows details in a hover Tooltip
-   */
   const renderStatusChipCell = (s) => {
     const st = norm(s);
     const label =
@@ -802,7 +624,6 @@ function DPRTable() {
 
   const closeProgress = () => {
     setProgressOpen(false);
-    // optional UI resets
     setActionType("progress");
     setProgressRow(null);
     setProgressQty("");
