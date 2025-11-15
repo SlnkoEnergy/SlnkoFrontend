@@ -1,5 +1,7 @@
 // pages/DPRTable.jsx
 import SearchIcon from "@mui/icons-material/Search";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/joy/styles"; // or "@mui/material/styles"
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import {
@@ -48,18 +50,7 @@ const ddmmyyyyToISO = (s) => {
 };
 
 /** Detect coarse pointer (touch) to avoid hover-only UX */
-function useCoarsePointer() {
-  const [coarse, setCoarse] = useState(false);
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mq = window.matchMedia("(pointer: coarse)");
-    const handler = (e) => setCoarse(e.matches);
-    setCoarse(mq.matches);
-    mq.addEventListener?.("change", handler);
-    return () => mq.removeEventListener?.("change", handler);
-  }, []);
-  return coarse;
-}
+
 
 function DPRTable() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -89,28 +80,6 @@ function DPRTable() {
     }
   }, [hide_status, searchParams.toString()]);
 
-  const isTouch = useCoarsePointer();
-  const ddmmyyyyToLocalDate = (s) => {
-    if (!s) return null;
-    const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(String(s).trim());
-    if (!m) return null;
-    const [, dd, mm, yyyy] = m;
-    const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd), 0, 0, 0, 0);
-    return isNaN(d.getTime()) ? null : d;
-  };
-
-  const startOfDay = (d) =>
-    d ? new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0) : null;
-
-  /** ceil days difference a->b, never negative */
-  const daysBetween = (a, b) => {
-    if (!a || !b) return 0;
-    const A = startOfDay(a);
-    const B = startOfDay(b);
-    const ms = B.getTime() - A.getTime();
-    if (ms <= 0) return 0;
-    return Math.ceil(ms / (24 * 60 * 60 * 1000));
-  };
 
   const HEADERS = [
     "Project Code",
@@ -124,8 +93,6 @@ function DPRTable() {
     "Actions",
   ];
 
-  // function DPRTable() {
-  // const [searchParams, setSearchParams] = useSearchParams();
   const prevQueryRef = useRef(null);
 
   /** ===== URL-backed state ===== */
@@ -144,6 +111,11 @@ function DPRTable() {
   const onlyWithDeadlineFromUrl =
     searchParams.get("onlyWithDeadline") || undefined;
   const categoryFromUrl = searchParams.get("category") || undefined;
+
+  const dprDateFrom = searchParams.get("dprDate_from") || "";
+  const dprDateTo = searchParams.get("dprDate_to") || "";
+  const dprFrom = searchParams.get("dpr_from") || "";
+  const dprTo = searchParams.get("dpr_to") || "";
 
   const [currentPage, setCurrentPage] = useState(pageFromUrl);
   const [rowsPerPage, setRowsPerPage] = useState(pageSizeFromUrl);
@@ -176,14 +148,18 @@ function DPRTable() {
       status: projectCodeFromUrl
         ? "project code"
         : statusFromUrl
-        ? statusFromUrl.replace(/-/g, " ")
-        : undefined,
+          ? statusFromUrl.replace(/-/g, " ")
+          : undefined,
       projectId: projectIdFromUrl,
       hide_status: hide_status,
       from: fromFromUrl,
       to: toFromUrl,
       onlyWithDeadline: onlyWithDeadlineFromUrl,
       category: categoryFromUrl,
+      dprDateFrom,
+      dprDateTo,
+      dprFrom,
+      dprTo,
     });
 
   // mutation
@@ -200,117 +176,7 @@ function DPRTable() {
     return "progress";
   };
 
-  const pageRows = useMemo(() => {
-    const raw =
-      (Array.isArray(data?.data) && data.data) ||
-      (Array.isArray(data?.rows) && data.rows) ||
-      [];
-    return raw.map((r, idx) => {
-      const deadlineStr = r.deadline || null;
-      const deadlineISO = deadlineStr ? ddmmyyyyToISO(deadlineStr) : null;
-
-      // totals
-      const total = Number(r.value ?? 0);
-      const cumulative = Number(r.cumulative_progress ?? 0); // for bar
-      const todaysSum = Number(r.todays_progress ?? 0);
-
-      // latest log status from API (string); we also compute lifecycleCompleted
-      const apiStatus = (r.dpr_status || r.status || "")
-        .toString()
-        .toLowerCase();
-
-      const lifecycleCompleted = total > 0 && cumulative >= total;
-
-      const normStatus = lifecycleCompleted
-        ? "completed"
-        : apiStatus === "in-progress" || apiStatus === "progress"
-        ? "progress"
-        : apiStatus === "work stopped" ||
-          apiStatus === "stopped" ||
-          apiStatus === "stop"
-        ? "stop"
-        : apiStatus === "idle"
-        ? "idle"
-        : "progress";
-
-      // ids…
-      const projectId =
-        r.projectId ||
-        r.project_id ||
-        r.project?._id ||
-        r.project?._idProject ||
-        null;
-      const activityId =
-        r.activityId || r.activity_id || r._id || r.activity?._id || null;
-
-      // ===== Delay calculation on FE =====
-      const deadlineLocal = ddmmyyyyToLocalDate(deadlineStr);
-      const todayLocal = startOfDay(new Date());
-
-      let delayDays = 0;
-
-      if (deadlineLocal) {
-        if (normStatus === "idle" || normStatus === "stop") {
-          // Not counted in these statuses
-          delayDays = 0;
-        } else if (normStatus === "completed") {
-          // Use the date of completion and keep it fixed
-          // We take r.dpr_date (dd-mm-yyyy) as the "last log date", which is when it likely completed.
-          const completedStr = r.dpr_date || null;
-          const completedLocal = ddmmyyyyToLocalDate(completedStr);
-          if (completedLocal && completedLocal > deadlineLocal) {
-            delayDays = daysBetween(deadlineLocal, completedLocal);
-          } else {
-            delayDays = 0;
-          }
-        } else {
-          // In progress: compute live delay vs today
-          if (todayLocal > deadlineLocal) {
-            delayDays = daysBetween(deadlineLocal, todayLocal);
-          }
-        }
-      }
-
-      const delayText = r.delay ?? null; // optional reason text if backend ever sends
-
-      return {
-        _id:
-          r._id || `${r.project_code || "p"}|${r.activity_name || "a"}|${idx}`,
-        projectId,
-        activityId,
-        project_code: r.project_code || "-",
-        project_name: r.project_name || "-",
-        activity_name: r.activity_name || "-",
-        category:
-          r.category ??
-          r.activity_category ??
-          r.category_name ??
-          r.categoryType ??
-          r.category_type ??
-          "-", // safe fallback
-
-        // total target:
-        work_completion: { value: total ?? null, unit: r.unit ?? "" },
-
-        // cumulative done (for bar & %):
-        current_work: { value: cumulative ?? null, unit: r.unit ?? "" },
-
-        // optional: today's sum
-        todays_sum: todaysSum,
-
-        // computed delay
-        delay_days: delayDays,
-        delay_text: delayText,
-
-        milestones: [],
-        deadlineISO,
-        deadlineStr,
-
-        // keep status for chips & "not counted"
-        status: normStatus,
-      };
-    });
-  }, [data]);
+  const pageRows = data?.data ?? [];
 
   // prefer server-provided pagination
   const totalPages = Number(
@@ -324,10 +190,14 @@ function DPRTable() {
     const n = Number(v);
     return Number.isFinite(n) ? n : 0;
   };
-  const getTotal = (r) => toNum(r?.work_completion?.value);
-  const getCompleted = (r) => toNum(r?.current_work?.value); // cumulative now
-  const getUnit = (r) =>
-    (r?.work_completion?.unit || r?.current_work?.unit || "").toString();
+  const getTotal = (r) => toNum(r?.value);
+
+  const getCompleted = (r) =>
+    (r.dpr_log || [])
+      .map((log) => toNum(log?.todays_progress ?? "0"))
+      .reduce((sum, val) => sum + val, 0); // cumulative now
+
+  const getUnit = (r) => (r?.unit || r?.current_work?.unit || "").toString();
 
   /** ===== search filter (client side) ===== */
   const filtered = useMemo(() => {
@@ -419,58 +289,27 @@ function DPRTable() {
       label: "100%",
     },
   ];
-  const getBandFor = (pct) => {
-    for (const b of PROGRESS_BANDS) if (pct <= b.max) return b;
-    return PROGRESS_BANDS[PROGRESS_BANDS.length - 1];
-  };
-  const clamp02 = (x) => Math.max(0, Math.min(1, x));
 
-  /** Build the explanatory text used in tooltip/inline */
-  const buildWorkDetailText = (completed, total, unit, deadline) => {
-    const pct = clamp02(total > 0 ? completed / total : 0);
-    const pct100 = Math.round(pct * 100);
 
-    const days = diffInDays(deadline);
-    const daysText =
-      days == null
-        ? "No deadline"
-        : days > 0
-        ? `${days} day${days === 1 ? "" : "s"} left`
-        : days === 0
-        ? "Due today"
-        : `Overdue by ${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"}`;
-
-    return {
-      pct100,
-      summary: `${completed} / ${total} ${unit || ""}`.trim(),
-      daysText,
-    };
-  };
-
-  /**
-   * Render progress UI
-   * - When inlineDetails === true (mobile), prints details under the bar (no hover)
-   * - When inlineDetails === false (desktop), shows details in a hover Tooltip
-   */
   const renderStatusChipCell = (s) => {
     const st = norm(s);
     const label =
       st === "completed"
         ? "Completed"
         : st === "idle"
-        ? "Idle"
-        : st === "stop"
-        ? "Work Stopped"
-        : "In progress";
+          ? "Idle"
+          : st === "stop"
+            ? "Work Stopped"
+            : "In progress";
 
     const color =
       st === "completed"
         ? "success"
         : st === "idle"
-        ? "neutral"
-        : st === "stop"
-        ? "danger"
-        : "warning";
+          ? "neutral"
+          : st === "stop"
+            ? "danger"
+            : "warning";
 
     return (
       <Chip variant="soft" color={color} sx={{ fontWeight: 700 }}>
@@ -498,10 +337,10 @@ function DPRTable() {
       delayText && String(delayText).trim()
         ? `Delay reason: ${String(delayText).trim()}`
         : showNotCounted
-        ? "Delay not counted for Idle/Stopped status"
-        : Number(delayDays) > 0
-        ? "Deadline exceeded"
-        : "No delay";
+          ? "Delay not counted for Idle/Stopped status"
+          : Number(delayDays) > 0
+            ? "Deadline exceeded"
+            : "No delay";
 
     return (
       <Tooltip title={tooltip} arrow variant="soft">
@@ -513,50 +352,46 @@ function DPRTable() {
   };
 
   const renderWorkPercent = (
-    wc,
-    tw,
-    deadline,
-    milestones = [],
+    row,
     showPercentLabel = true,
     inlineDetails = false
   ) => {
-    if (!wc || wc.value == null || !tw || tw.value == null) return "-";
+    if (!row || row.percent_complete == null) return "-";
 
-    const unit = (tw.unit || wc.unit || "").toString();
-    const total = Number(tw.value);
-    const completed = Number(wc.value); // cumulative
+    const pct100 = Number(row.percent_complete ?? 0);
+    const total = Number(row.value ?? 0);
+    const unit = (row.unit || "").toString();
 
-    if (!Number.isFinite(total) || total <= 0) {
-      return (
-        <Chip size="sm" variant="soft" color="neutral" sx={{ fontWeight: 700 }}>
-          {completed} {unit || ""}
-        </Chip>
-      );
+    const hasValidPct = Number.isFinite(pct100) && pct100 >= 0;
+    if (!hasValidPct) return "-";
+
+    // Approx completed quantity from percent + total
+    const hasTotal = Number.isFinite(total) && total > 0;
+    const completed = hasTotal ? (pct100 * total) / 100 : null;
+
+    const summary = hasTotal
+      ? `${completed?.toFixed(2)} / ${total} ${unit}`
+      : `${pct100}% ${unit}`;
+
+    // Build daysText from delay_days
+    let daysText = "";
+    if (typeof row.delay_days === "number") {
+      if (row.delay_days > 0) {
+        daysText = `Delayed by ${row.delay_days} day(s)`;
+      } else if (row.delay_days < 0) {
+        daysText = `Ahead by ${Math.abs(row.delay_days)} day(s)`;
+      } else {
+        daysText = "On schedule";
+      }
     }
 
-    const { pct100, summary, daysText } = buildWorkDetailText(
-      completed,
-      total,
-      unit,
-      deadline
-    );
-
-    const dotPositions = (() => {
-      const deltas = Array.isArray(milestones) ? milestones : [];
-      let run = 0;
-      const cumulative = [];
-      for (const x of deltas) {
-        const v = Number(x);
-        if (!Number.isFinite(v)) continue;
-        run += v;
-        if (run < 0) continue;
-        if (run > total) break;
-        cumulative.push(run);
-      }
-      return cumulative.map((m) => Math.round((m / total) * 100));
+    // Simple band/color logic (replacement for getBandFor)
+    const band = (() => {
+      if (pct100 >= 100) return { color: "success", sx: {} };
+      if (pct100 >= 75) return { color: "primary", sx: {} };
+      if (pct100 >= 40) return { color: "warning", sx: {} };
+      return { color: "danger", sx: {} };
     })();
-
-    const band = getBandFor(pct100);
 
     const Bar = (
       <Box
@@ -579,23 +414,6 @@ function DPRTable() {
             ...band.sx,
           }}
         />
-        {dotPositions.map((leftPct, idx) => (
-          <Box
-            key={idx}
-            sx={{
-              position: "absolute",
-              top: "50%",
-              left: `calc(${leftPct}% - 4px)`,
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              bgcolor: "neutral.outlinedBorder",
-              boxShadow: "0 0 0 2px var(--joy-palette-background-body)",
-              transform: "translateY(-50%)",
-              pointerEvents: "none",
-            }}
-          />
-        ))}
         {showPercentLabel && (
           <Typography
             level="body-xs"
@@ -616,32 +434,45 @@ function DPRTable() {
       </Box>
     );
 
+    // ---------- Mobile / inline mode ----------
     if (inlineDetails) {
-      // Mobile/touch: show written details below the bar
       return (
         <Box>
           {Bar}
           <Typography level="body-xs" sx={{ mt: 0.5 }}>
-            <b>Progress:</b> {pct100}% &nbsp;•&nbsp; <b>Qty:</b> {summary}
+            <b>Progress:</b> {pct100}%{" "}
+            {hasTotal && (
+              <>
+                &nbsp;•&nbsp;<b>Qty:</b> {summary}
+              </>
+            )}
           </Typography>
-          <Typography
-            level="body-xs"
-            sx={{ mt: 0.25, color: "text.secondary" }}
-          >
-            {daysText}
-          </Typography>
+          {/* {daysText && (
+            <Typography
+              level="body-xs"
+              sx={{ mt: 0.25, color: "text.secondary" }}
+            >
+              {daysText}
+            </Typography>
+          )} */}
         </Box>
       );
     }
 
-    // Desktop/hover: keep tooltip
+    // ---------- Desktop / tooltip mode ----------
     const tooltip = (
       <Box sx={{ p: 0.5 }}>
         <Typography level="title-sm" sx={{ fontWeight: 700, mb: 0.5 }}>
           Progress: {pct100}%
         </Typography>
-        <Typography level="body-sm">{summary}</Typography>
-        <Typography level="body-sm">{daysText}</Typography>
+        {hasTotal && <Typography level="body-sm">{summary}</Typography>}
+        {daysText && <Typography level="body-sm">{daysText}</Typography>}
+        {row.status && (
+          <Typography level="body-sm">Status: {row.status}</Typography>
+        )}
+        {row.dpr_remarks && (
+          <Typography level="body-sm">Remarks: {row.dpr_remarks}</Typography>
+        )}
       </Box>
     );
 
@@ -655,6 +486,7 @@ function DPRTable() {
   /** ===== DeadlineChip (dd-mm-yyyy display) ===== */
   function DeadlineChip({ dateStr, tickMs = 30000 }) {
     const [now, setNow] = useState(() => Date.now());
+
     useEffect(() => {
       const id = setInterval(() => setNow(Date.now()), tickMs);
       return () => clearInterval(id);
@@ -662,11 +494,9 @@ function DPRTable() {
 
     const parsed = useMemo(() => {
       if (!dateStr) return null;
-      const s = String(dateStr).trim();
-      const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(s);
-      if (!m) return null;
-      const [, dd, mm, yyyy] = m;
-      const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd), 0, 0, 0, 0);
+
+      // Backend sends ISO string like "2025-11-12T18:30:00.000Z"
+      const d = new Date(dateStr);
       return isNaN(d.getTime()) ? null : d;
     }, [dateStr]);
 
@@ -692,6 +522,7 @@ function DPRTable() {
     let color = "warning";
 
     if (diff > 0) {
+      // future – due in
       if (d >= 2) {
         label = `Due in ${d}d`;
         color = "primary";
@@ -709,6 +540,7 @@ function DPRTable() {
         color = "danger";
       }
     } else if (diff < 0) {
+      // past – overdue
       if (d >= 1) {
         label = `Overdue by ${d}d`;
         color = "danger";
@@ -721,6 +553,13 @@ function DPRTable() {
       }
     }
 
+    // Display date as dd-mm-yyyy for readability
+    const displayDate = parsed.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+
     return (
       <Tooltip arrow title={label}>
         <Chip
@@ -729,7 +568,7 @@ function DPRTable() {
           color={color}
           sx={{ fontWeight: 700, cursor: "default" }}
         >
-          {dateStr}
+          {displayDate}
         </Chip>
       </Tooltip>
     );
@@ -785,7 +624,6 @@ function DPRTable() {
 
   const closeProgress = () => {
     setProgressOpen(false);
-    // optional UI resets
     setActionType("progress");
     setProgressRow(null);
     setProgressQty("");
@@ -1082,7 +920,7 @@ function DPRTable() {
                   >
                     {row.category
                       ? row.category.charAt(0).toUpperCase() +
-                        row.category.slice(1)
+                      row.category.slice(1)
                       : "-"}
                   </td>
 
@@ -1096,19 +934,16 @@ function DPRTable() {
                     style={{ borderBottom: "1px solid #ddd", padding: "8px" }}
                   >
                     {renderWorkPercent(
-                      row.current_work, // cumulative
-                      row.work_completion, // total
-                      row.deadlineISO,
-                      row.milestones,
+                      row,
                       true, // showPercentLabel
-                      false // inlineDetails -> desktop/table stays tooltiped
+                      false // inlineDetails -> still tooltip on desktop; you can pass isMobile here
                     )}
                   </td>
 
                   <td
                     style={{ padding: "8px", borderBottom: "1px solid #ddd" }}
                   >
-                    <DeadlineChip dateStr={row.deadlineStr} />
+                    <DeadlineChip dateStr={row.deadline} />
                   </td>
 
                   {/* Delay cell (computed on FE) */}
@@ -1117,7 +952,7 @@ function DPRTable() {
                   >
                     {renderDelayCell(
                       row.delay_days,
-                      row.delay_text,
+                      row.dpr_remarks,
                       row.status
                     )}
                   </td>
@@ -1209,7 +1044,7 @@ function DPRTable() {
                       />
                     </Box>
                   </Typography>
-                  <DeadlineChip dateStr={row.deadlineStr} />
+                  <DeadlineChip dateStr={row.deadline} />
                 </Box>
 
                 <Button
@@ -1237,23 +1072,22 @@ function DPRTable() {
                     {/* On mobile, show written details (no hover) */}
                     <Typography level="body-sm" mt={0.5}>
                       {renderWorkPercent(
-                        row.current_work,
-                        row.work_completion,
-                        row.deadlineISO,
-                        row.milestones,
+                        row,
                         true, // showPercentLabel
-                        true // inlineDetails -> text printed under bar
+                        true // inlineDetails -> still tooltip on desktop; you can pass isMobile here
                       )}
                     </Typography>
 
                     {/* Delay on mobile */}
+
+
                     <Box mt={1}>
                       <Typography level="body-sm" sx={{ mb: 0.5 }}>
                         <strong>Delay:</strong>
                       </Typography>
                       {renderDelayCell(
                         row.delay_days,
-                        row.delay_text,
+                        row.dpr_remarks,
                         row.status
                       )}
                     </Box>
