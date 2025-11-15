@@ -13,6 +13,7 @@ import DPRTable from "../../component/Dpr";
 import Filter from "../../component/Partials/Filter";
 
 import { useGetProjectDropdownQuery } from "../../redux/projectsSlice";
+import { get } from "lodash";
 
 function DprManagement() {
   const navigate = useNavigate();
@@ -182,7 +183,6 @@ function DprManagement() {
       p.delete("dprDate_to")
       p.delete("dpr_from");
       p.delete("dpr_to");
-      p.delete("hide_status");
       p.set("page", "1");
 
       return p;

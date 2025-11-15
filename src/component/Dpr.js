@@ -50,24 +50,35 @@ const ddmmyyyyToISO = (s) => {
 };
 
 /** Detect coarse pointer (touch) to avoid hover-only UX */
-function useCoarsePointer() {
-  const [coarse, setCoarse] = useState(false);
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mq = window.matchMedia("(pointer: coarse)");
-    const handler = (e) => setCoarse(e.matches);
-    setCoarse(mq.matches);
-    mq.addEventListener?.("change", handler);
-    return () => mq.removeEventListener?.("change", handler);
-  }, []);
-  return coarse;
-}
+
 
 function DPRTable() {
   const [searchParams, setSearchParams] = useSearchParams();
   const statusFromUrl = searchParams.get("status") || "";
   const projectCodeFromUrl = searchParams.get("project_code") || "";
-  const hide_status = searchParams.get("hide_status") || "";
+  const hide_status = useMemo(
+    () =>
+      searchParams.get("hide_status") ||
+      localStorage.getItem("hide_status") ||
+      "",
+    [searchParams.toString()]
+  );
+
+  useEffect(() => {
+    if (hide_status) {
+      localStorage.setItem("hide_status", hide_status);
+    } else {
+      localStorage.removeItem("hide_status");
+    }
+
+    const current = searchParams.get("hide_status") || "";
+    if (hide_status !== current) {
+      const next = new URLSearchParams(searchParams);
+      if (hide_status) next.set("hide_status", hide_status);
+      else next.delete("hide_status");
+      setSearchParams(next, { replace: true });
+    }
+  }, [hide_status, searchParams.toString()]);
 
 
   const HEADERS = [
