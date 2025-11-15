@@ -181,8 +181,8 @@ function DPRTable() {
       status: projectCodeFromUrl
         ? "project code"
         : statusFromUrl
-        ? statusFromUrl.replace(/-/g, " ")
-        : undefined,
+          ? statusFromUrl.replace(/-/g, " ")
+          : undefined,
       projectId: projectIdFromUrl,
       hide_status: hide_status,
       from: fromFromUrl,
@@ -452,10 +452,10 @@ function DPRTable() {
       days == null
         ? "No deadline"
         : days > 0
-        ? `${days} day${days === 1 ? "" : "s"} left`
-        : days === 0
-        ? "Due today"
-        : `Overdue by ${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"}`;
+          ? `${days} day${days === 1 ? "" : "s"} left`
+          : days === 0
+            ? "Due today"
+            : `Overdue by ${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"}`;
 
     return {
       pct100,
@@ -475,19 +475,19 @@ function DPRTable() {
       st === "completed"
         ? "Completed"
         : st === "idle"
-        ? "Idle"
-        : st === "stop"
-        ? "Work Stopped"
-        : "In progress";
+          ? "Idle"
+          : st === "stop"
+            ? "Work Stopped"
+            : "In progress";
 
     const color =
       st === "completed"
         ? "success"
         : st === "idle"
-        ? "neutral"
-        : st === "stop"
-        ? "danger"
-        : "warning";
+          ? "neutral"
+          : st === "stop"
+            ? "danger"
+            : "warning";
 
     return (
       <Chip variant="soft" color={color} sx={{ fontWeight: 700 }}>
@@ -515,10 +515,10 @@ function DPRTable() {
       delayText && String(delayText).trim()
         ? `Delay reason: ${String(delayText).trim()}`
         : showNotCounted
-        ? "Delay not counted for Idle/Stopped status"
-        : Number(delayDays) > 0
-        ? "Deadline exceeded"
-        : "No delay";
+          ? "Delay not counted for Idle/Stopped status"
+          : Number(delayDays) > 0
+            ? "Deadline exceeded"
+            : "No delay";
 
     return (
       <Tooltip title={tooltip} arrow variant="soft">
@@ -1099,7 +1099,7 @@ function DPRTable() {
                   >
                     {row.category
                       ? row.category.charAt(0).toUpperCase() +
-                        row.category.slice(1)
+                      row.category.slice(1)
                       : "-"}
                   </td>
 
@@ -1223,7 +1223,7 @@ function DPRTable() {
                       />
                     </Box>
                   </Typography>
-                  <DeadlineChip dateStr={row.deadlineStr} />
+                  <DeadlineChip dateStr={row.deadline} />
                 </Box>
 
                 <Button
@@ -1258,6 +1258,8 @@ function DPRTable() {
                     </Typography>
 
                     {/* Delay on mobile */}
+
+
                     <Box mt={1}>
                       <Typography level="body-sm" sx={{ mb: 0.5 }}>
                         <strong>Delay:</strong>
