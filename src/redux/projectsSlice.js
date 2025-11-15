@@ -287,9 +287,9 @@ export const projectsApi = createApi({
       providesTags: (result) =>
         result?.items
           ? [
-              ...result.items.map((a) => ({ type: "Activity", id: a._id })),
-              { type: "Activity", id: "LIST" },
-            ]
+            ...result.items.map((a) => ({ type: "Activity", id: a._id })),
+            { type: "Activity", id: "LIST" },
+          ]
           : [{ type: "Activity", id: "LIST" }],
     }),
 
@@ -316,9 +316,9 @@ export const projectsApi = createApi({
       providesTags: (result) =>
         result?.data
           ? [
-              ...result.data.map((m) => ({ type: "Module", id: m._id })),
-              { type: "Module", id: "LIST" },
-            ]
+            ...result.data.map((m) => ({ type: "Module", id: m._id })),
+            { type: "Module", id: "LIST" },
+          ]
           : [{ type: "Module", id: "LIST" }],
     }),
 
@@ -364,12 +364,12 @@ export const projectsApi = createApi({
       providesTags: (result) =>
         result?.data
           ? [
-              ...result.data.map((m) => ({
-                type: "MaterialCategory",
-                id: m._id,
-              })),
-              { type: "MaterialCategory", id: "LIST" },
-            ]
+            ...result.data.map((m) => ({
+              type: "MaterialCategory",
+              id: m._id,
+            })),
+            { type: "MaterialCategory", id: "LIST" },
+          ]
           : [{ type: "MaterialCategory", id: "LIST" }],
     }),
 
@@ -562,10 +562,14 @@ export const projectsApi = createApi({
         from,
         to,
         onlyWithDeadline,
-        status, 
+        status,
         category,
         hide_status,
-        
+        dprDateFrom,
+        dprDateTo,
+        dprFrom,
+        dprTo,
+
       }) => {
         const params = new URLSearchParams();
 
@@ -580,9 +584,13 @@ export const projectsApi = createApi({
         if (status) params.set("status", status); // ✅ pass-through
         if (category) params.set("category", category);
 
-        if (status) params.set("status", status); 
-        if(hide_status) params.set("hide_status", hide_status)
-        
+        if (status) params.set("status", status);
+        if (hide_status) params.set("hide_status", hide_status);
+        if (dprDateFrom) params.set("dprDate_from", dprDateFrom);
+        if (dprDateTo) params.set("dprDate_to", dprDateTo);
+        if (dprFrom) params.set("dprFrom", dprFrom);
+        if (dprTo) params.set("dprTo", dprTo);
+
         return {
           url: `projectActivity/alldpr?${params.toString()}`,
           method: "GET",
